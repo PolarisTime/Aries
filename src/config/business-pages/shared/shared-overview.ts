@@ -69,9 +69,10 @@ function applyOverviewScope(
  * <p>勾选态返回两组: 先「已选 N 项 · …」, 再「本页合计 · …」, 两个数字各自有名字,
  * 不再出现"同一标签两个数"。未勾选态只返回本页合计, 标签保持原样。</p>
  *
- * <p><b>两组在列表页分两处渲染</b>: 勾选组进表格上方的「已选择 N 项」横幅
- * (`ModuleSelectionAlert`), 本页组合计留在页脚 (`ModuleTablePagination`)。按 `scopeKey`
- * 拆分而不是按 `scope` 文案匹配 —— 文案会随 i18n 变，标识不会。</p>
+ * <p><b>两组都在页脚渲染</b>: 勾选组（「已选 N 项」）与本页组合计一起落到表格下方的
+ * `ModuleTablePagination`，由它按 `scope` 分组展示。历史上勾选组曾单独渲染在表格上方的
+ * 横幅里，2026-10 按「去掉横幅、按钮上移工具栏、合计下沉页脚」的要求合并到页脚。
+ * 分组的判据仍是 `scopeKey`（机器可读）而不是 `scope` 文案 —— 文案会随 i18n 变。</p>
  *
  * @param buildItems 页面配置里的纯计算函数(如 `buildAmountWeightOverview` 的偏应用)
  * @param pageRows   本页行

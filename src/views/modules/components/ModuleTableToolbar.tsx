@@ -31,9 +31,9 @@ interface Props {
   /**
    * 页面级动作（打印 / 附件 / 单据流 …）。
    *
-   * <p>**批量动作不在这里**：「导出选中 N 条 / 批量审核 / 批量反审核 / 批量删除」只在有勾选时
-   * 才有意义，由表格上方的「已选择 N 项」横幅（`ModuleSelectionAlert`）承载 —— 横幅出现时
-   * 它们才出现，工具栏因此只剩"不依赖勾选"的动作，右侧状态区只留刷新与重置。</p>
+   * <p>**批量动作也在这里**：「导出选中 N 条 / 批量审核 / 批量反审核 / 批量删除」由
+   * `BusinessGridContent` 合并进本 prop（`toolbarActionList`）。它们只在有勾选时才会生成，
+   * 所以未勾选时工具栏不会多出禁用按钮；勾选后原地出现，用户不用再往表格上方找横幅。</p>
    */
   toolbarActions?: ModuleActionDefinition[]
   onAction?: (action: ModuleActionDefinition) => void

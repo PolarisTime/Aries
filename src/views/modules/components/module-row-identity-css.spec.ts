@@ -139,37 +139,3 @@ describe('首位身份列样式契约', () => {
     )
   })
 })
-
-describe('勾选状态横幅样式契约', () => {
-  it('整条浅蓝横幅: 撑满一行, 左右两端对齐, 上下各一道分隔线', () => {
-    const block = blockOf('.module-selection-alert')
-    expect(block).toMatch(/display:\s*flex/)
-    expect(block).toMatch(/flex-wrap:\s*wrap/)
-    expect(block).toMatch(/justify-content:\s*space-between/)
-    expect(block).toMatch(/background:\s*var\(--theme-primary-soft\)/)
-    expect(block).toMatch(
-      /border-top:\s*1px solid var\(--theme-border-subtle\)/,
-    )
-    expect(block).toMatch(
-      /border-bottom:\s*1px solid var\(--theme-border-subtle\)/,
-    )
-  })
-
-  it('左侧合计允许换行, 单个指标不拆行(窄窗口下不叠字)', () => {
-    const summary = blockOf('.module-selection-alert-summary')
-    expect(summary).toMatch(/flex-wrap:\s*wrap/)
-    expect(summary).toMatch(/min-width:\s*0/)
-    expect(blockOf('.module-selection-alert-metric')).toMatch(
-      /white-space:\s*nowrap/,
-    )
-  })
-
-  it('动作区不参与压缩, 清除选择用主色文字按钮', () => {
-    expect(blockOf('.module-selection-alert-actions')).toMatch(
-      /flex:\s*0 0 auto/,
-    )
-    expect(blockOf('.module-selection-alert-clear.ant-btn')).toMatch(
-      /color:\s*var\(--theme-primary-text\)/,
-    )
-  })
-})

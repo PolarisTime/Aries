@@ -25,8 +25,8 @@ export interface ModuleTableUtilitiesProps {
   /**
    * 已选条数；`0` 或缺省时不渲染胶囊。
    *
-   * <p>业务列表页不再往这里传：勾选状态改由表格上方的「已选择 N 项」横幅
-   * （`ModuleSelectionAlert`）表达，工具栏右侧只留筛选提示 / 刷新 / 重置。</p>
+   * <p>业务列表页不再往这里传：勾选数量与已选合计改由表格下方的页脚
+   * （`ModuleTablePagination` 的 scope 分组）表达，工具栏右侧只留筛选提示 / 刷新 / 重置。</p>
    */
   selectedCount?: number
   onClearSelection?: (() => void) | undefined

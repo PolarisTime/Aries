@@ -18,7 +18,6 @@ import { BusinessGridTable } from '@/views/modules/components/BusinessGridTable'
 import { ColumnSettingsPopover } from '@/views/modules/components/ColumnSettingsPopover'
 import { ModuleFilterActiveSummary } from '@/views/modules/components/ModuleFilterActiveSummary'
 import { ModuleFilterToolbar } from '@/views/modules/components/ModuleFilterToolbar'
-import { ModuleSelectionAlert } from '@/views/modules/components/ModuleSelectionAlert'
 import { ModuleTablePagination } from '@/views/modules/components/ModuleTablePagination'
 import { ModuleTableToolbar } from '@/views/modules/components/ModuleTableToolbar'
 
@@ -121,7 +120,6 @@ export function BusinessGridContent({
   onExport,
   onRefresh,
   onRetry,
-  onClearSelection,
   onToggleColumn,
   onColumnOrderChange,
   onResetColumnSizes,
@@ -134,7 +132,6 @@ export function BusinessGridContent({
   toolbarActions,
   onAction,
   onPageChange,
-  selectedCount,
   printDropdown,
 }: Props) {
   const { t } = useTranslation()
@@ -194,6 +191,28 @@ export function BusinessGridContent({
       ),
     [toolbarActions],
   )
+  /*
+   * 批量动作与页面动作合并到同一条工具栏。
+   *
+   * <p>原先批量动作（导出选中/批量审核/批量反审核/批量删除）渲染在表格上方的勾选横幅里，
+   * 勾选一出现就横贯一行、整页高度跟着跳动，而且"按钮在下方、表格在上方"要来回找。
+   * 现在统一进工具栏：这些动作只在勾选后才生成，未勾选时工具栏里不会多出禁用按钮。</p>
+   */
+  const toolbarActionList = useMemo(
+    () => [...pageActions, ...selectionActions],
+    [pageActions, selectionActions],
+  )
+  /*
+   * 页脚合计 = 勾选口径 + 本页口径。
+   *
+   * <p>勾选合计（「已选 N 项 · 总重量 · 总金额」）原本单独渲染在横幅里，横幅移除后跟着
+   * 本页合计一起落到表格下方的页脚，两组口径由 `ModuleTablePagination` 按 `scope` 自动分组，
+   * 不会混成一个数。</p>
+   */
+  const overviewItemsForFooter = useMemo(
+    () => [...selectionOverviewItems, ...pageOverviewItems],
+    [selectionOverviewItems, pageOverviewItems],
+  )
 
   /*
    * 稳定引用：内联 `() => setColumnSettingsOpen(true)` 每次渲染都是新函数，
@@ -228,7 +247,7 @@ export function BusinessGridContent({
           onExport={onExport}
           onRefresh={onRefresh}
           onReset={handleResetFilters}
-          toolbarActions={pageActions}
+          toolbarActions={toolbarActionList}
           onAction={onAction}
           filterSummary={
             /* 筛选生效提示: 只显示与默认值不同的条件数, 0 项时不渲染 */
@@ -255,15 +274,6 @@ export function BusinessGridContent({
           }
         />
       </div>
-
-      {/* 勾选横幅：勾选一出现就横贯一行，批量动作 + 已选合计 + 清除选择都在这里 */}
-      <ModuleSelectionAlert
-        selectedCount={selectedCount}
-        overviewItems={selectionOverviewItems}
-        actions={selectionActions}
-        onAction={onAction}
-        onClear={onClearSelection}
-      />
 
       {hasLoadError ? (
         <Alert
@@ -322,8 +332,8 @@ export function BusinessGridContent({
             currentPage={currentPage}
             pageSize={pageSize}
             currentItemCount={records.length}
-            /* 页脚只放本页合计；勾选口径已经在横幅里，不再重复一份 */
-            overviewItems={pageOverviewItems}
+            /* 页脚同时承载「已选 N 项」与「本页合计」两组口径（勾选横幅已移除） */
+            overviewItems={overviewItemsForFooter}
             onPageChange={onPageChange}
           />
         </>

@@ -1560,69 +1560,6 @@
   margin: var(--space-xs) var(--space-md);
 }
 
-/*
- * 勾选横幅（ProTable `tableAlertRender` 的形态）：勾选一出现就横贯一行，
- * 左侧「已选择 N 项 + 已选合计」，右侧批量动作 + 清除选择。
- *
- * 颜色取 `--theme-primary-soft`（浅色 #e6f4ff / 深色 #1e3a5f），与 antd `Alert type="info"`
- * 同一套 tint；上下各一道细分隔线与工具栏、表格分层，不再靠"工具栏右侧一个小胶囊"表达勾选状态。
- */
-.module-selection-alert {
-  display: flex;
-  flex: 0 0 auto;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-xs) var(--space-md);
-  padding: var(--space-xs) var(--space-md);
-  background: var(--theme-primary-soft);
-  border-top: 1px solid var(--theme-border-subtle);
-  border-bottom: 1px solid var(--theme-border-subtle);
-}
-
-.module-selection-alert-summary {
-  display: flex;
-  flex: 1 1 auto;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-xxs) var(--space-md);
-  min-width: 0;
-  color: var(--theme-text-muted);
-  font-size: 12px;
-}
-
-.module-selection-alert-count {
-  color: var(--theme-primary-text);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.module-selection-alert-metric {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  /* 单个指标（标签 + 数值）不拆行 */
-  white-space: nowrap;
-}
-
-.module-selection-alert-metric strong {
-  color: var(--theme-text);
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
-.module-selection-alert-actions {
-  display: flex;
-  flex: 0 0 auto;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.module-selection-alert-clear.ant-btn {
-  color: var(--theme-primary-text);
-}
-
 .module-page-skeleton {
   display: flex;
   flex-direction: column;
