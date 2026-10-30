@@ -18,17 +18,16 @@ export const viewLoaders: Record<
     import('@/views/modules/BusinessGridView').then((m) => ({
       default: m.BusinessGridView,
     })),
-  'master-value-alias': () =>
-    import('@/views/master-data/ValueAliasPage').then((m) => ({
-      default: m.ValueAliasPage,
+  // 合并后的两个宿主页：标签内容由宿主页自己组合，被并页不再单独登记加载器。
+  // `view-loaders.spec.ts` 守卫「页面注册表用到的 view 与加载器键集合完全相等」，
+  // 因此被并页的旧 key 必须一并移除，否则会成为无引用的死键。
+  'master-material': () =>
+    import('@/views/master-data/MaterialMasterPage').then((m) => ({
+      default: m.MaterialMasterPage,
     })),
-  'master-quote-region': () =>
-    import('@/views/master-data/QuoteRegionPage').then((m) => ({
-      default: m.QuoteRegionPage,
-    })),
-  'master-length-premium': () =>
-    import('@/views/master-data/LengthPremiumPage').then((m) => ({
-      default: m.LengthPremiumPage,
+  'master-project': () =>
+    import('@/views/master-data/ProjectMasterPage').then((m) => ({
+      default: m.ProjectMasterPage,
     })),
   'supplier-quote': () =>
     import('@/views/price-compare/SupplierQuotePage').then((m) => ({

@@ -7,9 +7,8 @@ import type { ModuleKey } from '@/module-system/core/module-key'
 export type RouteViewKey =
   | 'dashboard'
   | 'business-grid'
-  | 'master-value-alias'
-  | 'master-quote-region'
-  | 'master-length-premium'
+  | 'master-material'
+  | 'master-project'
   | 'supplier-quote'
   | 'sales-contract'
   | 'price-compare'
@@ -23,6 +22,17 @@ export type RouteViewKey =
   | 'finance-overview'
   | 'cash-ledger'
   | 'inventory'
+
+/**
+ * 路由查询串校验器（`?tab=` 一类页面内状态）。
+ *
+ * <p>只保留查询串、不参与页面查找：`parseSearch`（router-options.ts）已把全部参数
+ * 按字符串解析，这里再按需收窄成页面认识的形状。返回值会**原样展开**原始查询串，
+ * 避免把 `docNo` / `create` 这类深链意图参数从 `location.search` 里丢掉。</p>
+ */
+export type PageSearchValidator = (
+  rawSearch: Record<string, unknown>,
+) => Record<string, unknown>
 
 export interface AppPageDefinition {
   key: string
@@ -40,6 +50,8 @@ export interface AppPageDefinition {
   icon: AppIconKey
   menuParent?: MenuGroupKey
   moduleKey?: ModuleKey
+  /** 路由查询串校验器；缺省表示该页面不接受查询参数。 */
+  validateSearch?: PageSearchValidator
   searchable?: boolean
   hiddenInMenu?: boolean
   activeMenuKey?: string

@@ -1,25 +1,60 @@
-import type { AppPageDefinition } from '@/config/page-registry-types'
+import type {
+  AppPageDefinition,
+  PageSearchValidator,
+} from '@/config/page-registry-types'
+
+/**
+ * `?tab=` 查询串的校验器（全站唯一实现，material / project 两个宿主页共用）。
+ *
+ * <p>宿主页内的标签切换只改查询串、不改 pathname：shell 里一个 pathname 只对应一个
+ * 标签对象（layoutTabsStore 的 `setTabLocation` 不变式），换 pathname 会跨到另一个
+ * 外壳标签。因此 `?tab=` 是标签状态的唯一来源；被并页的深链路径
+ * （/material-categories 等）由 pathname 推导默认标签。</p>
+ *
+ * <p>返回原始查询串的浅拷贝，保证 `docNo` / `create` 等深链意图参数不被路由层丢弃。</p>
+ */
+export const tabSearchValidator: PageSearchValidator = (rawSearch) => {
+  const tab = rawSearch.tab
+  return typeof tab === 'string' ? { ...rawSearch, tab } : { ...rawSearch }
+}
 
 export const masterPageDefinitions: AppPageDefinition[] = [
   {
     key: 'material',
     titleKey: 'pages.material',
     menuKey: '/material',
-    // 接入通用列表页（business-grid）：列表/筛选/工具栏/分页与业务单据一致，
-    // 保存载荷走 module-page-schema.ts 的 saveFields（已按 buildRecord 逐字段补录）。
-    view: 'business-grid',
+    /*
+     * 宿主页（商品资料 + 材料类别 / 定尺加价 / 值映射 三个标签）。
+     *
+     * 清单里「基础数据」原有 11 个一层子项，用户确认合并成 6 个：商品资料页吸收
+     * 材料类别 / 定尺加价 / 值映射，项目资料页吸收报价地区，公司设置挪到系统设置分组。
+     * 被并页不再进菜单（hiddenInMenu），但**保留页面定义与路由**：`assertCompleteModulePages`
+     * 要求每个 MODULE_KEYS 都有页面定义，`material-categories` 是 module key；深链也不能 404。
+     * 被并页的 view 一律指向宿主页（见下方各条），由宿主页按 pathname / `?tab=` 选中标签。
+     *
+     * 以下两处入口共享同一份通用列表页配置（business-pages/master/material-page.ts）：
+     * 「商品资料」标签渲染通用列表页；「材料类别」标签同样渲染通用列表页，只是换 pageDef，
+     * 保持本页合并前的行为（`MaterialCategoriesPage` 自 5e695529 起已被通用列表页取代、
+     * 无任何加载器引用）。
+     */
+    view: 'master-material',
     icon: 'DatabaseOutlined',
     menuParent: 'master',
     moduleKey: 'material',
+    validateSearch: tabSearchValidator,
   },
   {
     key: 'material-categories',
     titleKey: 'pages.material-categories',
     menuKey: '/material-categories',
-    view: 'business-grid',
+    // 已并进 /material 的「商品类别」标签：菜单隐藏，route 保留（深链落到对应标签）。
+    view: 'master-material',
     icon: 'TagsOutlined',
     menuParent: 'master',
+    hiddenInMenu: true,
+    activeMenuKey: '/material',
     moduleKey: 'material-categories',
+    validateSearch: tabSearchValidator,
   },
   {
     key: 'supplier',
@@ -64,10 +99,12 @@ export const masterPageDefinitions: AppPageDefinition[] = [
      * 已知差异（可接受）：品牌/材质用 multiSelect 代替专用页的左右穿梭；项目价格规定
      * （独立 API 的多行编辑器）在通用编辑器里没有注入点，仍需后续补入口。
      */
-    view: 'business-grid',
+    view: 'master-project',
     icon: 'ProfileOutlined',
     menuParent: 'master',
     moduleKey: 'project',
+    // 宿主页：「项目资料」标签渲染通用列表页，「报价地区」标签渲染报价地区维护页。
+    validateSearch: tabSearchValidator,
   },
   {
     key: 'carrier',
@@ -99,7 +136,8 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     menuKey: '/company-setting',
     view: 'company-setting',
     icon: 'AccountBookOutlined',
-    menuParent: 'master',
+    // 合并方案：不再归「基础数据」，挪到「系统设置」分组（页面自身不变，不并页）。
+    menuParent: 'system',
     moduleKey: 'company-setting',
   },
   {
@@ -108,10 +146,14 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     key: 'value-alias',
     titleKey: 'pages.value-alias',
     menuKey: '/value-alias',
-    view: 'master-value-alias',
+    // 已并进 /material 的「值映射」标签：菜单隐藏，route 保留（深链落到对应标签）。
+    view: 'master-material',
     icon: 'SwapOutlined',
     menuParent: 'master',
+    hiddenInMenu: true,
+    activeMenuKey: '/material',
     requiredPermission: 'value-aliases:read',
+    validateSearch: tabSearchValidator,
   },
   {
     // 取价地区维护：西本行情抓取的城市清单与子域名，原写在 application.yml，
@@ -120,10 +162,14 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     key: 'quote-region',
     titleKey: 'pages.quote-region',
     menuKey: '/quote-region',
-    view: 'master-quote-region',
+    // 已并进 /project 的「报价地区」标签：菜单隐藏，route 保留（深链落到对应标签）。
+    view: 'master-project',
     icon: 'ShopOutlined',
     menuParent: 'master',
+    hiddenInMenu: true,
+    activeMenuKey: '/project',
     requiredPermission: 'quote-regions:read',
+    validateSearch: tabSearchValidator,
   },
   {
     // 定尺加价维护：定尺（如 12 米）每吨加价规则，原同时写在 yml 与 Java 默认值里。
@@ -131,9 +177,13 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     key: 'length-premium',
     titleKey: 'pages.length-premium',
     menuKey: '/length-premium',
-    view: 'master-length-premium',
+    // 已并进 /material 的「定尺加价」标签：菜单隐藏，route 保留（深链落到对应标签）。
+    view: 'master-material',
     icon: 'CalculatorOutlined',
     menuParent: 'master',
+    hiddenInMenu: true,
+    activeMenuKey: '/material',
     requiredPermission: 'length-premiums:read',
+    validateSearch: tabSearchValidator,
   },
 ]

@@ -47,10 +47,13 @@ export async function prefetchListData(
       staleTime: 30_000,
     })
     const pageSize = runtimeConfig.ui.defaultPageSize
-    const config =
-      definition.view === 'business-grid'
-        ? await loadBusinessPageConfig(moduleKey)
-        : undefined
+    /*
+     * 配置驱动的列表页都要先拿页面配置：预热键必须与组件真实初始查询键一致
+     * （含 defaultFilters / 默认日期区间），否则预取无效。
+     * 不能用 `view === 'business-grid'` 判定——材料/项目已改为宿主页视图（`master-*`），
+     * 用 view 字面量判断会让它们的预取丢掉配置、退化成空筛选键。
+     */
+    const config = await loadBusinessPageConfig(moduleKey)
     await queryClient.ensureQueryData({
       queryKey: QUERY_KEYS.businessGridList(
         moduleKey,

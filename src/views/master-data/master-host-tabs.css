@@ -1,0 +1,65 @@
+/*
+ * 宿主页（商品资料 / 项目资料）的外壳布局。
+ *
+ * 合并前这些子页面是独立路由，直接挂在 `.leo-tab-panel` 下，页面内部的
+ * AppProPage / page-stack 用 flex + min-height:0 做「整页填充 + 内部滚动」。
+ * 合并后中间多了一层 antd Tabs，必须把高度链补齐，否则表格页会退化成
+ * 「按内容撑高、整页滚动」，与其它页面观感不一致。
+ *
+ * 只约束宿主页自己的根节点，不写全局选择器。
+ */
+.master-host-tabs {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.master-host-tabs > .ant-tabs {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* 标签条左右与页面内容对齐（--space-md = 16px），上方留 8px 不与 shell 标签条贴死 */
+.master-host-tabs > .ant-tabs > .ant-tabs-nav {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: var(--space-sm) var(--space-md) 0;
+}
+
+.master-host-tabs > .ant-tabs > .ant-tabs-body-holder {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.master-host-tabs > .ant-tabs > .ant-tabs-body-holder > .ant-tabs-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/*
+ * 只拉伸激活面板；非激活面板保持 antd 的 .ant-tabs-content-hidden（display:none）。
+ * 注意 antd 6（@rc-component/tabs）里单个面板的类名是 .ant-tabs-content，
+ * 激活态是 .ant-tabs-content-active（不再是旧版的 .ant-tabs-tabpane）。
+ */
+.master-host-tabs .ant-tabs-content-active {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.master-host-tabs .ant-tabs-content-active > * {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}

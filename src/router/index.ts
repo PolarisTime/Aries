@@ -164,6 +164,11 @@ export function buildModuleRoutes(parent: AnyRoute) {
       path,
       component: lazy(viewLoaders[def.view]),
       /*
+       * 页面级查询串校验（目前只有宿主页的 `?tab=`）。定义在注册表里、由路由层统一透传，
+       * 避免宿主页再各自从 `window.location` 读一遍参数（两份口径会漂移）。
+       */
+      validateSearch: def.validateSearch,
+      /*
        * 列表预取是**优化**，不能变成渲染的阻塞依赖。
        *
        * <p>此前这里 `await prefetchModuleList(...)`：路由解析要等一次列表接口（实测约
