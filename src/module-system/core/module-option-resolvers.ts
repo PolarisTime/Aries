@@ -1,7 +1,6 @@
 import type { MaterialCategoryOption } from '@/api/master/material-categories'
 import type { MaterialGradeOption } from '@/api/master/material-grades'
 import type { ProjectOption } from '@/api/master/project-options'
-import { createOptionList } from '@/constants/module-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { tagMasterOptionRequirements } from '@/module-system/core/master-option-requirement-tag'
 import {
@@ -44,8 +43,18 @@ export const getSettlementCompanyOptions = tagMasterOptionRequirements(
   ['settlementCompanies'],
 )
 
+/*
+ * 冷启动兜底词表（**权威来源是主数据** `md_material_category`，这里只在缓存未命中时
+ * 顶上，避免下拉为空）。
+ *
+ * 2026-10 修正：旧词表是「螺纹钢 / 盘螺 / 线材」，而库里实际是「直条 / 盘螺 / 线材」
+ * （`purchase_weigh_required`：直条 false、盘螺 true、线材 true）——「螺纹钢」已不存在、
+ * 最常用的「直条」反而缺失，导致冷启动窗口内「是否需过磅」判定取错。改词表时必须与
+ * 主数据同步；若主数据再变，应优先补 `materialCategories` 需求让真实数据到位，
+ * 而不是继续扩这张表。
+ */
 const materialCategoryFallbackOptions: MaterialCategoryOption[] = [
-  '螺纹钢',
+  '直条',
   '盘螺',
   '线材',
 ].map((value) => ({
@@ -54,10 +63,13 @@ const materialCategoryFallbackOptions: MaterialCategoryOption[] = [
   purchaseWeighRequired: value === '盘螺' || value === '线材',
 }))
 
-const materialGradeFallbackOptions: MaterialGradeOption[] = createOptionList([
-  'HRB400',
-  'HRB500',
-])
+/*
+ * 材质（牌号）**不做兜底**：它是商品资料里的数据（`SELECT DISTINCT material`，
+ * 当前为 HPB300 / HRB400 / HRB400E / HRB500E 加若干费用类），随录入口径变化，
+ * 写死任何一份都会随数据漂移变成错值（旧值是 HRB400 / HRB500，其中 HRB500 库里并不存在）。
+ * 缓存未命中时宁可下拉为空，也不要给出选了也查不到商品的假选项。
+ */
+const materialGradeFallbackOptions: MaterialGradeOption[] = []
 
 function cachedOptions<T>(queryKey: readonly unknown[]): T[] {
   return getCachedQueryData<T>(queryKey)

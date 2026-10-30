@@ -80,6 +80,14 @@ export function useModuleEditorItemColumns({
   const { warehouses, materials } = useMasterOptions({
     warehouses: true,
     materials: true,
+    /*
+     * 必须显式声明 materialCategories：编辑器的明细派生/校验/只读判定会调用
+     * `isPurchaseWeighRequiredCategory()`，它读的是材料类别主数据里的
+     * `purchase_weigh_required` 开关。此前全站没有任何页面声明这项需求，
+     * 于是这些判定一直走 module-option-resolvers 里的硬编码兜底词表——
+     * 在「材料类别」页把某类别改成「需过磅」后，单据侧不会生效。
+     */
+    materialCategories: true,
   })
   const token = useAuthStore((s) => s.token)
   const canEditSalesUnitPrice = useHasPermission(
