@@ -23,7 +23,10 @@ interface Props {
   onCreate: () => void
   onExport: () => void
   onRefresh: () => void
-  /** 重置筛选（按钮渲染在右侧状态区最右端，见 ModuleTableUtilities 的 onReset） */
+  /**
+   * 重置筛选。业务列表页**不再传**：重置已回到筛选区尾部（与它作用的筛选条件同排），
+   * 避免与右侧刷新按钮的两个圆形箭头图标并排造成误点。
+   */
   onReset?: () => void
   extra?: ReactNode
   /** 筛选状态提示（「已筛选 N 项 · 清空筛选」），渲染在右侧状态区。 */

@@ -232,8 +232,15 @@ export function BusinessGridContent({
           onUpdateFilter={onUpdateFilter}
           onApplyFilters={onApplyFilters}
           onReset={handleResetFilters}
-          /* 重置下移到工具行右侧（与「已选择/清除/刷新」同组），筛选区只留筛选条件 */
-          showResetButton={false}
+          /*
+           * 重置留在筛选区尾部（默认 true）。
+           *
+           * <p>曾把它下移到工具行右侧与刷新并排，结果两个按钮都是圆形箭头图标
+           * （刷新 ReloadOutlined / 重置 RedoOutlined），只靠「重置」二字区分，
+           * 误点就会把用户设好的筛选条件清空。重置的语义是「改筛选条件」，
+           * 归位到筛选区后与它作用的控件同排，工具栏右侧只留刷新。</p>
+           */
+          showResetButton
         />
       </div>
 
@@ -246,7 +253,6 @@ export function BusinessGridContent({
           onCreate={onCreate}
           onExport={onExport}
           onRefresh={onRefresh}
-          onReset={handleResetFilters}
           toolbarActions={toolbarActionList}
           onAction={onAction}
           filterSummary={
