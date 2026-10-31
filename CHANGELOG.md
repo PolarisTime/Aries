@@ -1,3 +1,29 @@
+# [14.7.0](https://github.com/PolarisTime/Aries/compare/v14.6.0...v14.7.0) (2026-10-31)
+
+
+### Bug Fixes
+
+* **master-data:** 材料类别需求无人声明，单据侧一直走硬编码兜底 ([0dc99dc](https://github.com/PolarisTime/Aries/commit/0dc99dca3422bc993c4b471415ab697720987793))
+* **master-data:** 经营品牌穿梭弹窗被撑出视口（两栏定高 + 表体滚动） ([db40412](https://github.com/PolarisTime/Aries/commit/db40412b7abe310cd61dc1a311ce206a413f6403))
+* **material:** 商品编辑表单的「类别」下拉为空 ([1d00a4a](https://github.com/PolarisTime/Aries/commit/1d00a4a480c9af561ecf78f1b0662a0fdccd9373))
+* **material:** 商品资料的材质/类别筛选改为真实主数据（此前永远只有 HRB400/HRB500） ([51a8c03](https://github.com/PolarisTime/Aries/commit/51a8c0399a8c44a6d106ce1f7606c2fadca75b52))
+* **modules:** 主数据保存回执不再说「已保存为草稿，尚未提交审核」 ([3b35673](https://github.com/PolarisTime/Aries/commit/3b356732f9d990c0ba7ac1530ccc704e23084411))
+* **system:** 公司设置菜单补权限门禁，系统设置可见页统一校验 ([2244b52](https://github.com/PolarisTime/Aries/commit/2244b52749c4b3a4aa105e9bc5125a9702c92f9d))
+* **ui:** 修复弹窗关闭按钮错位（全局按钮定位补丁压过 antd 绝对定位） ([570ead8](https://github.com/PolarisTime/Aries/commit/570ead8471b2e8f4330ce577d246d7ca91dd8a4a))
+
+
+### Features
+
+* **master:** 供应商列表页接入通用列表页，经营品牌并入主数据选项体系 ([265b070](https://github.com/PolarisTime/Aries/commit/265b0700f6a7754c437c599a8966bef007255d52))
+* **master:** 商品资料/材料类别/客户/仓库列表页接入通用列表页 ([5e69552](https://github.com/PolarisTime/Aries/commit/5e695529d3d5a29b35ec54dbdbfc4c2ada47fe46))
+* **master:** 基础数据子页面合并为宿主页标签 ([4ca336c](https://github.com/PolarisTime/Aries/commit/4ca336c065ef3ddb9a1e3d363aac7d494103fe0a))
+* **master:** 定尺主数据驱动材料录入与比价，修正字段长度与尺寸规范 ([5739ac1](https://github.com/PolarisTime/Aries/commit/5739ac18f67ef703d054e145203a4d1352bf9500))
+* **master:** 物流商列表页接入通用列表页，补 vehicleType/priceMode 表单字段 ([ced403e](https://github.com/PolarisTime/Aries/commit/ced403ec7c19c922221ebb2de9edae0f68740557))
+* **master:** 项目资料列表页接入通用列表页，补齐 12 个取价/允许范围字段 ([2a755ef](https://github.com/PolarisTime/Aries/commit/2a755efe130ab142bd62105441de5d71160a6e04))
+* **material:** 商品资料支持启用/禁用，选商品类请求只取启用商品 ([9aea183](https://github.com/PolarisTime/Aries/commit/9aea183c2fdbeb612b3c3900152aaa1b45ae8615))
+* **modules:** 强制结单未选中时隐藏；工具行纯图标按钮补文字 ([00c7503](https://github.com/PolarisTime/Aries/commit/00c750328a264e08282c8258d8a18880fa07760f))
+* **ui:** 二级/三级弹窗统一层级规范（尺寸递减、遮罩加深、焦点落在可操作区） ([ca57308](https://github.com/PolarisTime/Aries/commit/ca57308d02c125b89c5b9189673b227f8a013ed7))
+
 # [14.6.0](https://github.com/PolarisTime/Aries/compare/v14.5.0...v14.6.0) (2026-10-29)
 
 
