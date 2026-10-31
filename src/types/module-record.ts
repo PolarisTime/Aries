@@ -142,11 +142,20 @@ export type ModuleSaveRequestFor<Key extends string> =
     ? ModuleSaveRequestMap[Key]
     : LegacyModuleRecordInput
 
-/** @deprecated 动态模块兼容别名；精确主流程请使用 MainFlowEditorDraft。 */
+/**
+ * @deprecated 长期兼容别名（迁移未排期）：动态模块只能用它；精确主流程类型见
+ * `MainFlowEditorDraft<Key>`（= `MainFlowEditorDraftMap[Key]`）。
+ */
 export type ModuleRecordInput = LegacyModuleRecordInput
 
-/** @deprecated 动态模块兼容别名；精确主流程请使用 MainFlowEditorLineItem。 */
+/**
+ * @deprecated 长期兼容别名（迁移未排期）：`MainFlowEditorLineItem<Key>` 是泛型类型、
+ * 当前 0 处引用且无法直接替换动态模块的明细行，故保留本别名。
+ */
 export type ModuleLineItem = LegacyModuleLineItem
 
-/** @deprecated 动态模块兼容别名；精确主流程请使用映射后的记录类型。 */
+/**
+ * @deprecated 长期兼容别名（迁移未排期）：精确类型用 `ModuleRecordMap[Key]` /
+ * `ModuleListRecordFor<Key>` / `ModuleDetailRecordFor<Key>`，动态模块仍用本别名。
+ */
 export type ModuleRecord = LegacyModuleRecord

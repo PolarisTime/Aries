@@ -2,7 +2,8 @@ import { Button } from 'antd'
 import { createElement, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ModuleLineItem } from '@/types/module-page'
-import { message, modal } from '@/utils/antd-app'
+import { message } from '@/utils/antd-app'
+import { confirmDanger } from '@/utils/confirm-danger'
 
 /** 撤销快照：被删的行 + 它们在原数组里的下标，恢复时按原位插回。 */
 export interface RemovedItemsSnapshot {
@@ -81,8 +82,9 @@ interface Options {
  * （审查报告 P1-4，实测行数 1→0 后 `confirmModal=[]`、`undoLike=[]`、`restored888=false`）。</p>
  *
  * <p>两层防护都在这里，且只有这一处：</p>
- * 1. **删前**：antd 确认框说明「将删除 N 行、不可恢复」，默认焦点在「取消」侧
- *    （`autoFocusButton: 'cancel'`，回车不会直接删）；
+ * 1. **删前**：确认框说明「将删除 N 行、不可恢复」，默认焦点在「取消」侧
+ *    （走 {@link confirmDanger} 唯一出口，它统一写 `focusable.autoFocusButton: 'cancel'`，
+ *    回车不会直接删）；
  * 2. **删后**：toast 带「撤销」动作，10 秒内可一次性恢复原行与原行序。
  *
  * <p>撤销只是本地状态回滚（明细在保存前不落库），不触发任何写请求。</p>
@@ -101,14 +103,12 @@ export function useConfirmedItemRemoval({
     if (snapshot.items.length === 0) return
     const count = snapshot.items.length
 
-    modal.confirm({
+    // 危险确认统一走 confirmDanger（默认焦点在「取消」、确认按钮 danger 语义色）。
+    confirmDanger({
       title: t('modules.itemsSection.confirmRemoveTitle', { count }),
       content: t('modules.itemsSection.confirmRemoveContent', { count }),
       okText: t('modules.itemsSection.confirmRemoveOk', { count }),
       cancelText: t('common.cancel'),
-      okButtonProps: { danger: true },
-      /* 破坏性操作默认焦点不能落在确认按钮上：回车即删是这类框最典型的事故。 */
-      autoFocusButton: 'cancel',
       onOk: () => {
         onConfirmDelete()
         /*

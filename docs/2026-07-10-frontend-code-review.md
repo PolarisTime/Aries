@@ -300,8 +300,20 @@
 
 ### 5.2 Ant Design CLI 扫描
 
-- 扫描 933 个文件。
+- 扫描 933 个文件（历史值；2026-10-31 复测为 **1152** 个文件，该数字随代码增长，不应再引用 933）。
 - 未发现 deprecated API。
+  > **口径补注（2026-10-31）**：该结论只覆盖 `antd lint` 能识别的写法（JSX 属性层）。
+  > CLI **不检查**命令式 API 的配置对象（`modal.confirm({...})`）与嵌套配置对象
+  > （`preview={{ visible }}`），也不解析 TS 的 `@deprecated` 标记。复测时 CLI 仍报
+  > `deprecated=0`（1152 文件），但人工+类型声明核对发现 **6 处 antd 6 真实废弃写法**
+  > （`modal.confirm` 顶层 `autoFocusButton` ×3、`maskClosable` ×1，
+  > `Image.PreviewGroup` 的 `preview.visible`/`onVisibleChange` ×2），以及
+  > `src/types/module-record.ts` 里 3 个长期兼容别名的 `@deprecated`（整改前被
+  > import **234 次 / 184 个文件**，其中 124 个生产文件）。
+  > 以上已在 2026-10-31 整改：6 处改为 antd 6 新 API（`focusable.autoFocusButton`、
+  > `mask.closable`、`Image preview.open/onOpenChange`），并补两道兜底门禁：
+  > Biome `suspicious/noDeprecatedImports`（warn，见 `biome.json`）与 e2e 运行时
+  > antd 废弃告警判失败（见 `tests/e2e/support/test.ts`）。详见同日 deprecated 核查报告。
 - 未发现 CLI 可识别的 a11y 问题。
 - 唯一提示为 `OssSettingsView` 的 Select 使用 `virtual={false}`。该 Select 仅有 14 个固定 Provider 选项，性能成本可忽略，且完整 option DOM 对读屏更友好，因此不列为缺陷。
 
@@ -619,6 +631,9 @@ WorkspaceOverlay 应建立统一的弹层栈，只有栈顶弹层响应 Escape �
 - 本轮最终结果为 456 个测试文件通过、1 个跳过；6073 项测试通过、4 项跳过，且未再出现测试环境销毁后的 `window is not defined`。
 - TypeScript、Biome、ESLint、生产构建和 `git diff --check` 均通过；React Doctor 对本轮差异复查为零问题。
 - Ant Design CLI 未发现废弃 API 或可访问性问题，仅保留 `OssSettingsView` 禁用 Select 虚拟滚动这一条既有性能警告。
+  > **口径补注（2026-10-31）**：同上——这只代表“CLI 可见范围内为 0”。CLI 盲区（命令式 API
+  > 配置对象、嵌套配置对象）在 2026-10-31 复测中发现 6 处 antd 6 废弃写法并已整改；TS 的
+  > `@deprecated` 长期别名（234 处 import）不属于 CLI 覆盖范围。
 
 ### 前端验收重点
 

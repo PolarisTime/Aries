@@ -243,7 +243,7 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
       title?: unknown
       content?: unknown
       onOk?: () => Promise<void>
-      autoFocusButton?: string | null
+      /* antd 6：默认焦点只在 focusable.autoFocusButton 上，顶层字段已废弃不应再出现。 */
       focusable?: { autoFocusButton?: string | null }
     }
 
@@ -266,7 +266,7 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
     expect(String(lastConfirm().content)).toContain('草稿')
     expect(String(lastConfirm().content)).toContain('已审核')
     // 默认焦点必须在取消侧
-    expect(lastConfirm().autoFocusButton).toBe('cancel')
+    expect(lastConfirm().focusable?.autoFocusButton).toBe('cancel')
 
     await act(async () => {
       await lastConfirm().onOk?.()
@@ -309,7 +309,7 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
     await flushConfirm()
 
     expect(lastConfirm().title).toBe('反审核 SO-2')
-    expect(lastConfirm().autoFocusButton).toBe('cancel')
+    expect(lastConfirm().focusable?.autoFocusButton).toBe('cancel')
     await act(async () => {
       await lastConfirm().onOk?.()
     })

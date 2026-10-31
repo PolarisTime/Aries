@@ -178,11 +178,8 @@ export const PERMISSION_TEMPLATES: readonly PermissionTemplate[] = [
       'freight-statements:read',
       'freight-statements:update',
       'inventory:read:cost',
-      'ledger-adjustments:audit',
-      'ledger-adjustments:create',
-      'ledger-adjustments:delete',
+      // 台账调整写端点与对应权限码已随后端下线，只保留只读（历史台账查询）。
       'ledger-adjustments:read',
-      'ledger-adjustments:update',
       'payments:audit',
       'payments:create',
       'payments:delete',

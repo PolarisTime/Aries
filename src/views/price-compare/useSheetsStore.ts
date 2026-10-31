@@ -1119,7 +1119,8 @@ export function useSheetsStore(options?: {
         okText: CONFLICT_OVERWRITE_TEXT,
         cancelText: CONFLICT_RELOAD_TEXT,
         closable: false,
-        maskClosable: false,
+        // antd 6 已废弃 maskClosable，等价写法是 mask.closable（antd normalizeMaskConfig 同义）。
+        mask: { closable: false },
         onOk: async () => {
           const runOverride =
             target.kind === 'config'

@@ -145,10 +145,10 @@ export function useBusinessGridBatchActions({
         /*
          * 破坏性确认的默认焦点必须在「取消」侧：antd 默认聚焦确认按钮，
          * 用户手还在回车键上时按一次就把单据推进了状态。
-         * 同时用 antd 6 的新 API（focusable）与仍被读取的顶层字段，避免 5.x 语义漂移。
+         * 只写 antd 6 的 `focusable.autoFocusButton`（顶层 `autoFocusButton`
+         * 已废弃且会触发 dev 告警，本项目只支持 antd 6）。
          */
         focusable: { autoFocusButton: 'cancel' },
-        autoFocusButton: 'cancel',
         onOk: async () => {
           const statusResults = await Promise.allSettled(
             targets.map(({ record, targetStatus }) =>

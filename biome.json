@@ -46,7 +46,8 @@
         "useExhaustiveDependencies": "error"
       },
       "suspicious": {
-        "noExplicitAny": "error"
+        "noExplicitAny": "error",
+        "noDeprecatedImports": "warn"
       },
       "style": {
         "noDescendingSpecificity": "off",

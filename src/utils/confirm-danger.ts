@@ -12,7 +12,8 @@ import { modal } from '@/utils/antd-app'
  *
  * <p>因此本函数强制两件事，调用点不需要（也不应该）再各自判断：</p>
  * <ol>
- *   <li>`autoFocusButton: 'cancel'` —— 默认焦点在「取消」，回车安全；</li>
+ *   <li>`focusable.autoFocusButton: 'cancel'` —— 默认焦点在「取消」，回车安全
+ *       （antd 6 的新 API；顶层 `autoFocusButton` 已废弃，本函数不再写）；</li>
  *   <li>`okButtonProps.danger: true` —— 确认按钮用危险语义色，视觉上就区分开。</li>
  * </ol>
  *
@@ -42,20 +43,24 @@ export interface ConfirmDangerOptions
 
 export function confirmDanger(options: ConfirmDangerOptions): void {
   const { danger = true, ...rest } = options
+  /*
+   * 运行时兜底：`ConfirmDangerOptions` 已在类型上 Omit 掉已废弃的顶层
+   * `autoFocusButton`，但 JS 调用方（无类型）仍可能把它塞进来；这里删掉，
+   * 避免把废弃字段透传给 antd（antd 6 会因此发 dev 告警）。
+   */
+  delete (rest as { autoFocusButton?: unknown }).autoFocusButton
   modal.confirm({
     cancelText: rest.cancelText,
     ...rest,
     /*
-     * 显式放在展开之后：即使调用方传了 autoFocusButton 也不能覆盖成确认侧，
+     * 显式放在展开之后：即使调用方传了 focusable 也不能覆盖成确认侧，
      * 否则本出口的"默认安全"保证就漏了。
      *
-     * 两处都写：
-     * - `focusable.autoFocusButton` 是 antd 6 的新 API（antd 内部优先读它）；
-     * - 顶层 `autoFocusButton` 在 antd 6 已标 @deprecated 但仍被读取，
-     *   保留它可使 5.x 语义与调用方既有断言（含本仓库测试）继续成立。
+     * 只写 antd 6 的 `focusable.autoFocusButton`：顶层 `autoFocusButton` 在
+     * antd 6 已标 @deprecated（`Modal.js` 会对它发 dev 告警），本项目只支持
+     * antd 6，不再保留那个兼容写法。
      */
     focusable: { autoFocusButton: 'cancel' },
-    autoFocusButton: 'cancel',
     okButtonProps: danger ? { danger: true } : undefined,
   })
 }

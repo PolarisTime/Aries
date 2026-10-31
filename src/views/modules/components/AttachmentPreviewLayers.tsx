@@ -38,14 +38,15 @@ export function AttachmentPreviewLayers({
       {previewOpen && previewSource && previewableImageAttachments.length ? (
         <Image.PreviewGroup
           preview={{
-            visible: previewOpen,
+            // antd 6 已废弃 preview.visible / preview.onVisibleChange，统一用 open / onOpenChange。
+            open: previewOpen,
             current: Math.max(
               previewableImageAttachments.findIndex(
                 (item) => previewUrlByAttachmentId[item.id] === previewSource,
               ),
               0,
             ),
-            onVisibleChange: onImagePreviewChange,
+            onOpenChange: onImagePreviewChange,
           }}
         >
           <div className="hidden">

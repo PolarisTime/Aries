@@ -14,7 +14,9 @@ import {
 /**
  * 真实权限码快照（守卫基准）。
  *
- * <p><b>来源</b>：2026-10-19 实测开发库 `sys_permission` 表，共 166 条 / 53 个资源。</p>
+ * <p><b>来源</b>：实测开发库 `sys_permission` 表，共 162 条 / 53 个资源。
+ * 2026-10-31 后端删除台账调整写端点及 `ledger-adjustments:create/update/delete/audit`
+ * 四个权限码（只保留 `:read`）后，由 166 条更新为 162 条。</p>
  *
  * <p><b>为什么把清单抄进测试而不是查接口</b>：单元测试不能连数据库，
  * 也不该依赖一个需要鉴权的 HTTP 接口。抄快照是"把外部事实固化成可断言基准"，
@@ -75,11 +77,7 @@ const KNOWN_PERMISSION_CODES: readonly string[] = [
   'inventory:backfill',
   'inventory:read',
   'inventory:read:cost',
-  'ledger-adjustments:audit',
-  'ledger-adjustments:create',
-  'ledger-adjustments:delete',
   'ledger-adjustments:read',
-  'ledger-adjustments:update',
   'length-premiums:create',
   'length-premiums:delete',
   'length-premiums:read',
@@ -219,10 +217,10 @@ function fakeTemplate(
 }
 
 describe('权限码快照本身可信', () => {
-  it('共 166 条、去重、含超管通配符 `*`', () => {
+  it('共 162 条、去重、含超管通配符 `*`', () => {
     // 条数锁死：快照被误删/截断时这里先红，避免守卫在空集上"全绿"
-    expect(KNOWN_PERMISSION_CODES).toHaveLength(166)
-    expect(new Set(KNOWN_PERMISSION_CODES).size).toBe(166)
+    expect(KNOWN_PERMISSION_CODES).toHaveLength(162)
+    expect(new Set(KNOWN_PERMISSION_CODES).size).toBe(162)
     // `*` 是真实存在的权限码（SUPER_ADMIN 用），保留在快照里但模板禁止使用
     expect(KNOWN_PERMISSION_CODES).toContain('*')
   })
@@ -400,8 +398,28 @@ describe('模板元数据', () => {
       salesperson: 12,
       supervisor: 27,
       dispatcher: 9,
-      finance: 29,
+      // 29 → 25：台账调整写/审权限码已随后端下线，财务模板只保留 `ledger-adjustments:read`。
+      finance: 25,
     })
+  })
+
+  it('台账调整只保留只读码（写/审端点已随后端下线）', () => {
+    // 后端已删除台账调整写端点与 create/update/delete/audit 四个权限码，
+    // 模板若继续带这些码，新环境权限矩阵会出现「目录里有、后端无」的残留码。
+    const finance = getPermissionTemplate('finance')
+    const ledgerCodes = (finance?.permissions ?? []).filter((code) =>
+      code.startsWith('ledger-adjustments:'),
+    )
+    expect(ledgerCodes).toEqual(['ledger-adjustments:read'])
+
+    const allTemplateCodes = PERMISSION_TEMPLATES.flatMap(
+      (template) => template.permissions,
+    )
+    for (const removedAction of ['audit', 'create', 'delete', 'update']) {
+      expect(allTemplateCodes).not.toContain(
+        `ledger-adjustments:${removedAction}`,
+      )
+    }
   })
 
   it('主管是业务员的超集（业务员全部权限）', () => {

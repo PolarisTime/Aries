@@ -9,7 +9,8 @@ import { confirmDanger } from './confirm-danger'
  * 回车键上 → 直接执行。审查里实测到两处真实事故（批量删除焦点在「确定」、
  * 放弃修改焦点在「放弃修改」）。</p>
  *
- * <p>本测试锁两件事：`autoFocusButton` 恒为 `'cancel'`，且确认按钮带 `danger`。
+ * <p>本测试锁三件事：`focusable.autoFocusButton` 恒为 `'cancel'`、确认按钮带 `danger`，
+ * 且**不再透传**已废弃的顶层 `autoFocusButton`（antd 6 会因此发 dev 告警）。
  * 它不渲染真实 DOM（antd 的 modal.confirm 是命令式 API），但足以防止回归 ——
  * 只要有人删掉这两行，测试就红。</p>
  */
@@ -29,7 +30,8 @@ describe('confirmDanger 破坏性确认契约', () => {
 
     expect(confirmSpy).toHaveBeenCalledTimes(1)
     const options = confirmSpy.mock.calls[0][0]
-    expect(options.autoFocusButton).toBe('cancel')
+    expect(options.focusable).toEqual({ autoFocusButton: 'cancel' })
+    expect(options).not.toHaveProperty('autoFocusButton')
   })
 
   it('确认按钮带 danger 语义', () => {
@@ -51,7 +53,9 @@ describe('confirmDanger 破坏性确认契约', () => {
     })
 
     const options = confirmSpy.mock.calls[0][0]
-    expect(options.autoFocusButton).toBe('cancel')
+    expect(options.focusable).toEqual({ autoFocusButton: 'cancel' })
+    // 运行时兜底：无类型调用方塞进来的废弃顶层字段会被删掉，不透传给 antd
+    expect(options).not.toHaveProperty('autoFocusButton')
   })
 
   it('danger: false 时不加 danger 样式（仅提示类确认）', () => {
@@ -61,7 +65,7 @@ describe('confirmDanger 破坏性确认契约', () => {
     const options = confirmSpy.mock.calls[0][0]
     expect(options.okButtonProps).toBeUndefined()
     // 但默认焦点仍然安全
-    expect(options.autoFocusButton).toBe('cancel')
+    expect(options.focusable).toEqual({ autoFocusButton: 'cancel' })
   })
 
   it('透传 title / content / okText / cancelText / onOk', () => {

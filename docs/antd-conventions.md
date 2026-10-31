@@ -14,6 +14,7 @@ antd 组件 API 本身不在本文件重复，写 antd 代码前仍应先用 `@a
 | --- | --- |
 | `pnpm antd:lint` | 全量扫描 `src`（a11y / deprecated / usage / performance 四类） |
 | `pnpm antd:lint:staged` | 只扫暂存文件（提交钩子内部调用，等价 `antd lint --staged`） |
+| `pnpm lint:biome` | 含 `suspicious/noDeprecatedImports`（warn）：本项目 `@deprecated` 标记的导入会被列出 |
 | `pnpm hooks:install` | 让 git 使用仓库内钩子（`git config core.hooksPath scripts/git-hooks`） |
 
 ### 提交钩子（`scripts/git-hooks/pre-commit`）
@@ -24,7 +25,7 @@ antd 组件 API 本身不在本文件重复，写 antd 代码前仍应先用 `@a
 
 ### CI（`.github/workflows/ci.yml` 的 lint 任务）
 
-CI 里 CLI 不是仓库依赖，固定版本临时拉取，输出被 `tee` 到文件后同样按 `⚠` 判定，命中即 `exit 1`。
+CLI 已是仓库 devDependency（`@ant-design/cli`），CI 直接跑 `pnpm antd:lint`；输出 `tee` 到文件后按 `⚠` 判定，命中即 `exit 1`。
 
 ### 关键陷阱：`antd lint` 总是退出 0
 
@@ -34,6 +35,25 @@ CI 里 CLI 不是仓库依赖，固定版本临时拉取，输出被 `tee` 到�
 2. 直接读输出末尾的 `Summary:` 四类计数。
 
 凡是把 `antd lint` 当普通 lint 用 `&&` / `set -e` 判定的写法都是无效门禁。
+
+### CLI 覆盖边界：`deprecated=0` ≠ 没有废弃写法
+
+`antd lint` 的 deprecated 规则只识别 **JSX 属性层**。实测（antd 6.6.4 / CLI 6.6.5）它**不检查**：
+
+- 命令式 API 的配置对象：`modal.confirm({ autoFocusButton, maskClosable })`、`notification.open({...})`；
+- 嵌套配置对象：`<Image preview={{ visible, onVisibleChange }}>`。
+
+2026-10-31 复测 CLI 仍报 0（扫描 1152 文件），但人工+类型声明核对发现 6 处 antd 6 废弃写法，
+已全部改为新 API：`focusable.autoFocusButton`、`mask.closable`、`Image preview.open/onOpenChange`。
+因此补两道兜底：
+
+1. **e2e 运行时判定**（`tests/e2e/support/test.ts`）：捕获 `[antd: …] … deprecated` 的控制台告警，
+   出现即判该用例失败并附报告（不再列入 BENIGN）；
+2. **Biome `suspicious/noDeprecatedImports`**（`biome.json`，`warn`）：拦住对 `@deprecated` 导出符号的
+   新 import。当前是 `warn` 而不是 `error`：`src/types/module-record.ts` 的 3 个长期兼容别名
+   （`ModuleRecord` / `ModuleRecordInput` / `ModuleLineItem`）历史遗留 **234 处 import / 184 个文件**，
+   规则报在 import 侧，无法在声明侧一次性豁免；设为 `error` 会立刻让 184 个文件变红。
+   计划清理方式：新代码优先用精确类型（`ModuleRecordMap[Key]` 等），迁移完成后再把规则升为 `error`。
 
 ## 规范边界(antd 覆盖什么，不覆盖什么)
 
