@@ -3,6 +3,10 @@ import { createElement, useCallback, useRef, useState } from 'react'
 import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import { findServerFilteredBusinessModuleRow } from '@/api/business/business-listing'
 import { getModuleConfig } from '@/api/contracts/module-contracts'
+import {
+  isFinanceDocumentModuleKey,
+  normalizeFinanceDocumentRecord,
+} from '@/api/finance/finance-document-record'
 import { useDetailSupport } from '@/hooks/useDetailSupport'
 import { useRequestError } from '@/hooks/useRequestError'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
@@ -19,6 +23,7 @@ import type {
   ModuleRecord,
 } from '@/types/module-page'
 import type {
+  LegacyModuleRecordInput,
   ModuleListRecordFor,
   PersistedModuleEditorDraftFor,
 } from '@/types/module-record'
@@ -46,6 +51,22 @@ interface ResolveEditorRecordOptions {
   requiresDetailFetch: boolean
 }
 
+/**
+ * 旧模块（非主流程）记录进编辑器前的统一归一。
+ *
+ * <p>付款单/收款单的更新依赖记录上的 `version` 原样带回 `X-Resource-Version`，
+ * 而它们的响应走通用 `rawRecordSchema`（`version` 为 unknown，可能是 number/null）：
+ * 在这里归一成十进制字符串后交给编辑器，更新链路的 `expectedVersion` 才能拿到正确值。</p>
+ */
+function toLegacyEditorRecord(
+  moduleKey: ModuleKey,
+  draft: LegacyModuleRecordInput,
+): LegacyModuleRecordInput {
+  return isFinanceDocumentModuleKey(moduleKey)
+    ? normalizeFinanceDocumentRecord(draft)
+    : draft
+}
+
 function resolveEditorRecord(
   options: ResolveEditorRecordOptions,
 ): Promise<PersistedModuleEditorDraftFor<ModuleKey>>
@@ -65,16 +86,16 @@ async function resolveEditorRecord({
     !requiresDetailFetch ||
     hasModuleRecordItems(record)
   ) {
-    return toLegacyEditorDraft(record)
+    return toLegacyEditorRecord(moduleKey, toLegacyEditorDraft(record))
   }
 
   const recordId = String(record.id || '')
   if (!recordId) {
-    return toLegacyEditorDraft(record)
+    return toLegacyEditorRecord(moduleKey, toLegacyEditorDraft(record))
   }
 
   const detail = await getBusinessModuleDetail(moduleKey, recordId)
-  return toLegacyEditorDraft(detail)
+  return toLegacyEditorRecord(moduleKey, toLegacyEditorDraft(detail))
 }
 
 export function useBusinessGridEditor({

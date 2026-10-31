@@ -30,6 +30,7 @@ vi.mock('@/hooks/useRequestError', () => ({
   useRequestError: () => ({ showError: showErrorMock }),
 }))
 
+import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig } from '@/types/module-page'
 import { useBusinessGridEditor } from '@/views/modules/use-business-grid-editor'
 
@@ -62,10 +63,12 @@ describe('useBusinessGridEditor', () => {
   let latest: ReturnType<typeof useBusinessGridEditor>
   let queryClient: QueryClient
   let config: ModulePageConfig
+  /** 被测模块：默认 material，财务单据（payment/receipt）用例会临时切换。 */
+  let moduleKey: ModuleKey = 'material'
 
   function Probe() {
     latest = useBusinessGridEditor({
-      moduleKey: 'material',
+      moduleKey,
       config,
       resolvedConfig: config,
     })
@@ -85,6 +88,7 @@ describe('useBusinessGridEditor', () => {
   }
 
   beforeEach(() => {
+    moduleKey = 'material'
     config = createMaterialConfig()
     getBusinessModuleDetailMock.mockReset()
     getBusinessModuleDetailMock.mockImplementation(
@@ -217,6 +221,52 @@ describe('useBusinessGridEditor', () => {
     expect(latest.shouldUseInlineDetail).toBe(false)
     expect(latest.recordDetailAction).toBeDefined()
     expect(latest.openGridDetail).not.toBe(latest.toggleInlineDetail)
+  })
+
+  it('付款单列表行的 version(number) 进入编辑器前归一成十进制字符串', async () => {
+    moduleKey = 'payment'
+    // 付款单没有明细列 → 编辑态直接用列表行，不请求详情
+    config = createMaterialConfig({ key: 'payment', itemColumns: undefined })
+    renderOnce()
+
+    const record = { id: '9001', paymentNo: 'PAY-1', version: 7 }
+    await act(async () => {
+      await latest.openEditor(record)
+    })
+
+    expect(getBusinessModuleDetailMock).not.toHaveBeenCalled()
+    expect(latest.editorOpen).toBe(true)
+    expect(latest.editRecord).toMatchObject({
+      id: '9001',
+      paymentNo: 'PAY-1',
+      version: '7',
+    })
+  })
+
+  it('收款单缺 version（旧后端）时编辑器记录不写入 version：更新不发版本头', async () => {
+    moduleKey = 'receipt'
+    config = createMaterialConfig({ key: 'receipt', itemColumns: undefined })
+    renderOnce()
+
+    const record = { id: '9002', receiptNo: 'REC-1' }
+    await act(async () => {
+      await latest.openEditor(record)
+    })
+
+    expect(latest.editRecord).toMatchObject({ id: '9002', receiptNo: 'REC-1' })
+    expect(latest.editRecord).not.toHaveProperty('version')
+  })
+
+  it('非财务模块的记录不做版本归一（不改变既有模块行为）', async () => {
+    config = createMaterialConfig({ itemColumns: undefined })
+    renderOnce()
+
+    const record = { id: '5', materialName: '垫片', version: 7 }
+    await act(async () => {
+      await latest.openEditor(record)
+    })
+
+    expect(latest.editRecord).toMatchObject({ id: '5', version: 7 })
   })
 
   it('opens and closes the attachment overlay', () => {

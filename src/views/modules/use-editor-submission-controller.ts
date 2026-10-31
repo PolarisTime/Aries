@@ -10,6 +10,10 @@ import {
   concurrencyRecoveryCodeOf,
   isConcurrencyRecoveryCode,
 } from '@/api/core/resource-version'
+import {
+  isFinanceDocumentModuleKey,
+  readFinanceDocumentVersion,
+} from '@/api/finance/finance-document-record'
 import { saveAndCompleteSalesOrder } from '@/api/sales/document-flow-commands'
 import { fetchSalesOrderContractCheck } from '@/api/sales/sales-contracts'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
@@ -182,6 +186,23 @@ async function executeEditorSubmission(
         expectedVersion,
       )
     : saveBusinessModule(moduleKey, draft, idempotencyKey, expectedVersion)
+}
+
+/**
+ * 编辑保存时随 PUT 发送的版本前置条件取值（记录上的 `version`）。
+ *
+ * <p>付款单/收款单的 `version` 来自通用旧模块记录（`rawRecordSchema`，类型为 unknown，
+ * 可能是 number 或 null），统一走财务单据契约归一成十进制字符串；其它模块保持既有
+ * 取值口径不变（采购/销售订单已验收，不改其行为）。返回 undefined 时不发空头。</p>
+ */
+function readEditorExpectedVersion(
+  moduleKey: ModuleKey,
+  record: object | null,
+): string | undefined {
+  if (isFinanceDocumentModuleKey(moduleKey)) {
+    return readFinanceDocumentVersion(record)
+  }
+  return asString(readModuleRecordField(record, 'version')).trim() || undefined
 }
 
 export function useEditorSubmissionController<Key extends ModuleKey>({
@@ -442,8 +463,7 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
           // 编辑态：把 detail 响应里的 version 作为 X-Resource-Version 前置条件随 PUT 发出；
           // 新建或旧后端无版本时为 undefined（适配层不会发送空头）。
           const expectedVersion = isEdit
-            ? asString(readModuleRecordField(record, 'version')).trim() ||
-              undefined
+            ? readEditorExpectedVersion(moduleKey, record)
             : undefined
           const savedResult = await executeEditorSubmission(moduleKey, {
             action: submissionAction,
