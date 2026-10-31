@@ -261,9 +261,9 @@ const projectPageConfig: ModulePageConfig = {
   ],
   detailColumnCount: 4,
   /*
-   * 字段长度上限以 **DB 列宽**为权威依据（md_project）：后端 `ProjectRequest` 目前对这批文案字段
-   * 没有 @Size（已由后端并行补），在补齐前前端不能等它 —— 否则超长内容会直接打到 varchar 上限报错。
-   * project_code 64 / project_name 200 / project_name_abbr 100 / project_manager 32 /
+   * 字段长度上限以 **DB 列宽**为权威依据（md_project），后端 `ProjectRequest` 的 @Size 与本组数值
+   * 已逐项一致（64/200/100/32/255/255），前端仍按同一口径在校验层拦截，避免超长内容打到 varchar
+   * 上限才报错。project_code 64 / project_name 200 / project_name_abbr 100 / project_manager 32 /
    * project_address 255 / remark 255。客户、结算主体、状态、取价策略等都是受控取值，不声明 maxLength。
    */
   formFields: [
