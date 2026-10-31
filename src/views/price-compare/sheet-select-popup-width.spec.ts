@@ -2,10 +2,12 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const source = readFileSync(
-  new URL('./SheetPanel.tsx', import.meta.url),
-  'utf8',
-)
+// 列定义已抽到 sheet-columns.tsx: 两处源码一起扫描, 保证「凡窄选择器都按内容撑开」这条契约
+// 在拆分后仍然覆盖全部下拉(原先只扫 SheetPanel.tsx)。
+const source = [
+  readFileSync(new URL('./SheetPanel.tsx', import.meta.url), 'utf8'),
+  readFileSync(new URL('./sheet-columns.tsx', import.meta.url), 'utf8'),
+].join('\n')
 
 /**
  * 单据表格内「窄选择器」的下拉宽度契约(源码层回归保护)。
