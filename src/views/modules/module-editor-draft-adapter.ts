@@ -66,11 +66,9 @@ export function toEditorFormState(
   const rawChargeItems =
     (draft as { chargeItems?: readonly object[] }).chargeItems || []
   const chargeItems: DocumentChargeItemDraft[] = rawChargeItems.map((item) => {
-    const row = copyDynamicFields(
-      item,
-    ) as unknown as DocumentChargeItemDraft & {
-      id?: unknown
-    }
+    // 附加费用行来自后端 JSON, 字段类型未知: 逐个字段显式转换,
+    // 不做「整体强转成 Draft」——缺字段/改类型时由这里兜住, 而不是静默带进表单。
+    const row = copyDynamicFields(item)
     return {
       ...(row.id != null ? { id: String(row.id) } : {}),
       chargeName: String(row.chargeName ?? ''),

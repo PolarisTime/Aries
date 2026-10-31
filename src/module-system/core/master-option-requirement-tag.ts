@@ -49,12 +49,19 @@ export function readMasterOptionRequirements(
   if (typeof resolver !== 'function') {
     return undefined
   }
-  const tagged = (resolver as unknown as Record<symbol, unknown>)[
-    MASTER_OPTION_REQUIREMENTS_TAG
-  ]
+  /*
+   * symbol 标记挂在函数对象上: TS 无法用点/索引语法在函数类型上表达"未知 symbol 键"，
+   * 这里用 Reflect.get 反射读取，不把 resolver 强转成 Record<symbol, unknown>。
+   * 读取结果仍按 unknown 校验，未通过校验一律回退到调用方的引用相等兜底。
+   */
+  const tagged: unknown = Reflect.get(resolver, MASTER_OPTION_REQUIREMENTS_TAG)
   // 空数组必须按「未打标记」处理：调用方看到标记就跳过引用相等兜底，
   // 空的 `[]` 会让兜底被吞掉，需求判定全部为 false（下拉静默为空）。
   if (!Array.isArray(tagged) || tagged.length === 0) {
+    return undefined
+  }
+  // 标记是对外导出的 symbol, 运行期可能被第三方写入非字符串值: 逐项校验后再收敛类型。
+  if (!tagged.every((key) => typeof key === 'string')) {
     return undefined
   }
   return tagged as MasterOptionRequirementsTag

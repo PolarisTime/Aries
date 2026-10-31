@@ -143,8 +143,15 @@ const TEMPLATE_CONTROL_METHODS = new Set([
   'PRINT',
 ])
 
-function getLodopMethod(lodop: CLodopInstance, method: string) {
-  return (lodop as unknown as Record<string, unknown>)[method]
+/**
+ * 反射读取 CLodop 方法。
+ *
+ * <p>模板脚本(`LodopInstruction[]`)可调用任意 CLodop 方法，而 `CLodopInstance` 只声明了
+ * 本仓库用到的子集；动态方法名只能用反射读取，返回值按 `unknown` 处理，由调用方用
+ * `typeof` / 显式函数类型断言收口 —— 不是把任意值强转成未知类型。</p>
+ */
+function getLodopMethod(lodop: CLodopInstance, method: string): unknown {
+  return Reflect.get(lodop, method)
 }
 
 function assertRequiredMethods(

@@ -1198,6 +1198,68 @@ export interface ModuleSaveRequestMap {
   'freight-bill': FreightBillSaveRequest
 }
 
+/* ------------------------------------------------------------------ 契约约束 */
+
+/**
+ * 契约双写的编译期守卫（由 `tsc -b` 检查，不依赖运行时用例）。
+ *
+ * <p>上面三张 map 是手写的，下面三张 schema 注册表是权威来源（各自带
+ * `satisfies Record<MainFlowModuleKey, z.ZodType>` 校验）。这里把两者绑死：</p>
+ * <ul>
+ *   <li>键必须完全一致 —— 加/删模块、拼错 key 都会编译失败；</li>
+ *   <li>值必须与注册表对应 schema 的输出完全相等 —— 把某个 key 映射到别的 schema、
+ *     或 schema 字段/可空性漂移，同样编译失败。</li>
+ * </ul>
+ * <p>因此「只改 zod」或「只改手写 map」都会在类型检查阶段被拦下，而不是等某个模块的
+ * 运行时用例（或线上）才暴露。</p>
+ */
+type Expect<T extends true> = T
+type SameKeys<A extends PropertyKey, B extends PropertyKey> = [A] extends [B]
+  ? [B] extends [A]
+    ? true
+    : false
+  : false
+type SameType<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
+type SchemaOutputsOf<Registry extends Record<string, z.ZodType>> = {
+  [K in keyof Registry]: z.output<Registry[K]>
+}
+
+/** 三张手写 map 与对应 schema 注册表的键值一致性（全部应为 true）。 */
+export type ModuleRecordContractCheck = {
+  /** 记录 map 的键 ↔ detail schema 注册表。 */
+  recordKeys: Expect<
+    SameKeys<keyof ModuleRecordMap, keyof typeof mainFlowDetailRecordSchemas>
+  >
+  /** 记录 map 的值 ↔ detail schema 输出（拦截 key 映射错 schema / 字段漂移）。 */
+  recordValues: Expect<
+    SameType<
+      ModuleRecordMap,
+      SchemaOutputsOf<typeof mainFlowDetailRecordSchemas>
+    >
+  >
+  /** 列表 map 的键 ↔ 列表响应 schema 注册表。 */
+  listKeys: Expect<
+    SameKeys<
+      keyof ModuleListRecordMap,
+      keyof typeof mainFlowListResponseSchemas
+    >
+  >
+  /** 保存请求 map 的键 ↔ 保存请求 schema 注册表。 */
+  saveKeys: Expect<
+    SameKeys<
+      keyof ModuleSaveRequestMap,
+      keyof typeof mainFlowSaveRequestSchemas
+    >
+  >
+  /** 保存请求 map 的值 ↔ 保存请求 schema 输出。 */
+  saveValues: Expect<
+    SameType<
+      ModuleSaveRequestMap,
+      SchemaOutputsOf<typeof mainFlowSaveRequestSchemas>
+    >
+  >
+}
+
 export type LineItem =
   | PurchaseOrderItem
   | PurchaseInboundItem

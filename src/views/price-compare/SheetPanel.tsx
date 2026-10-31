@@ -76,6 +76,7 @@ import {
 } from './core'
 import { LockableField } from './LockableField'
 import { SpotSyncActions } from './SpotSyncActions'
+import { moveFocus, moveFocusTon } from './sheet-focus-navigation'
 import { applyLowestQuotes } from './spot-from-price-list'
 import { resolveCellSpotSource } from './spot-source-cancel'
 import { resolveLinkedTonnageTotals } from './TonCell'
@@ -155,53 +156,6 @@ const SHEET_FIXED_CHROME_WIDTH = 32 + 24
 
 /** 供应商简称下拉: 支持中文原文 + 拼音全拼/首字母索引。 */
 const filterSupplierOption = createPinyinFilterOption()
-
-/**
- * 按方向在行内移动焦点并跳过无法聚焦的中间行(如隔断行缺少输入框),
- * 保证 Tab/Enter/方向键能穿过隔断继续定位到下一可编辑行。
- */
-function moveFocusBy(
-  orderedRows: PriceRow[],
-  rowId: string,
-  delta: number,
-  selectorOf: (row: PriceRow) => string,
-): boolean {
-  if (delta === 0) return false
-  const index = orderedRows.findIndex((row) => row.id === rowId)
-  if (index < 0) return false
-  for (let i = index + delta; i >= 0 && i < orderedRows.length; i += delta) {
-    const input = document.querySelector<HTMLInputElement>(
-      selectorOf(orderedRows[i]),
-    )
-    if (!input) continue
-    input.focus()
-    input.select()
-    return true
-  }
-  // 边界(列首/列尾): 返回 false, 调用方据此放行浏览器默认 Tab,
-  // 否则 preventDefault 后焦点原地不动, 整列会变成键盘陷阱。
-  return false
-}
-
-function moveFocus(orderedRows: PriceRow[]) {
-  return (brandName: string, rowId: string, delta: number) =>
-    moveFocusBy(
-      orderedRows,
-      rowId,
-      delta,
-      (row) => `input[data-spot="${brandName}:${row.id}"]`,
-    )
-}
-
-function moveFocusTon(orderedRows: PriceRow[]) {
-  return (rowId: string, delta: number) =>
-    moveFocusBy(
-      orderedRows,
-      rowId,
-      delta,
-      (row) => `input[data-ton="${row.id}"]`,
-    )
-}
 
 /* ------------------------------------------------------------------ 列定义 */
 

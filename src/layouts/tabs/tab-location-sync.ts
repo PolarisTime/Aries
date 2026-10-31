@@ -19,12 +19,17 @@ const tabRouters = new Map<string, AnyRouter>()
 const lastSyncedHrefs = new Map<string, string>()
 const attachedReloadKeys = new Map<string, number>()
 
-type DisposableRouter = { dispose?: () => void }
-
+/**
+ * 释放子 Router 的历史订阅。
+ *
+ * <p>TanStack Router 的公开类型未声明 `dispose`（部分 router 实例在运行期才带该方法），
+ * 属跨版本适配点：用反射读取并收敛为 `unknown`，不把整个 router 强转成自定义形状；
+ * 升级 Router 后应复核此处能否删除。</p>
+ */
 function disposeRouter(subRouter: AnyRouter): void {
-  const disposable = subRouter as unknown as DisposableRouter
-  if (typeof disposable.dispose === 'function') {
-    disposable.dispose()
+  const dispose: unknown = Reflect.get(subRouter, 'dispose')
+  if (typeof dispose === 'function') {
+    dispose.call(subRouter)
   }
 }
 

@@ -21,7 +21,9 @@ export function ErrorView() {
   const router = useRouter()
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const error = (router.state as unknown as Record<string, unknown>).error
+  // TanStack Router 的公开 state 类型未声明 error 字段（仅在错误边界下运行期存在），
+  // 用 Reflect.get 反射读取，避免把整个 state 强转成 Record<string, unknown>。
+  const error: unknown = Reflect.get(router.state, 'error')
 
   // 与 AppErrorBoundary 共用同一套分类规则（403/网络/500/运行时）与恢复建议文案。
   const presentation = resolveErrorPresentation(error)

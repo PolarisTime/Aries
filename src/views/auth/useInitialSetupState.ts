@@ -25,6 +25,9 @@ type AccountFormValues = {
   accountUserName: string
 }
 
+/** 初始设置表单值: 账号步骤 + 设置令牌(同一次校验里一起取回)。 */
+type SetupFormValues = AccountFormValues & { setupToken: string }
+
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
   return error instanceof Error ? error.message : fallbackMessage
 }
@@ -34,7 +37,8 @@ export function useInitialSetupState() {
   const navigate = useNavigate()
   const status = useSetupStore((state) => state.status)
   const [loadingAccount, setLoadingAccount] = useState(false)
-  const [form] = Form.useForm()
+  // 显式泛型: validateFields 据此返回 SetupFormValues, 不需要再对结果做强转。
+  const [form] = Form.useForm<SetupFormValues>()
 
   const getValidSetupToken = (): string | null => {
     const setupToken = asString(form.getFieldValue('setupToken'))
@@ -59,13 +63,13 @@ export function useInitialSetupState() {
     await withFinally(
       async () => {
         try {
-          const values = (await form.validateFields([
+          const values = await form.validateFields([
             'setupToken',
             'accountLoginName',
             'accountPassword',
             'accountConfirmPassword',
             'accountUserName',
-          ])) as unknown as AccountFormValues
+          ])
 
           if (values.accountPassword !== values.accountConfirmPassword) {
             message.error(t('auth.initialsetup.passwordMismatch'))

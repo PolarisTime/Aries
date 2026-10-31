@@ -1,7 +1,6 @@
 import dayjs from 'dayjs'
 import i18next from 'i18next'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { readRequestError } from '@/api/core/request-errors'
 import {
   acquireQuoteSheetEditLock,
   fetchQuoteSheetEditLock,
@@ -33,6 +32,34 @@ import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
 import { logger } from '@/utils/logger'
 import { DEFAULT_LENGTH_PREMIUM, isSeparatorRow, makeSheet } from './core'
+import {
+  type ConflictModalInstance,
+  type ConflictResolution,
+  conflictResourceKey,
+  isConflictError,
+  isLockConflict,
+  isVersionConflict,
+  OVERRIDE_MAX_ATTEMPTS,
+  type SheetsConflict,
+} from './sheet-conflict-policy'
+import {
+  createSheetHistory,
+  isSpecQuantityLocked,
+  recordHistoryCommit,
+  type SheetHistory,
+  type SheetSnapshot,
+  takeRedoSnapshot,
+  takeUndoSnapshot,
+} from './sheet-history'
+import {
+  deriveSaveStatus,
+  runSerializedTask,
+  SAVE_DEBOUNCE_MS,
+  type SaveOutcome,
+  SHEET_SAVE_KEY_PREFIX,
+  type SheetSaveStatus,
+  sheetIdOfSaveKey,
+} from './sheet-save-queue'
 import type {
   Brand,
   PriceRow,
@@ -42,11 +69,6 @@ import type {
   SheetInputs,
 } from './types'
 
-const HISTORY_LIMIT = 50
-const COALESCE_MS = 800
-const SAVE_DEBOUNCE_MS = 800
-/** 单据保存的串行队列键前缀: runSerialized 据此识别在途保存属于哪张单据。 */
-const SHEET_SAVE_KEY_PREFIX = 'sheet:'
 /** 跨标签同步频道。 */
 const SYNC_CHANNEL = 'aries-price-compare'
 /** 聚焦/轮询刷新间隔。 */
@@ -55,15 +77,6 @@ const REFRESH_INTERVAL_MS = 30_000
 const EDIT_LOCK_RENEW_MS = 60_000
 /** 有未保存改动时"服务器有更新"提示的去重 key。 */
 const STALE_NOTICE_KEY = 'price-compare-stale'
-/** 版本不匹配: 412 Precondition Failed。 */
-const VERSION_CONFLICT_STATUS = 412
-const VERSION_CONFLICT_CODE = 4120
-/** 缺少版本前置条件: 428 Precondition Required(需要带版本重试)。 */
-const PRECONDITION_REQUIRED_STATUS = 428
-const PRECONDITION_REQUIRED_CODE = 4280
-/** 他人签出锁冲突: 409 Conflict。 */
-const LOCK_CONFLICT_STATUS = 409
-const LOCK_CONFLICT_CODE = 4090
 
 const CONFLICT_TITLE = i18next.t('priceCompareStore.conflictTitle')
 const CONFLICT_CONTENT = i18next.t('priceCompareStore.conflictContent')
@@ -71,62 +84,12 @@ const CONFLICT_OVERWRITE_TEXT = i18next.t('priceCompareStore.conflictOverwrite')
 const CONFLICT_RELOAD_TEXT = i18next.t('priceCompareStore.conflictReload')
 /** 覆盖重试后仍冲突时的提示文案(保留同一弹窗)。 */
 const CONFLICT_RETRY_TEXT = i18next.t('priceCompareStore.conflictRetry')
-/** "以我的覆盖"最多尝试次数(含首次), 避免无限连环冲突。 */
-const OVERRIDE_MAX_ATTEMPTS = 2
 const STALE_NOTICE_TEXT = i18next.t('priceCompareStore.serverUpdated')
 /** 他人签出锁冲突提示(与版本冲突文案区分)。 */
 const LOCK_CONFLICT_TEXT = i18next.t('priceCompareStore.lockConflict')
 
-/** 同一资源串行执行: 在飞行中则排队一次, 结束后补跑最新任务。 */
-async function runSerializedTask(
-  inflight: Set<string>,
-  pending: Set<string>,
-  key: string,
-  task: () => Promise<void>,
-): Promise<void> {
-  if (inflight.has(key)) {
-    pending.add(key)
-    return
-  }
-  inflight.add(key)
-  try {
-    await task()
-  } finally {
-    inflight.delete(key)
-    if (pending.delete(key)) {
-      void runSerializedTask(inflight, pending, key, task)
-    }
-  }
-}
-
-type Snapshot = {
-  sheets: PriceSheet[]
-  activeId: string
-  /** 项目级配置: projectId -> 配置 */
-  configs: Record<string, ProjectConfig>
-}
-
-/** 版本冲突: 412/4120(版本已变更) 或 428/4280(缺少版本前置条件)。 */
-function isVersionConflict(error: unknown): boolean {
-  const { status, code } = readRequestError(error)
-  return (
-    status === VERSION_CONFLICT_STATUS ||
-    status === PRECONDITION_REQUIRED_STATUS ||
-    code === VERSION_CONFLICT_CODE ||
-    code === PRECONDITION_REQUIRED_CODE
-  )
-}
-
-/** 签出锁冲突: 409 / 4090(单据被他人签出)。 */
-function isLockConflict(error: unknown): boolean {
-  const { status, code } = readRequestError(error)
-  return status === LOCK_CONFLICT_STATUS || code === LOCK_CONFLICT_CODE
-}
-
-/** 服务端冲突(版本或签出锁)。 */
-function isConflictError(error: unknown): boolean {
-  return isVersionConflict(error) || isLockConflict(error)
-}
+/** 本地快照: 单据列表 + 激活项 + 项目级配置(历史条目)。 */
+type Snapshot = SheetSnapshot
 
 /** 西本模式虚拟品牌名(无品牌, 按规格一个价)。 */
 export const STEELX_VIRTUAL_BRAND = '基准价'
@@ -218,23 +181,6 @@ function deriveActiveViews(params: {
   const readOnly =
     lockPending || Boolean(activeLock && activeLock.locked && !activeLock.mine)
   return { config, configLoaded, activeLock, lockPending, readOnly }
-}
-
-/**
- * 由保存结论与未保存集合推导单据保存状态。
- * 优先级: 在途 > 冲突 > 失败 > 新的未落库改动 > 已保存 > 无变化。
- */
-function deriveSaveStatus(
-  outcome: 'saving' | 'saved' | 'error' | 'conflict' | undefined,
-  unsaved: ReadonlySet<string>,
-  activeId: string,
-): SheetSaveStatus {
-  if (outcome === 'saving') return 'saving'
-  if (outcome === 'conflict') return 'conflict'
-  if (outcome === 'error') return 'error'
-  if (unsaved.has(activeId)) return 'dirty'
-  if (outcome === 'saved') return 'saved'
-  return 'idle'
 }
 
 const emptyConfig = (): ProjectConfig => ({
@@ -560,27 +506,6 @@ function remapInputKeys(
   return next
 }
 
-/** 乐观并发冲突: 单据头/项目配置/某商品行。 */
-export type SheetsConflict = {
-  kind: 'sheet' | 'config' | 'item'
-  id: string
-  itemId?: string
-}
-
-/** 冲突资源键: 表头与商品行同属一个单据资源, 项目配置独立。 */
-function conflictResourceKey(kind: SheetsConflict['kind'], id: string): string {
-  return kind === 'config' ? `config:${id}` : `sheet:${id}`
-}
-
-/** 覆盖保存结果: 成功/仍冲突/其他失败/无可保存内容。 */
-type ConflictResolution = 'ok' | 'conflict' | 'error' | 'skipped'
-
-/** 冲突弹窗实例(antd confirm 返回值), 用于更新文案或销毁。 */
-type ConflictModalInstance = {
-  update?: (config: Record<string, unknown>) => void
-  destroy?: () => void
-}
-
 /** 当前批次编辑签出状态(供 UI 呈现与只读控制)。 */
 export type EditLockView = {
   sheetId: string
@@ -589,19 +514,8 @@ export type EditLockView = {
   ownerName?: string
 }
 
-/**
- * 单据保存状态:
- * - `idle` 无改动且本会话无保存结论; `dirty` 有改动待落库;
- * - `saving` 写请求在途; `saved` 已落库; `error` 保存失败可重试;
- * - `conflict` 版本/锁冲突, 交由冲突弹窗或编辑锁横幅处理。
- */
-export type SheetSaveStatus =
-  | 'idle'
-  | 'dirty'
-  | 'saving'
-  | 'saved'
-  | 'error'
-  | 'conflict'
+// 对外导出保持原样: 类型已迁到独立模块, 调用方仍从本模块导入。
+export type { SheetSaveStatus, SheetsConflict }
 
 export type SheetsStore = {
   loading: boolean
@@ -661,25 +575,10 @@ export type SheetsStore = {
   takeoverEditLock: (id?: string) => void
 }
 
-type History = {
-  past: Snapshot[]
-  future: Snapshot[]
-  lastKey: string
-  lastTime: number
-}
-
 function defaultState(): Snapshot {
   const a = makeSheet('批次 1', '', '', '', '', '')
   const b = makeSheet('批次 2', '', '', '', '', '')
   return { sheets: [a, b], activeId: a.id, configs: {} }
-}
-
-/** 当前激活单据是否锁定了规格和数量(锁定期间禁止撤销/重做规格与吨位)。 */
-function activeSheetSpecQuantityLocked(snapshot: Snapshot): boolean {
-  const activeSheet = snapshot.sheets.find(
-    (sheet) => sheet.id === snapshot.activeId,
-  )
-  return Boolean(activeSheet?.specQuantityLocked)
 }
 
 /** 多单据状态: 服务端为数据源, 本地乐观更新 + 防抖自动保存; 支持撤销/重做。 */
@@ -711,12 +610,7 @@ export function useSheetsStore(options?: {
    */
   const [historyDepth, setHistoryDepth] = useState({ past: 0, future: 0 })
   const stateRef = useRef(state)
-  const historyRef = useRef<History>({
-    past: [],
-    future: [],
-    lastKey: '',
-    lastTime: 0,
-  })
+  const historyRef = useRef<SheetHistory>(createSheetHistory())
   /** 把 historyRef 的深度同步到 state(供渲染期判断撤销/重做可用性)。 */
   const syncHistoryDepth = useCallback(() => {
     setHistoryDepth({
@@ -762,7 +656,7 @@ export function useSheetsStore(options?: {
    * 缺失表示本会话尚未产生保存结论(如"配置未加载被跳过"), 由脏标记推导为待保存。
    */
   const [saveOutcome, setSaveOutcome] = useState<
-    ReadonlyMap<string, 'saving' | 'saved' | 'error' | 'conflict'>
+    ReadonlyMap<string, SaveOutcome>
   >(() => new Map())
   /** 每张单据在途/排队的保存任务数, 用于精确收敛"保存中"状态。 */
   const sheetSaveCountRef = useRef<Map<string, number>>(new Map())
@@ -883,9 +777,7 @@ export function useSheetsStore(options?: {
     (key: string, task: () => Promise<void>) => {
       // 单据保存的在途状态由串行队列统一记录, 避免 saveSheetNow 的多个提前
       // return 路径遗漏清理而长期停留在"保存中"。
-      const sheetId = key.startsWith(SHEET_SAVE_KEY_PREFIX)
-        ? key.slice(SHEET_SAVE_KEY_PREFIX.length)
-        : null
+      const sheetId = sheetIdOfSaveKey(key)
       if (sheetId) {
         // 计数而非布尔: 同一单据可能已有任务在跑并排队了新任务, 先结束的任务
         // 不得把仍在排队的保存提前标记为结束。
@@ -936,22 +828,13 @@ export function useSheetsStore(options?: {
 
   const commit = useCallback(
     (next: Snapshot, coalesceKey?: string) => {
-      const history = historyRef.current
-      const now = Date.now()
-      const coalesce =
-        Boolean(coalesceKey) &&
-        coalesceKey === history.lastKey &&
-        now - history.lastTime < COALESCE_MS
-      if (!coalesce) {
-        history.past = [
-          ...history.past.slice(-(HISTORY_LIMIT - 1)),
-          stateRef.current,
-        ]
-        history.future = []
-        syncHistoryDepth()
-      }
-      history.lastKey = coalesceKey ?? ''
-      history.lastTime = now
+      const pushed = recordHistoryCommit(
+        historyRef.current,
+        stateRef.current,
+        coalesceKey,
+        Date.now(),
+      )
+      if (pushed) syncHistoryDepth()
       dataRevisionRef.current += 1
       stateRef.current = next
       setState(next)
@@ -1011,7 +894,7 @@ export function useSheetsStore(options?: {
    * "加载前的空状态"(整表消失), 这是无人期望的"撤销"。
    */
   const resetHistory = useCallback(() => {
-    historyRef.current = { past: [], future: [], lastKey: '', lastTime: 0 }
+    historyRef.current = createSheetHistory()
     syncHistoryDepth()
   }, [syncHistoryDepth])
 
@@ -2406,16 +2289,10 @@ export function useSheetsStore(options?: {
     // 只读态(他人签出)禁用撤销, 且不进入历史回滚
     if (readOnlyRef.current) return
     // 规格数量锁定期间撤销会回退规格/吨位, 被后端 422 拒绝后本地与服务端不一致, 直接禁用
-    if (activeSheetSpecQuantityLocked(stateRef.current)) return
-    const history = historyRef.current
-    if (!history.past.length) return
-    const target = preserveLockFields(history.past[history.past.length - 1])
-    history.past = history.past.slice(0, -1)
-    history.future = [stateRef.current, ...history.future].slice(
-      0,
-      HISTORY_LIMIT,
-    )
-    history.lastKey = ''
+    if (isSpecQuantityLocked(stateRef.current)) return
+    const snapshot = takeUndoSnapshot(historyRef.current, stateRef.current)
+    if (!snapshot) return
+    const target = preserveLockFields(snapshot)
     syncHistoryDepth()
     stateRef.current = target
     setState(target)
@@ -2438,16 +2315,10 @@ export function useSheetsStore(options?: {
     // 只读态(他人签出)禁用重做, 且不进入历史回滚
     if (readOnlyRef.current) return
     // 规格数量锁定期间重做同样会回退规格/吨位, 与后端 422 语义冲突, 直接禁用
-    if (activeSheetSpecQuantityLocked(stateRef.current)) return
-    const history = historyRef.current
-    if (!history.future.length) return
-    const target = preserveLockFields(history.future[0])
-    history.future = history.future.slice(1)
-    history.past = [
-      ...history.past.slice(-(HISTORY_LIMIT - 1)),
-      stateRef.current,
-    ]
-    history.lastKey = ''
+    if (isSpecQuantityLocked(stateRef.current)) return
+    const snapshot = takeRedoSnapshot(historyRef.current, stateRef.current)
+    if (!snapshot) return
+    const target = preserveLockFields(snapshot)
     syncHistoryDepth()
     stateRef.current = target
     setState(target)

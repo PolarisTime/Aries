@@ -34,6 +34,15 @@ function isUsableFocusTarget(
 }
 
 /**
+ * 读取菜单项上的内联样式并收敛为可展开的普通对象。
+ * rc-menu item 的 `style` 在类型上是联合形状, 用反射读出来后再展开, 避免整体强转。
+ */
+function styleRecordOf(style: unknown): Record<string, unknown> {
+  if (!style || typeof style !== 'object') return {}
+  return Object.fromEntries(Object.entries(style))
+}
+
+/**
  * rc-menu 的 disabled 项既不可聚焦, 也会被方向键跳过; APG 要求禁用项可聚焦、可被读屏发现。
  * 这里把 `disabled: true` 降级为"软禁用": 保留在菜单的键盘序列与 Tab 序列中,
  * 由 `aria-disabled`(挂载后补写)与点击/回车拦截共同表达"可见但不可用"。
@@ -44,13 +53,20 @@ function toSoftDisabledItems(items: MenuProps['items']): {
 } {
   const softDisabledKeys = new Set<string>()
   const list = items ?? []
-  const normalized = list.map((item) => {
+  /*
+   * rc-menu 的 item 是 antd 维护的联合形状, 而本组件要额外挂一个自定义 DOM 属性
+   * (`SOFT_DISABLED_ATTR`) 才能让禁用项留在键盘序列里。读取已知字段用 Reflect.get,
+   * 改写后的条目统一在数组出口收敛为 antd 的 item 类型; 不做逐项 unknown→特定类型的强转。
+   */
+  const normalized: unknown[] = list.map((item) => {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return item
-    const config = item as unknown as Record<string, unknown>
-    if (!config.disabled) return item
-    const key = String(config.key ?? '')
+    if (!Reflect.get(item, 'disabled')) return item
+    const key = String(Reflect.get(item, 'key') ?? '')
     if (key) softDisabledKeys.add(key)
-    const { disabled: _softDisabled, ...rest } = config
+    // 去掉 disabled, 其余字段原样保留(子菜单/分组等结构不被改写)
+    const rest: Record<string, unknown> = Object.fromEntries(
+      Object.entries(item).filter(([name]) => name !== 'disabled'),
+    )
     return {
       ...rest,
       [SOFT_DISABLED_ATTR]: 'true',
@@ -61,11 +77,11 @@ function toSoftDisabledItems(items: MenuProps['items']): {
       style: {
         opacity: 0.45,
         cursor: 'not-allowed',
-        ...((rest.style ?? {}) as Record<string, unknown>),
+        ...styleRecordOf(rest.style),
       },
-    } as unknown as (typeof list)[number]
+    }
   })
-  return { items: normalized, softDisabledKeys }
+  return { items: normalized as MenuProps['items'], softDisabledKeys }
 }
 
 export interface ContextMenuProps {
