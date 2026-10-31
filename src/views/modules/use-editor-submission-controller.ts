@@ -6,9 +6,12 @@ import {
 } from '@/api/business/business-crud'
 import { createIdempotencyKey } from '@/api/core/idempotency'
 import { readRequestError } from '@/api/core/request-errors'
+import {
+  concurrencyRecoveryCodeOf,
+  isConcurrencyRecoveryCode,
+} from '@/api/core/resource-version'
 import { saveAndCompleteSalesOrder } from '@/api/sales/document-flow-commands'
 import { fetchSalesOrderContractCheck } from '@/api/sales/sales-contracts'
-import { ERROR_CODE } from '@/constants/error-codes'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
 import {
   resolveStatusChangeActionLabelKey,
@@ -135,6 +138,11 @@ interface ExecuteSubmissionOptions {
   items: ModuleLineItem[]
   idempotencyKey: string
   chargeItems?: DocumentChargeItemDraft[]
+  /**
+   * 编辑保存时记录携带的乐观锁版本（detail 响应体 `version` 字段）。
+   * 新建或旧后端无版本时为空 —— 此时不得发送空的 X-Resource-Version 头。
+   */
+  expectedVersion?: string
 }
 
 function executeEditorSubmission<Key extends ModuleKey>(
@@ -145,7 +153,14 @@ async function executeEditorSubmission(
   moduleKey: ModuleKey,
   options: ExecuteSubmissionOptions,
 ): Promise<ModuleDetailRecordFor<ModuleKey>> {
-  const { action, values, items, chargeItems, idempotencyKey } = options
+  const {
+    action,
+    values,
+    items,
+    chargeItems,
+    idempotencyKey,
+    expectedVersion,
+  } = options
   if (action === 'save-and-complete') {
     return saveAndCompleteSalesOrder(
       buildEditorSubmissionDraft('sales-order', values, items, chargeItems),
@@ -160,8 +175,13 @@ async function executeEditorSubmission(
     chargeItems,
   )
   return action === 'save-and-audit'
-    ? saveAndAuditBusinessModule(moduleKey, draft, idempotencyKey)
-    : saveBusinessModule(moduleKey, draft, idempotencyKey)
+    ? saveAndAuditBusinessModule(
+        moduleKey,
+        draft,
+        idempotencyKey,
+        expectedVersion,
+      )
+    : saveBusinessModule(moduleKey, draft, idempotencyKey, expectedVersion)
 }
 
 export function useEditorSubmissionController<Key extends ModuleKey>({
@@ -419,12 +439,19 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
           }
 
           mutationAttempted = true
+          // 编辑态：把 detail 响应里的 version 作为 X-Resource-Version 前置条件随 PUT 发出；
+          // 新建或旧后端无版本时为 undefined（适配层不会发送空头）。
+          const expectedVersion = isEdit
+            ? asString(readModuleRecordField(record, 'version')).trim() ||
+              undefined
+            : undefined
           const savedResult = await executeEditorSubmission(moduleKey, {
             action: submissionAction,
             values: draftRecord,
             items: trimmedItems,
             chargeItems: expenseItems,
             idempotencyKey,
+            ...(expectedVersion ? { expectedVersion } : {}),
           })
           invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
           const savedRecord = savedResult
@@ -462,13 +489,23 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
               focusFirstInvalidField(form, validationErrorFields)
             }
           } else if (error instanceof Error) {
-            const { code, traceId } = readRequestError(error)
+            const { code, status, traceId } = readRequestError(error)
             const baseErrorMessage = error.message || t('common.saveFailed')
+            /*
+             * 并发类失败统一收敛为「刷新后重试」恢复码：
+             * 后端业务码 4090/4120/4280 优先，未回业务码时按 HTTP 409/412/428 兜底。
+             * 其余错误码保持原样，避免把 403/404 等误判进恢复路径。
+             */
+            const recoveryCode = concurrencyRecoveryCodeOf(status, code)
             setSaveResult({
               status: 'error',
               message: baseErrorMessage,
               traceId,
-              ...(code !== undefined ? { errorCode: code } : {}),
+              ...(recoveryCode !== undefined
+                ? { errorCode: recoveryCode }
+                : code !== undefined
+                  ? { errorCode: code }
+                  : {}),
             })
           } else {
             setSaveResult({
@@ -486,7 +523,7 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
   }
 
   const reloadAfterConflict = async (): Promise<void> => {
-    if (saveResult?.errorCode !== ERROR_CODE.CONCURRENT_MODIFICATION) {
+    if (!isConcurrencyRecoveryCode(saveResult?.errorCode)) {
       return
     }
 

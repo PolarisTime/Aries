@@ -8,6 +8,7 @@ import {
   apiPut,
 } from '@/api/core/client'
 import { withIdempotencyKey } from '@/api/core/idempotency'
+import { withResourceVersion } from '@/api/core/resource-version'
 import { toSaveRequest } from '@/module-system/record/module-save-payload'
 import { rawRecordSchema } from '@/shared/schemas/api'
 import {
@@ -61,16 +62,19 @@ export function saveBusinessModule<Key extends MainFlowModuleKey>(
   moduleKey: Key,
   record: MainFlowEditorDraft<Key>,
   idempotencyKey?: string,
+  expectedVersion?: string,
 ): Promise<MainFlowDetailRecord<Key>>
 export function saveBusinessModule<Key extends string>(
   moduleKey: Key,
   record: ModuleEditorDraftFor<Key>,
   idempotencyKey?: string,
+  expectedVersion?: string,
 ): Promise<ModuleDetailRecordFor<Key>>
 export async function saveBusinessModule(
   moduleKey: string,
   record: BusinessModuleSaveRecord,
   idempotencyKey?: string,
+  expectedVersion?: string,
 ): Promise<LegacyModuleRecord> {
   const endpointConfig = getModuleConfig(moduleKey)
   if (endpointConfig.readOnly) {
@@ -82,7 +86,12 @@ export async function saveBusinessModule(
   const path = hasId
     ? `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`
     : endpointConfig.path
-  const requestConfig = withIdempotencyKey(undefined, idempotencyKey)
+  // 新建（POST）不带版本前置条件；更新（PUT）仅在版本非空时才注入 X-Resource-Version，
+  // 缺版本时不发空头（后端返回 428，由统一错误展示引导刷新后重试）。
+  const requestConfig = withIdempotencyKey(
+    hasId ? withResourceVersion(expectedVersion) : undefined,
+    idempotencyKey,
+  )
   const mainFlowResponseSchema = getMainFlowDetailResponseSchema(moduleKey)
   if (mainFlowResponseSchema) {
     return hasId
@@ -100,16 +109,19 @@ export function saveAndAuditBusinessModule<Key extends MainFlowModuleKey>(
   moduleKey: Key,
   record: MainFlowEditorDraft<Key>,
   idempotencyKey?: string,
+  expectedVersion?: string,
 ): Promise<MainFlowDetailRecord<Key>>
 export function saveAndAuditBusinessModule<Key extends string>(
   moduleKey: Key,
   record: ModuleEditorDraftFor<Key>,
   idempotencyKey?: string,
+  expectedVersion?: string,
 ): Promise<ModuleDetailRecordFor<Key>>
 export async function saveAndAuditBusinessModule(
   moduleKey: string,
   record: BusinessModuleSaveRecord,
   idempotencyKey?: string,
+  expectedVersion?: string,
 ): Promise<LegacyModuleRecord> {
   const endpointConfig = getModuleConfig(moduleKey)
   if (endpointConfig.readOnly) {
@@ -126,7 +138,11 @@ export async function saveAndAuditBusinessModule(
   const path = hasId
     ? `${endpointConfig.path}/${encodeURIComponent(String(record.id))}`
     : endpointConfig.path
-  const requestConfig = withIdempotencyKey(undefined, idempotencyKey)
+  // 与 saveBusinessModule 同一口径：仅更新（PUT）且版本非空时携带版本头。
+  const requestConfig = withIdempotencyKey(
+    hasId ? withResourceVersion(expectedVersion) : undefined,
+    idempotencyKey,
+  )
   const mainFlowResponseSchema = getMainFlowDetailResponseSchema(moduleKey)
   if (mainFlowResponseSchema) {
     return hasId

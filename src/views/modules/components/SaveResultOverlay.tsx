@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { isConcurrencyRecoveryCode } from '@/api/core/resource-version'
 import { AppResult } from '@/components/AppResult'
-import { ERROR_CODE } from '@/constants/error-codes'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { ModulePageConfig } from '@/types/module-page'
@@ -64,7 +64,7 @@ export function SaveResultOverlay<Key extends ModuleKey>({
     saveResult.status === 'success' || saveResult.status === 'warning'
   const isConflict =
     saveResult.status === 'error' &&
-    saveResult.errorCode === ERROR_CODE.CONCURRENT_MODIFICATION
+    isConcurrencyRecoveryCode(saveResult.errorCode)
   const recordId = String(saveResult.record?.id || '')
   const canUploadAttachment = Boolean(isSuccess && saveResult.record?.id)
   const itemColumns = buildSaveResultItemColumns(config, formatCellValue)

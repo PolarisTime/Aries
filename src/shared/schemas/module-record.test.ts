@@ -617,3 +617,61 @@ describe('销售退货保存请求拒绝未知字段', () => {
     ).toThrow()
   })
 })
+
+/*
+ * P1-2：采购/销售订单的列表与详情响应新增 version 字段（乐观锁，更新时以
+ * X-Resource-Version 头带回）。旧后端没有该字段，因此必须可缺省；数字形态要归一化为
+ * 十进制字符串，避免前端把 number 当版本发出去被后端的严格校验拒绝。
+ */
+describe('采购/销售订单版本号契约(X-Resource-Version 前置条件)', () => {
+  it('详情响应携带字符串 version 时原样保留(两侧空白被裁剪)', () => {
+    const purchase = getMainFlowDetailResponseSchema('purchase-order').parse({
+      ...purchaseOrder,
+      version: '123456789012345678',
+      items: [purchaseOrderItem],
+      chargeItems: [],
+    })
+    const sales = getMainFlowDetailResponseSchema('sales-order').parse({
+      ...salesOrder,
+      version: ' 42 ',
+      items: [salesOrderItem],
+      chargeItems: [],
+    })
+
+    expect(purchase.version).toBe('123456789012345678')
+    expect(sales.version).toBe('42')
+  })
+
+  it('数字形态 version 归一化为十进制字符串', () => {
+    const parsed = getMainFlowDetailResponseSchema('sales-order').parse({
+      ...salesOrder,
+      version: 42,
+      items: [salesOrderItem],
+      chargeItems: [],
+    })
+
+    expect(parsed.version).toBe('42')
+  })
+
+  it('旧后端未返回 version 时解析为 undefined(不阻塞编辑)', () => {
+    const detail = getMainFlowDetailResponseSchema('purchase-order').parse({
+      ...purchaseOrder,
+      items: [purchaseOrderItem],
+      chargeItems: [],
+    })
+    const list = getMainFlowListResponseSchema('purchase-order').parse(
+      page(purchaseOrder),
+    )
+
+    expect(detail.version).toBeUndefined()
+    expect(list.content[0].version).toBeUndefined()
+  })
+
+  it('列表响应携带 version 时随记录返回', () => {
+    const list = getMainFlowListResponseSchema('purchase-order').parse(
+      page({ ...purchaseOrder, version: '7' }),
+    )
+
+    expect(list.content[0].version).toBe('7')
+  })
+})

@@ -1,6 +1,6 @@
 import { Form } from 'antd'
 import { useCallback, useEffect, useId, useRef } from 'react'
-import { ERROR_CODE } from '@/constants/error-codes'
+import { isConcurrencyRecoveryCode } from '@/api/core/resource-version'
 import {
   resolveMasterOptionRequirements,
   useMasterOptions,
@@ -147,7 +147,7 @@ function useEditorSessionLifecycle({
       nextStatus = 'clean'
     } else if (
       saveStatus === 'error' &&
-      saveErrorCode === ERROR_CODE.CONCURRENT_MODIFICATION
+      isConcurrencyRecoveryCode(saveErrorCode)
     ) {
       wasSavingRef.current = false
       nextStatus = 'conflict'

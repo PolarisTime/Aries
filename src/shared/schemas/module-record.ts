@@ -35,6 +35,22 @@ const responseDecimalSchema = z.union([
 const nullableResponseDecimalSchema = responseDecimalSchema.nullable()
 
 /**
+ * 资源乐观锁版本号（采购订单 / 销售订单等主流程单据）。
+ *
+ * <p>后端以响应体字段（或 `X-Resource-Version` 响应头）回传，前端更新时必须原样带回
+ * `X-Resource-Version`。旧后端可能不返回该字段，因此可缺省；数字形态统一归一化为
+ * **十进制字符串**，避免后端严格模式下 number 被拒（版本号量级小，不存在雪花 ID 精度问题）。</p>
+ */
+const resourceVersionSchema = z
+  .union([z.number(), z.string()])
+  .nullish()
+  .transform((value) =>
+    value === null || value === undefined || value === ''
+      ? undefined
+      : String(value).trim(),
+  )
+
+/**
  * 强制结单留痕：剩余未入库件数作废后由人工把订单置为「完成采购」。
  * 非强制结单时后端返回 null，因此这里可空；字段可缺省以兼容旧后端。
  */
@@ -143,6 +159,8 @@ const purchaseOrderRecordShape = {
   totalWeight: nonNegativeDecimalSchema,
   totalAmount: decimalSchema,
   status: purchaseOrderStatusSchema,
+  /** 乐观锁版本号：更新时以 X-Resource-Version 头原样带回；旧后端可缺省。 */
+  version: resourceVersionSchema,
   deletedFlag: z.boolean(),
   remark: nullableTextSchema,
   /** 订单级未入库件数：各明细行「订单量 − 已入库量」之和（列表与详情均返回）。 */
@@ -414,6 +432,8 @@ const salesOrderRecordShape = {
   totalWeight: nonNegativeDecimalSchema,
   totalAmount: decimalSchema,
   status: salesOrderStatusSchema,
+  /** 乐观锁版本号：更新时以 X-Resource-Version 头原样带回；旧后端可缺省。 */
+  version: resourceVersionSchema,
   deletedFlag: z.boolean(),
   remark: nullableTextSchema,
   /** 交付核定所用价格规定快照（可空）。 */
