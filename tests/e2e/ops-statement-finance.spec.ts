@@ -42,8 +42,7 @@ test.describe('对账与财务真实操作', () => {
 
     if (!candidate) {
       const directionTrigger = page
-        .locator('button')
-        .filter({ hasText: /^方向/ })
+        .getByRole('button', { name: /^方向/ })
         .first()
       await expect(directionTrigger).toBeVisible({ timeout: 30_000 })
       await directionTrigger.click()
@@ -115,8 +114,7 @@ test.describe('对账与财务真实操作', () => {
       await expect(statementRow).toContainText('已确认', { timeout: 30_000 })
 
       const directionTrigger = page
-        .locator('button')
-        .filter({ hasText: /^方向/ })
+        .getByRole('button', { name: /^方向/ })
         .first()
       await expect(directionTrigger).toBeVisible({ timeout: 30_000 })
       await directionTrigger.click()

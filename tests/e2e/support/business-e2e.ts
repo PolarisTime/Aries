@@ -129,10 +129,9 @@ export async function searchModule(
 
 /** 点击文字标签（如“单据状态”）对应的筛选 chip，打开其弹出面板。 */
 export async function openFilterChip(page: Page, label: string) {
-  const trigger = page
-    .locator('button')
-    .filter({ hasText: buttonName(label) })
-    .first()
+  // ModuleFilterChip 的可见文本只有选中值（如“全部”），标签在 aria-label 上
+  // （形如“单据状态: 全部”），因此必须按可访问名定位，不能用 hasText。
+  const trigger = page.getByRole('button', { name: buttonName(label) }).first()
   await expect(trigger).toBeVisible({ timeout: NAV_TIMEOUT_MS })
   await trigger.click()
 }

@@ -98,9 +98,12 @@ export async function selectAriaLabelOption(
   ariaLabel: string,
   option: string | number,
 ): Promise<void> {
-  const trigger = page
-    .locator(`input[aria-label="${ariaLabel}"]:visible`)
-    .first()
+  // antd 6 的“每页条数”不是 input，而是分页区的 Select（可访问名“页码”，文本形如
+  // “30 条/页”）；历史写法 input[aria-label="Page Size"] 永远匹配不到。
+  const trigger =
+    ariaLabel === 'Page Size'
+      ? page.locator('.ant-pagination-options .ant-select').first()
+      : page.locator(`input[aria-label="${ariaLabel}"]:visible`).first()
   await expect(trigger).toBeVisible({ timeout: 20_000 })
   await openAndPick(page, trigger, option)
 }
@@ -110,7 +113,10 @@ export async function selectPopoverOption(
   chipLabel: string,
   option: string | number,
 ): Promise<void> {
-  const chip = page.locator('button').filter({ hasText: chipLabel }).first()
+  // 筛选 chip 的可见文本只有选中值（如“全部”），标签在 aria-label 上，按可访问名定位。
+  const chip = page
+    .getByRole('button', { name: new RegExp(`^${chipLabel}`) })
+    .first()
   await expect(chip).toBeVisible({ timeout: 20_000 })
   await chip.click()
   const trigger = page
