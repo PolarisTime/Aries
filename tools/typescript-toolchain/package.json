@@ -6,6 +6,6 @@
   "exports": "./index.js",
   "dependencies": {
     "typescript": "5.9.3",
-    "typescript-eslint": "8.59.2"
+    "typescript-eslint": "8.72.0"
   }
 }
