@@ -8,6 +8,7 @@ import {
   apiPut,
   apiPutResponse,
 } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
@@ -459,10 +460,24 @@ export async function fetchQuoteSheet(
   return normalizeSheet(response, 0)
 }
 
+/**
+ * 报价单写接口均带 `X-Idempotency-Key`：后端 `V2QuoteSheetController` 是类级
+ * `@IdempotencyRequired`，POST/PUT/DELETE 缺该头会 422。
+ *
+ * <p>`idempotencyKey` 可选：调用方在同一次用户动作内重试时应传入同一个 key（例如冲突后
+ * 重新取版本重发），不传则由 {@link withIdempotencyKey} 在本次请求创建时生成一次；
+ * 401 换令牌重试用的是同一份请求配置，因此 key 不会变化。</p>
+ */
 export async function createQuoteSheet(
   payload: QuoteSheetPayload,
+  idempotencyKey?: string,
 ): Promise<QuoteSheetRecord> {
-  const response = await apiPost(ENDPOINTS.QUOTE_SHEETS, sheetSchema, payload)
+  const response = await apiPost(
+    ENDPOINTS.QUOTE_SHEETS,
+    sheetSchema,
+    payload,
+    withIdempotencyKey(undefined, idempotencyKey),
+  )
   return normalizeSheet(response, 0)
 }
 
@@ -470,18 +485,25 @@ export async function updateQuoteSheet(
   id: EntityId,
   payload: QuoteSheetPayload,
   expectedVersion?: string,
+  idempotencyKey?: string,
 ): Promise<QuoteSheetRecord> {
   const response = await apiPut(
     ENDPOINTS.QUOTE_SHEET(id),
     sheetSchema,
     payload,
-    withConcurrencyHeaders(expectedVersion),
+    withIdempotencyKey(withConcurrencyHeaders(expectedVersion), idempotencyKey),
   )
   return normalizeSheet(response, 0)
 }
 
-export async function deleteQuoteSheet(id: EntityId): Promise<void> {
-  await apiDeleteNoContent(ENDPOINTS.QUOTE_SHEET(id))
+export async function deleteQuoteSheet(
+  id: EntityId,
+  idempotencyKey?: string,
+): Promise<void> {
+  await apiDeleteNoContent(
+    ENDPOINTS.QUOTE_SHEET(id),
+    withIdempotencyKey(undefined, idempotencyKey),
+  )
 }
 
 /** 仅保存表头字段(不传 brands/items), 携带 If-Match 版本。 */
@@ -489,12 +511,13 @@ export async function updateQuoteSheetHeader(
   id: EntityId,
   payload: QuoteSheetHeaderPayload,
   expectedVersion?: string,
+  idempotencyKey?: string,
 ): Promise<QuoteSheetRecord> {
   const response = await apiPut(
     ENDPOINTS.QUOTE_SHEET(id),
     sheetSchema,
     payload,
-    withConcurrencyHeaders(expectedVersion),
+    withIdempotencyKey(withConcurrencyHeaders(expectedVersion), idempotencyKey),
   )
   return normalizeSheet(response, 0)
 }
@@ -510,12 +533,13 @@ export async function addQuoteSheetItem(
   id: EntityId,
   payload: QuoteSheetItemPayload,
   expectedVersion?: string,
+  idempotencyKey?: string,
 ): Promise<QuoteSheetItemWriteResult> {
   const response = await apiPostResponse(
     ENDPOINTS.QUOTE_SHEET_ITEMS(id),
     itemSchema,
     payload,
-    withConcurrencyHeaders(expectedVersion),
+    withIdempotencyKey(withConcurrencyHeaders(expectedVersion), idempotencyKey),
   )
   return {
     item: normalizeItem(response.data, 'quoteSheetItem'),
@@ -531,12 +555,13 @@ export async function updateQuoteSheetItem(
   itemId: EntityId,
   payload: QuoteSheetItemPayload,
   expectedVersion?: string,
+  idempotencyKey?: string,
 ): Promise<QuoteSheetItemWriteResult> {
   const response = await apiPutResponse(
     ENDPOINTS.QUOTE_SHEET_ITEM(id, itemId),
     itemSchema,
     payload,
-    withConcurrencyHeaders(expectedVersion),
+    withIdempotencyKey(withConcurrencyHeaders(expectedVersion), idempotencyKey),
   )
   return {
     item: normalizeItem(response.data, 'quoteSheetItem'),
@@ -555,12 +580,13 @@ export async function reorderQuoteSheetItems(
   id: EntityId,
   itemIds: EntityId[],
   expectedVersion?: string,
+  idempotencyKey?: string,
 ): Promise<QuoteSheetRecord> {
   const response = await apiPut(
     ENDPOINTS.QUOTE_SHEET_ITEM_ORDER(id),
     sheetSchema,
     { itemIds },
-    withConcurrencyHeaders(expectedVersion),
+    withIdempotencyKey(withConcurrencyHeaders(expectedVersion), idempotencyKey),
   )
   return normalizeSheet(response, 0)
 }
@@ -570,10 +596,11 @@ export async function deleteQuoteSheetItem(
   id: EntityId,
   itemId: EntityId,
   expectedVersion?: string,
+  idempotencyKey?: string,
 ): Promise<QuoteSheetItemWriteResult> {
   const response = await apiDeleteResponse(
     ENDPOINTS.QUOTE_SHEET_ITEM(id, itemId),
-    withConcurrencyHeaders(expectedVersion),
+    withIdempotencyKey(withConcurrencyHeaders(expectedVersion), idempotencyKey),
   )
   return {
     ...(readResourceVersionHeader(response.headers)

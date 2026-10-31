@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiGet, apiPut } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId } from '@/types/entity-id'
@@ -99,18 +100,25 @@ export async function fetchQuoteProjectConfig(
   return normalizeConfig(response, normalized)
 }
 
-/** 保存项目级比价配置(整体替换, 幂等)。 */
+/**
+ * 保存项目级比价配置(整体替换, 幂等)。
+ *
+ * <p>后端 `V2QuoteProjectConfigController` 是类级 `@IdempotencyRequired`，PUT 必须带
+ * `X-Idempotency-Key`。`idempotencyKey` 可选：同一次用户动作内重试应传同一个 key，
+ * 不传则本次请求创建时生成一次（401 换令牌重试复用同一请求配置，key 不变）。</p>
+ */
 export async function saveQuoteProjectConfig(
   projectId: EntityId,
   payload: QuoteProjectConfigPayload,
   expectedVersion?: string,
+  idempotencyKey?: string,
 ): Promise<QuoteProjectConfigRecord> {
   const normalized = parseEntityId(projectId, 'projectId')
   const response = await apiPut(
     ENDPOINTS.QUOTE_PROJECT_CONFIG(normalized),
     configSchema,
     payload,
-    withConcurrencyHeaders(expectedVersion),
+    withIdempotencyKey(withConcurrencyHeaders(expectedVersion), idempotencyKey),
   )
   return normalizeConfig(response, normalized)
 }

@@ -85,4 +85,37 @@ describe('exportModuleRecordsByIds 按记录 id 集合导出', () => {
     expect(supportsRecordIdExport('material')).toBe(false)
     expect(supportsRecordIdExport('supplier')).toBe(false)
   })
+
+  /*
+   * 后端 V2ModuleExportController 是类级 @IdempotencyRequired：POST /module-exports
+   * 必须带 X-Idempotency-Key（缺头 422）。此前该调用只处理了文件名与错误抑制，没有幂等键。
+   */
+  it('按 id 集合导出带非空幂等键, 同一次动作内可复用', async () => {
+    await exportModuleRecordsByIds('sales-outbound', ['101'])
+    await exportModuleRecordsByIds(
+      'sales-outbound',
+      ['101'],
+      'export-action-key',
+    )
+
+    interface ExportRequestConfig {
+      headers?: Record<string, string>
+      suppressGlobalErrorStatuses?: readonly number[]
+    }
+    const configOf = (call?: unknown[]): ExportRequestConfig =>
+      (call?.[2] as ExportRequestConfig | undefined) ?? {}
+    const firstKey = configOf(downloadPostResponseMock.mock.calls[0]).headers?.[
+      'X-Idempotency-Key'
+    ]
+    expect(typeof firstKey).toBe('string')
+    expect((firstKey ?? '').length).toBeGreaterThan(0)
+    expect(
+      configOf(downloadPostResponseMock.mock.calls[1]).headers,
+    ).toMatchObject({ 'X-Idempotency-Key': 'export-action-key' })
+    // 既有的"由调用方呈现 400/403/404/422"策略保持不变
+    expect(
+      configOf(downloadPostResponseMock.mock.calls[0])
+        .suppressGlobalErrorStatuses,
+    ).toEqual([400, 403, 404, 422])
+  })
 })

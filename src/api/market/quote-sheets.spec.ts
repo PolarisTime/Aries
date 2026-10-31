@@ -39,6 +39,7 @@ import {
   deleteQuoteSheetItem,
   fetchPurchaseOrderTonnages,
   fetchQuoteSheets,
+  reorderQuoteSheetItems,
   updateQuoteSheet,
   updateQuoteSheetHeader,
   updateQuoteSheetItem,
@@ -580,5 +581,141 @@ describe('quote-sheets API', () => {
     }
     expect(config.params.purchaseOrderItemIds).toEqual(['301', '302'])
     expect(config.paramsSerializer).toEqual({ indexes: null })
+  })
+})
+
+/*
+ * 后端 V2QuoteSheetController 是类级 @IdempotencyRequired：POST/PUT/DELETE 缺
+ * X-Idempotency-Key 直接 422。这里逐个写接口断言"必须有非空 key"，并锁定
+ * "同一次用户动作内重试传同一个 key" 的复用语义。
+ */
+describe('报价单写请求的幂等键(X-Idempotency-Key)', () => {
+  const sheetId = '700500000000000130'
+  const itemId = '700500000000000140'
+  const sheetPayload = {
+    name: '批次 1',
+    orderDate: '2026-09-16',
+    refDate: '2026-09-16',
+    refPeriod: '上午',
+    lengthPremium: 30,
+    locked: false,
+    specQuantityLocked: false,
+    brands: [],
+    items: [],
+  }
+  const headerPayload = {
+    name: '批次 1',
+    orderDate: '2026-09-16',
+    refDate: '2026-09-16',
+    refPeriod: '上午',
+    lengthPremium: 30,
+    locked: false,
+    specQuantityLocked: false,
+  }
+  const itemPayload = {
+    rowType: 'PRODUCT' as const,
+    category: '螺纹钢',
+    material: 'HRB400',
+    spec: 12,
+    length: '9米',
+    prices: [],
+  }
+
+  function idempotencyKeyOf(config: unknown): string | undefined {
+    return (config as { headers?: Record<string, string> } | undefined)
+      ?.headers?.['X-Idempotency-Key']
+  }
+
+  beforeEach(() => {
+    apiGetMock.mockReset()
+    apiPutMock.mockReset()
+    apiPostMock.mockReset()
+    apiDeleteMock.mockReset()
+    apiPostResponseMock.mockReset()
+    apiPutResponseMock.mockReset()
+    apiDeleteResponseMock.mockReset()
+    apiPostMock.mockResolvedValue(page.content[0])
+    apiPutMock.mockResolvedValue(page.content[0])
+    apiDeleteMock.mockResolvedValue(undefined)
+    apiPostResponseMock.mockResolvedValue({
+      data: page.content[0].items[0],
+      headers: {},
+    })
+    apiPutResponseMock.mockResolvedValue({
+      data: page.content[0].items[0],
+      headers: {},
+    })
+    apiDeleteResponseMock.mockResolvedValue({ headers: {} })
+  })
+
+  it('创建/更新/表头/删除/行新增/行替换/排序/行删除 全部带非空幂等键', async () => {
+    await createQuoteSheet(sheetPayload)
+    await updateQuoteSheet(sheetId, sheetPayload, '1')
+    await updateQuoteSheetHeader(sheetId, headerPayload, '2')
+    await deleteQuoteSheet(sheetId)
+    await addQuoteSheetItem(sheetId, itemPayload, '3')
+    await updateQuoteSheetItem(sheetId, itemId, itemPayload, '4')
+    await reorderQuoteSheetItems(sheetId, [itemId], '5')
+    await deleteQuoteSheetItem(sheetId, itemId, '6')
+
+    const writeConfigs = [
+      apiPostMock.mock.calls[0][3],
+      apiPutMock.mock.calls[0][3],
+      apiPutMock.mock.calls[1][3],
+      apiDeleteMock.mock.calls[0][1],
+      apiPostResponseMock.mock.calls[0][3],
+      apiPutResponseMock.mock.calls[0][3],
+      apiPutMock.mock.calls[2][3],
+      apiDeleteResponseMock.mock.calls[0][1],
+    ]
+
+    expect(writeConfigs).toHaveLength(8)
+    for (const config of writeConfigs) {
+      const key = idempotencyKeyOf(config)
+      expect(typeof key).toBe('string')
+      expect(key?.length).toBeGreaterThan(0)
+      // 幂等键不应顺带抑制全局错误提示（422 仍要能看到"缺少幂等键"）
+      expect(
+        (config as { suppressGlobalErrorStatuses?: readonly number[] })
+          .suppressGlobalErrorStatuses ?? [],
+      ).not.toContain(422)
+    }
+  })
+
+  it('调用方传入的幂等键被原样复用(同一次用户动作内重试不换 key)', async () => {
+    await updateQuoteSheet(sheetId, sheetPayload, '1', 'retry-action-key')
+    await updateQuoteSheet(sheetId, sheetPayload, '2', 'retry-action-key')
+
+    expect(idempotencyKeyOf(apiPutMock.mock.calls[0][3])).toBe(
+      'retry-action-key',
+    )
+    expect(idempotencyKeyOf(apiPutMock.mock.calls[1][3])).toBe(
+      'retry-action-key',
+    )
+  })
+
+  it('未显式传 key 时由请求创建期生成, 不同请求各自独立', async () => {
+    await updateQuoteSheet(sheetId, sheetPayload, '1')
+    await updateQuoteSheet(sheetId, sheetPayload, '2')
+
+    const first = idempotencyKeyOf(apiPutMock.mock.calls[0][3])
+    const second = idempotencyKeyOf(apiPutMock.mock.calls[1][3])
+    expect(first).toBeTruthy()
+    expect(second).toBeTruthy()
+    expect(first).not.toBe(second)
+  })
+
+  it('幂等键与并发版本头/全局错误抑制配置共存', async () => {
+    await updateQuoteSheet(sheetId, sheetPayload, '3', 'action-key')
+
+    const config = apiPutMock.mock.calls[0][3] as {
+      headers: Record<string, string>
+      suppressGlobalErrorStatuses?: readonly number[]
+    }
+    expect(config.headers['X-Idempotency-Key']).toBe('action-key')
+    expect(config.headers['X-Resource-Version']).toBe('3')
+    expect(config.suppressGlobalErrorStatuses).toEqual(
+      expect.arrayContaining([409, 412, 428]),
+    )
   })
 })

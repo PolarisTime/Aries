@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiDeleteNoContent, apiPut } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
@@ -55,17 +56,24 @@ function normalize(
   }
 }
 
+/*
+ * 后端 `V2PurchaseOrderItemController` 为类级 `@IdempotencyRequired`：PUT/DELETE 写请求
+ * 必须带 `X-Idempotency-Key`，否则 422。`idempotencyKey` 可选：同一次用户动作内重试传同一个
+ * key，不传则本次请求创建时生成一次（401 换令牌重试复用同一请求配置，key 不变）。
+ */
+
 /** 标记「已开完」(PUT)。 */
 export async function markPurchaseOrderItemIssuedDone(
   itemId: EntityId,
   signal?: AbortSignal,
+  idempotencyKey?: string,
 ): Promise<PurchaseOrderItemIssuedDoneRecord> {
   const id = parseEntityId(itemId, 'purchaseOrderItemId')
   const raw = await apiPut(
     ENDPOINTS.PURCHASE_ORDER_ITEM_ISSUED_DONE(id),
     issuedDoneSchema,
     { issuedDone: true },
-    signal ? { signal } : {},
+    withIdempotencyKey(signal ? { signal } : {}, idempotencyKey),
   )
   return normalize(raw, `purchaseOrderItemIssuedDone[${id}]`)
 }
@@ -74,12 +82,13 @@ export async function markPurchaseOrderItemIssuedDone(
 export async function clearPurchaseOrderItemIssuedDone(
   itemId: EntityId,
   signal?: AbortSignal,
+  idempotencyKey?: string,
 ): Promise<void> {
   await apiDeleteNoContent(
     ENDPOINTS.PURCHASE_ORDER_ITEM_ISSUED_DONE(
       parseEntityId(itemId, 'purchaseOrderItemId'),
     ),
-    signal ? { signal } : {},
+    withIdempotencyKey(signal ? { signal } : {}, idempotencyKey),
   )
 }
 
@@ -92,11 +101,12 @@ export async function setPurchaseOrderItemIssuedDone(
   itemId: EntityId,
   issuedDone: boolean,
   signal?: AbortSignal,
+  idempotencyKey?: string,
 ): Promise<PurchaseOrderItemIssuedDoneRecord> {
   const id = parseEntityId(itemId, 'purchaseOrderItemId')
   if (!issuedDone) {
-    await clearPurchaseOrderItemIssuedDone(id, signal)
+    await clearPurchaseOrderItemIssuedDone(id, signal, idempotencyKey)
     return { purchaseOrderItemId: id, issuedDone: false }
   }
-  return markPurchaseOrderItemIssuedDone(id, signal)
+  return markPurchaseOrderItemIssuedDone(id, signal, idempotencyKey)
 }

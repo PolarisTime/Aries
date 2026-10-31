@@ -47,18 +47,26 @@ export function supportsRecordIdExport(module: string): boolean {
  *
  * <p>只提交勾选的雪花 ID 字符串，不做任何数值转换：`recordIds` 为十进制字符串数组，
  * 与后端 DTO 的 `List<Long>` + `SnowflakeIdStringDeserializer` 契约一致。</p>
+ *
+ * <p>后端 `V2ModuleExportController` 是类级 `@IdempotencyRequired`，POST 必须带
+ * `X-Idempotency-Key`；`idempotencyKey` 可选，同一次用户动作内重试传同一个 key，
+ * 不传则本次请求创建时生成一次。</p>
  */
 export async function exportModuleRecordsByIds(
   module: string,
   recordIds: string[],
+  idempotencyKey?: string,
 ): Promise<void> {
   const response = await downloadPostResponse(
     ENDPOINTS.MODULE_EXPORTS,
     { moduleKey: module, recordIds },
-    {
-      responseType: 'blob',
-      suppressGlobalErrorStatuses: RECORD_ID_EXPORT_SUPPRESSED_STATUSES,
-    },
+    withIdempotencyKey(
+      {
+        responseType: 'blob',
+        suppressGlobalErrorStatuses: RECORD_ID_EXPORT_SUPPRESSED_STATUSES,
+      },
+      idempotencyKey,
+    ),
   )
   downloadBlob(
     response.data,

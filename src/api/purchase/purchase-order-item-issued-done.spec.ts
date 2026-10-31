@@ -83,4 +83,56 @@ describe('采购订单明细行「已开完」手动标记 API', () => {
     expect(apiPutMock).not.toHaveBeenCalled()
     expect(apiDeleteMock).not.toHaveBeenCalled()
   })
+
+  /*
+   * 后端 V2PurchaseOrderItemController 是类级 @IdempotencyRequired：
+   * PUT 与 DELETE 都必须带 X-Idempotency-Key，缺头 422。
+   */
+  it('PUT 与 DELETE 都带非空幂等键, 且显式 key 可复用', async () => {
+    apiPutMock.mockResolvedValue({
+      purchaseOrderItemId: '301',
+      issuedDone: true,
+    })
+    apiDeleteMock.mockResolvedValue(undefined)
+
+    await markPurchaseOrderItemIssuedDone('301', undefined, 'issued-action-key')
+    await clearPurchaseOrderItemIssuedDone(
+      '301',
+      undefined,
+      'issued-action-key',
+    )
+
+    const putConfig = apiPutMock.mock.calls[0][3] as {
+      headers?: Record<string, string>
+    }
+    const deleteConfig = apiDeleteMock.mock.calls[0][1] as {
+      headers?: Record<string, string>
+    }
+    expect(putConfig.headers?.['X-Idempotency-Key']).toBe('issued-action-key')
+    expect(deleteConfig.headers?.['X-Idempotency-Key']).toBe(
+      'issued-action-key',
+    )
+  })
+
+  it('未显式传 key 时 PUT/DELETE 各自生成非空幂等键', async () => {
+    apiPutMock.mockResolvedValue({
+      purchaseOrderItemId: '301',
+      issuedDone: true,
+    })
+    apiDeleteMock.mockResolvedValue(undefined)
+
+    await setPurchaseOrderItemIssuedDone('301', true)
+    await setPurchaseOrderItemIssuedDone('301', false)
+
+    const putKey = (
+      apiPutMock.mock.calls[0][3] as { headers?: Record<string, string> }
+    ).headers?.['X-Idempotency-Key']
+    const deleteKey = (
+      apiDeleteMock.mock.calls[0][1] as { headers?: Record<string, string> }
+    ).headers?.['X-Idempotency-Key']
+    expect(typeof putKey).toBe('string')
+    expect((putKey ?? '').length).toBeGreaterThan(0)
+    expect(typeof deleteKey).toBe('string')
+    expect((deleteKey ?? '').length).toBeGreaterThan(0)
+  })
 })
