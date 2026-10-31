@@ -111,7 +111,7 @@ describe('useParentSelectorConfirm', () => {
 
     await handleImportRecords(rows)
 
-    expect(messageMock.error).toHaveBeenCalledWith('modules.importParentFailed')
+    expect(messageMock.error).toHaveBeenCalledWith('common.importParentFailed')
     expect(onSelect).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
   })

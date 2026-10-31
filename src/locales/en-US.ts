@@ -37,6 +37,13 @@ export const enUS = {
     runtimeHint:
       'Refresh the page and try again; contact support if the problem persists',
     runtimeTitle: 'Page failed to render',
+    /** 412/428: resource version precondition failed (concurrent save / edit lock). */
+    preconditionTitle: 'The data was changed by someone else',
+    preconditionHint:
+      'Refresh the page to load the latest data, then try again',
+    /** 429: rate limited or export concurrency gate — wait rather than refresh. */
+    rateLimitedTitle: 'Too many requests',
+    rateLimitedHint: 'Try again shortly instead of clicking repeatedly',
     errorSummary: 'Error summary',
     copyFailed: 'Copy failed. Please copy manually',
   },
@@ -324,6 +331,10 @@ export const enUS = {
     detail: 'Detail',
     loading: 'Loading...',
     loadingIndicatorAnnouncing: 'Loading data…',
+    /** Retry button copy in error states (same meaning as error.retry). */
+    retry: 'Retry',
+    /** Fallback copy when data loading fails and no backend message is available. */
+    loadFailed: 'Failed to load',
     noData: 'No Data',
     total: '{{count}} total',
     selected: '{{count}} selected',
@@ -444,10 +455,6 @@ export const enUS = {
       material: 'Material',
       spec: 'Spec',
       length: 'Length',
-      viewModeBrands: 'Brands as columns',
-      viewModeSpecs: 'Specs across columns',
-      materialColumn: 'Material',
-      specColumn: 'Spec',
       unit: 'Unit',
       warehouse: 'Warehouse',
       batchNo: 'Batch No.',
@@ -710,10 +717,6 @@ export const enUS = {
       splitItemMenuLabel: 'Split quantity…',
       /** Accessible name of the item row context menu */
       rowContextMenuLabel: 'Actions for the "{{name}}" item row',
-      /** Accessible name for the data grid (distinguishes main vs detail tables) */
-      gridLabel: '{{title}} list',
-      /** Screen-reader column name for the detail-expand column */
-      expandDetailColumn: 'Expand detail',
       /** Accessible name of the group header context menu */
       groupContextMenuLabel: 'Actions for group {{index}}',
       mergeItem: 'Merge split',
@@ -1174,6 +1177,10 @@ export const enUS = {
       rowContextMenuLabel: 'Actions for the "{{title}}" row',
       /** Group title for batch actions appended to the row context menu (multi-select only) */
       rowContextMenuBatchGroup: 'Batch actions ({{count}} selected)',
+      /** Accessible name of list grids: screen readers use it to tell the main table from detail tables (WCAG 1.3.1) */
+      gridLabel: '{{title}} list',
+      /** Screen-reader column name for the detail-expand column (header is visually empty) */
+      expandDetailColumn: 'Expand detail',
       noData: 'No data',
       sequence: 'No.',
       /* Header of the trailing row-actions column: the visible entry to the row menu.
@@ -2324,6 +2331,10 @@ export const enUS = {
   },
   layouts: {
     userMenu: {
+      /** Accessible name of the user-menu trigger (icon-only button). */
+      open: 'Open user menu',
+      /** Top-nav avatar button shows a user name next to it; include it in the name. */
+      openFor: 'Open the user menu for {{name}}',
       personalSettings: 'Personal Settings',
       logout: 'Sign Out',
     },
@@ -2380,6 +2391,9 @@ export const enUS = {
     },
     sideNav: {
       root: 'Business Center',
+      /** Accessible name of the sidebar collapse toggle; flips with the state. */
+      expandNavigation: 'Expand navigation',
+      collapseNavigation: 'Collapse navigation',
       apiOnline: 'API Online',
       apiOffline: 'API Offline',
     },
@@ -2902,6 +2916,10 @@ export const enUS = {
       material: 'Material',
       specNo: 'Size',
       length: 'Length',
+      viewModeBrands: 'Brands as columns',
+      viewModeSpecs: 'Specs across columns',
+      materialColumn: 'Material',
+      specColumn: 'Spec',
       basePriceRuleTitle: 'Base price & premiums',
       basePriceRuleMenu: 'Base price & premiums…',
       basePriceRuleHint:

@@ -15,8 +15,9 @@ import { QuoteRegionPage } from './QuoteRegionPage'
  * 仍可用（页面定义 view 指向本宿主页，hiddenInMenu + activeMenuKey:'/project'），
  * 默认选中「报价地区」标签。</p>
  *
- * <p>项目资料标签渲染通用列表页；`ProjectPage`（master-archive 下的旧专用页）自
- * 接入通用列表页后已无加载器引用，因此不在这里复用，避免把两套实现同时搬上菜单。</p>
+ * <p>项目资料标签渲染通用列表页。迁移到通用列表页之前的专用页实现
+ * （`src/views/master-archive/`）已整目录删除，不要复活：本宿主页 + 通用列表页配置
+ * 是唯一实现。</p>
  */
 const PROJECT_HOST_TABS: readonly MasterHostTabSpec[] = [
   { key: 'project', pageKey: 'project' },

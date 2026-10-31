@@ -72,16 +72,14 @@ export function useParentSelectorConfirm({
         candidateQueryType,
       )
       if (resolvedRecords.some(isDeletedModuleRecord)) {
-        message.error(t('modules.importParentFailed'))
+        message.error(t('common.importParentFailed'))
         return
       }
       onSelect(resolvedRecords)
       onClose()
     } catch (error) {
       message.error(
-        error instanceof Error
-          ? error.message
-          : t('modules.importParentFailed'),
+        error instanceof Error ? error.message : t('common.importParentFailed'),
       )
     }
   }

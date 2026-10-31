@@ -67,6 +67,28 @@ export function createSalesReturn(
 }
 
 /**
+ * 来源候选请求体 → 统一保存通道的编辑草稿。
+ *
+ * <p>此前这里用 `as unknown as MainFlowEditorDraft<...>` 强转，等于把「后端保存契约」
+ * 与「编辑器草稿」之间的差异全部跳过：请求体字段白名单/ID 序列化的前置假设无从校验，
+ * 新增/改名字段也不会被 tsc 发现。现在改为显式映射，让两侧类型真正对上。</p>
+ *
+ * <p>明细行的 `id` 统一给空串：来源出库明细 id 不是本单明细的持久化 id，直接透传会被
+ * 当成「本单已有的明细 id」写进请求；空串经 `toPersistedLineItemId` 判定为非持久化 id，
+ * 序列化时被丢弃，语义就是新增行。</p>
+ */
+function toSalesReturnEditorDraft(
+  payload: SalesReturnSaveRequest,
+): MainFlowEditorDraft<typeof MODULE_KEY> {
+  return {
+    // 逐字段透传：草稿类型由同一份保存契约派生，字段类型对不上时 tsc 会报错。
+    ...payload,
+    status: payload.status ?? undefined,
+    items: payload.items.map((item) => ({ ...item, id: '' })),
+  }
+}
+
+/**
  * 从销售出库来源候选直接创建退货草稿；请求体已按来源契约组装，
  * 经由统一保存通道完成字段白名单与实体 ID 序列化。
  */
@@ -76,7 +98,7 @@ export function createSalesReturnFromSource(
 ): Promise<SalesReturn> {
   return saveBusinessModule(
     MODULE_KEY,
-    payload as unknown as MainFlowEditorDraft<typeof MODULE_KEY>,
+    toSalesReturnEditorDraft(payload),
     idempotencyKey,
   )
 }

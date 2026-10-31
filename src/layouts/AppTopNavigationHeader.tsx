@@ -48,7 +48,7 @@ export function AppTopNavigationHeader({
         <button
           type="button"
           className="app-top-brand"
-          aria-label={t('modules.openPages.workbench')}
+          aria-label={t('hooks.openPages.workbench')}
           onClick={onDashboardClick}
         >
           <span className="app-top-brand-mark">{topBrandMark}</span>

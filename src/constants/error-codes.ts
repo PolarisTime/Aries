@@ -15,6 +15,16 @@ export const ERROR_CODE = {
   PAYLOAD_TOO_LARGE: 4130,
   UNSUPPORTED_MEDIA_TYPE: 4150,
   BUSINESS_ERROR: 4220,
+  /**
+   * 资源版本前置条件不满足（HTTP 412）：调用方带的 `X-Resource-Version` 已过期，
+   * 后端由 `ResourceVersionPrecondition` 在并发保存/锁竞争时抛出。引导是「刷新后重试」，
+   * 不是「稍后重试」，与 {@link TOO_MANY_REQUESTS} 区分。
+   */
+  PRECONDITION_FAILED: 4120,
+  /** 缺少资源版本前置条件（HTTP 428）：写请求必须带 `X-Resource-Version`。 */
+  PRECONDITION_REQUIRED: 4280,
+  /** 请求过于频繁（HTTP 429）：限流或导出并发闸门拒绝。引导是「稍后重试」。 */
+  TOO_MANY_REQUESTS: 4290,
   /** 依赖服务不可用（HTTP 503），例如 Redis 不可用。 */
   SERVICE_UNAVAILABLE: 5030,
   INTERNAL_ERROR: 5000,

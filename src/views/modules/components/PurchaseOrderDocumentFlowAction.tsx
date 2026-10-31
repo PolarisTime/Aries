@@ -60,7 +60,7 @@ export function PurchaseOrderDocumentFlowAction({ selectedRows }: Props) {
 
   const disabledReason = canOpen
     ? undefined
-    : t('modules.toolbarActions.singleSelectionOnly', {
+    : t('hooks.toolbarActions.singleSelectionOnly', {
         action: t('documentFlow.title'),
       })
 

@@ -2,9 +2,15 @@
  * 错误分类与展示文案的共享模块：路由 ErrorView 与 AppErrorBoundary
  * 使用同一套分类规则（403 / 网络 / 500 / 运行时）与恢复建议文案，
  * i18n 复用 errorBoundary.* 既有键。
+ *
+ * <p>另有三个「有明确恢复动作」的窄分支，文案与 403/500 的引导刻意不同：
+ * 412/428（版本前置条件，引导刷新后重试）、429（限流，引导稍后重试）、
+ * 503（依赖服务不可用，与 500 的代码缺陷区分）。</p>
  */
 import i18next from 'i18next'
 import { readRequestError } from '@/api/core/request-errors'
+import { ERROR_CODE } from '@/constants/error-codes'
+import { HTTP_STATUS } from '@/constants/http-status'
 
 export type ErrorCategory = 'forbidden' | 'network' | 'runtime'
 export type ErrorResultStatus = '403' | '500' | 'warning' | 'error'
@@ -102,7 +108,40 @@ export function resolveErrorPresentation(error: unknown): ErrorPresentation {
     }
   }
 
-  if (status === 500 || code === 500 || msg.includes('internal server')) {
+  // 版本前置条件类（412/428）：并发保存/锁竞争，恢复动作是「刷新后重试」。
+  if (
+    status === HTTP_STATUS.PRECONDITION_FAILED ||
+    status === HTTP_STATUS.PRECONDITION_REQUIRED
+  ) {
+    return {
+      category,
+      status: 'warning',
+      title: i18next.t('errorBoundary.preconditionTitle'),
+      description: message,
+      hint: i18next.t('errorBoundary.preconditionHint'),
+    }
+  }
+
+  // 限流（429）：恢复动作是「稍后重试」，与 412 的「刷新后重试」区分。
+  if (status === HTTP_STATUS.TOO_MANY_REQUESTS) {
+    return {
+      category,
+      status: 'warning',
+      title: i18next.t('errorBoundary.rateLimitedTitle'),
+      description: message,
+      hint: i18next.t('errorBoundary.rateLimitedHint'),
+    }
+  }
+
+  if (
+    status === HTTP_STATUS.INTERNAL_SERVER_ERROR ||
+    status === HTTP_STATUS.SERVICE_UNAVAILABLE ||
+    // 兼容只带业务码的错误：500（历史裸值）与 5000/5030（后端 ErrorCode）
+    code === HTTP_STATUS.INTERNAL_SERVER_ERROR ||
+    code === ERROR_CODE.INTERNAL_ERROR ||
+    code === ERROR_CODE.SERVICE_UNAVAILABLE ||
+    msg.includes('internal server')
+  ) {
     return {
       category,
       status: '500',

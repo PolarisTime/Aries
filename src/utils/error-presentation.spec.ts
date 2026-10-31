@@ -8,6 +8,10 @@ const I18N_TEXTS: Record<string, string> = {
   'errorBoundary.serverBusy': '服务器繁忙，请稍后重试',
   'errorBoundary.runtimeTitle': '页面渲染出错',
   'errorBoundary.runtimeHint': '请刷新页面重试；若问题持续请联系技术支持',
+  'errorBoundary.preconditionTitle': '数据已被他人修改',
+  'errorBoundary.preconditionHint': '请刷新页面获取最新数据后重试',
+  'errorBoundary.rateLimitedTitle': '请求过于频繁',
+  'errorBoundary.rateLimitedHint': '请稍后重试，不要连续点击',
 }
 
 vi.mock('i18next', () => ({
@@ -92,6 +96,36 @@ describe('error-presentation', () => {
     expect(
       resolveErrorPresentation(new Error('Internal Server Error')).status,
     ).toBe('500')
+  })
+
+  it('412/428 展示「刷新后重试」的前置条件引导', () => {
+    for (const status of [412, 428]) {
+      const error = new Error('version precondition') as RequestError
+      error.status = status
+      const presentation = resolveErrorPresentation(error)
+      expect(presentation.status, `status=${status}`).toBe('warning')
+      expect(presentation.title).toBe('数据已被他人修改')
+      expect(presentation.hint).toBe('请刷新页面获取最新数据后重试')
+    }
+  })
+
+  it('429 展示「稍后重试」的限流引导（不是刷新页面）', () => {
+    const error = new Error('rate limited') as RequestError
+    error.status = 429
+    const presentation = resolveErrorPresentation(error)
+    expect(presentation.status).toBe('warning')
+    expect(presentation.title).toBe('请求过于频繁')
+    expect(presentation.hint).toBe('请稍后重试，不要连续点击')
+  })
+
+  it('503 与 500 同样展示服务器繁忙文案（依赖服务不可用，不是代码缺陷）', () => {
+    const byStatus = new Error('unavailable') as RequestError
+    byStatus.status = 503
+    expect(resolveErrorPresentation(byStatus).status).toBe('500')
+
+    const byCode = new Error('unavailable') as RequestError
+    byCode.code = 5030
+    expect(resolveErrorPresentation(byCode).status).toBe('500')
   })
 
   it('默认分类展示 error 图标与运行时标题', () => {

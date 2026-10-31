@@ -35,6 +35,12 @@ export const zhCN = {
     forbiddenHint: '请联系管理员开通相关权限',
     runtimeHint: '请刷新页面重试；若问题持续请联系技术支持',
     runtimeTitle: '页面渲染出错',
+    /** 412/428：资源版本前置条件不满足（多人同时保存、编辑锁冲突）。 */
+    preconditionTitle: '数据已被他人修改',
+    preconditionHint: '请刷新页面获取最新数据后重试',
+    /** 429：限流或导出并发闸门拒绝，恢复动作是等待而不是刷新。 */
+    rateLimitedTitle: '请求过于频繁',
+    rateLimitedHint: '请稍后重试，不要连续点击',
     errorSummary: '错误摘要',
     copyFailed: '复制失败，请手动复制',
   },
@@ -320,6 +326,10 @@ export const zhCN = {
     detail: '详情',
     loading: '加载中...',
     loadingIndicatorAnnouncing: '正在加载数据…',
+    /** 错误态里的重试按钮文案（与 error.retry 同义，供通用错误块复用）。 */
+    retry: '重试',
+    /** 数据加载失败的兜底文案：后端没有给出可读消息时显示。 */
+    loadFailed: '加载失败',
     noData: '暂无数据',
     total: '共 {{count}} 条',
     selected: '已选择 {{count}} 项',
@@ -2279,6 +2289,10 @@ export const zhCN = {
   },
   layouts: {
     userMenu: {
+      /** 用户菜单触发按钮的可访问名（纯图标按钮，读屏只能靠它）。 */
+      open: '打开用户菜单',
+      /** 顶部导航的头像按钮旁有姓名，可访问名带上姓名以便区分。 */
+      openFor: '打开 {{name}} 的用户菜单',
       personalSettings: '个人设置',
       logout: '退出登录',
     },
@@ -2333,6 +2347,9 @@ export const zhCN = {
     },
     sideNav: {
       root: '业务中心',
+      /** 侧栏折叠按钮的可访问名：随折叠状态切换，图标按钮必须有文案。 */
+      expandNavigation: '展开导航',
+      collapseNavigation: '折叠导航',
       apiOnline: 'API 正常',
       apiOffline: 'API 离线',
     },

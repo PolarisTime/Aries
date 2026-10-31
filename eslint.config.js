@@ -72,6 +72,11 @@ export default tseslint.config(
       // 第三方库类型限制 (Antd v6 / Axios / React Query v5)
       // 这些库的泛型推断返回 any，无法在业务层修复。已通过 src/lib/ 包装器隔离。
       // — 2026-05, Claude Code
+      //
+      // 2026-10-31 评估后尝试把作用域收窄到 src/lib/**（其余目录恢复 error），
+      // 实测全仓新增 250 条 error（生产代码 97 / 测试 153），远超本次修复范围，
+      // 故暂维持全项目关闭；收敛计划与量化数据见
+      // .local/quality-2026-10-31/fix-aries-p1.md。
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',

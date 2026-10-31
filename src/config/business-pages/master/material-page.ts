@@ -24,9 +24,11 @@ import {
  * `business-page-loader.ts` 的 `masterMaterialPageConfigs` → 本文件的
  * `materialsPageConfig`。因此表单字段改动必须落在这里才会出现在界面上。</p>
  *
- * <p>`src/views/master-data/MaterialPage.tsx` + `material-page-fields.ts` 是迁移到通用列表页
- * 之前的遗留实现，已无注册表/加载器引用（仅剩自身 spec 引用），**不是**权威来源；
- * 若两者口径不一致，以本文件为准。</p>
+ * <p><strong>旧实现已删除，不要复活</strong>：`src/views/master-data/MaterialPage.tsx`、
+ * `material-page-fields.ts`、`MaterialCategoriesPage.tsx` 是迁移到通用列表页之前的遗留实现，
+ * 已整组删除（其中一次 2026-10-30 的表单 bugfix 落在这份死实现上，对线上零效果）。
+ * 本文件是唯一权威来源，表单字段/可见性规则只有这一处，对应断言见
+ * `material-page.test.ts`。</p>
  */
 export const materialsPageConfig: ModulePageConfig = {
   key: 'material',

@@ -20,7 +20,7 @@ import { ValueAliasPage } from './ValueAliasPage'
  * /length-premium、/value-alias 深链不 404，并默认选中对应标签。</p>
  *
  * <p>标签内容的取舍：材料类别在 5e695529 之后已由通用列表页渲染
- * （`MaterialCategoriesPage` 是无人引用的旧页面），所以这里继续渲染通用列表页，
+ * （旧专用页 `MaterialCategoriesPage` 已删除），所以这里继续渲染通用列表页，
  * 只把 pageDef 换成 material-categories，保证合并前后列表的列、工具栏与编辑能力不变。</p>
  */
 const MATERIAL_HOST_TABS: readonly MasterHostTabSpec[] = [
