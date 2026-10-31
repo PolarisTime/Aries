@@ -13,6 +13,7 @@ import { SaveResultFieldSummary } from './SaveResultFieldSummary'
 import { SaveResultItemGroups } from './SaveResultItemGroups'
 import {
   buildSaveResultItemColumns,
+  isMasterDataModuleKey,
   NEXT_MODULE_PATHS,
   resolveSaveResultActions,
   resolveSaveResultItems,
@@ -77,6 +78,7 @@ export function SaveResultOverlay<Key extends ModuleKey>({
     isSuccess,
   })
 
+  const isMasterData = isMasterDataModuleKey(moduleKey)
   const title = resolveSaveResultTitle({
     config,
     isConflict,
@@ -85,6 +87,7 @@ export function SaveResultOverlay<Key extends ModuleKey>({
     action: saveResult.action,
     auditActionKind: saveResult.auditActionKind,
     documentNo: saveResult.documentNo,
+    isMasterData,
   })
 
   return (
@@ -113,6 +116,7 @@ export function SaveResultOverlay<Key extends ModuleKey>({
           fallback: saveResult.message,
           isSuccess,
           t,
+          isMasterData,
         })}
         traceId={saveResult.traceId}
         extra={

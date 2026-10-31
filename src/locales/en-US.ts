@@ -840,6 +840,8 @@ export const enUS = {
       success: 'Saved Successfully',
       pageSuccess: '{{title}} saved successfully',
       // The three submission actions must be distinguishable in the receipt.
+      // Master data has no draft/audit flow: saving takes effect immediately.
+      saved: '{{title}} {{no}} saved',
       savedAsDraft: '{{title}} {{no}} saved as draft',
       // The action word comes from the same source as the editor primary button.
       savedAndAction: '{{title}} {{no}} saved & {{action}}',

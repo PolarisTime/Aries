@@ -1,5 +1,6 @@
 import type { TableColumnsType } from 'antd'
 import type { TFunction } from 'i18next'
+import { masterModuleEndpointContracts } from '@/api/contracts/module-contracts-master'
 import {
   resolveStatusChangeActionLabelKey,
   type StatusChangeActionKind,
@@ -55,6 +56,18 @@ export function buildSaveResultItemColumns(
   )
 }
 
+/**
+ * 是否为主数据模块（商品 / 商品类别 / 客户 / 供应商 / 项目 / 物流商 / 仓库 …）。
+ *
+ * <p>主数据**没有草稿与审核流程**：保存即生效，不存在"尚未提交审核"这个后续阶段。
+ * 回执若套用单据文案（「已保存为草稿，尚未提交审核」），用户会以为保存没真正完成 ——
+ * 这正是「选了经营品牌保存后像是没存上」的来源。判据取端点契约表：主数据模块在那里
+ * 逐一登记，业务单据不在。</p>
+ */
+export function isMasterDataModuleKey(moduleKey: string): boolean {
+  return Object.hasOwn(masterModuleEndpointContracts, moduleKey)
+}
+
 export interface SaveResultTitleInput {
   config: ModulePageConfig
   isConflict: boolean
@@ -70,6 +83,8 @@ export interface SaveResultTitleInput {
   auditActionKind?: StatusChangeActionKind
   /** 保存后的主单号，用于文案里点明「刚存的是哪一张」。 */
   documentNo?: string
+  /** 主数据模块：没有草稿/审核流程，标题用「已保存」而不是「已保存为草稿」。 */
+  isMasterData?: boolean
 }
 
 /**
@@ -91,6 +106,7 @@ export function resolveSaveResultTitle({
   action,
   auditActionKind,
   documentNo,
+  isMasterData,
 }: SaveResultTitleInput) {
   if (isSuccess) {
     const params = { title: config.title, no: documentNo || '' }
@@ -107,7 +123,9 @@ export function resolveSaveResultTitle({
       return t('modules.saveResult.verifiedAndCompleted', params)
     }
     if (action === 'save') {
-      return t('modules.saveResult.savedAsDraft', params)
+      return isMasterData
+        ? t('modules.saveResult.saved', params)
+        : t('modules.saveResult.savedAsDraft', params)
     }
     return t('modules.saveResult.pageSuccess', { title: config.title })
   }
@@ -126,6 +144,8 @@ export interface SaveResultSubtitleInput {
   fallback: string
   isSuccess: boolean
   t: TFunction
+  /** 主数据模块：没有「尚未提交审核」这一阶段，副标题退回通用成功文案。 */
+  isMasterData?: boolean
 }
 
 /**
@@ -142,12 +162,14 @@ export function resolveSaveResultSubtitle({
   fallback,
   isSuccess,
   t,
+  isMasterData,
 }: SaveResultSubtitleInput): string {
   if (!isSuccess) {
     return fallback
   }
   if (action === 'save') {
-    return t('modules.saveResult.subtitleDraft')
+    // 主数据保存即生效：没有"尚未提交审核"，退回「新增成功 / 编辑成功」。
+    return isMasterData ? fallback : t('modules.saveResult.subtitleDraft')
   }
   if (action === 'save-and-audit') {
     return t('modules.saveResult.subtitleSavedAndAction', {
