@@ -71,8 +71,16 @@
 /* 连线上只画数量(件/吨); 类型文字改到 <title>, 避免汇聚干线上重复 */
 .document-flow-edge-metric {
   font-size: 11px;
-  fill: var(--text-placeholder);
+  fill: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
   font-variant-numeric: tabular-nums;
+  /*
+   * 白色描边打底（先描边后填充）：标签可能压在连线上，没有底色会和灰线糊在一起；
+   * 用主题背景色而非固定白色，暗色主题下同样可读。
+   */
+  paint-order: stroke;
+  stroke: var(--theme-surface, #fff);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 
 /* 列头「单据类型 · N 张」: 与节点同列、随画布横向滚动, 顶部固定一条带 */

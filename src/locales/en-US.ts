@@ -397,6 +397,8 @@ export const enUS = {
     prevPage: 'Previous',
     nextPage: 'Next',
     importParentFailed: 'Failed to import parent document',
+    parentDocumentLoadFailed:
+      'Failed to load document {{no}}; it may have been deleted or be inaccessible',
     logisticsChain: 'Logistics',
     logisticsChainDesc:
       'Logistics documents can flow independently or be embedded in procurement and sales chains.',
@@ -1147,6 +1149,7 @@ export const enUS = {
       deleteSelected: 'Delete Selected',
       duplicateItem: 'Duplicate Row',
       duplicateItemAriaLabel: 'Duplicate row: {{label}}',
+      importedItemNotDuplicable: 'Imported rows cannot be duplicated',
       autoSortItems: 'Auto Sort',
       autoSortBySourceNo: 'By bill number',
       autoSortByBillTime: 'Sort by date',

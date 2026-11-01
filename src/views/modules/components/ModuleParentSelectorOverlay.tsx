@@ -23,14 +23,35 @@ interface Props extends ModuleParentSelectorOverlayContentProps {
   open: boolean
 }
 
+/*
+ * 行内“不该触发整行选择/双击直导”的交互区：勾选列、已选卡片删除、明细展开按钮。
+ *
+ * <p>明细按钮自己 stopPropagation 了 click/dblclick，这里再兜一层：读屏/键盘路径下
+ * 事件 target 可能落在按钮内部的 svg/span 上，`.closest()` 判断比逐处 stop 更稳。</p>
+ */
 const PARENT_SELECTOR_ROW_EXCLUSION_SELECTOR =
-  '.ant-table-selection-column, .parent-selector-selected-chip-remove'
+  '.ant-table-selection-column, .parent-selector-selected-chip-remove, .parent-selector-detail-toggle-btn'
 
 function shouldIgnoreRowInteraction(target: EventTarget | null) {
   return (
     target instanceof Element &&
     Boolean(target.closest(PARENT_SELECTOR_ROW_EXCLUSION_SELECTOR))
   )
+}
+
+/**
+ * 候选弹层的分页档位：固定档位 + 运行时默认 pageSize（去重升序）。
+ *
+ * <p>弹层首次渲染会把 pageSize 对齐到运行时配置（`useDefaultPageSize`，可能为 10/20），
+ * 若选项里没有该值，antd 的 size changer 会显示一个不在选项中的当前值。</p>
+ */
+export function resolveParentSelectorPageSizeOptions(
+  currentPageSize: number,
+): string[] {
+  return Array.from(new Set([15, 30, 50, currentPageSize]))
+    .filter((size) => Number.isFinite(size) && size > 0)
+    .sort((left, right) => left - right)
+    .map(String)
 }
 
 interface ParentSelectorSelectedPanelProps {
@@ -322,7 +343,7 @@ function ParentSelectorTable({
         pageSize,
         total,
         showSizeChanger: true,
-        pageSizeOptions: ['15', '30', '50'],
+        pageSizeOptions: resolveParentSelectorPageSizeOptions(pageSize),
         showTotal: (count) =>
           t('modules.parentSelector.paginationTotal', { count }),
         onChange: onPageChange,
@@ -368,6 +389,18 @@ function ModuleParentSelectorOverlayContent(
 ) {
   const selector = useModuleParentSelectorOverlay(props)
 
+  /*
+   * 导入进行中不允许关闭弹层（Esc / 点遮罩 / 取消按钮）。
+   *
+   * <p>导入是「拉父单详情 → 合并明细 → 写回表单」的异步链路，关闭并不会取消它。
+   * 若放行关闭，用户会看到弹层消失、几百毫秒后明细又冒出来（"关闭后仍回填"），
+   * 期间还能点到保存。锁定到导入结束再关闭，语义与用户预期一致。</p>
+   */
+  const handleRequestClose = () => {
+    if (selector.importing) return
+    selector.onClose()
+  }
+
   /**
    * 动作区节点只构造**一次**，交给顶部工具行渲染。
    *
@@ -376,8 +409,10 @@ function ModuleParentSelectorOverlayContent(
    */
   const footerActions = (
     <ParentSelectorFooter
+      cancelDisabled={selector.importing}
       confirmDisabled={!selector.selectedRows.length}
-      onCancel={selector.onClose}
+      confirmLoading={selector.importing}
+      onCancel={handleRequestClose}
       onConfirm={() => {
         void selector.handleImportRecords(selector.selectedRows)
       }}
@@ -390,7 +425,7 @@ function ModuleParentSelectorOverlayContent(
     <WorkspaceOverlay
       title={selector.effectiveTitle}
       open
-      onClose={selector.onClose}
+      onClose={handleRequestClose}
       className="workspace-overlay-panel--parent-selector"
       variant="workspace"
       width="100%"

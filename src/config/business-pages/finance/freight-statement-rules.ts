@@ -26,7 +26,9 @@ export function buildFreightStatementParentFilters(
 ): Record<string, unknown> {
   return {
     carrierId: entityIdOf(currentRecord.carrierId, 'carrierId'),
-    currentRecordId: entityIdOf(currentRecord.id, 'currentRecordId'),
+    // 运费对账单候选接口（FreightStatementCandidatesCriteria）的实参名是
+    // currentStatementId，发 currentRecordId 会被静默忽略。
+    currentStatementId: entityIdOf(currentRecord.id, 'currentStatementId'),
     settlementCompanyId: currentRecord.settlementCompanyId,
   }
 }

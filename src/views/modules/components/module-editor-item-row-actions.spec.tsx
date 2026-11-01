@@ -34,6 +34,8 @@ describe('buildModuleEditorItemDuplicateColumn 行操作按钮列', () => {
 
   const renderColumn = (options: {
     disabled?: boolean
+    disabledOf?: (item: ModuleLineItem) => boolean
+    disabledTitleOf?: (item: ModuleLineItem) => string | undefined
     onDuplicate: (itemId: string) => void
   }) => {
     const column = buildModuleEditorItemDuplicateColumn({
@@ -41,6 +43,8 @@ describe('buildModuleEditorItemDuplicateColumn 行操作按钮列', () => {
       actionLabel: '复制本行',
       ariaLabelOf: (item) => `复制本行：${String(item.id)}`,
       disabled: options.disabled ?? false,
+      disabledOf: options.disabledOf,
+      disabledTitleOf: options.disabledTitleOf,
       onDuplicate: options.onDuplicate,
     })
 
@@ -83,6 +87,53 @@ describe('buildModuleEditorItemDuplicateColumn 行操作按钮列', () => {
     const button = renderColumn({ onDuplicate, disabled: true })
 
     expect(button?.disabled).toBe(true)
+    act(() => {
+      button?.click()
+    })
+    expect(onDuplicate).not.toHaveBeenCalled()
+  })
+
+  it('导入行逐行禁用：按钮置灰、悬停提示原因、点击无效', () => {
+    const onDuplicate = vi.fn()
+    const button = renderColumn({
+      onDuplicate,
+      disabledOf: (item) => Boolean(item.sourcePurchaseOrderItemId),
+      disabledTitleOf: () => '导入行不可复制',
+    })
+
+    // 本用例的 record 不带来源 id → 仍可用
+    expect(button?.disabled).toBe(false)
+    expect(button?.getAttribute('title')).toBe('复制本行')
+  })
+
+  it('带 source*ItemId 的行禁用复制并给出原因', () => {
+    const onDuplicate = vi.fn()
+    const importedRecord = {
+      id: 'row-2',
+      materialCode: 'M-002',
+      sourcePurchaseOrderItemId: 'po-item-1',
+    } as ModuleLineItem
+    const column = buildModuleEditorItemDuplicateColumn({
+      title: '操作',
+      actionLabel: '复制本行',
+      ariaLabelOf: (item) => `复制本行：${String(item.id)}`,
+      disabled: false,
+      disabledOf: (item) => Boolean(item.sourcePurchaseOrderItemId),
+      disabledTitleOf: () => '导入行不可复制',
+      onDuplicate,
+    })
+    const node = (
+      column as {
+        render: (value: unknown, item: ModuleLineItem) => React.ReactNode
+      }
+    ).render(undefined, importedRecord)
+    act(() => {
+      root.render(createElement('div', null, node))
+    })
+    const button = container.querySelector('button')
+
+    expect(button?.disabled).toBe(true)
+    expect(button?.getAttribute('title')).toBe('导入行不可复制')
     act(() => {
       button?.click()
     })

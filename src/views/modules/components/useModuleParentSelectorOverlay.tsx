@@ -41,7 +41,8 @@ export interface ModuleParentSelectorOverlayContentProps {
   hiddenSelectorColumnKeys?: ModuleParentImportDefinition['hiddenSelectorColumnKeys']
   fixedFilters?: SearchParams
   title?: string
-  onSelect: (records: ModuleRecord[]) => void
+  /** 返回 Promise 时弹层会等到导入真正回填完成再关闭（见 use-parent-selector-confirm）。 */
+  onSelect: (records: ModuleRecord[]) => void | Promise<void>
   onClose: () => void
 }
 
@@ -146,17 +147,18 @@ export function useModuleParentSelectorOverlay({
       loadDetailRecord,
     })
 
-  const { selectedSummary, handleImportRecords } = useParentSelectorConfirm({
-    parentModuleKey,
-    candidateStatementModuleKey,
-    candidateQueryType,
-    selectedRows,
-    displayFieldKey,
-    allowMultipleSelection,
-    t,
-    onSelect,
-    onClose,
-  })
+  const { selectedSummary, importing, handleImportRecords } =
+    useParentSelectorConfirm({
+      parentModuleKey,
+      candidateStatementModuleKey,
+      candidateQueryType,
+      selectedRows,
+      displayFieldKey,
+      allowMultipleSelection,
+      t,
+      onSelect,
+      onClose,
+    })
 
   const dataColumns: ColumnsType<ModuleRecord> = buildParentSelectorDataColumns(
     {
@@ -189,6 +191,7 @@ export function useModuleParentSelectorOverlay({
     handleImportRecords,
     handlePageChange,
     handleSelectedRowsChange,
+    importing,
     isLoading,
     onClose,
     overlayFilterConfig,

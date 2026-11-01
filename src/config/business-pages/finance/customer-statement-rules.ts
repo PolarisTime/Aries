@@ -81,7 +81,10 @@ export function buildCustomerStatementParentFilters(
   return {
     customerId: entityIdOf(currentRecord.customerId, 'customerId'),
     projectId: entityIdOf(currentRecord.projectId, 'projectId'),
-    currentRecordId: entityIdOf(currentRecord.id, 'currentRecordId'),
+    // 后端候选接口（V2CustomerStatementController#candidates）的实参名是
+    // currentStatementId；发 currentRecordId 会被静默忽略，本单已包含的销售订单
+    // 就会重新出现在候选里（自引用重复导入）。
+    currentStatementId: entityIdOf(currentRecord.id, 'currentStatementId'),
   }
 }
 

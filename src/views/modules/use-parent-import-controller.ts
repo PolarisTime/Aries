@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import {
@@ -15,6 +15,7 @@ import type {
 } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
 import { cloneLineItems } from '@/utils/clone-utils'
+import { asString } from '@/utils/type-narrowing'
 import {
   syncEditorFormValues,
   type WorkspaceFormApi,
@@ -56,8 +57,23 @@ export function useParentImportController({
   const [parentImporting, setParentImporting] = useState(false)
   const { t } = useTranslation()
   const parentSelectorOpen = parentSelectorSessionKey === editorSessionKey
+  /*
+   * 导入 in-flight 锁（同步生效）。
+   *
+   * <p>两次导入若并发执行，各自读到的 `items` 是同一份渲染快照，后完成的一次
+   * `replaceItems` 会把前一次的结果整体覆盖——明细静默丢一组。state 只用于禁用按钮，
+   * 拦截必须靠 ref：连点/双击可能落在同一渲染批次里，state 还来不及翻 true。</p>
+   */
+  const parentImportingRef = useRef(false)
+  const finishParentImport = () => {
+    parentImportingRef.current = false
+    setParentImporting(false)
+  }
 
   const handleImportParentRecord = async (selectedRecords: ModuleRecord[]) => {
+    if (parentImportingRef.current) {
+      return
+    }
     const parentImportConfig =
       parentSelectorDefinition ||
       (config.parentImport
@@ -76,17 +92,36 @@ export function useParentImportController({
       return
     }
 
+    parentImportingRef.current = true
     setParentImporting(true)
     try {
       const parentDetails = await Promise.all(
-        selectedRecords.map(async (selectedRecord) => ({
-          data: parentImportConfig.useCandidateSnapshot
-            ? selectedRecord
-            : await getBusinessModuleDetail(
+        selectedRecords.map(async (selectedRecord) => {
+          if (parentImportConfig.useCandidateSnapshot) {
+            return { data: selectedRecord }
+          }
+          try {
+            return {
+              data: await getBusinessModuleDetail(
                 parentImportConfig.parentModuleKey,
                 String(selectedRecord.id),
               ),
-        })),
+            }
+          } catch (error) {
+            /*
+             * 父单详情 404/已删除/无权限：必须带上单号，否则用户只看到
+             * 「加载失败」却不知道是哪一张单据需要处理。
+             */
+            const parentNo =
+              asString(
+                selectedRecord[parentImportConfig.parentDisplayFieldKey],
+              ).trim() || String(selectedRecord.id)
+            throw new Error(
+              t('common.parentDocumentLoadFailed', { no: parentNo }),
+              { cause: error },
+            )
+          }
+        }),
       )
 
       let nextValues = form.getFieldsValue(true)
@@ -135,7 +170,7 @@ export function useParentImportController({
 
       if (importValidationError) {
         message.error(importValidationError)
-        setParentImporting(false)
+        finishParentImport()
         return
       }
 
@@ -170,12 +205,12 @@ export function useParentImportController({
       if (importWarning) {
         message.warning(importWarning)
       }
-      setParentImporting(false)
+      finishParentImport()
     } catch (error) {
       message.error(
         error instanceof Error ? error.message : t('common.importParentFailed'),
       )
-      setParentImporting(false)
+      finishParentImport()
     }
   }
 

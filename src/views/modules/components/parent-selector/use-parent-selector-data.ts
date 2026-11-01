@@ -191,7 +191,14 @@ export function useParentSelectorData({
   const { draftFilters, submittedFilters, page, pageSize } = state
   const detailRequestSequenceRef = useRef(0)
   const detailRequestVersionsRef = useRef(new Map<string, number>())
-  const detailModuleKey = candidateStatementModuleKey || parentModuleKey
+  /*
+   * 候选行的详情模块 = **父单模块**（候选行本身就是父单）。
+   *
+   * <p>对账单来源（candidateStatementModuleKey）只决定「候选列表走哪个 statement
+   * 候选接口」，候选行仍然是上游销售订单/物流单，详情必须用 parentModuleKey 拉；
+   * 用 statement key 会拿销售订单 id 去请求 /customer-statements/{id}。</p>
+   */
+  const detailModuleKey = parentModuleKey
   const effectiveFixedFilters = compactParentSelectorFilters(fixedFilters)
   const effectiveSubmittedFilters = mergeParentSelectorFilters(
     submittedFilters,

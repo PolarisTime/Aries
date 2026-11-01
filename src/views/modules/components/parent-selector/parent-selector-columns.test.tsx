@@ -162,6 +162,16 @@ describe('buildParentSelectorDetailToggleColumn', () => {
     ;(buttonProps.onClick as (event: unknown) => void)(event)
     expect(event.stopPropagation).toHaveBeenCalled()
     expect(toggleDetail).toHaveBeenCalledWith({ id: '9001' })
+
+    /*
+     * 双击 = 两次 click + 一次 dblclick：click 已 stop，dblclick 若继续冒泡会命中
+     * 行上的「双击直导」，表现为「想看明细 → 直接导入父单并关掉弹层」。
+     */
+    const doubleClickEvent = { stopPropagation: vi.fn() }
+    ;(buttonProps.onDoubleClick as (event: unknown) => void)(doubleClickEvent)
+    expect(doubleClickEvent.stopPropagation).toHaveBeenCalled()
+    // 双击本身不改变展开状态：展开仍只由 click 触发一次
+    expect(toggleDetail).toHaveBeenCalledTimes(1)
   })
 
   it('已展开行渲染收起按钮', () => {

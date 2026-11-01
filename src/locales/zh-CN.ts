@@ -386,6 +386,8 @@ export const zhCN = {
     prevPage: '上一页',
     nextPage: '下一页',
     importParentFailed: '导入上级单据失败',
+    /** 父单详情拉取失败（404/已删除/无权限）：必须带单号，否则用户不知道是哪一张。 */
+    parentDocumentLoadFailed: '单据 {{no}} 加载失败，可能已被删除或无权查看',
     logisticsChain: '物流协同',
     logisticsChainDesc: '物流相关单据独立流转，并继续支持物流对账。',
     pleaseSelectWith: '请先选择{{label}}',
@@ -1128,6 +1130,8 @@ export const zhCN = {
       deleteSelected: '删除选中',
       duplicateItem: '复制本行',
       duplicateItemAriaLabel: '复制本行：{{label}}',
+      /** 导入行的来源/上限由上游单据决定，复制会造出同来源的重复行。 */
+      importedItemNotDuplicable: '导入行不可复制',
       autoSortItems: '自动排序',
       autoSortBySourceNo: '按单号顺序',
       autoSortByBillTime: '按日期排序',

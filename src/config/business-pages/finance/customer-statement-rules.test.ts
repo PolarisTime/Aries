@@ -53,6 +53,15 @@ describe('customer-statement-rules', () => {
       const filters = buildCustomerStatementParentFilters({})
       expect(filters.customerId).toBeUndefined()
       expect(filters.projectId).toBeUndefined()
+      expect(filters.currentStatementId).toBeUndefined()
+    })
+
+    it('已保存单据发 currentStatementId（与后端实参同名，本单才会被排除）', () => {
+      const filters = buildCustomerStatementParentFilters(
+        recordWith({ customerId: '1932500000000000002' }),
+      )
+      expect(filters.currentStatementId).toBe(entityId)
+      // 旧名会被后端静默忽略，导致本单已包含的销售订单重新出现在候选里
       expect(filters.currentRecordId).toBeUndefined()
     })
 

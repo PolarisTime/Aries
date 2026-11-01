@@ -6,7 +6,11 @@ import type {
 /** 流程图节点尺寸与间距（像素）。 */
 export const FLOW_NODE_WIDTH = 180
 export const FLOW_NODE_HEIGHT = 96
-export const FLOW_COLUMN_GAP = 56
+/**
+ * 列间距。必须容得下连线上的「N 件 · N 吨」标签：实测 56px 时 11px 字号会把
+ * 数量文字压到卡片边缘、被节点遮住（SVG 在节点下层），故放到 104px。
+ */
+export const FLOW_COLUMN_GAP = 104
 export const FLOW_ROW_GAP = 20
 export const FLOW_CANVAS_PADDING = 16
 /**

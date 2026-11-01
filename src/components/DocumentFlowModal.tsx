@@ -175,7 +175,11 @@ export function DocumentFlowModal({
     <Modal
       open={open}
       title={t('documentFlow.titleWithNo', { no: documentNo || '--' })}
-      width="min(1280px, 94vw)"
+      /*
+       * 5 列以上（采购单→入库→销售单→出库→退货）时画布宽度约 1350px，
+       * 1280 会横向裁掉最后一列只能靠滚动；放宽到 1560 让常见链路一屏看完。
+       */
+      width="min(1560px, 96vw)"
       footer={null}
       onCancel={onClose}
       className="document-flow-modal"

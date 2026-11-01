@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, createElement, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { resolveParentSelectorPageSizeOptions } from './ModuleParentSelectorOverlay'
 import { useModuleParentSelectorOverlay } from './useModuleParentSelectorOverlay'
 
 vi.mock('react-i18next', () => ({
@@ -189,5 +190,32 @@ describe('选单器默认展开明细', () => {
     await vi.waitFor(() => {
       expect(hook.result.selectedSummary).toContain('selectedSingleSummary')
     })
+  })
+
+  it('分页档位并入运行时 pageSize（去重升序），当前值不会缺席', () => {
+    // 运行时默认值来自后端配置（可能是 10/20），不在固定档位里时
+    // antd 的 size changer 会显示一个"选项里没有的当前值"。
+    expect(resolveParentSelectorPageSizeOptions(10)).toEqual([
+      '10',
+      '15',
+      '30',
+      '50',
+    ])
+    expect(resolveParentSelectorPageSizeOptions(30)).toEqual(['15', '30', '50'])
+    expect(resolveParentSelectorPageSizeOptions(20)).toEqual([
+      '15',
+      '20',
+      '30',
+      '50',
+    ])
+  })
+
+  it('非法 pageSize 不进入选项', () => {
+    expect(resolveParentSelectorPageSizeOptions(Number.NaN)).toEqual([
+      '15',
+      '30',
+      '50',
+    ])
+    expect(resolveParentSelectorPageSizeOptions(0)).toEqual(['15', '30', '50'])
   })
 })

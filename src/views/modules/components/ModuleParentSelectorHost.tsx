@@ -15,7 +15,8 @@ import { ModuleParentSelectorOverlay } from './ModuleParentSelectorOverlay'
 interface Props {
   config: ModulePageConfig
   onCloseParentSelector: () => void
-  onImportParentRecord: (records: ModuleRecord[]) => void
+  /** 返回 Promise 时弹层会等导入回填完成再关闭（in-flight 锁由导入控制器持有）。 */
+  onImportParentRecord: (records: ModuleRecord[]) => void | Promise<void>
   open: boolean
   parentSelectorDisplayFieldKey?: string
   parentSelectorFilters: SearchParams

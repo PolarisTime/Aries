@@ -33,8 +33,17 @@ describe('freight-statement-rules', () => {
     it('空值字段输出 undefined', () => {
       const filters = buildFreightStatementParentFilters({})
       expect(filters.carrierId).toBeUndefined()
-      expect(filters.currentRecordId).toBeUndefined()
+      expect(filters.currentStatementId).toBeUndefined()
       expect(filters.settlementCompanyId).toBeUndefined()
+    })
+
+    it('已保存单据发 currentStatementId（与后端实参同名，本单才会被排除）', () => {
+      const filters = buildFreightStatementParentFilters(
+        recordWith({ carrierId }),
+      )
+      expect(filters.currentStatementId).toBe(carrierId)
+      // 旧名会被 FreightStatementCandidatesCriteria 静默忽略
+      expect(filters.currentRecordId).toBeUndefined()
     })
 
     it('非法雪花 ID 抛错', () => {

@@ -112,7 +112,8 @@ const parentCandidateFilterContracts: Record<
       'settlementCompanyId',
       'startDate',
       'endDate',
-      'currentRecordId',
+      // V2CustomerStatementController#candidates 的「排除本单」实参名。
+      'currentStatementId',
     ],
     dateRangeMapping: {
       deliveryDate: { startKey: 'startDate', endKey: 'endDate' },
@@ -127,7 +128,8 @@ const parentCandidateFilterContracts: Record<
       'settlementCompanyId',
       'startDate',
       'endDate',
-      'currentRecordId',
+      // FreightStatementCandidatesCriteria 的「排除本单」实参名。
+      'currentStatementId',
     ],
     dateRangeMapping: {
       billTime: { startKey: 'startDate', endKey: 'endDate' },

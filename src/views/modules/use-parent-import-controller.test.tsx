@@ -25,6 +25,7 @@ vi.mock('@/api/business/business-crud', () => ({
   getBusinessModuleDetail: vi.fn(),
 }))
 
+import { getBusinessModuleDetail } from '@/api/business/business-crud'
 import { useParentImportController } from './use-parent-import-controller'
 
 /**
@@ -58,6 +59,7 @@ describe('use-parent-import-controller 导入后预警', () => {
 
   const buildApi = (
     warnParentImport: ModuleParentImportDefinition['warnParentImport'],
+    overrides: Partial<ModuleParentImportDefinition> = {},
   ) => {
     const parentImport: ModuleParentImportDefinition = {
       parentModuleKey: 'purchase-order',
@@ -68,6 +70,7 @@ describe('use-parent-import-controller 导入后预警', () => {
       useCandidateSnapshot: true,
       transformItems: () => [{ ...importedItem }],
       warnParentImport,
+      ...overrides,
     }
     const config = {
       key: 'sales-order',
@@ -158,5 +161,58 @@ describe('use-parent-import-controller 导入后预警', () => {
 
     expect(messageMock.warning).not.toHaveBeenCalled()
     expect(messageMock.success).toHaveBeenCalledTimes(1)
+  })
+
+  it('导入进行中重复触发被忽略（同一时刻只执行一次导入）', async () => {
+    const detail = vi.mocked(getBusinessModuleDetail)
+    let resolveDetail!: (value: ModuleRecord) => void
+    detail.mockImplementationOnce(
+      () =>
+        new Promise<ModuleRecord>((resolve) => {
+          resolveDetail = resolve
+        }) as never,
+    )
+    buildApi(
+      vi.fn(() => null),
+      { useCandidateSnapshot: false },
+    )
+
+    let first!: Promise<void>
+    act(() => {
+      first = api!.handleImportParentRecord([parentRecord])
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    // 连点：第二次落在第一次的 in-flight 窗口内，必须被同一把锁挡掉
+    await act(async () => {
+      await api!.handleImportParentRecord([parentRecord])
+    })
+    expect(detail).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      resolveDetail(parentRecord)
+      await first
+    })
+    expect(replaceItems).toHaveBeenCalledTimes(1)
+    expect(messageMock.success).toHaveBeenCalledTimes(1)
+  })
+
+  it('父单详情加载失败时提示带单号，便于定位是哪一张单据', async () => {
+    const detail = vi.mocked(getBusinessModuleDetail)
+    detail.mockRejectedValueOnce(new Error('404 Not Found'))
+    buildApi(
+      vi.fn(() => null),
+      { useCandidateSnapshot: false },
+    )
+
+    await act(async () => {
+      await api!.handleImportParentRecord([parentRecord])
+    })
+
+    expect(replaceItems).not.toHaveBeenCalled()
+    const [errorMessage] = messageMock.error.mock.calls[0] ?? []
+    expect(String(errorMessage)).toContain('PO-1')
+    expect(String(errorMessage)).toContain('加载失败')
   })
 })

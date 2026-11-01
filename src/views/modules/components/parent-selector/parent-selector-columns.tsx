@@ -374,6 +374,12 @@ export function buildParentSelectorDetailToggleColumn({
               event.stopPropagation()
               toggleDetail(record)
             }}
+            onDoubleClick={(event) => {
+              // 一次双击 = 两次 click + 一次 dblclick：click 已 stopPropagation，
+              // dblclick 仍会冒泡到 tr 上的「双击直导」，不拦就变成
+              // 「想展开明细 → 却直接导入并关闭弹层」。
+              event.stopPropagation()
+            }}
             size="small"
             type="text"
           />

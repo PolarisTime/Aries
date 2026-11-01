@@ -13,7 +13,17 @@ interface Options {
   actionLabel: string
   /** 逐行可访问名：读屏需区分「复制哪一行」。 */
   ariaLabelOf: (record: ModuleLineItem) => string
+  /** 整体可用性（只读 / 明细锁定 / 保存中等）。 */
   disabled: boolean
+  /**
+   * 逐行禁用：如「来源由上游单据决定的导入行」不允许复制。
+   *
+   * <p>导入行的来源与数量上限都挂在来源明细上，复制出来的副本会和原行引用同一个
+   * 来源行（两行各自 ≤ 上限、合计超量），只能在保存时被后端拒绝。</p>
+   */
+  disabledOf?: (record: ModuleLineItem) => boolean
+  /** 逐行禁用原因（悬停提示），缺省沿用按钮文案。 */
+  disabledTitleOf?: (record: ModuleLineItem) => string | undefined
   onDuplicate: (itemId: string) => void
 }
 
@@ -28,6 +38,8 @@ export function buildModuleEditorItemDuplicateColumn({
   actionLabel,
   ariaLabelOf,
   disabled,
+  disabledOf,
+  disabledTitleOf,
   onDuplicate,
 }: Options): TableColumnType<ModuleLineItem> {
   return {
@@ -35,19 +47,26 @@ export function buildModuleEditorItemDuplicateColumn({
     title,
     width: 96,
     align: 'center',
-    render: (_value, record) => (
-      <Button
-        type="link"
-        size="small"
-        className="table-action-btn"
-        icon={<CopyOutlined />}
-        disabled={disabled}
-        title={actionLabel}
-        aria-label={ariaLabelOf(record)}
-        onClick={() => onDuplicate(record.id)}
-      >
-        {actionLabel}
-      </Button>
-    ),
+    render: (_value, record) => {
+      const rowDisabled = disabled || (disabledOf?.(record) ?? false)
+      const rowDisabledTitle = disabledOf?.(record)
+        ? disabledTitleOf?.(record)
+        : undefined
+      return (
+        <Button
+          type="link"
+          size="small"
+          className="table-action-btn"
+          icon={<CopyOutlined />}
+          disabled={rowDisabled}
+          // 禁用按钮也要能解释原因：原生 title 在悬停时仍可见，读屏由 aria-label 兜底
+          title={rowDisabled ? (rowDisabledTitle ?? actionLabel) : actionLabel}
+          aria-label={ariaLabelOf(record)}
+          onClick={() => onDuplicate(record.id)}
+        >
+          {actionLabel}
+        </Button>
+      )
+    },
   }
 }

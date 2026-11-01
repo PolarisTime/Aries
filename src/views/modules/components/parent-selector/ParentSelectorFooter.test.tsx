@@ -95,4 +95,22 @@ describe('ParentSelectorFooter', () => {
     expect(onCancel).toHaveBeenCalledTimes(1)
     expect(onConfirm).toHaveBeenCalledTimes(1)
   })
+
+  it('导入进行中：确认按钮 loading 且不可点，取消也被禁用', () => {
+    const onCancel = vi.fn()
+    const onConfirm = vi.fn()
+    render({ confirmLoading: true, onCancel, onConfirm })
+
+    const [cancel, confirm] = buttons()
+    // loading 让用户看到「正在导入」（antd v6 渲染的是 loading 图标节点），
+    // disabled 让连点无效
+    expect(confirm?.querySelector('.ant-btn-loading-icon')).not.toBeNull()
+    expect(confirm?.disabled).toBe(true)
+    expect(cancel?.disabled).toBe(true)
+
+    act(() => confirm?.click())
+    act(() => cancel?.click())
+    expect(onConfirm).not.toHaveBeenCalled()
+    expect(onCancel).not.toHaveBeenCalled()
+  })
 })

@@ -36,6 +36,12 @@ vi.mock('@/api/purchase/purchase-order-candidates', () => ({
   })),
 }))
 
+vi.mock('@/api/finance/statements', () => ({
+  listStatementCandidatePage: vi.fn(() => ({
+    data: { rows: [], total: 0 },
+  })),
+}))
+
 const getBusinessModuleDetailMock = vi.fn(
   (_moduleKey: string, id: string): ModuleRecord | Promise<ModuleRecord> => ({
     id,
@@ -84,7 +90,11 @@ describe('useParentSelectorData', () => {
     container.remove()
   })
 
-  function renderDataHook(options?: { fixedFilters?: SearchParams }): {
+  function renderDataHook(options?: {
+    fixedFilters?: SearchParams
+    parentModuleKey?: string
+    candidateStatementModuleKey?: 'customer-statement' | 'freight-statement'
+  }): {
     result: HookResult
     queryClient: QueryClient
   } {
@@ -97,8 +107,11 @@ describe('useParentSelectorData', () => {
       const [state, setState] = usePatchState(parentSelectorInitialState)
       result.state = state
       result.data = useParentSelectorData({
-        parentModuleKey: 'purchase-order',
-        candidateQueryType: 'purchase-order-import',
+        parentModuleKey: options?.parentModuleKey ?? 'purchase-order',
+        candidateQueryType: options?.candidateStatementModuleKey
+          ? undefined
+          : 'purchase-order-import',
+        candidateStatementModuleKey: options?.candidateStatementModuleKey,
         fixedFilters: options?.fixedFilters ?? {},
         state,
         setState,
@@ -201,6 +214,31 @@ describe('useParentSelectorData', () => {
       )
       expect(hook.result.state.inlineDetailItems['9001']?.loading).toBe(false)
     })
+  })
+
+  it('对账单来源的候选行详情按 parentModuleKey 拉取（不是 statement 模块）', async () => {
+    /*
+     * 客户对账单导入时候选行是上游**销售订单**；candidateStatementModuleKey 只用于
+     * 候选列表接口路由。历史缺陷：详情也用了它，于是拿销售订单 id 请求
+     * /customer-statements/{id}，展开明细必然 404 或显示错单。
+     */
+    const hook = renderDataHook({
+      parentModuleKey: 'sales-order',
+      candidateStatementModuleKey: 'customer-statement',
+    })
+    act(() => {
+      void hook.result.data.loadDetailRecord('9001')
+    })
+    await vi.waitFor(() => {
+      expect(getBusinessModuleDetailMock).toHaveBeenCalledWith(
+        'sales-order',
+        '9001',
+      )
+    })
+    expect(getBusinessModuleDetailMock).not.toHaveBeenCalledWith(
+      'customer-statement',
+      expect.anything(),
+    )
   })
 
   it('明细请求竞态：过期响应被版本守卫丢弃', async () => {

@@ -4,6 +4,10 @@ import type { ParentSelectorTranslator } from '../useModuleParentSelectorOverlay
 
 export interface ParentSelectorFooterProps {
   confirmDisabled: boolean
+  /** 导入进行中：确认按钮 loading，重复点击被 hook 忽略。 */
+  confirmLoading?: boolean
+  /** 导入进行中禁止取消：避免「弹层关了但明细随后又回填」。 */
+  cancelDisabled?: boolean
   onCancel: () => void
   onConfirm: () => void
   summary: string
@@ -22,6 +26,9 @@ export interface ParentSelectorFooterProps {
  */
 export function ParentSelectorFooter({
   confirmDisabled,
+  confirmLoading = false,
+  // 导入进行中默认同时锁取消：两者是一把 in-flight 锁的两面
+  cancelDisabled = confirmLoading,
   onCancel,
   onConfirm,
   summary,
@@ -30,11 +37,14 @@ export function ParentSelectorFooter({
   return (
     <div className="parent-selector-footer">
       <div className="parent-selector-footer-buttons">
-        <Button onClick={onCancel}>{t('modules.parentSelector.cancel')}</Button>
+        <Button disabled={cancelDisabled} onClick={onCancel}>
+          {t('modules.parentSelector.cancel')}
+        </Button>
         <Button
           type="primary"
           icon={<CheckOutlined />}
-          disabled={confirmDisabled}
+          loading={confirmLoading}
+          disabled={confirmDisabled || confirmLoading}
           onClick={onConfirm}
         >
           {t('modules.parentSelector.confirmImport')}

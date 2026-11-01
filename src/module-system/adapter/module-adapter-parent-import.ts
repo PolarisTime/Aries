@@ -36,6 +36,26 @@ function getSourceParentItemId(item: ModuleLineItem): string {
   return ''
 }
 
+/**
+ * 该明细行是否来自上游导入（带任一 `source*ItemId`）。
+ *
+ * <p>导出给编辑器用：导入行的来源、数量上限由上游单据决定，「复制本行」会造出两条
+ * 引用同一来源行的副本（各自都 ≤ 上限、合计超量），保存时才被后端按重复来源拒绝。
+ * 复用同一份字段清单，避免各处各写一份"哪些字段算导入行"。</p>
+ *
+ * <p>这里只做「有没有非空值」的宽松判断，不走 {@link getSourceParentItemId} 的实体 ID
+ * 校验：它是渲染期谓词（决定按钮是否置灰），遇到脏值应当禁用按钮而不是把编辑器打崩。</p>
+ */
+export function hasSourceParentItemId(item: ModuleLineItem): boolean {
+  return SOURCE_PARENT_ITEM_ID_FIELDS.some((field) => {
+    const raw = item[field]
+    if (raw === undefined || raw === null) {
+      return false
+    }
+    return String(raw).trim() !== ''
+  })
+}
+
 function resolvePersistedParentRelationNo(item: ModuleLineItem) {
   const explicitRelationNo = asString(item._parentRelationNo).trim()
   if (explicitRelationNo) {
@@ -163,6 +183,24 @@ export function buildParentImportState(options: {
   const mergedParentNos = currentParentNos.includes(parentNo)
     ? currentParentNos
     : [...currentParentNos, parentNo]
+  const currentParentItemSet = new Set(currentParentItems)
+  /*
+   * 上限计算用的「已分配」口径（与「替换时保留旧数量」分开算）。
+   *
+   * <p>服务端 remaining 是否已扣掉本单占用，取决于行是否已落库：</p>
+   * <ol>
+   *   <li><b>本会话刚导入、尚未保存的行</b>带 `_parentRelationId`（session 标记）：
+   *       服务端不知道它们，remaining 未扣减 → 计入就会把上限算成 remaining + 草稿量，
+   *       表现为「同一父单导入两次，上限 10 → 20」；</li>
+   *   <li><b>已保存行</b>没有该标记（靠 sourceNo 归属父单）：服务端 remaining 已扣掉本单
+   *       占用 → 必须加回，否则改单时上限偏小、甚至把已有行判成超量。</li>
+   * </ol>
+   * <p>其他父单的行照旧累加：它们的占用可能已落库，也可能与本行共用同一来源行。</p>
+   */
+  const countedAllocationItems = effectiveCurrentItems.filter((item) => {
+    if (!currentParentItemSet.has(item)) return true
+    return !resolvePersistedParentRelationId(item)
+  })
   const mappedValues = parentImportConfig.mapParentToDraft?.(parentRecord) || {}
   const shouldApplyMappedValues =
     !currentParentNos.length ||
@@ -197,6 +235,31 @@ export function buildParentImportState(options: {
         toSafeNumber(item.amount),
     )
   })
+  /* 上限用的已分配量：只统计「服务端 remaining 已扣减」的行，口径见 countedAllocationItems。 */
+  const maxAllocatedQuantityMap = new Map<string, number>()
+  const maxAllocatedWeightTonMap = new Map<string, number>()
+  const maxAllocatedAmountMap = new Map<string, number>()
+  countedAllocationItems.forEach((item) => {
+    const sourceParentItemId = getSourceParentItemId(item)
+    if (!sourceParentItemId) {
+      return
+    }
+    maxAllocatedQuantityMap.set(
+      sourceParentItemId,
+      toSafeNumber(maxAllocatedQuantityMap.get(sourceParentItemId)) +
+        toSafeNumber(item.quantity),
+    )
+    maxAllocatedWeightTonMap.set(
+      sourceParentItemId,
+      toSafeNumber(maxAllocatedWeightTonMap.get(sourceParentItemId)) +
+        toSafeNumber(item.weightTon),
+    )
+    maxAllocatedAmountMap.set(
+      sourceParentItemId,
+      toSafeNumber(maxAllocatedAmountMap.get(sourceParentItemId)) +
+        toSafeNumber(item.amount),
+    )
+  })
   const importedItems: ModuleLineItem[] = sourceItems.flatMap((item) => {
     const sourceParentItemId = getSourceParentItemId(item)
     const nextItem: ModuleLineItem = {
@@ -221,7 +284,8 @@ export function buildParentImportState(options: {
     const maxImportQuantity =
       explicitMaxImportQuantity !== undefined
         ? explicitMaxImportQuantity
-        : remainingQuantity + currentAllocatedQuantity
+        : remainingQuantity +
+          toSafeNumber(maxAllocatedQuantityMap.get(sourceParentItemId))
     const remainingWeightTon = toSafeNumber(
       item.remainingWeightTon ?? item._maxImportWeightTon ?? item.weightTon,
     )
@@ -238,7 +302,8 @@ export function buildParentImportState(options: {
     const maxImportWeightTon =
       explicitMaxImportWeightTon !== undefined
         ? explicitMaxImportWeightTon
-        : remainingWeightTon + currentAllocatedWeightTon
+        : remainingWeightTon +
+          toSafeNumber(maxAllocatedWeightTonMap.get(sourceParentItemId))
     const remainingAmount = toSafeNumber(
       item.remainingAmount ?? item._maxImportAmount ?? item.amount,
     )
@@ -253,7 +318,8 @@ export function buildParentImportState(options: {
     const maxImportAmount =
       explicitMaxImportAmount !== undefined
         ? explicitMaxImportAmount
-        : remainingAmount + currentAllocatedAmount
+        : remainingAmount +
+          toSafeNumber(maxAllocatedAmountMap.get(sourceParentItemId))
 
     nextItem.quantity = nextQuantity
     nextItem._maxImportQuantity = maxImportQuantity
@@ -271,7 +337,6 @@ export function buildParentImportState(options: {
       : []
   })
 
-  const currentParentItemSet = new Set(currentParentItems)
   return {
     parentId,
     parentNo,

@@ -90,7 +90,7 @@ interface Props {
   onOpenParentSelector: () => void
   onCloseParentSelector: () => void
   onRemoveSelectedItems: () => void
-  onImportParentRecord: (records: ModuleRecord[]) => void
+  onImportParentRecord: (records: ModuleRecord[]) => void | Promise<void>
   onItemColumnOrderChange: (order: string[]) => void
   onToggleItemColumn: (key: string) => void
   /** 明细行序变化(整行长按拖动/键盘 Alt+↑↓ 落位): 新的 id 顺序即最终顺序; 不传=不可排序。 */

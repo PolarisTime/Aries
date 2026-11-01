@@ -272,12 +272,21 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   })
   // oxlint-enable react-doctor/no-event-handler
 
-  // Ctrl/Cmd+S 保存、Ctrl/Cmd+Shift+S 保存并审核；保存中/只读/无权限时忽略。
+  /*
+   * 编辑器忙态：保存与上游导入共用同一把 in-flight 锁。
+   *
+   * <p>导入进行中若还允许保存，保存载荷取自导入前的 items，服务端会先落一份
+   * 「没有导入行」的单据；导入随后完成又置脏，用户以为已保存、其实还要再存一次。
+   * 取消与 Ctrl+S 同频禁用，避免同一段异步链路里出现第二份草稿快照。</p>
+   */
+  const editorBusy = saving || parentImporting
+
+  // Ctrl/Cmd+S 保存、Ctrl/Cmd+Shift+S 保存并审核；保存中/导入中/只读/无权限时忽略。
   useEditorSaveShortcuts({
     enabled: open,
     canSave,
     canAudit: canSaveAndAuditInEditor,
-    saving,
+    saving: editorBusy,
     onSave: (audit) => {
       void handleSave(audit)
     },
@@ -365,7 +374,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
               canSave={canSave}
               canAudit={canSaveAndAuditInEditor}
               auditLabel={editorAuditLabel}
-              saving={saving}
+              saving={editorBusy}
               onCancel={requestCloseEditor}
               onSave={(audit) => {
                 void handleSave(audit)
@@ -384,7 +393,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           actions={{
             canSave,
             canAudit: canSaveAndAuditInEditor,
-            saving,
+            saving: editorBusy,
             visible: presentation.formActionsVisible,
             onCancel: requestCloseEditor,
             onSave: (audit) => {
@@ -440,7 +449,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
             audit: canSaveAndAuditInEditor,
           }}
           auditLabel={editorAuditLabel}
-          saving={saving}
+          saving={editorBusy}
           showFooterActions={!presentation.overlayFooterVisible}
           currentStatus={currentStatus}
           formValues={editorFormValues}
@@ -459,7 +468,8 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           onRemoveSelectedItems={removeSelectedItems}
           onImportParentRecord={(parentRecords) => {
             clearSelectedItems()
-            void handleImportParentRecord(parentRecords)
+            // 返回 Promise：选单弹层据此保持打开+锁定，直到导入真正回填完成。
+            return handleImportParentRecord(parentRecords)
           }}
           onItemColumnOrderChange={onItemColumnOrderChange}
           onToggleItemColumn={toggleItemColumn}

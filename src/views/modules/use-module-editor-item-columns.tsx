@@ -14,6 +14,7 @@ import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { useHasPermission } from '@/hooks/usePermission'
 import { isEditorItemColumnEditableForModule } from '@/module-system/adapter/module-adapter-editor'
+import { hasSourceParentItemId } from '@/module-system/adapter/module-adapter-parent-import'
 import {
   buildModuleEditorDataColumns,
   buildModuleEditorManagementColumns,
@@ -298,6 +299,14 @@ export function useModuleEditorItemColumns({
   }, [pendingFocusItemId])
 
   const duplicateItemLabel = t('modules.itemsSection.duplicateItem')
+  /*
+   * 导入行不可复制：来源明细（`source*ItemId`）和数量上限挂在同一来源行上，
+   * 复制出的副本与原行引用同一来源，两行各自 ≤ 上限、合计超量 —— 保存时才被后端拒绝。
+   * 行内按钮与行右键菜单共用这一口径（与 haveSourceParentItemId 同源）。
+   */
+  const importedItemNotDuplicableLabel = t(
+    'modules.itemsSection.importedItemNotDuplicable',
+  )
 
   /** 行右键菜单：与行内「复制本行」按钮共用同一份动作与可用性口径。 */
   const itemRowMenus = useMemo<RowContextMenuMap>(() => {
@@ -309,6 +318,8 @@ export function useModuleEditorItemColumns({
           key: 'duplicate',
           label: duplicateItemLabel,
           icon: <CopyOutlined />,
+          // 导入行在菜单里同样置灰（菜单没有悬停提示，原因写在按钮 title 上）
+          disabled: hasSourceParentItemId(item),
           onClick: () => handleDuplicateItem(item.id),
         },
       ],
@@ -376,6 +387,8 @@ export function useModuleEditorItemColumns({
               label: resolveItemRowLabel(record),
             }),
           disabled: !canDuplicateItem,
+          disabledOf: (record) => hasSourceParentItemId(record),
+          disabledTitleOf: () => importedItemNotDuplicableLabel,
           onDuplicate: handleDuplicateItem,
         }),
       )
