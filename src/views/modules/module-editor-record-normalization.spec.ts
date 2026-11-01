@@ -41,7 +41,7 @@ describe('normalizeRecordForEditor 清理前端 session 标记', () => {
     const normalized = normalizeRecordForEditor(config, {
       id: '8001',
       items: [sourcedItem],
-    } as never)
+    })
 
     const [item] = normalized.items as ModuleLineItem[]
     expect(Object.hasOwn(item, '_parentRelationId')).toBe(false)
@@ -54,7 +54,7 @@ describe('normalizeRecordForEditor 清理前端 session 标记', () => {
 
   it('不改写入参记录（query cache 里的对象不能被就地改写）', () => {
     const record = { id: '8001', items: [{ ...sourcedItem }] }
-    normalizeRecordForEditor(config, record as never)
+    normalizeRecordForEditor(config, record)
 
     const [original] = record.items as ModuleLineItem[]
     expect(original._parentRelationId).toBe('347011099205312512')
@@ -62,9 +62,7 @@ describe('normalizeRecordForEditor 清理前端 session 标记', () => {
   })
 
   it('items 缺失/非数组时不报错', () => {
-    expect(() =>
-      normalizeRecordForEditor(config, { id: '8001' } as never),
-    ).not.toThrow()
+    expect(() => normalizeRecordForEditor(config, { id: '8001' })).not.toThrow()
     expect(() =>
       normalizeRecordForEditor(config, { id: '8001', items: null } as never),
     ).not.toThrow()

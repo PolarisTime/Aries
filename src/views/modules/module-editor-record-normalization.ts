@@ -107,9 +107,7 @@ export function normalizeRecordForEditor(
    * 服务端契约不返回；若某天回传，上限口径会把草稿行误判成已保存行。
    */
   if (Array.isArray(normalized.items)) {
-    normalized.items = (normalized.items as ModuleLineItem[]).map(
-      stripEditorSessionItemMarkers,
-    )
+    normalized.items = normalized.items.map(stripEditorSessionItemMarkers)
   }
   const normalizeEditorRecord = getBehaviorValue(
     config.key,

@@ -174,7 +174,7 @@ describe('use-parent-import-controller 导入后预警', () => {
       () =>
         new Promise<ModuleRecord>((resolve) => {
           resolveDetail = resolve
-        }) as never,
+        }),
     )
     buildApi(
       vi.fn(() => null),

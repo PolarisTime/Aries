@@ -260,7 +260,7 @@ describe('hasSourceParentItemId', () => {
       hasSourceParentItemId({
         id: 'line-1',
         [field]: '347011099205312900',
-      } as ModuleLineItem),
+      }),
     ).toBe(true)
   })
 
@@ -273,7 +273,7 @@ describe('hasSourceParentItemId', () => {
       hasSourceParentItemId({
         id: 'line-1',
         sourcePurchaseOrderItemId: '  ',
-      } as ModuleLineItem),
+      }),
     ).toBe(false)
   })
 })
