@@ -918,7 +918,6 @@ export const zhCN = {
       status: '状态',
       billStatus: '单据状态',
       auditStatus: '审核状态',
-      signStatus: '签署状态',
       customerName: '客户名称',
       supplierName: '供应商名称',
       carrierName: '物流商',
@@ -1540,7 +1539,6 @@ export const zhCN = {
         paidAmount: '已付金额',
         unpaidAmount: '未付金额',
         auditStatus: '审核状态',
-        signStatus: '签署状态',
         attachment: '附件',
         remark: '备注',
         freightStatementDesc:

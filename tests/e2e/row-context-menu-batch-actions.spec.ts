@@ -1,5 +1,6 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { loginAsE2eUser } from './support/business-e2e'
+import { test } from './support/test'
 
 /**
  * 行右键菜单里的批量动作（个人设置 → 右键菜单）。
@@ -78,8 +79,9 @@ test.describe('行右键菜单 · 批量动作', () => {
     // ② 勾选两行后右键其中一行：出现「批量操作（已选 2 项）」与批量动作
     await checkbox(page, 0).check()
     await checkbox(page, 1).check()
-    await expect(page.locator('.module-selection-alert')).toContainText(
-      '已选择 2 项',
+    // 勾选横幅已移除：勾选口径落在表格下方页脚（scope=已选 N 项）。
+    await expect(page.getByTestId('pagination-summary')).toContainText(
+      '已选 2 项',
     )
     menu = await openRowMenu(page)
     await expect(menu).toContainText('批量操作（已选 2 项）')

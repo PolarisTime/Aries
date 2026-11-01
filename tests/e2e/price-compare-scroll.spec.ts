@@ -1,5 +1,6 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { loginAsE2eUser } from './support/business-e2e'
+import { test } from './support/test'
 
 /**
  * 报单比价: 低分辨率下必须能向下滚动到底(回归 2026-10-09 缺陷)。

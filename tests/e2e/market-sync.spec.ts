@@ -1,5 +1,6 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { loginAsE2eUser } from './support/business-e2e'
+import { test } from './support/test'
 
 /**
  * 行情同步页重做后的行为回归。

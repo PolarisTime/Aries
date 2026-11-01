@@ -937,7 +937,6 @@ export const enUS = {
       status: 'Status',
       billStatus: 'Bill Status',
       auditStatus: 'Audit Status',
-      signStatus: 'Sign Status',
       customerName: 'Customer',
       supplierName: 'Supplier',
       carrierName: 'Carrier',
@@ -1571,7 +1570,6 @@ export const enUS = {
         paidAmount: 'Paid amount',
         unpaidAmount: 'Unpaid amount',
         auditStatus: 'Audit status',
-        signStatus: 'Sign status',
         attachment: 'Attachment',
         remark: 'Remark',
         freightStatementDesc:

@@ -83,6 +83,62 @@ async function openAndPick(
     .catch(() => undefined)
 }
 
+/**
+ * 可搜索下拉的「输入过滤再选」版本（只新增，不改既有 helper 签名）。
+ *
+ * <p>antd Select 默认开启虚拟滚动：选项多时首屏只渲染约 10 个 `.ant-select-item-option`，
+ * 直接按文本过滤会「元素不存在」。这里先把关键字输入进组合框（触发远端/本地过滤），
+ * 再点命中的选项；适合结算主体/客户/项目/物流方等数据量会增长的字段。</p>
+ */
+export async function searchAndSelectFieldOption(
+  page: Page,
+  fieldId: string,
+  text: string,
+): Promise<void> {
+  const trigger = page.locator(`#${fieldId}`)
+  await expect(trigger).toBeVisible({ timeout: 20_000 })
+  await openAndPickFiltered(page, trigger, text)
+}
+
+/** `searchAndSelectFieldOption` 的 aria-label 版本（资金流水「结算主体」等）。 */
+export async function searchAndSelectAriaLabelOption(
+  page: Page,
+  ariaLabel: string,
+  text: string,
+): Promise<void> {
+  const trigger = page
+    .locator(`input[aria-label="${ariaLabel}"]:visible`)
+    .first()
+  await expect(trigger).toBeVisible({ timeout: 20_000 })
+  await openAndPickFiltered(page, trigger, text)
+}
+
+async function openAndPickFiltered(
+  page: Page,
+  trigger: Locator,
+  text: string,
+): Promise<void> {
+  await trigger.click()
+  const panel = page
+    .locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)')
+    .last()
+  await expect(panel).toBeVisible({ timeout: 15_000 })
+  // 虚拟滚动只在首屏渲染部分 option，先把关键字输入到组合框触发过滤。
+  // 非 showSearch 的 Select 其 input 是 readonly，fill 会一直等到测试超时，必须用短超时兜底。
+  await trigger.fill(text, { timeout: 2_000 }).catch(() => undefined)
+  const target = panel
+    .locator('.ant-select-item-option')
+    .filter({ hasText: text })
+    .first()
+  await expect(target, `下拉中应能按关键字找到「${text}」`).toBeVisible({
+    timeout: 20_000,
+  })
+  await target.click()
+  await expect(panel)
+    .toBeHidden({ timeout: 10_000 })
+    .catch(() => undefined)
+}
+
 export async function selectFieldOption(
   page: Page,
   fieldId: string,

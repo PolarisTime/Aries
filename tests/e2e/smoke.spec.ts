@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { test } from './support/test'
 
 const LOGIN_NAME = process.env.E2E_LOGIN_NAME || 'admin_prod'
 const LOGIN_PASSWORD = process.env.E2E_LOGIN_PASSWORD || '123456'

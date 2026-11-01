@@ -1,5 +1,6 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { gotoRoute, loginAsE2eUser } from './support/business-e2e'
+import { test } from './support/test'
 
 /**
  * 报单比价：现货价「按替代牌号代取」的 E 角标。

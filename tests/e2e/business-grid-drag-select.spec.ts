@@ -52,9 +52,9 @@ test.describe('列表页拖拽框选', () => {
     }
     await page.mouse.up()
 
-    // 3 行被勾选：横幅条数 + 行选中态一致
-    await expect(page.locator('.module-selection-alert-count')).toHaveText(
-      '已选择 3 项',
+    // 3 行被勾选：页脚「已选 N 项」口径 + 行选中态一致（勾选横幅已移除）
+    await expect(page.getByTestId('pagination-summary')).toContainText(
+      '已选 3 项',
     )
     await expect(page.locator('tbody tr.ant-table-row-selected')).toHaveCount(3)
     // 拖拽过程中不能留下"划词"选区
@@ -62,15 +62,17 @@ test.describe('列表页拖拽框选', () => {
       await page.evaluate(() => window.getSelection()?.toString() ?? ''),
     ).toBe('')
 
-    // 拖拽之后的一次普通点击仍然生效（抑制窗口只覆盖拖拽收尾的那一下）
-    await page.locator('.module-selection-alert-clear').click()
-    const clickTarget = await rows.nth(0).boundingBox()
-    if (clickTarget) {
-      await page.mouse.click(x, clickTarget.y + clickTarget.height / 2)
-      await expect(page.locator('tbody tr.ant-table-row-selected')).toHaveCount(
-        1,
-      )
-    }
+    // 拖拽之后的一次普通点击仍然生效（抑制窗口只覆盖拖拽收尾的那一下）：
+    // 点第一行勾选框把它取消勾选，选中数应从 3 变 2。
+    await rows
+      .nth(0)
+      .locator('input[type="checkbox"]')
+      .first()
+      .click({ force: true })
+    await expect(page.locator('tbody tr.ant-table-row-selected')).toHaveCount(2)
+    await expect(page.getByTestId('pagination-summary')).toContainText(
+      '已选 2 项',
+    )
 
     await assertNoFatalUiErrors()
   })

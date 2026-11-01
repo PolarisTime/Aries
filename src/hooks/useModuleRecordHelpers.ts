@@ -12,10 +12,9 @@ export function useModuleRecordHelpers({ config }: Props) {
     getModuleRecordPrimaryNo(record, config.primaryNoKey)
 
   const getRowClassName = (record: ModuleRecord) => {
-    const statuses = [asString(record.status), asString(record.signStatus)]
-    return config.rowHighlightStatuses?.some((status) =>
-      statuses.includes(status),
-    )
+    // 行高亮只读 status：V208 已删除 st_freight_statement.sign_status 列，
+    // 历史实现还读 record.signStatus，恒为 undefined（已删列残留）。
+    return config.rowHighlightStatuses?.includes(asString(record.status))
       ? 'table-row-emphasis'
       : ''
   }

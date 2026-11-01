@@ -1,10 +1,11 @@
-import { expect, test } from '@playwright/test'
+import { expect } from '@playwright/test'
 import {
   buildAuthorizationHeaders,
   e2eApiUrl,
   getPasswordSession,
 } from './support/api-key'
 import { gotoRoute, loginAsE2eUser } from './support/business-e2e'
+import { test } from './support/test'
 
 /**
  * 现货价「按抗震牌号代取」的**持久化闭环** e2e（WIP：等工作区干净后再跑）。
