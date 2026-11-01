@@ -26,7 +26,11 @@ vi.mock('@/api/business/business-crud', () => ({
 }))
 
 import { getBusinessModuleDetail } from '@/api/business/business-crud'
-import { useParentImportController } from './use-parent-import-controller'
+import {
+  fetchParentDetailWithTimeout,
+  PARENT_DETAIL_TIMEOUT_MS,
+  useParentImportController,
+} from './use-parent-import-controller'
 
 /**
  * 导入父单后的非阻断预警: warnParentImport 返回文案时必须提示, 且导入照常生效。
@@ -214,5 +218,163 @@ describe('use-parent-import-controller 导入后预警', () => {
     const [errorMessage] = messageMock.error.mock.calls[0] ?? []
     expect(String(errorMessage)).toContain('PO-1')
     expect(String(errorMessage)).toContain('加载失败')
+  })
+})
+
+describe('父单详情请求超时（10s）', () => {
+  const t = (key: string, options?: Record<string, unknown>) =>
+    `${key}:${String(options?.no ?? '')}`
+
+  /** 把 mock 当宽松函数用：getBusinessModuleDetail 是重载签名，直接 mockImplementationOnce 推不出参数。 */
+  const detailMock = () =>
+    getBusinessModuleDetail as unknown as {
+      mockImplementationOnce: (
+        impl: (moduleKey: string, id: string, signal?: AbortSignal) => unknown,
+      ) => void
+    }
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('超过 10s 中断请求，并抛出带单号的超时提示', async () => {
+    vi.useFakeTimers()
+    let aborted = false
+    detailMock().mockImplementationOnce((_moduleKey, _id, signal) => {
+      return new Promise((_resolve, reject) => {
+        signal?.addEventListener('abort', () => {
+          aborted = true
+          reject(new Error('aborted'))
+        })
+      })
+    })
+
+    const pending = fetchParentDetailWithTimeout({
+      moduleKey: 'purchase-order',
+      recordId: '5001',
+      parentNo: 'PO-1',
+      t,
+    })
+    // 先挂上拒绝断言，避免计时器触发的拒绝被判成 unhandled rejection
+    const assertion = expect(pending).rejects.toThrow(
+      'common.parentDocumentLoadTimeout:PO-1',
+    )
+    await vi.advanceTimersByTimeAsync(PARENT_DETAIL_TIMEOUT_MS)
+    await assertion
+    expect(aborted).toBe(true)
+  })
+
+  it('未超时就返回详情（不误报超时）', async () => {
+    detailMock().mockImplementationOnce(() => ({
+      id: '5001',
+      orderNo: 'PO-1',
+      items: [],
+    }))
+
+    const record = await fetchParentDetailWithTimeout({
+      moduleKey: 'purchase-order',
+      recordId: '5001',
+      parentNo: 'PO-1',
+      t,
+    })
+
+    expect(record.orderNo).toBe('PO-1')
+  })
+
+  it('详情失败时抛带单号的加载失败提示（与超时区分）', async () => {
+    detailMock().mockImplementationOnce(() => {
+      throw new Error('404')
+    })
+
+    await expect(
+      fetchParentDetailWithTimeout({
+        moduleKey: 'purchase-order',
+        recordId: '5001',
+        parentNo: 'PO-1',
+        t,
+      }),
+    ).rejects.toThrow('common.parentDocumentLoadFailed:PO-1')
+  })
+
+  it('详情失败后 in-flight 锁必须释放，可以再次导入', async () => {
+    const replaceItems = vi.fn()
+    const config = {
+      key: 'sales-order',
+      parentImport: {
+        parentModuleKey: 'purchase-order',
+        label: '采购订单',
+        parentFieldKey: 'purchaseOrderNo',
+        parentDisplayFieldKey: 'orderNo',
+        useCandidateSnapshot: false,
+        transformItems: () => [{ id: 'item-1', quantity: 1 }],
+      },
+      columns: [],
+      detailFields: [],
+      formFields: [],
+      data: [],
+    } as unknown as ModulePageConfig
+    const values: ModuleRecordInput = { id: '8001', purchaseOrderNo: '' }
+    let captured: ReturnType<typeof useParentImportController> | null = null
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+    const Harness = () => {
+      captured = useParentImportController({
+        session: {
+          editorSessionKey: 'session-timeout',
+          moduleKey: 'sales-order',
+          config,
+        },
+        form: {
+          validateFields: () => Promise.resolve(values),
+          getFieldsValue: () => ({ ...values }),
+          setFieldsValue: (next: Partial<ModuleRecordInput>) =>
+            Object.assign(values, next),
+          resetFields: () => {},
+          focusField: () => {},
+        },
+        workspace: {
+          items: [],
+          replaceItems,
+          invalidateSubmission: vi.fn(),
+          onDirty: vi.fn(),
+        },
+      })
+      return null
+    }
+    try {
+      ;(
+        globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+      ).IS_REACT_ACT_ENVIRONMENT = true
+      act(() => {
+        root.render(createElement(Harness))
+      })
+
+      detailMock().mockImplementationOnce(() => {
+        throw new Error('boom')
+      })
+      await act(async () => {
+        await captured!.handleImportParentRecord([
+          { id: '5001', orderNo: 'PO-1' },
+        ])
+      })
+      expect(replaceItems).not.toHaveBeenCalled()
+
+      detailMock().mockImplementationOnce(() => ({
+        id: '5001',
+        orderNo: 'PO-1',
+        items: [{ id: 'src-1', quantity: 2 }],
+      }))
+      await act(async () => {
+        await captured!.handleImportParentRecord([
+          { id: '5001', orderNo: 'PO-1' },
+        ])
+      })
+      // 第二次没有被 in-flight 锁挡住 → finally 已解锁
+      expect(replaceItems).toHaveBeenCalledTimes(1)
+    } finally {
+      act(() => root.unmount())
+      container.remove()
+    }
   })
 })

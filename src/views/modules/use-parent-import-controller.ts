@@ -16,6 +16,7 @@ import type {
 import { message } from '@/utils/antd-app'
 import { cloneLineItems } from '@/utils/clone-utils'
 import { asString } from '@/utils/type-narrowing'
+import { withFinally } from '@/utils/with-finally'
 import {
   syncEditorFormValues,
   type WorkspaceFormApi,
@@ -38,6 +39,52 @@ interface Options {
   session: ParentImportSession
   form: WorkspaceFormApi
   workspace: ParentImportWorkspace
+}
+
+/** 父单详情请求超时（毫秒）。 */
+export const PARENT_DETAIL_TIMEOUT_MS = 10_000
+
+type ParentDetailTranslator = (
+  key: string,
+  options?: Record<string, unknown>,
+) => string
+
+/**
+ * 拉取父单详情：10s 超时 + 可中断。
+ *
+ * <p>导入进行中弹层与保存按钮是锁定的，详情请求一旦挂起就会把用户永久锁在导入态，
+ * 因此这里必须给上限。超时与失败分开提示（前者可重试、后者多为已删除/无权限），
+ * 两者都带单号——只提示「加载失败」用户无法定位是哪一张单据。</p>
+ */
+export async function fetchParentDetailWithTimeout({
+  moduleKey,
+  recordId,
+  parentNo,
+  t,
+}: {
+  moduleKey: string
+  recordId: string
+  parentNo: string
+  t: ParentDetailTranslator
+}): Promise<ModuleRecord> {
+  const controller = new AbortController()
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, PARENT_DETAIL_TIMEOUT_MS)
+  try {
+    return await getBusinessModuleDetail(moduleKey, recordId, controller.signal)
+  } catch (error) {
+    throw new Error(
+      timedOut
+        ? t('common.parentDocumentLoadTimeout', { no: parentNo })
+        : t('common.parentDocumentLoadFailed', { no: parentNo }),
+      { cause: error },
+    )
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 export function useParentImportController({
@@ -94,124 +141,122 @@ export function useParentImportController({
 
     parentImportingRef.current = true
     setParentImporting(true)
-    try {
-      const parentDetails = await Promise.all(
-        selectedRecords.map(async (selectedRecord) => {
-          if (parentImportConfig.useCandidateSnapshot) {
-            return { data: selectedRecord }
-          }
-          try {
-            return {
-              data: await getBusinessModuleDetail(
-                parentImportConfig.parentModuleKey,
-                String(selectedRecord.id),
-              ),
+    /*
+     * 收尾用 withFinally 而不是 try/finally：React Compiler 不支持带 finally 的
+     * TryStatement（react-doctor `react-hooks-js/todo`），命中后整个 Hook 会失去自动记忆化；
+     * 而导入的每条退出路径（成功 / 校验失败提前 return / 异常 / 详情超时）都必须解锁。
+     */
+    await withFinally(async () => {
+      try {
+        const parentDetails = await Promise.all(
+          selectedRecords.map(async (selectedRecord) => {
+            if (parentImportConfig.useCandidateSnapshot) {
+              return { data: selectedRecord }
             }
-          } catch (error) {
-            /*
-             * 父单详情 404/已删除/无权限：必须带上单号，否则用户只看到
-             * 「加载失败」却不知道是哪一张单据需要处理。
-             */
+            // 父单详情 404/已删除/超时都必须带单号，用户才知道该处理哪一张。
             const parentNo =
               asString(
                 selectedRecord[parentImportConfig.parentDisplayFieldKey],
               ).trim() || String(selectedRecord.id)
-            throw new Error(
-              t('common.parentDocumentLoadFailed', { no: parentNo }),
-              { cause: error },
-            )
-          }
-        }),
-      )
-
-      let nextValues = form.getFieldsValue(true)
-      let nextItems = items
-      let importedParentCount = 0
-      let importedItemCount = 0
-      let importValidationError = ''
-      // 导入前的明细行以引用身份判定「本次新增行」: buildParentImportState 复用既有行对象,
-      // 只把新导入的行作为新对象写回, 因此无需按来源 ID 再写一套去重规则。
-      const beforeItemSet = new Set(items)
-
-      for (const parentDetail of parentDetails) {
-        const parentRecord = parentDetail.data
-        const currentParentNos = parseParentRelationNos(
-          nextValues[parentImportConfig.parentFieldKey],
+            return {
+              data: await fetchParentDetailWithTimeout({
+                moduleKey: parentImportConfig.parentModuleKey,
+                recordId: String(selectedRecord.id),
+                parentNo,
+                t,
+              }),
+            }
+          }),
         )
-        const validationError = parentImportConfig.validateParentImport?.({
+
+        let nextValues = form.getFieldsValue(true)
+        let nextItems = items
+        let importedParentCount = 0
+        let importedItemCount = 0
+        let importValidationError = ''
+        // 导入前的明细行以引用身份判定「本次新增行」: buildParentImportState 复用既有行对象,
+        // 只把新导入的行作为新对象写回, 因此无需按来源 ID 再写一套去重规则。
+        const beforeItemSet = new Set(items)
+
+        for (const parentDetail of parentDetails) {
+          const parentRecord = parentDetail.data
+          const currentParentNos = parseParentRelationNos(
+            nextValues[parentImportConfig.parentFieldKey],
+          )
+          const validationError = parentImportConfig.validateParentImport?.({
+            currentRecord: nextValues,
+            currentItems: nextItems,
+            currentParentNos,
+            parentRecord,
+          })
+          if (validationError) {
+            importValidationError = validationError
+            break
+          }
+          const importState = buildParentImportState({
+            parentImportConfig,
+            parentRecord,
+            currentParentNos,
+            currentItems: nextItems,
+            cloneLineItems,
+          })
+
+          nextValues = {
+            ...nextValues,
+            [parentImportConfig.parentFieldKey]: importState.parentNosText,
+          }
+          if (importState.shouldApplyMappedValues) {
+            Object.assign(nextValues, importState.mappedValues)
+          }
+          nextItems = importState.nextItems
+          importedParentCount += importState.hasImportedCurrentParent ? 0 : 1
+          importedItemCount += importState.importedItemCount
+        }
+
+        if (importValidationError) {
+          message.error(importValidationError)
+          return
+        }
+
+        syncEditorFormValues({
+          config,
+          form,
+          moduleKey,
+          items: nextItems,
+          changedValues: nextValues,
+        })
+        invalidateSubmission()
+        onDirty()
+        replaceItems(nextItems)
+        setParentSelectorSessionKey(null)
+        setParentSelectorDefinition(null)
+        message.success(
+          importedParentCount > 1
+            ? t('common.importParentSuccess', {
+                parentCount: importedParentCount,
+                itemCount: importedItemCount,
+              })
+            : t('common.importParentSuccessSimple', {
+                itemCount: importedItemCount,
+              }),
+        )
+        // 非阻断预警: 导入已生效, 提示人工复核(如品牌/材质超出项目约定范围)。
+        const importWarning = parentImportConfig.warnParentImport?.({
           currentRecord: nextValues,
-          currentItems: nextItems,
-          currentParentNos,
-          parentRecord,
+          importedItems: nextItems.filter((item) => !beforeItemSet.has(item)),
+          parentRecords: parentDetails.map((detail) => detail.data),
         })
-        if (validationError) {
-          importValidationError = validationError
-          break
+        if (importWarning) {
+          message.warning(importWarning)
         }
-        const importState = buildParentImportState({
-          parentImportConfig,
-          parentRecord,
-          currentParentNos,
-          currentItems: nextItems,
-          cloneLineItems,
-        })
-
-        nextValues = {
-          ...nextValues,
-          [parentImportConfig.parentFieldKey]: importState.parentNosText,
-        }
-        if (importState.shouldApplyMappedValues) {
-          Object.assign(nextValues, importState.mappedValues)
-        }
-        nextItems = importState.nextItems
-        importedParentCount += importState.hasImportedCurrentParent ? 0 : 1
-        importedItemCount += importState.importedItemCount
+      } catch (error) {
+        message.error(
+          error instanceof Error
+            ? error.message
+            : t('common.importParentFailed'),
+        )
       }
-
-      if (importValidationError) {
-        message.error(importValidationError)
-        finishParentImport()
-        return
-      }
-
-      syncEditorFormValues({
-        config,
-        form,
-        moduleKey,
-        items: nextItems,
-        changedValues: nextValues,
-      })
-      invalidateSubmission()
-      onDirty()
-      replaceItems(nextItems)
-      setParentSelectorSessionKey(null)
-      setParentSelectorDefinition(null)
-      message.success(
-        importedParentCount > 1
-          ? t('common.importParentSuccess', {
-              parentCount: importedParentCount,
-              itemCount: importedItemCount,
-            })
-          : t('common.importParentSuccessSimple', {
-              itemCount: importedItemCount,
-            }),
-      )
-      // 非阻断预警: 导入已生效, 提示人工复核(如品牌/材质超出项目约定范围)。
-      const importWarning = parentImportConfig.warnParentImport?.({
-        currentRecord: nextValues,
-        importedItems: nextItems.filter((item) => !beforeItemSet.has(item)),
-        parentRecords: parentDetails.map((detail) => detail.data),
-      })
-      if (importWarning) {
-        message.warning(importWarning)
-      }
-      finishParentImport()
-    } catch (error) {
-      message.error(
-        error instanceof Error ? error.message : t('common.importParentFailed'),
-      )
-      finishParentImport()
-    }
+    }, finishParentImport)
   }
 
   const openParentSelector = () => {

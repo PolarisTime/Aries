@@ -13,6 +13,34 @@ function isRecordLike(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
+/**
+ * 明细行上的**前端 session 标记**。
+ *
+ * <p>`_parentRelationId` / `_parentRelationNo` 只允许「上游导入」流程写入，
+ * 服务端契约不返回它们。它们参与 `buildParentImportState` 的上限口径判断
+ * （带标记 = 本会话草稿、服务端 remaining 未扣减），一旦从服务端回传就会被
+ * 误判成「已保存行」，重复导入同一父单时上限重新翻倍。</p>
+ *
+ * <p>因此记录进入编辑器前统一剔除；其它 `_maxImport*` 这类派生字段不动。</p>
+ */
+const EDITOR_SESSION_ITEM_MARKERS = [
+  '_parentRelationId',
+  '_parentRelationNo',
+] as const
+
+/** 剔除明细行上的前端 session 标记（不改入参对象）。 */
+function stripEditorSessionItemMarkers(item: ModuleLineItem): ModuleLineItem {
+  let next: ModuleLineItem | null = null
+  for (const marker of EDITOR_SESSION_ITEM_MARKERS) {
+    if (!Object.hasOwn(item, marker)) {
+      continue
+    }
+    next ??= { ...item }
+    delete next[marker]
+  }
+  return next ?? item
+}
+
 function normalizeSelectLikeValue(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map((item) => normalizeSelectLikeValue(item))
@@ -74,6 +102,15 @@ export function normalizeRecordForEditor(
   record: ModuleRecordInput,
 ): ModuleRecordInput {
   let normalized: ModuleRecordInput = { ...record }
+  /*
+   * 记录入口先清掉 items 上的前端 session 标记：它们只属于导入流程，
+   * 服务端契约不返回；若某天回传，上限口径会把草稿行误判成已保存行。
+   */
+  if (Array.isArray(normalized.items)) {
+    normalized.items = (normalized.items as ModuleLineItem[]).map(
+      stripEditorSessionItemMarkers,
+    )
+  }
   const normalizeEditorRecord = getBehaviorValue(
     config.key,
     'normalizeEditorRecord',
@@ -114,7 +151,7 @@ export function normalizeLineItemsForEditor(
   items: ModuleLineItem[],
 ): ModuleLineItem[] {
   return items.map((item) => ({
-    ...item,
+    ...stripEditorSessionItemMarkers(item),
     materialCode: normalizeLabeledValueObject(item.materialCode),
     settlementMode: normalizeSelectLikeValue(item.settlementMode),
     warehouseName: normalizeSelectLikeValue(item.warehouseName),

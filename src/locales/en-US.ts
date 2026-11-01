@@ -399,6 +399,8 @@ export const enUS = {
     importParentFailed: 'Failed to import parent document',
     parentDocumentLoadFailed:
       'Failed to load document {{no}}; it may have been deleted or be inaccessible',
+    parentDocumentLoadTimeout:
+      'Timed out loading document {{no}}. Please retry.',
     logisticsChain: 'Logistics',
     logisticsChainDesc:
       'Logistics documents can flow independently or be embedded in procurement and sales chains.',
@@ -2908,6 +2910,13 @@ export const enUS = {
       'The graph hit the node/relation limit and is truncated. Open each document to see the full flow.',
     edgeQuantity: '{{value}} pcs',
     edgeWeight: '{{value}} t',
+    viewSwitchLabel: 'Document flow view',
+    viewGraph: 'Graph',
+    viewList: 'List',
+    listGroupsTitle: 'Documents by type',
+    listRelationsTitle: 'Document relations',
+    listRelationsEmpty: 'No document relations',
+    relationTo: 'to',
     types: {
       purchaseOrder: 'Purchase Order',
       purchaseInbound: 'Purchase Inbound',

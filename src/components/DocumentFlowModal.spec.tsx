@@ -306,4 +306,144 @@ describe('DocumentFlowModal', () => {
     ).map((item) => item.textContent)
     expect(metrics).toEqual(['8 件'])
   })
+
+  /** 点 Segmented 的选项（antd 渲染成 label + 隐藏 radio，点 radio 最稳）。 */
+  function clickViewSwitch(label: string) {
+    const item = Array.from(
+      document.body.querySelectorAll<HTMLElement>('.ant-segmented-item'),
+    ).find((element) => element.textContent?.includes(label))
+    expect(item, `未找到视图切换项：${label}`).toBeTruthy()
+    const input = item?.querySelector('input')
+    act(() => {
+      input?.click()
+    })
+  }
+
+  it('默认图视图；切到列表后图 DOM 消失、切回恢复', async () => {
+    mockedGetDocumentFlow.mockResolvedValue(flow)
+    await renderModal()
+
+    // 默认图：画布在、列表不在
+    expect(
+      document.body.querySelector('.document-flow-viewport'),
+    ).not.toBeNull()
+    expect(document.body.querySelector('.document-flow-list')).toBeNull()
+
+    clickViewSwitch('列表')
+
+    expect(document.body.querySelector('.document-flow-list')).not.toBeNull()
+    expect(document.body.querySelector('.document-flow-viewport')).toBeNull()
+    expect(document.body.querySelector('.document-flow-canvas')).toBeNull()
+
+    clickViewSwitch('图')
+
+    expect(
+      document.body.querySelector('.document-flow-viewport'),
+    ).not.toBeNull()
+    expect(document.body.querySelector('.document-flow-list')).toBeNull()
+  })
+
+  it('列表视图按类型分组：组头用「类型 · N 张」', async () => {
+    mockedGetDocumentFlow.mockResolvedValue({
+      ...flow,
+      nodes: [
+        flow.nodes[0],
+        flow.nodes[1],
+        {
+          type: 'purchase-inbound',
+          id: '3',
+          no: 'IN-2',
+          status: '已审核',
+          amount: null,
+          weight: null,
+          date: '2026-09-03',
+        },
+      ],
+      links: [
+        ...flow.links,
+        {
+          fromType: 'purchase-order',
+          fromId: '1',
+          toType: 'purchase-inbound',
+          toId: '3',
+          linkType: '入库',
+        },
+      ],
+    })
+    await renderModal()
+    clickViewSwitch('列表')
+
+    const groups = Array.from(
+      document.body.querySelectorAll('.document-flow-list-group'),
+    )
+    expect(groups).toHaveLength(2)
+    expect(
+      groups.map(
+        (group) =>
+          group.querySelector('.document-flow-list-group-title')?.textContent,
+      ),
+    ).toEqual(['采购单 · 1 张', '采购入库单 · 2 张'])
+    // 分组行内展示单号/状态/日期/金额/重量
+    const rows = Array.from(
+      document.body.querySelectorAll('.document-flow-list-row'),
+    )
+    expect(rows).toHaveLength(3)
+    expect(rows[0]?.textContent).toContain('PO-1')
+    expect(rows[0]?.textContent).toContain('已审核')
+    expect(rows[0]?.textContent).toContain('金额')
+    expect(rows[0]?.textContent).toContain('1,000')
+    // 当前单据行有标记
+    expect(
+      document.body.querySelector('.document-flow-list-row-current'),
+    ).not.toBeNull()
+  })
+
+  it('列表视图的关系行：上游 → 下游 + 关系类型，数量缺失不渲染', async () => {
+    mockedGetDocumentFlow.mockResolvedValue(flow)
+    await renderModal()
+    clickViewSwitch('列表')
+
+    const [relation] = Array.from(
+      document.body.querySelectorAll('.document-flow-list-relation'),
+    )
+    expect(relation?.textContent).toContain('PO-1')
+    expect(relation?.textContent).toContain('IN-1')
+    expect(relation?.textContent).toContain('入库')
+    // flow.links 没有 quantity/weight → 整段不渲染
+    expect(document.body.querySelector('.document-flow-list-metric')).toBeNull()
+  })
+
+  it('列表视图关系行带数量时展示「N 件 · N 吨」', async () => {
+    mockedGetDocumentFlow.mockResolvedValue({
+      ...flow,
+      links: [{ ...flow.links[0], quantity: '10', weight: '12.5' }],
+    })
+    await renderModal()
+    clickViewSwitch('列表')
+
+    expect(
+      document.body.querySelector('.document-flow-list-metric')?.textContent,
+    ).toBe('10 件 · 12.5 吨')
+  })
+
+  it('视图切换有可访问名（radiogroup + 业务 aria-label）', async () => {
+    mockedGetDocumentFlow.mockResolvedValue(flow)
+    await renderModal()
+
+    const group = document.body.querySelector('[role="radiogroup"]')
+    expect(group).not.toBeNull()
+    // antd Segmented 默认 aria-label 是 "segmented control"，必须被业务名覆盖
+    expect(group?.getAttribute('aria-label')).toBe('单据流向视图')
+  })
+
+  it('列表视图无关系时给出空态文案', async () => {
+    mockedGetDocumentFlow.mockResolvedValue({ ...flow, links: [] })
+    await renderModal()
+    clickViewSwitch('列表')
+
+    expect(
+      document.body.querySelector('.document-flow-list-relations'),
+    ).toBeNull()
+    expect(document.body.textContent).toContain('暂无单据关系')
+  })
 })

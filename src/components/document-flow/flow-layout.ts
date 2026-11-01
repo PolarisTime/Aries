@@ -84,7 +84,10 @@ function edgeKey(link: DocumentFlowLink): string {
  * 运行时收窄：缺失、null、空串、非法数字一律当作没有，界面据此完全不渲染数量，
  * 避免出现空标签或「NaN 吨」。</p>
  */
-function readLinkMetric(link: DocumentFlowLink, field: 'quantity' | 'weight') {
+export function readLinkMetric(
+  link: DocumentFlowLink,
+  field: 'quantity' | 'weight',
+) {
   const raw = link[field]
   if (raw === null || raw === undefined) return null
   if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null

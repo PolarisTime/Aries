@@ -388,6 +388,8 @@ export const zhCN = {
     importParentFailed: '导入上级单据失败',
     /** 父单详情拉取失败（404/已删除/无权限）：必须带单号，否则用户不知道是哪一张。 */
     parentDocumentLoadFailed: '单据 {{no}} 加载失败，可能已被删除或无权查看',
+    /** 父单详情请求超过 10s：可重试，与「失败」分开提示。 */
+    parentDocumentLoadTimeout: '单据 {{no}} 加载超时，请重试',
     logisticsChain: '物流协同',
     logisticsChainDesc: '物流相关单据独立流转，并继续支持物流对账。',
     pleaseSelectWith: '请先选择{{label}}',
@@ -2855,6 +2857,15 @@ export const zhCN = {
     /** 关系边上的引用数量（件）与重量（吨）；后端未返回时整段不渲染。 */
     edgeQuantity: '{{value}} 件',
     edgeWeight: '{{value}} 吨',
+    /** 图 / 列表 视图切换（列表是读屏替代与大图备用）。 */
+    viewSwitchLabel: '单据流向视图',
+    viewGraph: '图',
+    viewList: '列表',
+    listGroupsTitle: '单据（按类型）',
+    listRelationsTitle: '单据关系',
+    listRelationsEmpty: '暂无单据关系',
+    /** 列表关系行里箭头（上游 → 下游）的可访问名。 */
+    relationTo: '至',
     types: {
       purchaseOrder: '采购单',
       purchaseInbound: '采购入库单',
