@@ -1,3 +1,24 @@
+# [14.8.0](https://github.com/PolarisTime/Aries/compare/v14.7.0...v14.8.0) (2026-11-01)
+
+
+### Bug Fixes
+
+* **amount:** 前端金额计算统一为十进制 HALF_UP 口径 ([5cbb6a7](https://github.com/PolarisTime/Aries/commit/5cbb6a76e7a19418a78313ff02b2e25c4a5c51e2))
+* **antd:** 整改 antd 6 废弃写法并启用弃用检查门禁 ([6fd30de](https://github.com/PolarisTime/Aries/commit/6fd30de6f47721f8f06fdb9a4f2fd7026a4a96fb))
+* **aries:** 删除迁移遗留死代码并补齐 i18n 与错误码门禁 ([f1ec771](https://github.com/PolarisTime/Aries/commit/f1ec771ef55ec8f887600238cf2d97ffd7123fbf))
+* **import,document-flow:** 修复导入竞态与上限翻倍，单据流补列头与边数量 ([6119cbe](https://github.com/PolarisTime/Aries/commit/6119cbe7931afd7318fb9de5e194c36001143484))
+* **lint:** 移除多余类型断言并通过 eslint ([3e9da1c](https://github.com/PolarisTime/Aries/commit/3e9da1c20ced0f88e71c7d406dbd04e20daa2d3d))
+
+
+### Features
+
+* **aries:** 付款/收款单接入资源版本前置条件 ([8262eec](https://github.com/PolarisTime/Aries/commit/8262eecd9332b056163933f981046915e7a9230b))
+* **aries:** 模块更新接入 X-Resource-Version 前置条件 ([a8d4d50](https://github.com/PolarisTime/Aries/commit/a8d4d5031702714237c63e33779ba439f1f9840c))
+* **aries:** 补齐报价单/项目配置/采购明细/导出的幂等键 ([11632d6](https://github.com/PolarisTime/Aries/commit/11632d60cc337ee9162f01d01e5676b21e59311d))
+* **document-flow:** 单据流拆分组件并新增列表视图，导入详情加超时 ([c40f09c](https://github.com/PolarisTime/Aries/commit/c40f09ca70dae5c8e831bce8d7bb832125825c9c))
+* **purchase-inbound,document-flow:** 采购入库改单选导入，单据流向补列头与边数量 ([c7b591b](https://github.com/PolarisTime/Aries/commit/c7b591b9dd2eccde467ffd1a49cadf9365c9e924))
+* **sales-order:** 销售订单三处展示项目数据面板 ([c1b60bb](https://github.com/PolarisTime/Aries/commit/c1b60bb5c9225c152db4ab6b81dbc9c4556920b2))
+
 # [14.7.0](https://github.com/PolarisTime/Aries/compare/v14.6.0...v14.7.0) (2026-10-31)
 
 
