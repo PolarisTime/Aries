@@ -1934,7 +1934,7 @@ export const zhCN = {
         validationSameSettlementCompany:
           '来源采购订单存在不同结算主体，不能合并生成采购入库单',
         validationPurchaseOrderNoTooLong:
-          '合并后的采购订单号长度不能超过 {{max}} 个字符',
+          '采购订单号长度不能超过 {{max}} 个字符',
       },
       salesOutbound: {
         title: '销售出库',
@@ -2843,6 +2843,14 @@ export const zhCN = {
     legendUpstream: '上游',
     legendDownstream: '下游',
     currentBadge: '当前单据',
+    /** 列头摘要：「采购单 · 2 张」，替代把类型写在每条连线上。 */
+    typeCount: '{{type}} · {{count}} 张',
+    /** 服务端达到节点/关系上限后截断展示，必须显式告知。 */
+    truncated:
+      '节点或关系数量已达上限，图中为截断后的结果；完整流转请逐单打开查看',
+    /** 关系边上的引用数量（件）与重量（吨）；后端未返回时整段不渲染。 */
+    edgeQuantity: '{{value}} 件',
+    edgeWeight: '{{value}} 吨',
     types: {
       purchaseOrder: '采购单',
       purchaseInbound: '采购入库单',

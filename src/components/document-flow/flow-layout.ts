@@ -9,6 +9,13 @@ export const FLOW_NODE_HEIGHT = 96
 export const FLOW_COLUMN_GAP = 56
 export const FLOW_ROW_GAP = 20
 export const FLOW_CANVAS_PADDING = 16
+/**
+ * 列头「单据类型 · N 张」占用的顶部高度。
+ *
+ * <p>列头是每列的类型摘要，必须与节点同列对齐、随画布一起横向滚动，因此画布顶部
+ * 预留一条固定高度的带；节点的 y 从这里开始，连线几何仍按节点真实坐标计算。</p>
+ */
+export const FLOW_HEADER_HEIGHT = 28
 
 export interface FlowLayoutNode {
   key: string
@@ -18,6 +25,9 @@ export interface FlowLayoutNode {
   y: number
 }
 
+/** 连线上的可空数量指标：后端可能返回 number 或字符串，缺失即 null。 */
+export type FlowMetricValue = number | string | null
+
 export interface FlowLayoutEdge {
   key: string
   fromKey: string
@@ -26,11 +36,29 @@ export interface FlowLayoutEdge {
   path: string
   labelX: number
   labelY: number
+  /** 关系边上的引用数量（件）；后端未返回时为 null，界面必须完全不渲染。 */
+  quantity: FlowMetricValue
+  /** 关系边上的引用重量（吨）；后端未返回时为 null，界面必须完全不渲染。 */
+  weight: FlowMetricValue
+}
+
+/** 某一列的类型摘要：同层混排时按类型分组，逐一给出张数。 */
+export interface FlowLayoutHeaderType {
+  type: string
+  count: number
+}
+
+export interface FlowLayoutHeader {
+  level: number
+  x: number
+  width: number
+  types: FlowLayoutHeaderType[]
 }
 
 export interface FlowLayout {
   nodes: FlowLayoutNode[]
   edges: FlowLayoutEdge[]
+  headers: FlowLayoutHeader[]
   width: number
   height: number
 }
@@ -43,6 +71,22 @@ function edgeKey(link: DocumentFlowLink): string {
   // 同一对节点间可能存在多种关系(如物流单同时是销售单与出库单的下游),
   // key 必须包含 linkType, 否则多条连线会被误去重而丢失关系标签。
   return `${link.fromType ?? ''}:${link.fromId ?? ''}->${link.toType ?? ''}:${link.toId ?? ''}#${link.linkType ?? ''}`
+}
+
+/**
+ * 读取关系边上的可空数量字段（quantity=件 / weight=吨）。
+ *
+ * <p>这两个字段由后端新增、契约里声明为可空（number 或十进制字符串），这里仍做一次
+ * 运行时收窄：缺失、null、空串、非法数字一律当作没有，界面据此完全不渲染数量，
+ * 避免出现空标签或「NaN 吨」。</p>
+ */
+function readLinkMetric(link: DocumentFlowLink, field: 'quantity' | 'weight') {
+  const raw = link[field]
+  if (raw === null || raw === undefined) return null
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null
+  const trimmed = raw.trim()
+  if (trimmed === '' || !Number.isFinite(Number(trimmed))) return null
+  return trimmed
 }
 
 /** 取一组位置的中位数；无有效邻居时返回 null。 */
@@ -246,10 +290,34 @@ export function layoutDocumentFlow(
         node: nodesByKey.get(key) as DocumentFlowNode,
         level,
         x: level * (FLOW_NODE_WIDTH + FLOW_COLUMN_GAP),
-        y: offset + row * (FLOW_NODE_HEIGHT + FLOW_ROW_GAP),
+        // 顶部预留列头带，节点从这里开始；连线几何按同一坐标计算，不会错位。
+        y:
+          FLOW_HEADER_HEIGHT + offset + row * (FLOW_NODE_HEIGHT + FLOW_ROW_GAP),
       })
     })
   }
+
+  /*
+   * 列头摘要：每列显示「类型 · N 张」，替代把类型写在每条连线上
+   * （同一汇聚干线上会重复出现「销售」，且连线一多就糊成一片）。
+   * 同层混排（如退货单与物流单同层）时按类型分组拼接，顺序取该列首次出现顺序。
+   */
+  const layoutHeaders: FlowLayoutHeader[] = Array.from(orderedGroups.keys())
+    .sort((a, b) => a - b)
+    .map((level) => {
+      const countByType = new Map<string, number>()
+      for (const key of orderedGroups.get(level) ?? []) {
+        const node = nodesByKey.get(key)
+        if (!node) continue
+        countByType.set(node.type, (countByType.get(node.type) ?? 0) + 1)
+      }
+      return {
+        level,
+        x: level * (FLOW_NODE_WIDTH + FLOW_COLUMN_GAP),
+        width: FLOW_NODE_WIDTH,
+        types: Array.from(countByType, ([type, count]) => ({ type, count })),
+      }
+    })
 
   const layoutByKey = new Map(layoutNodes.map((item) => [item.key, item]))
   const layoutEdges: FlowLayoutEdge[] = []
@@ -266,6 +334,8 @@ export function layoutDocumentFlow(
       labelX: (from.x + FLOW_NODE_WIDTH + to.x) / 2 + FLOW_CANVAS_PADDING,
       labelY:
         (from.y + to.y) / 2 + FLOW_NODE_HEIGHT / 2 + FLOW_CANVAS_PADDING - 4,
+      quantity: readLinkMetric(edge.link, 'quantity'),
+      weight: readLinkMetric(edge.link, 'weight'),
     })
   }
 
@@ -283,6 +353,10 @@ export function layoutDocumentFlow(
       y: item.y + FLOW_CANVAS_PADDING,
     })),
     edges: layoutEdges,
+    headers: layoutHeaders.map((header) => ({
+      ...header,
+      x: header.x + FLOW_CANVAS_PADDING,
+    })),
     width,
     height,
   }

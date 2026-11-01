@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   FLOW_CANVAS_PADDING,
   FLOW_COLUMN_GAP,
+  FLOW_HEADER_HEIGHT,
   FLOW_NODE_WIDTH,
   layoutDocumentFlow,
 } from '@/components/document-flow/flow-layout'
@@ -142,5 +143,77 @@ describe('layoutDocumentFlow', () => {
       expect(Number.isFinite(item.x)).toBe(true)
       expect(Number.isFinite(item.y)).toBe(true)
     }
+  })
+
+  it('每列生成一条列头摘要, 同层混排按类型分组计数', () => {
+    const inbound = node('purchase-inbound', '2', 'IN-1')
+    const anotherInbound = node('purchase-inbound', '4', 'IN-2')
+    const freight = node('freight-bill', '3', 'FB-1')
+    const layout = layoutDocumentFlow(
+      [order, inbound, anotherInbound, freight],
+      [link(order, inbound), link(order, anotherInbound), link(order, freight)],
+    )
+
+    expect(layout.headers).toHaveLength(2)
+    const [first, second] = layout.headers
+    expect(first.level).toBe(0)
+    expect(first.types).toEqual([{ type: 'purchase-order', count: 1 }])
+    // 第 2 列: 两张采购入库单 + 一张物流单
+    expect(second.level).toBe(1)
+    expect(
+      Object.fromEntries(
+        second.types.map((group) => [group.type, group.count]),
+      ),
+    ).toEqual({ 'purchase-inbound': 2, 'freight-bill': 1 })
+  })
+
+  it('列头与同列节点左边界对齐, 节点为列头带预留高度', () => {
+    const layout = layoutDocumentFlow([order, inbound], [link(order, inbound)])
+
+    for (const header of layout.headers) {
+      const columnNodes = layout.nodes.filter(
+        (item) => item.level === header.level,
+      )
+      expect(columnNodes.length).toBeGreaterThan(0)
+      expect(header.x).toBe(columnNodes[0].x)
+      expect(header.width).toBe(FLOW_NODE_WIDTH)
+    }
+    expect(layout.nodes[0].y).toBe(FLOW_CANVAS_PADDING + FLOW_HEADER_HEIGHT)
+  })
+
+  it('连线透传可空 quantity/weight, 缺失时为 null', () => {
+    const layout = layoutDocumentFlow(
+      [order, inbound],
+      [
+        link(order, inbound),
+        {
+          ...link(order, inbound),
+          linkType: 'second',
+          quantity: '10',
+          weight: 12.5,
+        },
+      ],
+    )
+
+    expect(layout.edges).toHaveLength(2)
+    expect(layout.edges[0].quantity).toBeNull()
+    expect(layout.edges[0].weight).toBeNull()
+    expect(layout.edges[1].quantity).toBe('10')
+    expect(layout.edges[1].weight).toBe(12.5)
+  })
+
+  it('非法/空字符串的数量字段按缺失处理', () => {
+    const layout = layoutDocumentFlow(
+      [order, inbound],
+      [{ ...link(order, inbound), quantity: '  ', weight: Number.NaN }],
+    )
+
+    expect(layout.edges[0].quantity).toBeNull()
+    expect(layout.edges[0].weight).toBeNull()
+  })
+
+  it('空输入不产生列头', () => {
+    const layout = layoutDocumentFlow([], [])
+    expect(layout.headers).toEqual([])
   })
 })

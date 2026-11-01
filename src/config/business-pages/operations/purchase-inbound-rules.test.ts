@@ -209,20 +209,64 @@ describe('purchase-inbound-rules', () => {
     })
   })
 
-  describe('validatePurchaseInboundParentImport', () => {
-    const firstOrder = recordWith({
-      orderNo: 'PO-1',
-      supplierId: '1932500000000000011',
-      supplierCode: 'S001',
-      settlementCompanyId: '1932500000000000021',
+  describe('validatePurchaseInboundParentImport（单选：单一来源订单 + 单号长度）', () => {
+    it('单张订单号正常时放行', () => {
+      expect(
+        validatePurchaseInboundParentImport({
+          parentRecord: recordWith({ orderNo: 'PO-1' }),
+        }),
+      ).toBeNull()
     })
 
-    const supplierBase = {
-      supplierId: '1932500000000000011',
-      supplierCode: 'S001',
-      settlementCompanyId: '1932500000000000021',
-    }
+    it('单张订单号恰好等于列宽上限时放行（边界值）', () => {
+      expect(
+        validatePurchaseInboundParentImport({
+          parentRecord: recordWith({ orderNo: 'X'.repeat(256) }),
+        }),
+      ).toBeNull()
+    })
 
+    it('单张订单号超出列宽上限时拦截', () => {
+      expect(
+        validatePurchaseInboundParentImport({
+          parentRecord: recordWith({ orderNo: 'X'.repeat(257) }),
+        }),
+      ).toBe('采购订单号长度不能超过 256 个字符')
+    })
+
+    it('空订单号不拦截（是否必填由表单校验负责）', () => {
+      expect(
+        validatePurchaseInboundParentImport({
+          parentRecord: recordWith({ orderNo: '' }),
+        }),
+      ).toBeNull()
+    })
+
+    it('已导入 PO-1 后再选另一张 PO-2：导入前就拦下（不再等保存失败）', () => {
+      /*
+       * 单选语义：一张入库单只能关联一张采购订单。若放行，共享适配器会把表头来源单号
+       * 拼成「PO-1, PO-2」并把两单明细混在一起，用户要填完整单才在保存时被
+       * module-editor-validation 的 purchaseInboundMixedSource 拒绝。
+       */
+      expect(
+        validatePurchaseInboundParentImport({
+          currentParentNos: ['PO-1'],
+          parentRecord: recordWith({ orderNo: 'PO-2' }),
+        }),
+      ).toBe('一张采购入库单只能关联一张采购订单')
+    })
+
+    it('已导入 PO-1 后再次导入同一张 PO-1：放行（用于刷新剩余可入库量）', () => {
+      expect(
+        validatePurchaseInboundParentImport({
+          currentParentNos: ['PO-1'],
+          parentRecord: recordWith({ orderNo: 'PO-1' }),
+        }),
+      ).toBeNull()
+    })
+  })
+
+  describe('采购入库单选导入', () => {
     const sourceItems: ModuleLineItem[] = [
       {
         id: '1932500000000000101',
@@ -233,236 +277,16 @@ describe('purchase-inbound-rules', () => {
       },
     ]
 
-    it('多选来源供应商不一致时提示，不静默覆盖表头', () => {
-      expect(
-        validatePurchaseInboundParentImport({
-          currentRecord: supplierBase,
-          currentItems: sourceItems,
-          currentParentNos: ['PO-1'],
-          parentRecord: recordWith({
-            orderNo: 'PO-2',
-            supplierId: '1932500000000000012',
-            supplierCode: 'S002',
-          }),
-        }),
-      ).toBe('来源采购订单存在不同供应商，不能合并生成采购入库单')
-    })
-
-    it('供应商 id 相同但 code 未漂移时放行', () => {
-      expect(
-        validatePurchaseInboundParentImport({
-          currentRecord: supplierBase,
-          currentItems: sourceItems,
-          currentParentNos: ['PO-1'],
-          parentRecord: recordWith({
-            orderNo: 'PO-2',
-            supplierId: '1932500000000000011',
-            supplierCode: 'S001',
-            settlementCompanyId: '1932500000000000021',
-          }),
-        }),
-      ).toBeNull()
-    })
-
-    it('多选来源结算主体不一致时提示', () => {
-      expect(
-        validatePurchaseInboundParentImport({
-          currentRecord: supplierBase,
-          currentItems: sourceItems,
-          currentParentNos: ['PO-1'],
-          parentRecord: recordWith({
-            orderNo: 'PO-2',
-            supplierId: '1932500000000000011',
-            supplierCode: 'S001',
-            settlementCompanyId: '1932500000000000022',
-          }),
-        }),
-      ).toBe('来源采购订单存在不同结算主体，不能合并生成采购入库单')
-    })
-
-    it('合并后来源单号超长时提前拦截', () => {
-      const currentRecord = { ...supplierBase, purchaseOrderNo: 'PO-1' }
-      const longOrderNo = 'X'.repeat(256)
-      expect(
-        validatePurchaseInboundParentImport({
-          currentRecord,
-          currentItems: sourceItems,
-          currentParentNos: ['PO-1'],
-          parentRecord: recordWith({ orderNo: longOrderNo }),
-        }),
-      ).toBe('合并后的采购订单号长度不能超过 256 个字符')
-    })
-
-    it('首次导入（尚无已选来源）跳过一致性校验以保留单选回填路径', () => {
-      expect(
-        validatePurchaseInboundParentImport({
-          currentRecord: {},
-          currentItems: [],
-          currentParentNos: [],
-          parentRecord: firstOrder,
-        }),
-      ).toBeNull()
-    })
-
-    it('删空全部来源明细后允许改选其它供应商，不误拦截', () => {
-      expect(
-        validatePurchaseInboundParentImport({
-          currentRecord: supplierBase,
-          currentItems: [
-            { id: 'draft-1', quantity: 0, pieceWeightTon: 0, unitPrice: 0 },
-          ],
-          currentParentNos: ['PO-1'],
-          parentRecord: recordWith({
-            orderNo: 'PO-3',
-            supplierId: '1932500000000000019',
-            supplierCode: 'S009',
-          }),
-        }),
-      ).toBeNull()
-    })
-  })
-
-  describe('采购入库多选合并导入', () => {
-    it('页面配置启用多选并接入一致性校验', () => {
+    it('页面配置不再启用多选，且仍接入导入前校验', () => {
       expect(
         purchaseInboundsPageConfig.parentImport?.allowMultipleSelection,
-      ).toBe(true)
+      ).not.toBe(true)
       expect(
         purchaseInboundsPageConfig.parentImport?.validateParentImport,
       ).toBe(validatePurchaseInboundParentImport)
     })
 
-    it('合并多单时 purchaseOrderNo 为多单号拼接，仅保留首单表头且不取最后一单', () => {
-      const commonHeader = {
-        supplierId: '1932500000000000011',
-        supplierCode: 'S001',
-        supplierName: '供应商甲',
-        settlementCompanyId: '1932500000000000021',
-      }
-      const first = runParentImport({
-        parentRecord: recordWith({
-          id: '1932500000000000011',
-          orderNo: 'PO-1',
-          ...commonHeader,
-          items: [
-            {
-              id: '1932500000000000101',
-              quantity: 1,
-              pieceWeightTon: 1,
-              unitPrice: 100,
-            },
-          ],
-        }),
-      })
-
-      const afterFirstValues = {
-        ...first.state.mappedValues,
-        purchaseOrderNo: first.state.parentNosText,
-      }
-      const second = runParentImport({
-        parentRecord: recordWith({
-          id: '1932500000000000012',
-          orderNo: 'PO-2',
-          ...commonHeader,
-          items: [
-            {
-              id: '1932500000000000102',
-              quantity: 2,
-              pieceWeightTon: 1,
-              unitPrice: 200,
-            },
-          ],
-        }),
-        currentRecord: afterFirstValues,
-        currentParentNos: first.state.parentNosText.split(', '),
-        currentItems: first.state.nextItems,
-      })
-
-      expect(second.validationError).toBeNull()
-      expect(second.state.parentNosText).toBe('PO-1, PO-2')
-      expect(second.state.shouldApplyMappedValues).toBe(false)
-      expect(second.state.mappedValues.supplierName).toBe('供应商甲')
-      expect(second.state.nextItems).toHaveLength(2)
-    })
-
-    it('多仓库来源合并不改写表头仓库，行级仓库保留各自来源', () => {
-      const commonHeader = {
-        supplierId: '1932500000000000011',
-        supplierCode: 'S001',
-        settlementCompanyId: '1932500000000000021',
-      }
-      const first = runParentImport({
-        parentRecord: recordWith({
-          id: '1932500000000000011',
-          orderNo: 'PO-1',
-          warehouseId: '1932500000000000201',
-          warehouseName: '一号仓',
-          ...commonHeader,
-          items: [
-            {
-              id: '1932500000000000101',
-              warehouseId: '1932500000000000201',
-              warehouseName: '一号仓',
-              quantity: 1,
-              pieceWeightTon: 1,
-              unitPrice: 100,
-            },
-          ],
-        }),
-      })
-      const second = runParentImport({
-        parentRecord: recordWith({
-          id: '1932500000000000012',
-          orderNo: 'PO-2',
-          warehouseId: '1932500000000000202',
-          warehouseName: '二号仓',
-          ...commonHeader,
-          items: [
-            {
-              id: '1932500000000000102',
-              warehouseId: '1932500000000000202',
-              warehouseName: '二号仓',
-              quantity: 1,
-              pieceWeightTon: 1,
-              unitPrice: 100,
-            },
-          ],
-        }),
-        currentRecord: {
-          ...first.state.mappedValues,
-          purchaseOrderNo: first.state.parentNosText,
-        },
-        currentParentNos: ['PO-1'],
-        currentItems: first.state.nextItems,
-      })
-
-      // 表头不携带仓库字段：多仓库由后端按行级 warehouseId 置 null 并命名「多仓库」。
-      const headerWarehouseKeys = (
-        purchaseInboundsPageConfig.formFields ?? []
-      ).flatMap((field) =>
-        field.key === 'warehouseId' || field.key === 'warehouseName'
-          ? [field.key]
-          : [],
-      )
-      expect(headerWarehouseKeys).toEqual([])
-      expect(second.state.mappedValues.warehouseId).toBeUndefined()
-      const lineWarehouses = second.state.nextItems.map((item) => ({
-        warehouseId: item.warehouseId,
-        warehouseName: item.warehouseName,
-      }))
-      expect(lineWarehouses).toEqual([
-        {
-          warehouseId: '1932500000000000201',
-          warehouseName: '一号仓',
-        },
-        {
-          warehouseId: '1932500000000000202',
-          warehouseName: '二号仓',
-        },
-      ])
-    })
-
-    it('单选导入仍回填表头供应商与结算主体', () => {
+    it('单张订单导入回填表头供应商与结算主体', () => {
       const single = runParentImport({
         parentRecord: recordWith({
           orderNo: 'PO-1',
@@ -481,6 +305,52 @@ describe('purchase-inbound-rules', () => {
         supplierName: '供应商甲',
         settlementCompanyName: '结算主体甲',
       })
+    })
+
+    it('单张订单导入保留行级仓库，表头不携带仓库字段', () => {
+      const single = runParentImport({
+        parentRecord: recordWith({
+          orderNo: 'PO-1',
+          warehouseId: '1932500000000000201',
+          warehouseName: '一号仓',
+          items: [
+            {
+              id: '1932500000000000101',
+              warehouseId: '1932500000000000201',
+              warehouseName: '一号仓',
+              quantity: 1,
+              pieceWeightTon: 1,
+              unitPrice: 100,
+            },
+          ],
+        }),
+      })
+
+      // 表头不携带仓库字段：仓库由行级 warehouseId 决定（多仓库时后端另行处理）。
+      const headerWarehouseKeys = (
+        purchaseInboundsPageConfig.formFields ?? []
+      ).flatMap((field) =>
+        field.key === 'warehouseId' || field.key === 'warehouseName'
+          ? [field.key]
+          : [],
+      )
+      expect(headerWarehouseKeys).toEqual([])
+      expect(single.state.mappedValues.warehouseId).toBeUndefined()
+      expect(single.state.nextItems.map((item) => item.warehouseName)).toEqual([
+        '一号仓',
+      ])
+    })
+
+    it('重新导入同一张订单不重复累计来源单号', () => {
+      const again = runParentImport({
+        parentRecord: recordWith({ orderNo: 'PO-1' }),
+        currentParentNos: ['PO-1'],
+        currentItems: sourceItems,
+      })
+
+      expect(again.validationError).toBeNull()
+      expect(again.state.hasImportedCurrentParent).toBe(true)
+      expect(again.state.parentNosText).toBe('PO-1')
     })
   })
 })

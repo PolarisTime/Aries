@@ -337,7 +337,11 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     parentDisplayFieldKey: 'orderNo',
     buttonText: i18next.t('modules.pages.purchaseInbound.parentImportButton'),
     candidateQueryType: 'purchase-order-import',
-    allowMultipleSelection: true,
+    /*
+     * 单选导入：一张采购入库单只能关联一张采购订单。多选合并能力已下线
+     * （不传 allowMultipleSelection 即弹层单选框 + 点行即选中）。
+     * 后端与 module-editor-validation 的混来源校验是同一口径的兜底。
+     */
     remainingQuantityKey: 'remainingQuantity',
     buildParentFilters: buildPurchaseInboundParentFilters,
     hiddenSelectorColumnKeys: ['status'],

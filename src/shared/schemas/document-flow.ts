@@ -23,6 +23,15 @@ const documentFlowLinkSchema = z.looseObject({
   toType: z.string().optional(),
   toId: responseEntityIdSchema.optional(),
   linkType: z.string().optional(),
+  /**
+   * 该下游单据实际引用上游明细的数量（件）与重量（吨）。
+   *
+   * <p>后端只对「采购订单→采购入库、采购入库→销售订单、销售订单→销售出库、
+   * 销售订单→物流单」四条明细级链路填充，其余链路（对账单、退货等）为 null；
+   * 前端必须按"缺失/为 null 就完全不渲染"处理，不能补 0。</p>
+   */
+  quantity: z.union([z.number(), z.string()]).nullish(),
+  weight: z.union([z.number(), z.string()]).nullish(),
 })
 
 export const documentFlowSchema = z.looseObject({

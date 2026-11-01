@@ -1963,7 +1963,7 @@ export const enUS = {
         validationSameSettlementCompany:
           'Cannot merge purchase orders with different settlement entities',
         validationPurchaseOrderNoTooLong:
-          'Merged PO number cannot exceed {{max}} characters',
+          'PO number cannot exceed {{max}} characters',
       },
       salesOutbound: {
         title: 'Sales Outbounds',
@@ -2900,6 +2900,11 @@ export const enUS = {
     legendUpstream: 'Upstream',
     legendDownstream: 'Downstream',
     currentBadge: 'Current',
+    typeCount: '{{type}} · {{count}}',
+    truncated:
+      'The graph hit the node/relation limit and is truncated. Open each document to see the full flow.',
+    edgeQuantity: '{{value}} pcs',
+    edgeWeight: '{{value}} t',
     types: {
       purchaseOrder: 'Purchase Order',
       purchaseInbound: 'Purchase Inbound',
