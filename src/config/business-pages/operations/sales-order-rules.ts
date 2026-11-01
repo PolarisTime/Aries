@@ -13,6 +13,7 @@ import type {
   ModuleRecord,
   ModuleRecordInput,
 } from '@/types/module-page'
+import { multiplyAmount } from '@/utils/money'
 import { asString } from '@/utils/type-narrowing'
 import {
   buildAmountWeightOverview,
@@ -165,9 +166,7 @@ export function transformPurchaseInboundItemsToSalesOrderItems(
             pieceWeightTon,
             remainingQuantity,
             remainingWeightTon,
-            remainingAmount: Number(
-              (remainingWeightTon * unitPrice).toFixed(2),
-            ),
+            remainingAmount: multiplyAmount(remainingWeightTon, unitPrice),
             _sourceTotalQuantity: item.quantity,
             _sourceTotalWeightTon: item.weightTon,
             _sourcePieceWeightTon: item.pieceWeightTon,

@@ -4,6 +4,7 @@ import type {
   ModuleRecord,
   ModuleRecordInput,
 } from '@/types/module-page'
+import { multiplyAmount } from '@/utils/money'
 import { asString } from '@/utils/type-narrowing'
 import { buildAmountWeightOverview } from '../shared/shared'
 
@@ -77,7 +78,7 @@ export function transformSalesOrderItemsToFreightBillItems(
               ),
             )
           : Number(item.weightTon || 0)
-      const amount = Number((weightTon * unitPrice).toFixed(2))
+      const amount = multiplyAmount(weightTon, unitPrice)
       return {
         ...base,
         quantity: remainingQuantity,

@@ -9,11 +9,17 @@ import {
   resolveFreightSettlementMode,
   SETTLEMENT_MODE_FIELD,
 } from '@/constants/freight-settlement'
-import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import type { ModuleBehaviorContributor } from '@/module-system/behavior/module-behavior-registry-core'
 import { collectUniqueSourceNos } from '@/module-system/behavior/module-behavior-registry-utils'
 import { normalizeStatementDirection } from '@/shared/schemas/customer-statement'
 import type { ModuleRecord } from '@/types/module-page'
+import {
+  multiplyAmount,
+  roundAmount,
+  roundWeight,
+  subtractAmount,
+  sumAmounts,
+} from '@/utils/money'
 import { asString } from '@/utils/type-narrowing'
 
 export const contributeNormalizerBehaviors: ModuleBehaviorContributor = (
@@ -40,26 +46,21 @@ export const contributeNormalizerBehaviors: ModuleBehaviorContributor = (
       if (sourceNos) {
         record.sourceOrderNos = sourceNos
       }
-      record.totalWeight = Number(
-        ctx
-          .sumLineItemsBy(items, 'weightTon')
-          .toFixed(INTERNAL_WEIGHT_PRECISION),
-      )
+      record.totalWeight = roundWeight(ctx.sumLineItemsBy(items, 'weightTon'))
       // 结算金额口径：按吨位 = 单价 × 吨位合计（历史口径，数值完全不变）；
       // 固定运费 = 固定运费金额。totalFreight 就是本次结算金额（入账/对账单/列表「总运费」都读它）。
       record[SETTLEMENT_MODE_FIELD] = resolveFreightSettlementMode(record)
       const fixedFreightAmount = resolveFixedFreightAmount(record)
       if (isFixedFreightSettlement(record)) {
         record[FIXED_FREIGHT_AMOUNT_FIELD] = fixedFreightAmount
-        record.totalFreight = Number((fixedFreightAmount ?? 0).toFixed(2))
+        record.totalFreight = roundAmount(fixedFreightAmount)
       } else {
         // 按吨位模式必须显式落 null：后端把该模式下的非 null 金额视为互斥冲突（422），
         // null 则用于清空库里遗留的固定金额。
         record[FIXED_FREIGHT_AMOUNT_FIELD] = null
-        record.totalFreight = Number(
-          (
-            Number(record.unitPrice || 0) * Number(record.totalWeight || 0)
-          ).toFixed(2),
+        record.totalFreight = multiplyAmount(
+          record.unitPrice,
+          record.totalWeight,
         )
       }
     },
@@ -80,11 +81,7 @@ export const contributeNormalizerBehaviors: ModuleBehaviorContributor = (
         record.sourceBillNos = sourceBillNos
       }
       if (items.length) {
-        record.totalWeight = Number(
-          ctx
-            .sumLineItemsBy(items, 'weightTon')
-            .toFixed(INTERNAL_WEIGHT_PRECISION),
-        )
+        record.totalWeight = roundWeight(ctx.sumLineItemsBy(items, 'weightTon'))
         const sourceFreightMap = new Map<string, number>()
         const sourceBillDates: string[] = []
         items.forEach((item) => {
@@ -105,9 +102,7 @@ export const contributeNormalizerBehaviors: ModuleBehaviorContributor = (
         })
         const sourceFreights = Array.from(sourceFreightMap.values())
         if (sourceFreightMap.size) {
-          record.totalFreight = Number(
-            sourceFreights.reduce((sum, value) => sum + value, 0).toFixed(2),
-          )
+          record.totalFreight = sumAmounts(sourceFreights)
         }
         if (sourceBillDates.length) {
           const sortedDates = sourceBillDates.toSorted()
@@ -116,10 +111,9 @@ export const contributeNormalizerBehaviors: ModuleBehaviorContributor = (
         }
       }
       record.paidAmount = Number(record.paidAmount || 0)
-      record.unpaidAmount = Number(
-        (
-          Number(record.totalFreight || 0) - Number(record.paidAmount || 0)
-        ).toFixed(2),
+      record.unpaidAmount = subtractAmount(
+        record.totalFreight,
+        record.paidAmount,
       )
       if (Array.isArray(record.attachments)) {
         record.attachment = record.attachments
@@ -141,9 +135,7 @@ export const contributeNormalizerBehaviors: ModuleBehaviorContributor = (
     },
     normalizeDraftRecord(record, items, ctx) {
       if (items.length) {
-        record.salesAmount = Number(
-          ctx.sumLineItemsBy(items, 'amount').toFixed(2),
-        )
+        record.salesAmount = roundAmount(ctx.sumLineItemsBy(items, 'amount'))
         record.sourceOrderNos = collectUniqueSourceNos(items)
         const sourceDates = items
           .flatMap((item) => {
@@ -157,7 +149,7 @@ export const contributeNormalizerBehaviors: ModuleBehaviorContributor = (
         }
       }
       record.receiptAmount = Number(record.receiptAmount || 0)
-      record.closingAmount = Number(Number(record.salesAmount || 0).toFixed(2))
+      record.closingAmount = roundAmount(record.salesAmount)
       record.direction = normalizeStatementDirection(record.direction)
     },
   })

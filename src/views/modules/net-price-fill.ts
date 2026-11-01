@@ -3,6 +3,7 @@ import type { MaterialPriceMatch } from '@/api/market/steel-quotes'
 import { recalculateEditorLineItem } from '@/module-system/editor/module-editor-line-item-calculations'
 import type { ModuleLineItem } from '@/types/module-page'
 import { substituteMaterialOf } from '@/utils/material-grade'
+import { roundAmount } from '@/utils/money'
 
 export type PriceFloatMode = 'ADD' | 'SUBTRACT'
 
@@ -33,7 +34,7 @@ export function normalizeDateValue(value: unknown): string {
 
 /** 按 2 位小数四舍五入（与后端金额精度口径一致）。 */
 export function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100
+  return roundAmount(value)
 }
 
 /**

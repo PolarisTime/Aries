@@ -1,6 +1,7 @@
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import { toRoundedNumber } from '@/module-system/editor/module-editor-shared'
 import type { ModuleLineItem } from '@/types/module-page'
+import { divideAmount, multiplyAmount } from '@/utils/money'
 import { asString } from '@/utils/type-narrowing'
 
 function calculateWeightByPieceWeightTon(
@@ -156,15 +157,12 @@ export function recalculateEditorLineItem(
 
   const currentWeightTon = Number(item.weightTon || 0)
   if (changedKey === 'amount' && currentWeightTon > 0) {
-    item.unitPrice = toRoundedNumber(
-      Number(item.amount || 0) / currentWeightTon,
-      2,
-    )
+    item.unitPrice = divideAmount(item.amount, currentWeightTon)
     // 反推单价后必须同步重量调整金额：它与「改单价」同一口径（调整吨位 × 单价），
     // 否则同一行上两个金额会按新旧两个单价各算一次。
-    item.weightAdjustmentAmount = toRoundedNumber(
-      Number(item.weightAdjustmentTon || 0) * Number(item.unitPrice || 0),
-      2,
+    item.weightAdjustmentAmount = multiplyAmount(
+      item.weightAdjustmentTon,
+      item.unitPrice,
     )
     return item
   }
@@ -177,17 +175,14 @@ export function recalculateEditorLineItem(
     changedKey === 'weightTon' ||
     changedKey === 'unitPrice'
   ) {
-    item.amount = toRoundedNumber(
-      Number(item.weightTon || 0) * Number(item.unitPrice || 0),
-      2,
-    )
+    item.amount = multiplyAmount(item.weightTon, item.unitPrice)
     item.weightAdjustmentTon = toRoundedNumber(
       Number(item.weightTon || 0) - theoreticalWeightTon,
       INTERNAL_WEIGHT_PRECISION,
     )
-    item.weightAdjustmentAmount = toRoundedNumber(
-      Number(item.weightAdjustmentTon || 0) * Number(item.unitPrice || 0),
-      2,
+    item.weightAdjustmentAmount = multiplyAmount(
+      item.weightAdjustmentTon,
+      item.unitPrice,
     )
   }
 

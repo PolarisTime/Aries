@@ -1,4 +1,5 @@
 import type { ModuleRecordInput } from '@/types/module-page'
+import { multiplyAmount } from '@/utils/money'
 import { asString } from '@/utils/type-narrowing'
 
 /**
@@ -77,5 +78,5 @@ export function resolveTonnageFreightAmount(form?: ModuleRecordInput): number {
   if (!Number.isFinite(unitPrice) || !Number.isFinite(totalWeight)) {
     return 0
   }
-  return Number((unitPrice * totalWeight).toFixed(2))
+  return multiplyAmount(unitPrice, totalWeight)
 }

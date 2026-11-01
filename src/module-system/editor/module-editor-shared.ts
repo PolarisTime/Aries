@@ -1,5 +1,6 @@
 import { isPurchaseOrder } from '@/module-system/core/module-category'
 import type { ModuleLineItem, ModuleRecord } from '@/types/module-page'
+import { roundDecimal } from '@/utils/money'
 import { asString } from '@/utils/type-narrowing'
 
 export type EditorItemDragPosition = 'before' | 'after'
@@ -43,12 +44,15 @@ export function hasEditorValue(value: unknown) {
   return true
 }
 
+/**
+ * 通用数值舍入（重量/数量等）。
+ *
+ * <p>金额计算请使用 `@/utils/money` 的 `roundAmount` / `multiplyAmount` / `sumAmounts`，
+ * 不要用本函数做金额舍入 —— 它只是把十进制舍入统一到同一个出口，
+ * 金额的口径（2 位、HALF_UP）由 money 模块单独表达。</p>
+ */
 export function toRoundedNumber(value: unknown, precision: number) {
-  const numericValue = Number(value)
-  if (!Number.isFinite(numericValue)) {
-    return 0
-  }
-  return Number(numericValue.toFixed(precision))
+  return roundDecimal(value, precision)
 }
 
 /**

@@ -1,5 +1,6 @@
 import { INTERNAL_WEIGHT_PRECISION } from '@/constants/precision'
 import type { ModuleRecord, ModuleRecordInput } from '@/types/module-page'
+import { multiplyAmount } from '@/utils/money'
 import { buildAmountWeightOverview, cloneLineItems } from '../shared/shared'
 
 /**
@@ -74,7 +75,7 @@ export function transformSalesOrderItemsToOutboundItems(
             // 计算导入默认值与单行上限（_maxImportQuantity）。
             remainingQuantity,
             remainingWeightTon: weightTon,
-            remainingAmount: Number((weightTon * unitPrice).toFixed(2)),
+            remainingAmount: multiplyAmount(weightTon, unitPrice),
           }
         })
       : [],

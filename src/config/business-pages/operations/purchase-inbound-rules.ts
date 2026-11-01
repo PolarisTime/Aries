@@ -6,6 +6,7 @@ import type {
   ModuleRecord,
   ModuleRecordInput,
 } from '@/types/module-page'
+import { multiplyAmount } from '@/utils/money'
 import { asString } from '@/utils/type-narrowing'
 import { buildAmountWeightOverview, cloneLineItems } from '../shared/shared'
 
@@ -140,7 +141,10 @@ export function transformPurchaseOrderItemsToInboundItems(
             weighWeightTon: undefined,
             weightAdjustmentTon: 0,
             weightAdjustmentAmount: 0,
-            amount: Number((weightTon * unitPrice).toFixed(2)),
+            amount:
+              Number.isFinite(weightTon) && Number.isFinite(unitPrice)
+                ? multiplyAmount(weightTon, unitPrice)
+                : Number.NaN,
           }
         })
       : [],

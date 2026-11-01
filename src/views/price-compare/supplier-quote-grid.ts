@@ -1,3 +1,4 @@
+import { roundAmount } from '@/utils/money'
 import { lengthRank } from './core'
 import type { QuoteRow } from './supplier-price-list-model'
 
@@ -45,7 +46,7 @@ export function parseGridPrice(raw: string): number | null | undefined {
  * 整数仍原样显示（不带 `.00`），一列 5 位数放得下。</p>
  */
 export function roundPrice(value: number): number {
-  return Math.round(value * 100) / 100
+  return roundAmount(value)
 }
 
 /** 一行规格：定尺收进格子里（同一规格的 9米/12米 是同一行的两个价格）。 */

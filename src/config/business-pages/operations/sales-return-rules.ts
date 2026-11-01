@@ -5,6 +5,7 @@ import type {
   SalesReturnSaveRequest,
 } from '@/shared/schemas/module-record'
 import type { ModuleRecord } from '@/types/module-page'
+import { roundDecimal } from '@/utils/money'
 import { buildAmountWeightOverview } from '../shared/shared'
 
 export function buildSalesReturnOverview(rows: ModuleRecord[]) {
@@ -17,8 +18,7 @@ export interface SalesReturnSourceSelection {
 }
 
 function roundTo(value: number, digits: number): number {
-  const factor = 10 ** digits
-  return Math.round(value * factor) / factor
+  return roundDecimal(value, digits)
 }
 
 function resolveSelectedQuantity(
