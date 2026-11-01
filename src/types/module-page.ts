@@ -1,3 +1,4 @@
+import type { FormInstance } from 'antd'
 import type { ReactNode } from 'react'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { SearchParams } from '@/types/api-raw'
@@ -230,6 +231,33 @@ export interface ModuleProjectOption {
   quoteRegion?: string
 }
 
+/**
+ * 单据附加费用行的最小契约。
+ *
+ * <p>编辑器附加节点只需要「费用金额合计」这一个口径，不依赖费用行的完整结构；
+ * 用最小契约可以让 `types/` 层不反向依赖 `views/` 里的草稿类型。</p>
+ */
+export interface ModuleChargeAmountItem {
+  amount: number
+}
+
+/** 编辑器附加节点的上下文（由 ModuleEditorWorkspace 注入）。 */
+export interface ModuleEditorExtrasContext {
+  /**
+   * 当前编辑器记录：持久化记录的字段 + 实时表单值 + 明细行。
+   *
+   * <p>新建时没有 `id`（`ModuleRecordInput` 的 `id` 是可选的），因此类型用它而不是
+   * `ModuleRecord`（后者要求 `id` 必填）。</p>
+   */
+  record: ModuleRecordInput
+  /** antd 表单实例：需要直接读某个字段时用它，不要自己再 `Form.useForm`。 */
+  form: FormInstance<ModuleRecordInput>
+  /** 当前明细行。 */
+  items: ModuleLineItem[]
+  /** 附加费用行（独立通道）：与明细一起决定「含本单」合计。 */
+  expenseItems: readonly ModuleChargeAmountItem[]
+}
+
 export interface ModulePageConfig {
   key: ModuleKey
   title: string
@@ -264,6 +292,17 @@ export interface ModulePageConfig {
   actions?: ModuleActionDefinition[]
   /** 明细工具栏附加操作（如销售订单交付核定的「整单取网价」）。 */
   renderItemsActions?: (ctx: ModuleItemsActionsContext) => ReactNode
+  /**
+   * 编辑器（新建/编辑弹层）表单区下方的附加节点。
+   *
+   * <p>与 {@link renderDetailExtras} 的区别是「编辑中」：这里拿得到实时表单值与明细行，
+   * 适合展示随录入变化的派生数据（典型例子：销售订单的「项目数据」，需要把本单草稿合计
+   * 作为 pending 传给后端汇总接口）。</p>
+   *
+   * <p>挂载点必须是**只读**节点：不得写入单据数据、不得触发保存、不得改表单字段
+   * —— 保存链路只由编辑器自己的保存动作触发。</p>
+   */
+  renderEditorExtras?: (ctx: ModuleEditorExtrasContext) => ReactNode
   /**
    * 只读详情面（详情弹窗 / 列表行「+」展开）的附加节点。
    *

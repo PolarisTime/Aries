@@ -997,6 +997,37 @@ export const zhCN = {
       exceededAmount: '本次超出金额：{{value}}',
       exceededTonnage: '本次超出吨位：{{value}}',
     },
+    /**
+     * 销售订单「项目数据」面板（订单/送货/对账/合同额度汇总）。
+     * 组标题与指标名分开；进度条另有可访问名（读屏要能分辨金额/吨位两条）。
+     */
+    projectSalesSummary: {
+      title: '项目数据',
+      projectUnavailable: '项目不存在或已停用',
+      loadFailed: '项目数据加载失败',
+      retry: '重试',
+      noContract: '该项目未关联有效销售合同',
+      amountUsage: '合同金额使用率',
+      amountUsageAria: '合同金额使用率进度条',
+      tonnageUsage: '合同吨位使用率',
+      tonnageUsageAria: '合同吨位使用率进度条',
+      contractAmount: '合同金额：{{value}}',
+      contractTonnage: '合同吨位：{{value}}',
+      remainingAmount: '剩余金额：{{value}}',
+      remainingTonnage: '剩余吨位：{{value}}',
+      exceededTitle: '合同额度已超限',
+      exceededAmount: '已超出合同金额 {{value}} 元',
+      exceededTonnage: '已超出合同吨位 {{value}} 吨',
+      groupOrders: '订单合计',
+      groupDelivery: '送货',
+      groupReconcile: '对账情况',
+      orderAmount: '合计金额',
+      orderTonnage: '合计吨位',
+      deliveredTonnage: '合计送货吨位',
+      unreconciledAmount: '未对账金额',
+      unreconciledTonnage: '未对账吨位',
+      pendingHint: '含本单未保存合计：{{amount}} 元 / {{tonnage}} 吨',
+    },
     print: {
       /** 明细行复选框的可访问名：读屏要能分辨勾的是哪一条物料 */
       selectItemRow: '选择明细：{{label}}',

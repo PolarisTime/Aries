@@ -43,8 +43,15 @@ export interface DocumentChargeItemDraft {
   remark?: string
 }
 
-/** 附加费用合计：金额非法按 0 计；两位舍入由 applyComputedTotals 统一处理。 */
-export function sumChargeItemAmount(items: DocumentChargeItemDraft[]) {
+/**
+ * 附加费用合计：金额非法按 0 计；两位舍入由 applyComputedTotals 统一处理。
+ *
+ * <p>只要求 `amount` 一个字段（`Pick`），因此「编辑器附加节点」这类只需要费用合计的
+ * 调用方不必构造完整的费用行，也不会因为多出一个费用行类型而产生第二份求和。</p>
+ */
+export function sumChargeItemAmount(
+  items: readonly Pick<DocumentChargeItemDraft, 'amount'>[],
+) {
   return items.reduce((sum, item) => {
     const amount = Number(item.amount)
     return sum + (Number.isFinite(amount) ? amount : 0)

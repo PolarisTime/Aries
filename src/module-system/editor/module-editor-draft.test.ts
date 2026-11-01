@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { syncDerivedEditorFormValuesForModule } from '@/module-system/editor/module-editor-draft'
+import {
+  computeDraftTotals,
+  syncDerivedEditorFormValuesForModule,
+} from '@/module-system/editor/module-editor-draft'
 import type { ModuleLineItem } from '@/types/module-page'
 
 function sumLineItemsBy(items: ModuleLineItem[], key: string) {
@@ -81,5 +84,65 @@ describe('syncDerivedEditorFormValuesForModule 的单据总金额联动', () => 
     // totalWeight/totalFreight 由 freight-bill 专属 normalizeDraftRecord 维护（运费口径不含费用）。
     expect(record.totalAmount).toBeUndefined()
     expect(record.totalWeight).toBe(1)
+  })
+})
+
+/**
+ * `computeDraftTotals` 是「货物 + 附加费用」合计的**唯一计算出口**：
+ * 表单联动（写回 record.totalAmount / totalWeight）与销售订单「项目数据」面板
+ * （作为 pendingAmount / pendingTonnage 下发）都从它取数。这里锁定两件事：
+ * 1. 口径本身（货物 + 费用，不是只有货物）；
+ * 2. 与 `syncDerivedEditorFormValuesForModule` 写回表单的值完全一致（同一出口，不会分叉）。
+ */
+describe('computeDraftTotals 单据合计口径', () => {
+  it('货物金额 + 附加费用金额 = totalAmount，吨位按明细求和', () => {
+    const totals = computeDraftTotals(
+      'sales-order',
+      [
+        { id: '1', amount: 100, weightTon: 1.5 },
+        { id: '2', amount: 200.25, weightTon: 2.25 },
+      ] as ModuleLineItem[],
+      sumLineItemsBy,
+      30.5,
+    )
+
+    // 货物 300.25 + 费用 30.5 = 330.75（只有货物会是 300.25，能区分两种口径）
+    expect(totals).toEqual({ totalAmount: 330.75, totalWeight: 3.75 })
+  })
+
+  it('chargeTotal 缺省 / 非法时按 0 计，口径与只有货物时一致', () => {
+    const items = goodsItems([100.5])
+    expect(computeDraftTotals('sales-order', items, sumLineItemsBy)).toEqual({
+      totalAmount: 100.5,
+      totalWeight: 1,
+    })
+    expect(
+      computeDraftTotals('sales-order', items, sumLineItemsBy, Number.NaN),
+    ).toEqual({ totalAmount: 100.5, totalWeight: 1 })
+  })
+
+  it('未注册金额计算的模块返回 null（调用方保持原值，不写 0）', () => {
+    expect(
+      computeDraftTotals('freight-bill', goodsItems([100]), sumLineItemsBy, 50),
+    ).toBeNull()
+  })
+
+  it('与表单联动写回的 totalAmount / totalWeight 完全一致（同一出口）', () => {
+    const items = goodsItems([11.11, 22.22])
+    const record: Record<string, unknown> = {}
+    syncDerivedEditorFormValuesForModule({
+      moduleKey: 'sales-order',
+      record,
+      items,
+      sumLineItemsBy,
+      chargeTotal: 3.33,
+    })
+
+    expect(
+      computeDraftTotals('sales-order', items, sumLineItemsBy, 3.33),
+    ).toEqual({
+      totalAmount: record.totalAmount,
+      totalWeight: record.totalWeight,
+    })
   })
 })

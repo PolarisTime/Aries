@@ -174,6 +174,9 @@ export const ENDPOINTS = {
     `/projects/${pathSegment(id)}/price-rules`,
   PROJECT_PRICING_QUOTE_RESOLUTIONS: (id: string | number) =>
     `/projects/${pathSegment(id)}/pricing-quote-resolutions`,
+  /** 项目销售汇总（只读聚合：订单/送货/对账/合同额度），query 支持 excludeOrderId、pending*。 */
+  PROJECT_SALES_SUMMARY: (projectId: string | number) =>
+    `/projects/${pathSegment(projectId)}/sales-summary`,
   SUPPLIERS_OPTIONS: '/suppliers/options',
   CARRIERS_OPTIONS: '/carriers/options',
   MATERIALS: '/materials',

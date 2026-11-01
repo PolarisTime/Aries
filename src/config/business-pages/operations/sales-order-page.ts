@@ -1,19 +1,24 @@
 import i18next from 'i18next'
-import { createElement } from 'react'
+import { createElement, Fragment } from 'react'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   getCustomerOptions,
   getCustomerProjectOptions,
 } from '@/module-system/core/module-option-resolvers'
+import { computeDraftTotals } from '@/module-system/editor/module-editor-draft'
 import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
 import { renderProjectNameCell } from '@/utils/project-display'
+import { asString } from '@/utils/type-narrowing'
 import { NetPriceMatchChip } from '@/views/modules/components/NetPriceMatchChip'
+import { ProjectSalesSummaryPanel } from '@/views/modules/components/ProjectSalesSummaryPanel'
 import { SalesOrderNetPriceCheck } from '@/views/modules/components/SalesOrderNetPriceCheck'
 import { SalesOrderNetPriceFiller } from '@/views/modules/components/SalesOrderNetPriceFiller'
+import { sumChargeItemAmount } from '@/views/modules/module-editor-draft-adapter'
+import { sumLineItemsBy } from '@/views/modules/module-editor-workspace-support'
 import {
   BILL_STATUS_LABEL,
   CUSTOMER_NAME_LABEL,
@@ -516,10 +521,48 @@ export const salesOrdersPageConfig: ModulePageConfig = {
   },
   ...salesOrderItemColumnOutputs,
   renderItemsActions: (ctx) => createElement(SalesOrderNetPriceFiller, ctx),
-  // 只读详情面(详情弹窗 / 列表行「+」展开)没有取价工具栏, 由这里发起网价核查;
-  // 否则「网价匹配」列在这两处永远显示「未核查」。
+  /*
+   * 只读详情面(详情弹窗 / 列表行「+」展开)没有取价工具栏, 由这里发起网价核查;
+   * 否则「网价匹配」列在这两处永远显示「未核查」。
+   *
+   * 同一个挂载点还要展示「项目数据」: 两处只读详情面共用它, 因此不必给通用详情组件
+   * 增加第二个扩展点。
+   */
   renderDetailExtras: ({ record }) =>
-    createElement(SalesOrderNetPriceCheck, { record }),
+    createElement(
+      Fragment,
+      null,
+      createElement(SalesOrderNetPriceCheck, { record }),
+      createElement(ProjectSalesSummaryPanel, {
+        projectId: asString(record.projectId),
+        variant: 'detail',
+      }),
+    ),
+  /*
+   * 编辑器(新建/编辑弹层)的「项目数据」: 需要「含本单」口径, 所以把草稿合计作为 pending 下发,
+   * 并排除本单已保存的金额/吨位。合计口径复用 computeDraftTotals —— 与保存载荷同一出口,
+   * 绝不在面板或本配置里再 reduce 一遍明细。
+   */
+  renderEditorExtras: ({ record, items, expenseItems }) => {
+    const totals = computeDraftTotals(
+      'sales-order',
+      items,
+      sumLineItemsBy,
+      sumChargeItemAmount(expenseItems),
+    )
+    const excludeOrderId = asString(record.id).trim()
+    return createElement(ProjectSalesSummaryPanel, {
+      projectId: asString(record.projectId),
+      ...(excludeOrderId ? { excludeOrderId } : {}),
+      ...(totals
+        ? {
+            pendingAmount: totals.totalAmount,
+            pendingTonnage: totals.totalWeight,
+          }
+        : {}),
+      variant: 'editor',
+    })
+  },
   data: [],
   buildOverview: buildSalesOrderOverview,
   statusMap: salesOrderStatusMap,

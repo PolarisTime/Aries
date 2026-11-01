@@ -13,6 +13,7 @@ import type { ModuleKey } from '@/module-system/core/module-key'
 import type {
   ModulePageConfig,
   ModuleParentImportSource,
+  ModuleRecordInput,
 } from '@/types/module-page'
 import type { PersistedModuleEditorDraftFor } from '@/types/module-record'
 import {
@@ -31,6 +32,7 @@ import { useModuleEditorItemControls } from '@/views/modules/use-module-editor-i
 import { useModuleEditorSettlementAccounts } from '@/views/modules/use-module-editor-settlement-accounts'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
 import { EditorFooterActions } from './EditorFooterActions'
+import { ModuleEditorExtras } from './ModuleEditorExtras'
 import { ModuleEditorFormArea } from './ModuleEditorFormArea'
 import { ModuleEditorItemsArea } from './ModuleEditorItemsArea'
 import { ModuleEditorSaveResultHost } from './ModuleEditorSaveResultHost'
@@ -396,6 +398,18 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           onValuesChange={(changedValues) => {
             handleFormValuesChange(changedValues)
           }}
+        />
+
+        {/* 编辑器附加节点（模块配置可选的 renderEditorExtras）：只读派生展示，不写单据数据。 */}
+        <ModuleEditorExtras
+          config={config}
+          // 主流程编辑器的精确草稿类型（items 带模块私有字段）只在会话/保存链路内需要；
+          // 附加节点按通用契约（ModuleRecordInput）消费，这里做一次边界收窄。
+          record={record as ModuleRecordInput | null}
+          form={form}
+          formValues={editorFormValues}
+          items={items}
+          expenseItems={expenseItems}
         />
 
         <ModuleEditorItemsArea

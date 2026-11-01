@@ -1,0 +1,117 @@
+/*
+ * 销售订单「项目数据」面板（ProjectSalesSummaryPanel）。
+ *
+ * 三处挂载点（编辑器 / 详情弹层 / 列表行展开）共用同一份样式：
+ * - 编辑器里位于表单区与明细区之间，横向占满、作为一条信息带；
+ * - 只读详情面里位于详情字段之上，需要与下方字段网格留出 8px 间距（行级留白只用阶梯值）。
+ */
+.project-sales-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: var(--ant-border-radius-lg, 8px);
+}
+
+.project-sales-summary--editor {
+  margin: var(--space-md) 0;
+}
+
+.project-sales-summary--detail {
+  margin-bottom: var(--space-xs);
+}
+
+.project-sales-summary__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs) var(--space-xs);
+  align-items: baseline;
+}
+
+.project-sales-summary__title {
+  font-size: var(--font-size-sm);
+}
+
+.project-sales-summary__project-name {
+  font-size: var(--font-size-xs);
+  overflow-wrap: anywhere;
+}
+
+.project-sales-summary__quota {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.project-sales-summary__quota-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+  min-width: 0;
+}
+
+.project-sales-summary__quota-head {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.project-sales-summary__quota-label {
+  color: var(--ant-color-text, rgb(0 0 0 / 88%));
+  font-size: var(--font-size-xs);
+}
+
+.project-sales-summary__quota-percent {
+  color: var(--ant-color-text, rgb(0 0 0 / 88%));
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 超限：百分比文本本身也标红（颜色只是附加信息，数值始终以文本呈现）。 */
+.project-sales-summary__quota-percent--exceeded {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.project-sales-summary__quota-progress {
+  margin: 0;
+}
+
+.project-sales-summary__quota-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 45%));
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.project-sales-summary__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.project-sales-summary__metrics-group {
+  min-width: 0;
+  margin: 0;
+}
+
+.project-sales-summary__pending {
+  font-size: var(--font-size-xs);
+}
+
+.project-sales-summary__error,
+.project-sales-summary__no-contract,
+.project-sales-summary__exceeded {
+  margin: 0;
+}
+
+.project-sales-summary__error-detail {
+  overflow-wrap: anywhere;
+}

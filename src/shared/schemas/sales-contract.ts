@@ -4,6 +4,10 @@ import {
   requestEntityIdSchema,
   responseEntityIdSchema,
 } from './api'
+import {
+  responseDecimalSchema,
+  responseNonNegativeDecimalSchema,
+} from './decimal'
 
 /**
  * 销售合同状态契约: 草稿 / 审核 / 签发 / 归档 / 作废。
@@ -25,18 +29,6 @@ export const SALES_CONTRACT_QUOTA_STATUSES: readonly SalesContractStatus[] = [
   '签发',
   '归档',
 ]
-
-const DECIMAL_PATTERN = /^-?(?:\d+\.?\d*|\.\d+)$/
-
-/** 金额/吨位响应兼容数值与十进制字符串，统一归一化为有限 number。 */
-const responseDecimalSchema = z
-  .union([z.number(), z.string().trim().regex(DECIMAL_PATTERN)])
-  .transform((value) => (typeof value === 'number' ? value : Number(value)))
-  .pipe(z.number().finite())
-
-const responseNonNegativeDecimalSchema = responseDecimalSchema.pipe(
-  z.number().nonnegative(),
-)
 
 const dateTextSchema = z
   .string()
