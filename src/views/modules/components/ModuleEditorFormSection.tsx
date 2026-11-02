@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next'
 import type { ProjectOption } from '@/api/master/project-options'
 import { isEditorFieldDisabledForModule } from '@/module-system/adapter/module-adapter-editor'
 import { usesSnowflakeBusinessNo } from '@/module-system/core/business-no-policy'
-import { groupFieldsByRow } from '@/module-system/presentation/module-field-layout'
+import {
+  groupFieldsByRow,
+  moveDocumentNoFieldsToSectionEnd,
+} from '@/module-system/presentation/module-field-layout'
 import { isModuleFormFieldVisible } from '@/module-system/presentation/module-form-field-visibility'
 import type {
   ModuleFormFieldDefinition,
@@ -105,7 +108,14 @@ export function ModuleEditorFormSection({
   if (!visibleFields.length) {
     return null
   }
-  const formFieldGroups = groupFieldsBySection(visibleFields)
+  // 抬头统一口径：客户/供应商（公司）、项目等业务对象在前，主单号与来源单号排到同一 section 段末尾。
+  const documentNoKeys = [
+    config.primaryNoKey,
+    config.parentImport?.parentFieldKey,
+  ].filter((key): key is string => Boolean(key))
+  const formFieldGroups = groupFieldsBySection(
+    moveDocumentNoFieldsToSectionEnd(visibleFields, documentNoKeys),
+  )
 
   return (
     <>

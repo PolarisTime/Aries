@@ -8,7 +8,10 @@ import type {
   ModuleFormFieldDefinition,
   ModulePageConfig,
 } from '@/types/module-page'
-import { groupFieldsByRow } from './module-field-layout'
+import {
+  groupFieldsByRow,
+  moveDocumentNoFieldsToSectionEnd,
+} from './module-field-layout'
 import { isModuleFormFieldVisible } from './module-form-field-visibility'
 
 /**
@@ -123,5 +126,75 @@ describe('groupFieldsByRow', () => {
     expect(
       rows.map((row) => row.map((field) => (field as { key: string }).key)),
     ).toEqual([['a', 'b', 'c', 'd'], ['e'], ['full'], ['f']])
+  })
+})
+
+describe('moveDocumentNoFieldsToSectionEnd', () => {
+  it('平铺表单把单号移到段末，客户/供应商等业务对象自然前移', () => {
+    const fields = [
+      { key: 'orderNo', row: 1 },
+      { key: 'supplierId', row: 1 },
+      { key: 'settlementCompanyId', row: 1 },
+      { key: 'orderDate', row: 1 },
+    ]
+    expect(
+      moveDocumentNoFieldsToSectionEnd(fields, ['orderNo']).map(
+        (field) => field.key,
+      ),
+    ).toEqual(['supplierId', 'settlementCompanyId', 'orderDate', 'orderNo'])
+  })
+
+  it('有 section 时只在段内移动，单号不会跨 section 产生重复区块标题', () => {
+    const fields = [
+      { key: 'orderNo', section: '基本信息' },
+      { key: 'purchaseOrderNo', section: '基本信息' },
+      { key: 'customerId', section: '基本信息' },
+      { key: 'projectId', section: '基本信息' },
+      { key: 'orderDate', section: '日期与经手' },
+    ]
+    expect(
+      moveDocumentNoFieldsToSectionEnd(fields, [
+        'orderNo',
+        'purchaseOrderNo',
+      ]).map((field) => field.key),
+    ).toEqual([
+      'customerId',
+      'projectId',
+      'orderNo',
+      'purchaseOrderNo',
+      'orderDate',
+    ])
+  })
+
+  it('多个单号保持各自原有相对顺序', () => {
+    const fields = [
+      { key: 'salesOrderNo' },
+      { key: 'outboundNo' },
+      { key: 'customerId' },
+    ]
+    expect(
+      moveDocumentNoFieldsToSectionEnd(fields, [
+        'outboundNo',
+        'salesOrderNo',
+      ]).map((field) => field.key),
+    ).toEqual(['customerId', 'salesOrderNo', 'outboundNo'])
+  })
+
+  it('没有单号 key 时原样返回同一引用（不发散渲染）', () => {
+    const fields = [{ key: 'a' }, { key: 'b' }]
+    expect(moveDocumentNoFieldsToSectionEnd(fields, [])).toBe(fields)
+  })
+
+  it('批号（batchNo）不在单号集合内时不被移动', () => {
+    const fields = [
+      { key: 'orderNo' },
+      { key: 'batchNo' },
+      { key: 'customerId' },
+    ]
+    expect(
+      moveDocumentNoFieldsToSectionEnd(fields, ['orderNo']).map(
+        (field) => field.key,
+      ),
+    ).toEqual(['batchNo', 'customerId', 'orderNo'])
   })
 })

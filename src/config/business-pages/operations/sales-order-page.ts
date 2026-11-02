@@ -464,9 +464,9 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       type: 'date',
       required: true,
       /*
-       * row 2：row 1 已被「订单编号 / 采购订单号 / 客户 / 项目」4 个 span=6 字段占满，
-       * 第 5 个会被 antd 静默挤到下一行最左（30 栅格 > 24）。
-       * 现在行内顺序是「单号 → 来源单号 → 客户 → 项目」，日期与经手统一放第 2 行。
+       * row 2：row 1 由「客户 / 项目 / 订单编号 / 采购订单号」4 个 span=6 字段占满
+       * （渲染时把单号排到同一 section 段末尾，见 moveDocumentNoFieldsToSectionEnd），
+       * 第 5 个会被 antd 静默挤到下一行最左（30 栅格 > 24），日期与经手统一放第 2 行。
        */
       row: 2,
       section: i18next.t('modules.formSections.schedule'),

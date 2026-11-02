@@ -251,7 +251,7 @@ export const salesReturnsPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      /* 客户与项目相邻：第 1 行统一是「单号 / 来源单号 / 客户 / 项目」。 */
+      /* 客户与项目相邻，并在渲染时排到单号之前：第 1 行是「客户 / 项目 / 退货单号 / 销售订单号」。 */
       key: 'customerId',
       label: i18next.t('modules.pages.salesReturn.colCustomerName'),
       type: 'select',

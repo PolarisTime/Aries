@@ -1,6 +1,7 @@
 import i18next from 'i18next'
 import { beforeAll, describe, expect, it } from 'vitest'
 import '@/i18n'
+import { moveDocumentNoFieldsToSectionEnd } from '@/module-system/presentation/module-field-layout'
 import type { ModulePageConfig } from '@/types/module-page'
 import { renderProjectNameCell } from '@/utils/project-display'
 
@@ -31,25 +32,39 @@ describe('销售订单报单日期配置', () => {
   })
 
   /**
-   * 表头顺序契约（2026-10 统一）：第 1 行「单号 → 来源单号 → 客户 → 项目」，
+   * 表头顺序契约（2026-11 修订）：运行时第 1 行是「客户 → 项目 → 订单编号 → 采购订单号」，
    * 第 2 行「报单日期 → 交货日期 → 销售员」，备注整行收尾。
    *
-   * <p>锁定这组顺序的原因：行内字段位置是扫读单据的主要线索，改动它会直接影响录入效率；
-   * 此前采购订单/入库/出库/退货各行顺序各不相同（来源单号与日期谁在前、客户与项目是否
-   * 相邻都不一致），用户在不同单据之间切换时要重新找字段。顺序调整若不同步改这组断言，
-   * 会静默退化。</p>
+   * <p>单号类字段（主单号 + 来源单号）由 `moveDocumentNoFieldsToSectionEnd` 在渲染时
+   * 移到同一 section 段末尾，所以 `formFields` 里它们仍排在最前；本断言必须走同一口径，
+   * 否则锁的是配置顺序、不是用户看到的顺序。新建时主单号隐藏，第 1 行只剩
+   * 「客户 → 项目 → 采购订单号」。</p>
    */
   it('表头行内顺序符合统一口径', () => {
     const formFields = salesOrdersPageConfig.formFields ?? []
+    const ordered = moveDocumentNoFieldsToSectionEnd(
+      formFields,
+      [
+        salesOrdersPageConfig.primaryNoKey,
+        salesOrdersPageConfig.parentImport?.parentFieldKey,
+      ].filter((key): key is string => Boolean(key)),
+    )
     const keysOfRow = (row: number) =>
-      formFields.filter((field) => field.row === row).map((field) => field.key)
+      ordered.filter((field) => field.row === row).map((field) => field.key)
 
     expect(keysOfRow(1)).toEqual([
-      'orderNo',
-      'purchaseOrderNo',
       'customerId',
       'projectId',
+      'orderNo',
+      'purchaseOrderNo',
     ])
+    // 新建：主单号在渲染时被隐藏，单号只剩来源单号，仍在客户/项目之后。
+    expect(
+      ordered
+        .filter((field) => field.key !== salesOrdersPageConfig.primaryNoKey)
+        .filter((field) => field.row === 1)
+        .map((field) => field.key),
+    ).toEqual(['customerId', 'projectId', 'purchaseOrderNo'])
     expect(keysOfRow(2)).toEqual(['orderDate', 'deliveryDate', 'salesName'])
     expect(keysOfRow(3)).toEqual(['remark'])
   })
