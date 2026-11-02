@@ -112,6 +112,7 @@ export function ModuleEditorFormSection({
   const documentNoKeys = [
     config.primaryNoKey,
     config.parentImport?.parentFieldKey,
+    ...(config.sourceNoKeys ?? []),
   ].filter((key): key is string => Boolean(key))
   const formFieldGroups = groupFieldsBySection(
     moveDocumentNoFieldsToSectionEnd(visibleFields, documentNoKeys),

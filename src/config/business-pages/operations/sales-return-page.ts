@@ -72,6 +72,8 @@ export const salesReturnsPageConfig: ModulePageConfig = {
   kicker: 'Sales',
   description: i18next.t('modules.pages.salesReturn.description'),
   primaryNoKey: 'returnNo',
+  /* 来源销售订单号是只读快照；本模块没有 parentImport，显式声明让抬头排序把它排到段末。 */
+  sourceNoKeys: ['salesOrderNo'],
   actions: actionSet,
   filters: [
     {
@@ -234,6 +236,23 @@ export const salesReturnsPageConfig: ModulePageConfig = {
   ],
   formFields: [
     {
+      /* 客户与项目在前；退货单号与来源销售订单号由运行时排序排到同一段末尾（sourceNoKeys）。 */
+      key: 'customerId',
+      label: i18next.t('modules.pages.salesReturn.colCustomerName'),
+      type: 'select',
+      required: true,
+      options: getCustomerOptions,
+      row: 1,
+    },
+    {
+      key: 'projectId',
+      label: i18next.t('modules.pages.salesReturn.colProjectName'),
+      type: 'select',
+      required: true,
+      options: getCustomerProjectOptions,
+      row: 1,
+    },
+    {
       key: 'returnNo',
       label: i18next.t('modules.pages.salesReturn.colReturnNo'),
       type: 'input',
@@ -248,23 +267,6 @@ export const salesReturnsPageConfig: ModulePageConfig = {
       placeholder: i18next.t(
         'modules.pages.salesReturn.placeholderSalesOrderNo',
       ),
-      row: 1,
-    },
-    {
-      /* 客户与项目相邻，并在渲染时排到单号之前：第 1 行是「客户 / 项目 / 退货单号 / 销售订单号」。 */
-      key: 'customerId',
-      label: i18next.t('modules.pages.salesReturn.colCustomerName'),
-      type: 'select',
-      required: true,
-      options: getCustomerOptions,
-      row: 1,
-    },
-    {
-      key: 'projectId',
-      label: i18next.t('modules.pages.salesReturn.colProjectName'),
-      type: 'select',
-      required: true,
-      options: getCustomerProjectOptions,
       row: 1,
     },
     {

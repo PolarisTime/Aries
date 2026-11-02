@@ -264,6 +264,14 @@ export interface ModulePageConfig {
   kicker: string
   description: string
   primaryNoKey?: string
+  /**
+   * 额外需要排到抬头末尾的单号字段（主单号与 `parentImport.parentFieldKey` 之外）。
+   *
+   * <p>典型场景：销售退货的「销售订单号」是只读来源快照，但该模块没有 `parentImport`
+   * （退货候选由接口下发），运行时排序识别不到它，会把它留在第 1 行最前。
+   * 显式声明比按 `*No` 后缀猜安全（批号 `batchNo` 同样以 No 结尾，但不是单据号）。</p>
+   */
+  sourceNoKeys?: readonly string[]
   /** 新建时显示由服务端签发的只读主编号。 */
   showGeneratedPrimaryNoOnCreate?: boolean
   readOnly?: boolean

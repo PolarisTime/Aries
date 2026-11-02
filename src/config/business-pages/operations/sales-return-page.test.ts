@@ -2,6 +2,7 @@ import i18next from 'i18next'
 import { beforeAll, describe, expect, it } from 'vitest'
 import '@/i18n'
 import { operationModuleEndpointContracts } from '@/api/contracts/module-contracts-operations'
+import { moveDocumentNoFieldsToSectionEnd } from '@/module-system/presentation/module-field-layout'
 import { renderProjectNameCell } from '@/utils/project-display'
 import { salesReturnsPageConfig } from './sales-return-page'
 
@@ -13,6 +14,27 @@ describe('销售退货单页面配置', () => {
   it('页面 key 与主编号字段符合模块注册约定', () => {
     expect(salesReturnsPageConfig.key).toBe('sales-return')
     expect(salesReturnsPageConfig.primaryNoKey).toBe('returnNo')
+  })
+
+  it('抬头行序：客户/项目在前，退货单号与来源销售订单号在后', () => {
+    const ordered = moveDocumentNoFieldsToSectionEnd(
+      salesReturnsPageConfig.formFields ?? [],
+      [
+        salesReturnsPageConfig.primaryNoKey,
+        ...(salesReturnsPageConfig.sourceNoKeys ?? []),
+      ].filter((key): key is string => Boolean(key)),
+    )
+    const keysOfRow = (row: number) =>
+      ordered.filter((field) => field.row === row).map((field) => field.key)
+
+    expect(keysOfRow(1)).toEqual([
+      'customerId',
+      'projectId',
+      'returnNo',
+      'salesOrderNo',
+    ])
+    expect(keysOfRow(2)).toEqual(['returnDate', 'settlementCompanyId'])
+    expect(keysOfRow(3)).toEqual(['remark'])
   })
 
   it('筛选条件覆盖关键词、商品信息、客户、状态与退货日期区间', () => {
