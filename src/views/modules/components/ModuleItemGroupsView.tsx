@@ -125,44 +125,62 @@ export function ModuleItemGroupsView({
     <div className="module-items-groups">
       {groups.map((group) => {
         const viewKind = resolveModuleItemGroupViewKind(moduleKey, group)
+        /*
+         * 物流对账单 / 物流单按「一张来源单据」成卡：卡片头放单号与合计，
+         * 卡体放项目小节。原来每组只是平铺的标题+表格，多个组叠在一起时
+         * 组与组的边界只能靠间距区分，长对账单里极易看串行。
+         */
+        const isFreightCard =
+          viewKind === 'freight-project' || viewKind === 'freight-statement'
         return (
-          <div className="module-items-group" key={group.key}>
+          <div
+            className={
+              isFreightCard
+                ? 'module-items-group module-items-group--freight'
+                : 'module-items-group'
+            }
+            key={group.key}
+          >
             {viewKind === 'freight-project' ? (
-              <div className="module-items-project-group">
-                <FreightStatementProjectGroupHeader
-                  group={group as ProjectGroup}
-                />
-                <ModuleItemsTable
-                  columns={tableColumns}
-                  components={rowComponents}
-                  dataSource={(group as ProjectGroup).items}
-                  emptyText={emptyText}
-                  rowClassName={rowClassName}
-                  itemRowMenus={itemRowMenus}
-                />
+              <div className="module-items-freight-group-body">
+                <div className="module-items-project-group">
+                  <FreightStatementProjectGroupHeader
+                    group={group as ProjectGroup}
+                  />
+                  <ModuleItemsTable
+                    columns={tableColumns}
+                    components={rowComponents}
+                    dataSource={(group as ProjectGroup).items}
+                    emptyText={emptyText}
+                    rowClassName={rowClassName}
+                    itemRowMenus={itemRowMenus}
+                  />
+                </div>
               </div>
             ) : 'projectGroups' in group ? (
               <>
                 <FreightStatementItemGroupHeader group={group} />
-                {group.projectGroups.map((projectGroup) => (
-                  <div
-                    className="module-items-project-group"
-                    key={projectGroup.key}
-                  >
-                    <FreightStatementProjectGroupHeader
-                      group={projectGroup}
-                      showSubtotal={false}
-                    />
-                    <ModuleItemsTable
-                      columns={tableColumns}
-                      components={rowComponents}
-                      dataSource={projectGroup.items}
-                      emptyText={emptyText}
-                      rowClassName={rowClassName}
-                      itemRowMenus={itemRowMenus}
-                    />
-                  </div>
-                ))}
+                <div className="module-items-freight-group-body">
+                  {group.projectGroups.map((projectGroup) => (
+                    <div
+                      className="module-items-project-group"
+                      key={projectGroup.key}
+                    >
+                      <FreightStatementProjectGroupHeader
+                        group={projectGroup}
+                        showSubtotal={false}
+                      />
+                      <ModuleItemsTable
+                        columns={tableColumns}
+                        components={rowComponents}
+                        dataSource={projectGroup.items}
+                        emptyText={emptyText}
+                        rowClassName={rowClassName}
+                        itemRowMenus={itemRowMenus}
+                      />
+                    </div>
+                  ))}
+                </div>
               </>
             ) : viewKind === 'customer-statement' ? (
               <>

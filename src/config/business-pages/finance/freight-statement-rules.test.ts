@@ -152,11 +152,20 @@ describe('freight-statement-rules', () => {
         sourceNo: 'FB-1',
         sourceFreightBillId: carrierId,
         sourceFreightBillItemId: '1932500000000000007',
+        // 明细自带来源物流单日期：保存后重新打开仍能显示「单据日期」
+        sourceFreightBillTime: '2026-04-01',
         customerId: '1932500000000000005',
         projectId: '1932500000000000006',
         _parentBillTime: '2026-04-01',
         _parentTotalFreight: 800,
       })
+    })
+
+    it('父单没有日期时来源日期为空串（不是 undefined）', () => {
+      const items = transformFreightBillItemsToFreightStatementItems(
+        recordWith({ billNo: 'FB-2', items: [{ id: '1932500000000000008' }] }),
+      )
+      expect(items[0].sourceFreightBillTime).toBe('')
     })
 
     it('无单号回退 freight-bill 前缀，缺失运费回退 0', () => {

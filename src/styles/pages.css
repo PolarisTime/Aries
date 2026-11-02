@@ -83,6 +83,20 @@
   vertical-align: middle;
 }
 
+/* 数值列右对齐：详情表默认由上面的 !important 把整表居中，金额/重量/件数
+   居中会让小数点与量级对不齐；列上带标记类时覆盖为右对齐并启用等宽数字。 */
+.module-detail-table
+  .ant-table-thead
+  > tr
+  > th.module-detail-table-cell--numeric,
+.module-detail-table
+  .ant-table-tbody
+  > tr
+  > td.module-detail-table-cell--numeric {
+  font-variant-numeric: tabular-nums;
+  text-align: right !important;
+}
+
 .module-detail-table tbody > tr:hover > td {
   background: var(--theme-sider-surface);
 }

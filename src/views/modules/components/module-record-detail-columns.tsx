@@ -21,6 +21,23 @@ export interface BuildDetailItemColumnsInput {
   formatCellValue: (value: unknown, columnType?: string) => string
 }
 
+/**
+ * 需要右对齐的数值列类型。
+ *
+ * <p>编辑器里这些列是居中（可编辑时居中便于定位输入框），但**只读详情表**里
+ * 居中会让「18 / 40.560 / 0.00」这类数字对不齐小数点和量级，一张 11 列的表
+ * 从上往下扫读合计时很费劲；只读表数值列右对齐是通用做法，且不影响编辑器。</p>
+ *
+ * <p>详情表的单元格对齐由 `.module-detail-table` 的 CSS 统一 `!important` 居中，
+ * antd 的 `align` prop 会被它压掉，因此这里用列 className 做标记，由 CSS 覆盖
+ * （`module-detail-table-cell--numeric`），而不是假装 `align: 'right'` 就能生效。</p>
+ */
+const NUMERIC_COLUMN_TYPES: ReadonlySet<string> = new Set([
+  'amount',
+  'weight',
+  'count',
+])
+
 /** 详情只读明细列: 单重与大重量显示规则与编辑器表格保持一致。 */
 export function buildDetailItemColumns({
   columns,
@@ -31,6 +48,10 @@ export function buildDetailItemColumns({
     dataIndex: column.dataIndex,
     key: column.dataIndex,
     width: column.width,
+    className:
+      column.type && NUMERIC_COLUMN_TYPES.has(column.type)
+        ? 'module-detail-table-cell--numeric'
+        : undefined,
     align: column.align || 'center',
     render: (value: unknown, record: ModuleLineItem) => {
       if (

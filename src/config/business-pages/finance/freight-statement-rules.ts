@@ -82,6 +82,12 @@ export function transformFreightBillItemsToFreightStatementItems(
   parentRecord: ModuleRecord,
 ): ModuleLineItem[] {
   const sourceNo = asString(parentRecord.billNo).trim()
+  /*
+   * 来源物流单日期随明细一起带下去：分组头按 sourceFreightBillTime 显示「单据日期」。
+   * 该字段由后端 st_freight_statement_item.source_freight_bill_time 持久化并回填，
+   * 因此保存后重新打开对账单仍能看到日期（_parentBillTime 只是本次会话的草稿标记）。
+   */
+  const sourceFreightBillTime = asString(parentRecord.billTime).trim()
   const parentCustomerId = entityIdOf(
     parentRecord.customerId,
     'parentRecord.customerId',
@@ -97,6 +103,7 @@ export function transformFreightBillItemsToFreightStatementItems(
       sourceNo,
       sourceFreightBillId: parentRecord.id,
       sourceFreightBillItemId: item.id,
+      sourceFreightBillTime,
       customerId:
         entityIdOf(item.customerId, 'items[].customerId') || parentCustomerId,
       projectId:

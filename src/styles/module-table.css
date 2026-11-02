@@ -736,6 +736,128 @@
   color: var(--text-primary);
 }
 
+/* ── 物流对账单 / 物流单分组卡片 ─────────────────────────────────────
+   一张来源单据一张卡：卡头是单号、日期与合计/运费，卡体是项目小节。
+   改造前每组只有一行拼起来的标题 + 每项目一张表，多个组上下叠放时组边界
+   只能靠间距区分；长对账单（上百行、十余组）里极易看串行。 */
+.module-items-group--freight {
+  overflow: clip;
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--theme-border-subtle);
+  border-radius: var(--ant-border-radius-lg, 8px);
+}
+
+.module-items-group--freight .module-items-freight-group-title {
+  gap: var(--space-xs) var(--space-xl);
+  justify-content: space-between;
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--theme-surface-hover);
+  border-bottom: 1px solid var(--theme-border-subtle);
+}
+
+.module-items-freight-group-identity,
+.module-items-freight-group-metrics,
+.module-items-project-group-meta,
+.module-items-project-group-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xxs) var(--space-xl);
+  min-width: 0;
+}
+
+.module-items-freight-group-metrics {
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+/* 指标之间用细分隔线分组，避免四个「标签 值」连读成一串 */
+.module-items-freight-group-metrics .module-items-group-field {
+  padding-left: var(--space-md);
+  border-left: 1px solid var(--theme-border-subtle);
+}
+
+.module-items-freight-group-metrics .module-items-group-field:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.module-items-group-field {
+  display: inline-flex;
+  gap: var(--space-xxs);
+  align-items: baseline;
+  min-width: 0;
+}
+
+.module-items-group-label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+/* 金额/重量/件数统一等宽数字，纵向扫读时小数点能对齐 */
+.module-items-group-number {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.module-items-group-number--muted {
+  color: var(--text-secondary);
+}
+
+.module-items-freight-group-no {
+  letter-spacing: 0.2px;
+}
+
+.module-items-freight-group-body {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+}
+
+.module-items-group--freight .module-items-project-group {
+  padding-left: var(--space-sm);
+  margin-bottom: 0;
+  border-left: 2px solid var(--theme-border-subtle);
+}
+
+.module-items-group--freight .module-items-project-group-title {
+  gap: var(--space-xs) var(--space-xl);
+  margin: 0 0 var(--space-xs);
+}
+
+.module-items-project-group-summary {
+  justify-content: flex-end;
+  margin-left: auto;
+  color: var(--text-secondary);
+}
+
+/* 项目名可能很长（含楼栋/配电房清单），单行省略，全称留在 title 里 */
+.module-items-project-group-project {
+  max-width: 38ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 960px) {
+  .module-items-freight-group-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .module-items-freight-group-metrics {
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+
+  .module-items-freight-group-metrics .module-items-group-field {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+
 .overlay-action-button.ant-btn {
   color: var(--theme-primary-deep);
   border-color: var(--theme-primary-soft-strong);
