@@ -15,9 +15,9 @@ import { ValueAliasPage } from './ValueAliasPage'
  * <p>「基础数据」原有 11 个一层子项，用户确认合并为 6 个：本页吸收
  * 材料类别 / 定尺加价 / 值映射三个页面，菜单只保留「商品资料」一项。</p>
  *
- * <p>被并页的页面定义与路由都保留（registry 里 view 指向本宿主页，
- * hiddenInMenu + activeMenuKey:'/material'），因此 /material-categories、
- * /length-premium、/value-alias 深链不 404，并默认选中对应标签。</p>
+ * <p>被并页的旧深链（/material-categories、/length-premium、/value-alias）已于
+ * 2026-11-02 下线，进入对应标签的唯一方式是 `/material?tab=<key>`；本页按 `?tab=`
+ * 选中标签，未带 `?tab=` 时回落到首个可见标签（商品资料）。</p>
  *
  * <p>标签内容的取舍：材料类别在 5e695529 之后已由通用列表页渲染
  * （旧专用页 `MaterialCategoriesPage` 已删除），所以这里继续渲染通用列表页，

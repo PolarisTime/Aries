@@ -11,9 +11,8 @@ import { QuoteRegionPage } from './QuoteRegionPage'
 /**
  * 项目资料宿主页。
  *
- * <p>吸收「基础数据」里的报价地区页面：菜单只保留「项目资料」，/quote-region 深链
- * 仍可用（页面定义 view 指向本宿主页，hiddenInMenu + activeMenuKey:'/project'），
- * 默认选中「报价地区」标签。</p>
+ * <p>吸收「基础数据」里的报价地区页面：菜单只保留「项目资料」。旧深链 /quote-region
+ * 已于 2026-11-02 下线，进入「报价地区」标签的唯一方式是 `/project?tab=quote-region`。</p>
  *
  * <p>项目资料标签渲染通用列表页。迁移到通用列表页之前的专用页实现
  * （`src/views/master-archive/`）已整目录删除，不要复活：本宿主页 + 通用列表页配置

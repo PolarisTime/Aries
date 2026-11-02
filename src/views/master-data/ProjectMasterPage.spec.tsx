@@ -149,8 +149,9 @@ describe('项目资料宿主页', () => {
     ).toBe('project')
   })
 
-  it('深链 /quote-region 默认选中报价地区标签并渲染报价地区页', async () => {
-    locationState.pathname = '/quote-region'
+  it('?tab=quote-region 选中报价地区标签并渲染报价地区页', async () => {
+    locationState.pathname = '/project'
+    locationState.searchStr = '?tab=quote-region'
     await renderPage()
 
     expect(activeTabLabel()).toBe('取价地区维护')
@@ -166,9 +167,10 @@ describe('项目资料宿主页', () => {
     expect(String(pushMock.mock.calls[0][0])).toBe('/project?tab=quote-region')
   })
 
-  it('无报价地区权限时只渲染项目资料标签，深链回退到项目资料', async () => {
+  it('无报价地区权限时只渲染项目资料标签，?tab= 回退到项目资料', async () => {
     permissionsState.current = []
-    locationState.pathname = '/quote-region'
+    locationState.pathname = '/project'
+    locationState.searchStr = '?tab=quote-region'
     await renderPage()
 
     expect(tabLabels()).toEqual(['项目资料'])

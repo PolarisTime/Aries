@@ -9,7 +9,10 @@ import {
 } from '@tanstack/react-router'
 import { lazy } from 'react'
 import { getRuntimeConfig } from '@/api/system/runtime-config'
-import { appPageDefinitions, getPageRoutePath } from '@/config/page-registry'
+import {
+  getPageRoutePath,
+  routablePageDefinitions,
+} from '@/config/page-registry'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { queryClient } from '@/lib/query-client'
 import { isListPrefetchView, prefetchPage } from '@/router/page-prefetch'
@@ -157,7 +160,8 @@ const authenticatedLayoutRoute = createRoute({
  * 以传入的父路由为挂载点生成全部页面路由（含 loader 预取），避免两份定义漂移。
  */
 export function buildModuleRoutes(parent: AnyRoute) {
-  return appPageDefinitions.map((def) => {
+  // routeless 页面只有页面定义、没有独立路由（被并页的入口是宿主页 `?tab=`）。
+  return routablePageDefinitions.map((def) => {
     const path = `/${getPageRoutePath(def)}`
     return createRoute({
       getParentRoute: () => parent,

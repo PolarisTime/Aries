@@ -62,6 +62,16 @@ const searchableModuleKeys = appPageDefinitions.flatMap((entry) =>
   entry.searchable && entry.moduleKey ? [entry.moduleKey] : [],
 )
 
+/**
+ * 真正生成路由的页面（`routeless` 的被并页只有定义、没有路由）。
+ *
+ * <p>唯一消费者是 `buildModuleRoutes`；单独导出是为了让「旧深链已下线」这件事可被单测锁住
+ * ——否则删掉 `routeless` 标记就会静默把已下线的深链注册回路由表。</p>
+ */
+export const routablePageDefinitions = appPageDefinitions.filter(
+  (entry) => !entry.routeless,
+)
+
 export function getPageRoutePath(page: AppPageDefinition | string) {
   const target =
     typeof page === 'string' ? appPageDefinitionMap.get(page) : page

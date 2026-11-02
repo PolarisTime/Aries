@@ -65,10 +65,6 @@ export const viewLoaders: Record<
     import('@/views/system/UserAccountManagementView').then((m) => ({
       default: m.UserAccountManagementView,
     })),
-  account: () =>
-    import('@/views/system/AccountView').then((m) => ({
-      default: m.AccountView,
-    })),
   'finance-overview': () =>
     import('@/views/finance/FinanceOverviewView').then((m) => ({
       default: m.FinanceOverviewView,

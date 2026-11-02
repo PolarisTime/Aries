@@ -164,8 +164,9 @@ describe('商品资料宿主页', () => {
     ).toBe('material')
   })
 
-  it('深链 /material-categories 默认选中商品类别标签，且列表页使用该类别的 pageDef', async () => {
-    locationState.pathname = '/material-categories'
+  it('?tab=material-categories 选中商品类别标签，且列表页使用该类别的 pageDef', async () => {
+    locationState.pathname = '/material'
+    locationState.searchStr = '?tab=material-categories'
     await renderPage()
 
     expect(activeTabLabel()).toBe('商品类别')
@@ -176,28 +177,30 @@ describe('商品资料宿主页', () => {
     ).toBe('material-categories')
   })
 
-  it('深链 /length-premium 默认选中定尺加价标签', async () => {
-    locationState.pathname = '/length-premium'
+  it('?tab=length-premium 选中定尺加价标签', async () => {
+    locationState.pathname = '/material'
+    locationState.searchStr = '?tab=length-premium'
     await renderPage()
 
     expect(activeTabLabel()).toBe('定尺加价维护')
     expect(container.textContent).toContain('length-premium-page')
   })
 
-  it('深链 /value-alias 默认选中值映射标签', async () => {
-    locationState.pathname = '/value-alias'
+  it('?tab=value-alias 选中值映射标签', async () => {
+    locationState.pathname = '/material'
+    locationState.searchStr = '?tab=value-alias'
     await renderPage()
 
     expect(activeTabLabel()).toBe('值映射维护')
     expect(container.textContent).toContain('value-alias-page')
   })
 
-  it('URL 上的 ?tab= 优先于 pathname 推导的默认标签', async () => {
-    locationState.pathname = '/material-categories'
-    locationState.searchStr = '?tab=value-alias'
+  it('未带 ?tab= 时回落到首个可见标签', async () => {
+    locationState.pathname = '/material'
+    locationState.searchStr = ''
     await renderPage()
 
-    expect(activeTabLabel()).toBe('值映射维护')
+    expect(activeTabLabel()).toBe('商品资料')
   })
 
   it('切标签只改 ?tab=，保留其它深链参数', async () => {

@@ -4,7 +4,12 @@ import {
   menuGroupDefinitions,
   menuGroupOrder,
 } from '@/config/navigation-registry'
-import { appPageDefinitions, getPageRoutePath } from '@/config/page-registry'
+import {
+  appPageDefinitions,
+  getPageDefinition,
+  getPageRoutePath,
+  routablePageDefinitions,
+} from '@/config/page-registry'
 import { buildVisibleLayoutMenuEntries } from '@/layouts/layout-menu'
 import { enUS } from '@/locales/en-US'
 import { zhCN } from '@/locales/zh-CN'
@@ -133,7 +138,10 @@ describe('页面/分组标题 i18n key 完整性', () => {
 /**
  * 「基础数据」子页面合并方案（已与用户确认）：
  * 商品资料吸收 材料类别 / 定尺加价 / 值映射，项目资料吸收 报价地区，
- * 公司设置挪到系统设置分组；菜单 11 → 6，被并页保留页面定义与深链路由。
+ * 公司设置挪到系统设置分组；菜单 11 → 6。
+ *
+ * <p>旧深链不再保留（2026-11-02 决定）：被并页只作为宿主页的 `?tab=` 标签存在，
+ * 独立路由与页面定义全部下线，访问旧路径落到 404。</p>
  */
 describe('基础数据子页面合并', () => {
   const mergedPages = [
@@ -162,7 +170,7 @@ describe('基础数据子页面合并', () => {
     ])
   })
 
-  it('被并页不进菜单，但保留页面定义、路由与菜单高亮宿主项', () => {
+  it('被并页的旧深链已下线：定义保留但不再生成路由', () => {
     const hiddenMasterKeys = appPageDefinitions
       .filter((entry) => entry.menuParent === 'master' && entry.hiddenInMenu)
       .map((entry) => entry.key)
@@ -171,13 +179,18 @@ describe('基础数据子页面合并', () => {
     )
 
     mergedPages.forEach((item) => {
-      const page = appPageDefinitions.find((entry) => entry.key === item.key)
-      expect(page, `页面定义必须保留: ${item.key}`).toBeDefined()
+      const page = getPageDefinition(item.key)
+      expect(
+        page,
+        `页面定义需要保留(宿主页标签渲染依赖): ${item.key}`,
+      ).toBeDefined()
       expect(page?.hiddenInMenu).toBe(true)
-      expect(page?.activeMenuKey).toBe(item.activeMenuKey)
-      expect(page?.view).toBe(item.view)
-      // 深链不能 404：路由仍按 menuKey 生成
-      expect(getPageRoutePath(item.key)).toBe(item.key)
+      expect(page?.routeless).toBe(true)
+      // 旧深链已下线：不进入路由表
+      expect(
+        routablePageDefinitions.some((entry) => entry.key === item.key),
+        `旧深链不得再注册路由: ${item.key}`,
+      ).toBe(false)
     })
   })
 
@@ -194,19 +207,6 @@ describe('基础数据子页面合并', () => {
       expect(
         page?.validateSearch?.({ tab: 'value-alias', docNo: 'PO-2026-0001' }),
       ).toEqual({ tab: 'value-alias', docNo: 'PO-2026-0001' })
-    })
-  })
-
-  it('被并页标题 key 在中英文资源里都可解析（shell 标签标题会用到）', () => {
-    mergedPages.forEach((item) => {
-      const page = appPageDefinitions.find((entry) => entry.key === item.key)
-      expect(page).toBeDefined()
-      Object.entries(i18nResources).forEach(([locale, resource]) => {
-        expect(
-          readI18nKey(resource, page!.titleKey),
-          `${locale} 缺少页面标题 ${page!.titleKey} (页面 ${page!.key})`,
-        ).toBeTruthy()
-      })
     })
   })
 

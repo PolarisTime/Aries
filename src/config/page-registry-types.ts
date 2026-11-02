@@ -18,7 +18,6 @@ export type RouteViewKey =
   | 'operation-log'
   | 'role-management'
   | 'user-accounts'
-  | 'account'
   | 'finance-overview'
   | 'cash-ledger'
   | 'inventory'
@@ -54,6 +53,15 @@ export interface AppPageDefinition {
   validateSearch?: PageSearchValidator
   searchable?: boolean
   hiddenInMenu?: boolean
+  /**
+   * 仅作为宿主页的标签存在：保留页面定义（页定义查找 / 标签渲染 / 模块完整性断言需要），
+   * 但**不生成独立路由**。
+   *
+   * <p>用于「被并页」——它们的入口是宿主页的 `?tab=`。旧深链已下线（2026-11-02），
+   * 访问旧路径不会再命中本定义。`buildModuleRoutes` 必须跳过本类页面，否则等于把
+   * 「已下线的深链」又注册回路由表。</p>
+   */
+  routeless?: boolean
   activeMenuKey?: string
   /** 访问该页面/菜单所需权限码；缺省表示所有登录用户可见。 */
   requiredPermission?: string

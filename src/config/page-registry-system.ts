@@ -38,14 +38,4 @@ export const systemPageDefinitions: AppPageDefinition[] = [
     menuParent: 'system',
     requiredPermission: 'user-accounts:read',
   },
-  {
-    // 个人账号已并入右上角「个人设置」，此处保留路由与视图以兼容旧链接，菜单隐藏。
-    key: 'account',
-    titleKey: 'pages.account',
-    menuKey: '/account',
-    view: 'account',
-    icon: 'UserOutlined',
-    menuParent: 'system',
-    hiddenInMenu: true,
-  },
 ]

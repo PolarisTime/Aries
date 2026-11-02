@@ -8,8 +8,8 @@ import type {
  *
  * <p>宿主页内的标签切换只改查询串、不改 pathname：shell 里一个 pathname 只对应一个
  * 标签对象（layoutTabsStore 的 `setTabLocation` 不变式），换 pathname 会跨到另一个
- * 外壳标签。因此 `?tab=` 是标签状态的唯一来源；被并页的深链路径
- * （/material-categories 等）由 pathname 推导默认标签。</p>
+ * 外壳标签。因此 `?tab=` 是标签状态的唯一来源；被并页不再有独立 pathname
+ * （旧深链已于 2026-11-02 下线），只能通过 `?tab=` 进入对应标签。</p>
  *
  * <p>返回原始查询串的浅拷贝，保证 `docNo` / `create` 等深链意图参数不被路由层丢弃。</p>
  */
@@ -28,9 +28,11 @@ export const masterPageDefinitions: AppPageDefinition[] = [
      *
      * 清单里「基础数据」原有 11 个一层子项，用户确认合并成 6 个：商品资料页吸收
      * 材料类别 / 定尺加价 / 值映射，项目资料页吸收报价地区，公司设置挪到系统设置分组。
-     * 被并页不再进菜单（hiddenInMenu），但**保留页面定义与路由**：`assertCompleteModulePages`
-     * 要求每个 MODULE_KEYS 都有页面定义，`material-categories` 是 module key；深链也不能 404。
-     * 被并页的 view 一律指向宿主页（见下方各条），由宿主页按 pathname / `?tab=` 选中标签。
+     * 被并页**不再保留页面定义与路由**（2026-11-02 决定）：旧深链 /material-categories、
+     * /length-premium、/value-alias、/quote-region 全部下线，访问旧路径落到 404；
+     * 进入对应标签的唯一方式是在宿主页上带 `?tab=`。
+     * `material-categories` 仍是 module key（列表/表单配置按它寻址），已在
+     * `page-registry.ts` 的 TAB_ONLY_MODULE_KEYS 登记为「无独立路由的标签型模块」。
      *
      * 以下两处入口共享同一份通用列表页配置（business-pages/master/material-page.ts）：
      * 「商品资料」标签渲染通用列表页；「材料类别」标签同样渲染通用列表页，只是换 pageDef，
@@ -47,11 +49,13 @@ export const masterPageDefinitions: AppPageDefinition[] = [
     key: 'material-categories',
     titleKey: 'pages.material-categories',
     menuKey: '/material-categories',
-    // 已并进 /material 的「商品类别」标签：菜单隐藏，route 保留（深链落到对应标签）。
+    // 已并进 /material 的「商品类别」标签：不再生成独立路由（routeless），
+    // 页面定义仅用于宿主页标签渲染与页定义查找。
     view: 'master-material',
     icon: 'TagsOutlined',
     menuParent: 'master',
     hiddenInMenu: true,
+    routeless: true,
     activeMenuKey: '/material',
     moduleKey: 'material-categories',
     validateSearch: tabSearchValidator,
@@ -148,46 +152,45 @@ export const masterPageDefinitions: AppPageDefinition[] = [
   },
   {
     // 值映射/别名维护：把「同一含义多种写法」归一，规则由业务维护而非改代码。
-    // 无 moduleKey（不是业务单据模块），权限码与后端 VALUE_ALIASES_READ 对齐。
+    // 已并进 /material 的「值映射」标签：不生成独立路由，定义仅供宿主页标签渲染。
     key: 'value-alias',
     titleKey: 'pages.value-alias',
     menuKey: '/value-alias',
-    // 已并进 /material 的「值映射」标签：菜单隐藏，route 保留（深链落到对应标签）。
     view: 'master-material',
     icon: 'SwapOutlined',
     menuParent: 'master',
     hiddenInMenu: true,
+    routeless: true,
     activeMenuKey: '/material',
     requiredPermission: 'value-aliases:read',
     validateSearch: tabSearchValidator,
   },
   {
-    // 取价地区维护：西本行情抓取的城市清单与子域名，原写在 application.yml，
-    // 新增城市要改配置并重启，现由业务自行维护（停用不必删除）。
-    // 无 moduleKey（不是业务单据模块），权限码与后端 QUOTE_REGIONS_READ 对齐。
+    // 取价地区维护：西本行情抓取的城市清单与子域名，原写在 application.yml。
+    // 已并进 /project 的「报价地区」标签：不生成独立路由，定义仅供宿主页标签渲染。
     key: 'quote-region',
     titleKey: 'pages.quote-region',
     menuKey: '/quote-region',
-    // 已并进 /project 的「报价地区」标签：菜单隐藏，route 保留（深链落到对应标签）。
     view: 'master-project',
     icon: 'ShopOutlined',
     menuParent: 'master',
     hiddenInMenu: true,
+    routeless: true,
     activeMenuKey: '/project',
     requiredPermission: 'quote-regions:read',
     validateSearch: tabSearchValidator,
   },
   {
     // 定尺加价维护：定尺（如 12 米）每吨加价规则，原同时写在 yml 与 Java 默认值里。
-    // 无 moduleKey（不是业务单据模块），权限码与后端 LENGTH_PREMIUMS_READ 对齐。
+    // 已并进 /material 的「定尺加价」标签：不生成独立路由，定义仅供宿主页标签渲染。
     key: 'length-premium',
     titleKey: 'pages.length-premium',
     menuKey: '/length-premium',
-    // 已并进 /material 的「定尺加价」标签：菜单隐藏，route 保留（深链落到对应标签）。
     view: 'master-material',
     icon: 'CalculatorOutlined',
     menuParent: 'master',
     hiddenInMenu: true,
+    routeless: true,
     activeMenuKey: '/material',
     requiredPermission: 'length-premiums:read',
     validateSearch: tabSearchValidator,
