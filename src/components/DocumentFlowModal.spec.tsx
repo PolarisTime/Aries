@@ -216,7 +216,7 @@ describe('DocumentFlowModal', () => {
     expect(legend?.textContent).toContain('下游')
   })
 
-  it('同层混排时列头按类型分组拼接', async () => {
+  it('同一类型固定一列：混排类型拆成多条泳道，每列只写自己的类型', async () => {
     mockedGetDocumentFlow.mockResolvedValue({
       ...flow,
       nodes: [
@@ -248,10 +248,11 @@ describe('DocumentFlowModal', () => {
     const headers = Array.from(
       document.body.querySelectorAll('.document-flow-column-header'),
     ).map((item) => item.textContent ?? '')
-    expect(headers).toHaveLength(2)
-    // 第 2 列混排（采购入库单 + 物流单），按类型分组逐项给出张数
+    // 按单据类型固定分列：采购单 / 采购入库单 / 物流单 各占一列，不再混在同一列
+    expect(headers).toHaveLength(3)
     expect(headers[1]).toContain('采购入库单 · 1 张')
-    expect(headers[1]).toContain('物流单 · 1 张')
+    expect(headers[2]).toContain('物流单 · 1 张')
+    expect(headers[1]).not.toContain('物流单')
   })
 
   it('未截断时不显示截断提示', async () => {

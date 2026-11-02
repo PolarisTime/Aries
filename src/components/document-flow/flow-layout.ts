@@ -7,7 +7,7 @@ import type {
 export const FLOW_NODE_WIDTH = 180
 export const FLOW_NODE_HEIGHT = 96
 /**
- * 列间距。必须容得下连线上的「N 件 · N 吨」标签：实测 56px 时 11px 字号会把
+ * 泳道间距。必须容得下连线上的「N 件 · N 吨」标签：实测 56px 时 11px 字号会把
  * 数量文字压到卡片边缘、被节点遮住（SVG 在节点下层），故放到 104px。
  */
 export const FLOW_COLUMN_GAP = 104
@@ -16,14 +16,35 @@ export const FLOW_CANVAS_PADDING = 16
 /**
  * 列头「单据类型 · N 张」占用的顶部高度。
  *
- * <p>列头是每列的类型摘要，必须与节点同列对齐、随画布一起横向滚动，因此画布顶部
+ * <p>列头是每条泳道的类型摘要，必须与节点同列对齐、随画布一起横向滚动，因此画布顶部
  * 预留一条固定高度的带；节点的 y 从这里开始，连线几何仍按节点真实坐标计算。</p>
  */
 export const FLOW_HEADER_HEIGHT = 28
 
+/**
+ * 泳道（列）的固定类型顺序，左 → 右与业务链路一致：
+ * 采购单 → 采购入库 → 销售订单 → 销售出库 → 销售退货 → 物流单。
+ *
+ * <p>后端单据流的边一律「上游 → 下游」，且上游类型全部排在本表更靠左的位置
+ * （采购单→销售单这类跳过采购入库的直连也只是跨一条泳道），因此按本顺序排列
+ * 不会出现指向左侧的边。未知类型追加在末尾，按首次出现顺序，保证新增单据也能渲染。</p>
+ *
+ * <p>没有单据的类型不占列位（空泳道折叠）：否则只有采购单+采购入库的单据流会被
+ * 拉到 6 列宽，一屏放不下。</p>
+ */
+export const FLOW_LANE_ORDER = [
+  'purchase-order',
+  'purchase-inbound',
+  'sales-order',
+  'sales-outbound',
+  'sales-return',
+  'freight-bill',
+] as const
+
 export interface FlowLayoutNode {
   key: string
   node: DocumentFlowNode
+  /** 泳道序号（0 起，从左到右）；与列头 `level` 一一对应。 */
   level: number
   x: number
   y: number
@@ -46,7 +67,7 @@ export interface FlowLayoutEdge {
   weight: FlowMetricValue
 }
 
-/** 某一列的类型摘要：同层混排时按类型分组，逐一给出张数。 */
+/** 某条泳道的类型摘要（拆列后每条泳道只有一种类型，保留数组形状以兼容渲染层）。 */
 export interface FlowLayoutHeaderType {
   type: string
   count: number
@@ -96,105 +117,15 @@ export function readLinkMetric(
   return trimmed
 }
 
-/** 取一组位置的中位数；无有效邻居时返回 null。 */
-function medianPosition(
-  keys: string[],
-  position: Map<string, number>,
-): number | null {
-  const values: number[] = []
-  for (const key of keys) {
-    const value = position.get(key)
-    if (value !== undefined) values.push(value)
-  }
-  if (values.length === 0) return null
-  values.sort((a, b) => a - b)
-  const mid = Math.floor(values.length / 2)
-  return values.length % 2 === 1
-    ? values[mid]
-    : (values[mid - 1] + values[mid]) / 2
-}
-
 /**
- * 对单层节点按参考邻居位置的中位数排序；无邻居的节点保留当前相对位置，
- * 再以原始发现顺序与 key 作为最终兜底，保证排序确定且可复现。
- */
-function sortLevelByMedian(
-  group: string[],
-  referenceOf: (key: string) => string[],
-  position: Map<string, number>,
-  baseOrder: Map<string, number>,
-): string[] {
-  return [...group].sort((left, right) => {
-    const leftMedian = medianPosition(referenceOf(left), position)
-    const rightMedian = medianPosition(referenceOf(right), position)
-    const leftValue =
-      leftMedian ?? position.get(left) ?? Number.POSITIVE_INFINITY
-    const rightValue =
-      rightMedian ?? position.get(right) ?? Number.POSITIVE_INFINITY
-    if (leftValue !== rightValue) return leftValue - rightValue
-    const leftBase = baseOrder.get(left) ?? 0
-    const rightBase = baseOrder.get(right) ?? 0
-    if (leftBase !== rightBase) return leftBase - rightBase
-    return left < right ? -1 : left > right ? 1 : 0
-  })
-}
-
-/**
- * 同层防交叉排序：先按上游邻接位置前向扫描，再按下游邻接位置后向扫描，
- * 每遍都用最新位置重算中位数，逐步减少层间连线交叉。
- */
-function orderLevels(
-  levelGroups: Map<number, string[]>,
-  predecessors: Map<string, string[]>,
-  successors: Map<string, string[]>,
-  baseOrder: Map<string, number>,
-): Map<number, string[]> {
-  const levels = Array.from(levelGroups.keys()).sort((a, b) => a - b)
-  const groups = new Map<number, string[]>(
-    levels.map((level) => [level, [...(levelGroups.get(level) ?? [])]]),
-  )
-  const collectPositions = () => {
-    const position = new Map<string, number>()
-    for (const level of levels) {
-      const group = groups.get(level) ?? []
-      for (let index = 0; index < group.length; index += 1) {
-        position.set(group[index], index)
-      }
-    }
-    return position
-  }
-
-  let position = collectPositions()
-  for (const level of levels) {
-    groups.set(
-      level,
-      sortLevelByMedian(
-        groups.get(level) ?? [],
-        (key) => predecessors.get(key) ?? [],
-        position,
-        baseOrder,
-      ),
-    )
-    position = collectPositions()
-  }
-  for (const level of [...levels].reverse()) {
-    groups.set(
-      level,
-      sortLevelByMedian(
-        groups.get(level) ?? [],
-        (key) => successors.get(key) ?? [],
-        position,
-        baseOrder,
-      ),
-    )
-    position = collectPositions()
-  }
-  return groups
-}
-
-/**
- * 将扁平的节点/连线整理为分层流程图布局：
- * 按引用方向做最长路径分层（左 → 右），同层节点用 median/barycenter 防交叉排序后纵向排列并整体居中。
+ * 将扁平的节点/连线整理为「按单据类型固定分列」的泳道流程图：
+ *
+ * <ol>
+ *   <li>列 = 单据类型（{@link FLOW_LANE_ORDER}），不再是"第 N 步"，同一类型无论在第几层
+ *     都落在同一列；没有单据的类型不占列位。</li>
+ *   <li>列内节点按「上游邻居的平均行号」排序，同上游时按首次发现顺序，减少跨列连线交叉。</li>
+ *   <li>各列纵向整体居中；连线仍按节点真实坐标绘制。</li>
+ * </ol>
  */
 export function layoutDocumentFlow(
   flowNodes: DocumentFlowNode[],
@@ -210,9 +141,7 @@ export function layoutDocumentFlow(
     }
   }
 
-  const successors = new Map<string, string[]>()
   const predecessors = new Map<string, string[]>()
-  const indegree = new Map<string, number>()
   const seenEdges = new Set<string>()
   const validEdges: {
     key: string
@@ -221,9 +150,7 @@ export function layoutDocumentFlow(
     link: DocumentFlowLink
   }[] = []
   for (const key of nodesByKey.keys()) {
-    successors.set(key, [])
     predecessors.set(key, [])
-    indegree.set(key, 0)
   }
   for (const link of flowLinks) {
     if (!link.fromType || !link.fromId || !link.toType || !link.toId) continue
@@ -234,97 +161,73 @@ export function layoutDocumentFlow(
     if (seenEdges.has(key)) continue
     seenEdges.add(key)
     validEdges.push({ key, from, to, link })
-    successors.get(from)?.push(to)
     predecessors.get(to)?.push(from)
-    indegree.set(to, (indegree.get(to) ?? 0) + 1)
   }
 
-  const levelOf = new Map<string, number>()
-  const queue = Array.from(nodesByKey.keys()).filter(
-    (key) => (indegree.get(key) ?? 0) === 0,
-  )
-  const remaining = new Map(indegree)
-  // 用 Set 记录已入队节点, 避免在循环内做 O(n) 的 queue.includes 查找。
-  const enqueued = new Set(queue)
-  for (const key of queue) levelOf.set(key, 0)
-  while (queue.length) {
-    const current = queue.shift() as string
-    for (const next of successors.get(current) ?? []) {
-      levelOf.set(
-        next,
-        Math.max(levelOf.get(next) ?? 0, (levelOf.get(current) ?? 0) + 1),
-      )
-      remaining.set(next, (remaining.get(next) ?? 0) - 1)
-      if ((remaining.get(next) ?? 0) <= 0 && !enqueued.has(next)) {
-        enqueued.add(next)
-        queue.push(next)
-      }
-    }
-  }
-  // 环形引用兜底：按原始顺序补齐层级，保证仍然可渲染
+  // 1) 按类型归并到泳道，再按固定顺序排（未知类型追加在末尾）
+  const keysByType = new Map<string, string[]>()
   for (const key of nodesByKey.keys()) {
-    if (!levelOf.has(key)) levelOf.set(key, 0)
-  }
-
-  const levelGroups = new Map<number, string[]>()
-  for (const [key] of Array.from(nodesByKey.entries()).sort(
-    (left, right) => (order.get(left[0]) ?? 0) - (order.get(right[0]) ?? 0),
-  )) {
-    const level = levelOf.get(key) ?? 0
-    const group = levelGroups.get(level)
+    const type = nodesByKey.get(key)?.type ?? ''
+    const group = keysByType.get(type)
     if (group) group.push(key)
-    else levelGroups.set(level, [key])
+    else keysByType.set(type, [key])
   }
+  const knownTypes: readonly string[] = FLOW_LANE_ORDER
+  const orderedTypes = [
+    ...knownTypes.filter((type) => keysByType.has(type)),
+    ...Array.from(keysByType.keys()).filter(
+      (type) => !knownTypes.includes(type),
+    ),
+  ]
 
-  const maxRowCount = Math.max(
-    1,
-    ...Array.from(levelGroups.values(), (group) => group.length),
-  )
-  const orderedGroups = orderLevels(
-    levelGroups,
-    predecessors,
-    successors,
-    order,
-  )
+  // 2) 列内排序：以上游邻居的平均行号为锚点（无上游的排在最前，保持发现顺序）
+  const rowIndexOf = new Map<string, number>()
+  const lanes = orderedTypes.map((type, laneIndex) => {
+    const keys = [...(keysByType.get(type) ?? [])]
+    const anchorOf = (key: string) => {
+      const upstreamRows = (predecessors.get(key) ?? [])
+        .map((upstreamKey) => rowIndexOf.get(upstreamKey))
+        .filter((row): row is number => row !== undefined)
+      if (!upstreamRows.length) return Number.NEGATIVE_INFINITY
+      return (
+        upstreamRows.reduce((sum, row) => sum + row, 0) / upstreamRows.length
+      )
+    }
+    keys.sort((left, right) => {
+      const anchorDiff = anchorOf(left) - anchorOf(right)
+      if (Number.isFinite(anchorDiff) && anchorDiff !== 0) return anchorDiff
+      return (order.get(left) ?? 0) - (order.get(right) ?? 0)
+    })
+    keys.forEach((key, row) => {
+      rowIndexOf.set(key, row)
+    })
+    return { type, laneIndex, keys }
+  })
+
+  const maxRowCount = Math.max(1, ...lanes.map((lane) => lane.keys.length))
+  const rowStep = FLOW_NODE_HEIGHT + FLOW_ROW_GAP
   const layoutNodes: FlowLayoutNode[] = []
-  for (const level of Array.from(orderedGroups.keys()).sort((a, b) => a - b)) {
-    const group = orderedGroups.get(level) ?? []
-    const offset =
-      ((maxRowCount - group.length) * (FLOW_NODE_HEIGHT + FLOW_ROW_GAP)) / 2
-    group.forEach((key, row) => {
+  for (const lane of lanes) {
+    const offset = ((maxRowCount - lane.keys.length) * rowStep) / 2
+    lane.keys.forEach((key, row) => {
       layoutNodes.push({
         key,
         node: nodesByKey.get(key) as DocumentFlowNode,
-        level,
-        x: level * (FLOW_NODE_WIDTH + FLOW_COLUMN_GAP),
+        level: lane.laneIndex,
+        x: lane.laneIndex * (FLOW_NODE_WIDTH + FLOW_COLUMN_GAP),
         // 顶部预留列头带，节点从这里开始；连线几何按同一坐标计算，不会错位。
-        y:
-          FLOW_HEADER_HEIGHT + offset + row * (FLOW_NODE_HEIGHT + FLOW_ROW_GAP),
+        y: FLOW_HEADER_HEIGHT + offset + row * rowStep,
       })
     })
   }
 
-  /*
-   * 列头摘要：每列显示「类型 · N 张」，替代把类型写在每条连线上
-   * （同一汇聚干线上会重复出现「销售」，且连线一多就糊成一片）。
-   * 同层混排（如退货单与物流单同层）时按类型分组拼接，顺序取该列首次出现顺序。
-   */
-  const layoutHeaders: FlowLayoutHeader[] = Array.from(orderedGroups.keys())
-    .sort((a, b) => a - b)
-    .map((level) => {
-      const countByType = new Map<string, number>()
-      for (const key of orderedGroups.get(level) ?? []) {
-        const node = nodesByKey.get(key)
-        if (!node) continue
-        countByType.set(node.type, (countByType.get(node.type) ?? 0) + 1)
-      }
-      return {
-        level,
-        x: level * (FLOW_NODE_WIDTH + FLOW_COLUMN_GAP),
-        width: FLOW_NODE_WIDTH,
-        types: Array.from(countByType, ([type, count]) => ({ type, count })),
-      }
-    })
+  // 3) 每列一条列头：拆列后一条泳道只有一种类型，不再出现「A · 1 · B · 1」的混合列
+  const layoutHeaders: FlowLayoutHeader[] = lanes.map((lane) => ({
+    level: lane.laneIndex,
+    x: lane.laneIndex * (FLOW_NODE_WIDTH + FLOW_COLUMN_GAP),
+    width: FLOW_NODE_WIDTH,
+    types: [{ type: lane.type, count: lane.keys.length }],
+  }))
 
   const layoutByKey = new Map(layoutNodes.map((item) => [item.key, item]))
   const layoutEdges: FlowLayoutEdge[] = []

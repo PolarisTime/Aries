@@ -32,7 +32,7 @@ describe('layoutDocumentFlow', () => {
   const inbound = node('purchase-inbound', '2', 'IN-1')
   const salesOrder = node('sales-order', '3', 'SO-1')
 
-  it('按引用方向分层: 线性链路层级递增且 x 逐列右移', () => {
+  it('按类型分列: 线性链路各占一列且 x 逐列右移', () => {
     const layout = layoutDocumentFlow(
       [order, inbound, salesOrder],
       [link(order, inbound), link(inbound, salesOrder)],
@@ -47,7 +47,7 @@ describe('layoutDocumentFlow', () => {
     expect(layout.width).toBe(third.x + FLOW_NODE_WIDTH + FLOW_CANVAS_PADDING)
   })
 
-  it('同层节点纵向排列且整体居中', () => {
+  it('同一泳道多个节点纵向排列且整体居中', () => {
     const second = node('purchase-inbound', '9', 'IN-9')
     const layout = layoutDocumentFlow(
       [order, inbound, second],
@@ -84,7 +84,7 @@ describe('layoutDocumentFlow', () => {
     expect(layout.width).toBe(FLOW_CANVAS_PADDING * 2)
   })
 
-  it('同层 median 排序减少交叉: 下游按上游邻接顺序排列', () => {
+  it('列内按上游锚点排序减少交叉: 下游按上游邻接顺序排列', () => {
     const left1 = node('purchase-order', '1', 'PO-1')
     const left2 = node('purchase-order', '2', 'PO-2')
     const right1 = node('purchase-inbound', '3', 'IN-1')
@@ -105,7 +105,7 @@ describe('layoutDocumentFlow', () => {
     )
   })
 
-  it('同层排序确定且可复现: 相同输入多次布局结果一致', () => {
+  it('列内排序确定且可复现: 相同输入多次布局结果一致', () => {
     const nodes = [
       node('purchase-order', '1', 'PO-1'),
       node('purchase-order', '2', 'PO-2'),
@@ -145,7 +145,7 @@ describe('layoutDocumentFlow', () => {
     }
   })
 
-  it('每列生成一条列头摘要, 同层混排按类型分组计数', () => {
+  it('按单据类型固定分列: 混排类型拆成多条泳道, 每列只有一种类型', () => {
     const inbound = node('purchase-inbound', '2', 'IN-1')
     const anotherInbound = node('purchase-inbound', '4', 'IN-2')
     const freight = node('freight-bill', '3', 'FB-1')
@@ -154,17 +154,45 @@ describe('layoutDocumentFlow', () => {
       [link(order, inbound), link(order, anotherInbound), link(order, freight)],
     )
 
-    expect(layout.headers).toHaveLength(2)
-    const [first, second] = layout.headers
-    expect(first.level).toBe(0)
-    expect(first.types).toEqual([{ type: 'purchase-order', count: 1 }])
-    // 第 2 列: 两张采购入库单 + 一张物流单
-    expect(second.level).toBe(1)
+    // 采购单 / 采购入库 / 物流单：三列都是单一类型，不再出现「入库 · 2 · 物流 · 1」的混合列
+    expect(layout.headers.map((header) => header.types)).toEqual([
+      [{ type: 'purchase-order', count: 1 }],
+      [{ type: 'purchase-inbound', count: 2 }],
+      [{ type: 'freight-bill', count: 1 }],
+    ])
+    expect(layout.headers.map((header) => header.level)).toEqual([0, 1, 2])
+    expect(layout.headers[1].x - layout.headers[0].x).toBe(
+      FLOW_NODE_WIDTH + FLOW_COLUMN_GAP,
+    )
+  })
+
+  it('空泳道折叠: 没有单据的类型不占列位, 右侧泳道前移', () => {
+    const salesOrder = node('sales-order', '3', 'SO-1')
+    const layout = layoutDocumentFlow(
+      [order, salesOrder],
+      [link(order, salesOrder)],
+    )
+
+    expect(layout.headers.map((header) => header.types[0].type)).toEqual([
+      'purchase-order',
+      'sales-order',
+    ])
+    expect(layout.headers[1].x - layout.headers[0].x).toBe(
+      FLOW_NODE_WIDTH + FLOW_COLUMN_GAP,
+    )
     expect(
-      Object.fromEntries(
-        second.types.map((group) => [group.type, group.count]),
-      ),
-    ).toEqual({ 'purchase-inbound': 2, 'freight-bill': 1 })
+      layout.nodes.find((item) => item.key === 'sales-order:3')?.level,
+    ).toBe(1)
+  })
+
+  it('未知单据类型追加在已知泳道之后', () => {
+    const custom = node('custom-doc', '9', 'C-1')
+    const layout = layoutDocumentFlow([custom, order], [])
+
+    expect(layout.headers.map((header) => header.types[0].type)).toEqual([
+      'purchase-order',
+      'custom-doc',
+    ])
   })
 
   it('列头与同列节点左边界对齐, 节点为列头带预留高度', () => {
