@@ -14,6 +14,7 @@ import type {
   ModuleEditorDraftFor,
   PersistedModuleEditorDraftFor,
 } from '@/types/module-record'
+import { sumValues } from '@/utils/money'
 import type { EditorFormValues } from '@/views/modules/module-editor-workspace-support'
 
 interface EditorDraftSource {
@@ -52,10 +53,10 @@ export interface DocumentChargeItemDraft {
 export function sumChargeItemAmount(
   items: readonly Pick<DocumentChargeItemDraft, 'amount'>[],
 ) {
-  return items.reduce((sum, item) => {
-    const amount = Number(item.amount)
-    return sum + (Number.isFinite(amount) ? amount : 0)
-  }, 0)
+  // 走 sumValues（Decimal 累加）：就地 reduce 累加 float 会出现 0.1+0.2=0.30000000000000004，
+  // 多行费用时保存载荷与列表合计会差最后几位。精度不在此处收口（由 applyComputedTotals 统一舍入），
+  // 因此沿用默认重量精度做「精确累加、不提前舍入」。
+  return sumValues(items.map((item) => item.amount))
 }
 
 export function toEditorFormState(

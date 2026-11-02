@@ -1,4 +1,6 @@
+import { DISPLAY_AMOUNT_PRECISION } from '@/constants/precision'
 import { parseDateTimeValue } from '@/utils/formatters'
+import { sumValues } from '@/utils/money'
 
 export interface CustomerStatementItemGroup<
   Item extends Record<string, unknown>,
@@ -19,11 +21,6 @@ function readText(value: unknown) {
 
 function readSourceItemId(value: unknown) {
   return readText(value)
-}
-
-function readNumber(value: unknown) {
-  const number = Number(value)
-  return Number.isFinite(number) ? number : 0
 }
 
 function readDeliveryDate<Item extends Record<string, unknown>>(item: Item) {
@@ -97,17 +94,13 @@ export function groupCustomerStatementItems<
       key,
       sourceNo: group.sourceNo,
       deliveryDate: group.deliveryDate,
-      totalQuantity: group.items.reduce(
-        (sum, item) => sum + readNumber(item.quantity),
-        0,
-      ),
-      totalWeightTon: group.items.reduce(
-        (sum, item) => sum + readNumber(item.weightTon),
-        0,
-      ),
-      totalAmount: group.items.reduce(
-        (sum, item) => sum + readNumber(item.amount),
-        0,
+      // 合计统一走 sumValues（Decimal 累加）：就地 reduce 累加 float 会漂移
+      // （0.1 + 0.2 = 0.30000000000000004），分组小计会与单据合计差最后几位。
+      totalQuantity: sumValues(group.items.map((item) => item.quantity)),
+      totalWeightTon: sumValues(group.items.map((item) => item.weightTon)),
+      totalAmount: sumValues(
+        group.items.map((item) => item.amount),
+        DISPLAY_AMOUNT_PRECISION,
       ),
       items: group.items,
       firstIndex,
