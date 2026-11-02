@@ -89,6 +89,16 @@ export function PrintJobModalBody({
   const { t } = useTranslation()
   const isSalesOrder = supportsSalesOrderPrintOption(moduleKey)
   const statementPrintModule = isStatementPrintModule(moduleKey)
+  /*
+   * 对账单没有「交货日期」，只有起止日期：汇总条此时显示「对账期间」。
+   * 继续用 deliveryDate 会让客户/物流对账单永远显示「交货日期：-」。
+   */
+  const statementPeriod = statementPrintModule
+    ? [primaryRecord?.startDate, primaryRecord?.endDate]
+        .map((value) => (value ? formatDate(value, '') : ''))
+        .filter(Boolean)
+        .join(' ~ ')
+    : ''
   const printItemFields = useMemo(
     () => getPrintItemFields(moduleKey),
     [moduleKey],
@@ -145,7 +155,16 @@ export function PrintJobModalBody({
         isSalesOrder={isSalesOrder}
       />
       <PrintJobModalSummaryBar
-        recordDeliveryDate={formatDate(primaryRecord?.deliveryDate, '-')}
+        dateLabel={
+          statementPrintModule
+            ? t('modules.print.statementPeriod')
+            : t('modules.print.deliveryDate')
+        }
+        recordDeliveryDate={
+          statementPrintModule
+            ? statementPeriod || '-'
+            : formatDate(primaryRecord?.deliveryDate, '-')
+        }
         recordRemark={fieldText(primaryRecord?.remark)}
         settlementCompanyName={fieldText(primaryRecord?.settlementCompanyName)}
         totalQuantity={totalQuantity}

@@ -107,3 +107,34 @@ export function subtractAmount(left: unknown, right: unknown): number {
     .toDecimalPlaces(AMOUNT_SCALE, Decimal.ROUND_HALF_UP)
     .toNumber()
 }
+
+/**
+ * 通用十进制求和：合计件数/重量等非金额字段（默认重量精度 8 位，HALF_UP）。
+ *
+ * <p>打印作业的「合计件数 / 合计重量」原先用 `reduce((sum, v) => sum + Number(v))`
+ * 累加，多行明细下会出现 `0.1 + 0.2 = 0.30000000000000004` 这类二进制误差，
+ * 合计与单据上的吨位对不上。</p>
+ */
+export function sumValues(
+  values: readonly unknown[],
+  precision: number = WEIGHT_SCALE,
+): number {
+  const total = values.reduce<Decimal>(
+    (sum, value) => sum.plus(toDecimal(value)),
+    new MoneyDecimal(0),
+  )
+  return total.toDecimalPlaces(precision, Decimal.ROUND_HALF_UP).toNumber()
+}
+
+/**
+ * 按精度格式化为十进制文本（不经过 `Number` 二次转换）。
+ *
+ * <p>展示层用它替代 `value.toFixed(n)`：后者按 IEEE-754 二进制真实值舍入，
+ * `2.675.toFixed(2)` 得 `"2.67"`、`9.995.toFixed(2)` 得 `"9.99"`，
+ * 与本模块 HALF_UP 口径不一致。</p>
+ */
+export function formatDecimal(value: unknown, precision: number): string {
+  return toDecimal(value)
+    .toDecimalPlaces(precision, Decimal.ROUND_HALF_UP)
+    .toFixed(precision)
+}

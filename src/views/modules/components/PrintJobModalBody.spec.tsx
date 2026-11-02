@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { PrintRecordItem } from '@/api/system/print-template'
 import { rowDragKeyboardModelLabels } from '@/components/table/row-drag'
+import type { ModuleRecord } from '@/types/module-page'
 import { PrintJobModalBody } from './PrintJobModalBody'
 import type { PrintJobFormValues } from './print-job-modal-state'
 import type { PrintJobItemsState } from './use-print-job-modal-items'
@@ -67,7 +68,13 @@ function buildItemState(): PrintJobItemsState {
 }
 
 /** 与 PrintJobModal 的接线一致: 传感器由外层创建后传入内容区。 */
-function BodyHarness() {
+function BodyHarness({
+  moduleKey = 'sales-order',
+  primaryRecord,
+}: {
+  moduleKey?: string
+  primaryRecord?: ModuleRecord
+} = {}) {
   const [form] = Form.useForm<PrintJobFormValues>()
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -84,10 +91,10 @@ function BodyHarness() {
       itemSelectionEnabled={false}
       itemState={buildItemState()}
       mergeEquivalentItems={false}
-      moduleKey="sales-order"
+      moduleKey={moduleKey}
       onDragEnd={() => undefined}
       onRetryPrintItems={() => undefined}
-      primaryRecord={undefined}
+      primaryRecord={primaryRecord}
       printItems={ITEMS}
       printItemsError={false}
       sensors={sensors}
@@ -174,5 +181,25 @@ describe('打印明细区 DndContext 的读屏接线', () => {
       expect(labels.some((label) => label.startsWith('上移'))).toBe(true)
       expect(labels.some((label) => label.startsWith('下移'))).toBe(true)
     }
+  })
+
+  it('对账单打印作业显示「对账期间」，不显示「交货日期」', () => {
+    act(() => {
+      root.render(
+        createElement(BodyHarness, {
+          moduleKey: 'customer-statement',
+          primaryRecord: {
+            id: '1',
+            startDate: '2026-09-22',
+            endDate: '2026-10-11',
+            settlementCompanyName: '熠祺建材',
+          } as ModuleRecord,
+        }),
+      )
+    })
+
+    const text = container.textContent ?? ''
+    // SummaryBar 的日期行改为「对账期间：起 ~ 止」，不再显示「交货日期：-」。
+    expect(text).toContain('对账期间：2026年09月22日 ~ 2026年10月11日')
   })
 })

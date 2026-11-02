@@ -1083,6 +1083,7 @@ export const zhCN = {
       moveItemUp: '上移',
       moveItemDown: '下移',
       deliveryDate: '交货日期',
+      statementPeriod: '对账期间',
       recordRemark: '单据备注',
       totalQuantity: '合计件数',
       totalWeight: '合计重量',

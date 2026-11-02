@@ -1100,6 +1100,7 @@ export const enUS = {
       moveItemUp: 'Move up',
       moveItemDown: 'Move down',
       deliveryDate: 'Delivery Date',
+      statementPeriod: 'Statement Period',
       recordRemark: 'Document Remark',
       totalQuantity: 'Total Qty',
       totalWeight: 'Total Weight',

@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { formattedTotal } from '@/views/modules/components/print-job-modal-format'
 
 interface Props {
+  /** 「日期」行标签：单据默认「交货日期」，对账单用「对账期间」。 */
+  dateLabel?: string
   recordDeliveryDate: string
   recordRemark: string
   settlementCompanyName: string
@@ -12,6 +14,7 @@ interface Props {
 
 /** 打印作业弹窗的汇总条：交货日期、备注、结算公司与合计件数/重量。 */
 export function PrintJobModalSummaryBar({
+  dateLabel,
   recordDeliveryDate,
   recordRemark,
   settlementCompanyName,
@@ -36,7 +39,7 @@ export function PrintJobModalSummaryBar({
     >
       <Flex align="center" gap="middle" wrap="wrap" style={{ minWidth: 0 }}>
         <SummaryInfo
-          label={t('modules.print.deliveryDate')}
+          label={dateLabel ?? t('modules.print.deliveryDate')}
           value={recordDeliveryDate}
           valueMaxWidth={160}
         />

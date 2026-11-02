@@ -2,6 +2,7 @@ import { getCustomerProjectOptions } from '@/module-system/core/module-option-re
 import type { PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
 import { formatAmount as formatAmountValue } from '@/utils/formatters'
+import { formatDecimal, sumValues } from '@/utils/money'
 import type {
   PrintItemFieldKey,
   PrintItemFieldSpec,
@@ -97,10 +98,9 @@ export function fieldText(value: unknown) {
 }
 
 export function numericTotal(values: unknown[]) {
-  const total = values.reduce<number>((sum, value) => {
-    const numericValue = toNumberOrNull(value)
-    return numericValue == null ? sum : sum + numericValue
-  }, 0)
+  // 合计走十进制精确求和（`utils/money.sumValues`）：浮点累加会让「合计重量」
+  // 在多行明细时与单据差 0.001 吨，打印件与屏幕对不上账。
+  const total = sumValues(values)
   return total > 0 ? total : null
 }
 
@@ -112,7 +112,9 @@ function toNumberOrNull(value: unknown) {
 
 export function formattedTotal(value: number | null, fractionDigits = 3) {
   if (value == null) return '-'
-  const fixed = value.toFixed(fractionDigits)
+  // 舍入与格式化都走十进制出口：`toFixed` 按 IEEE-754 真实值舍入，
+  // 9.995 会被舍成 9.99，而金额/吨位口径是 HALF_UP。
+  const fixed = formatDecimal(value, fractionDigits)
   // 整数展示（如合计件数）不做尾零截断，避免 100 被截成 "1"。
   if (fractionDigits === 0) return fixed
   return fixed.replace(/\.?0+$/, '')
