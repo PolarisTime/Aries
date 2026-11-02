@@ -50,7 +50,7 @@ jobs:
         shell: bash
     steps:
       - name: Checkout Aries
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.aries_ref || github.ref_name }}
 
@@ -61,7 +61,7 @@ jobs:
         run: VITE_API_BASE_URL="$VITE_API_BASE_URL" pnpm build-only --mode production
 
       - name: Upload frontend artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: aries-frontend-dist
           path: dist/**
@@ -77,12 +77,12 @@ jobs:
         shell: bash
     steps:
       - name: Checkout Aries deploy scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.aries_ref || github.ref_name }}
 
       - name: Download frontend artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: aries-frontend-dist
           path: release-input/frontend
@@ -127,7 +127,7 @@ jobs:
           sha256sum aries-frontend-release.tar.gz > aries-frontend-release.tar.gz.sha256
 
       - name: Upload frontend release archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: aries-frontend-release
           path: |
@@ -186,7 +186,7 @@ jobs:
       - name: Download frontend release archive (attempt 1)
         id: download-release-attempt-1
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: aries-frontend-release
           path: frontend-release-attempt-1
@@ -199,7 +199,7 @@ jobs:
         id: download-release-attempt-2
         if: ${{ steps.download-release-attempt-1.outcome == 'failure' }}
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: aries-frontend-release
           path: frontend-release-attempt-2
@@ -212,7 +212,7 @@ jobs:
         id: download-release-attempt-3
         if: ${{ steps.download-release-attempt-1.outcome == 'failure' && steps.download-release-attempt-2.outcome == 'failure' }}
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: aries-frontend-release
           path: frontend-release-attempt-3
@@ -333,7 +333,7 @@ jobs:
       - name: Download frontend release archive (attempt 1)
         id: download-release-attempt-1
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: aries-frontend-release
           path: frontend-release-attempt-1
@@ -346,7 +346,7 @@ jobs:
         id: download-release-attempt-2
         if: ${{ steps.download-release-attempt-1.outcome == 'failure' }}
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: aries-frontend-release
           path: frontend-release-attempt-2
@@ -359,7 +359,7 @@ jobs:
         id: download-release-attempt-3
         if: ${{ steps.download-release-attempt-1.outcome == 'failure' && steps.download-release-attempt-2.outcome == 'failure' }}
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: aries-frontend-release
           path: frontend-release-attempt-3
