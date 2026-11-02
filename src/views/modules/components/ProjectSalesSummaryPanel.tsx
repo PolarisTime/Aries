@@ -2,6 +2,7 @@ import { ReloadOutlined } from '@ant-design/icons'
 import { Alert, Button, Skeleton, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ProjectSalesSummary } from '@/api/sales/project-sales-summary'
+import { formatAmount, formatWeight } from '@/utils/formatters'
 import {
   type ProjectSalesSummaryError,
   useProjectSalesSummary,
@@ -78,9 +79,6 @@ interface StateAreaProps {
   loading: boolean
   summary: ProjectSalesSummary | null
   retry: () => void
-  variant: 'editor' | 'detail'
-  pendingAmount?: number
-  pendingTonnage?: number
 }
 
 /**
@@ -94,9 +92,6 @@ function ProjectSalesSummaryStateArea({
   loading,
   summary,
   retry,
-  variant,
-  pendingAmount,
-  pendingTonnage,
 }: StateAreaProps) {
   if (error) {
     return <ProjectSalesSummaryErrorState error={error} onRetry={retry} />
@@ -112,14 +107,7 @@ function ProjectSalesSummaryStateArea({
     )
   }
   if (!summary) return null
-  return (
-    <ProjectSalesSummaryContent
-      summary={summary}
-      variant={variant}
-      {...(pendingAmount === undefined ? {} : { pendingAmount })}
-      {...(pendingTonnage === undefined ? {} : { pendingTonnage })}
-    />
-  )
+  return <ProjectSalesSummaryContent summary={summary} />
 }
 
 /**
@@ -128,7 +116,8 @@ function ProjectSalesSummaryStateArea({
  * <p>三处共用同一个组件与同一个请求出口：</p>
  * <ol>
  *   <li>销售订单编辑器（新建/编辑）—— 传入草稿合计作为 `pending*`、本单 id 作为
- *     `excludeOrderId`，因此「合计金额」显示的是"保存后"的项目合计；</li>
+ *     `excludeOrderId`，因此「合计金额」显示的是"保存后"的项目合计；「含本单未保存合计」
+ *     渲染在面板 header 行右侧，紧贴表单备注行下方，不另占一行；</li>
  *   <li>订单详情弹层；</li>
  *   <li>列表行「+」展开区。</li>
  * </ol>
@@ -154,6 +143,10 @@ export function ProjectSalesSummaryPanel({
   const projectIdText = String(projectId ?? '').trim()
   if (!projectIdText) return null
 
+  const showPending =
+    variant === 'editor' &&
+    (pendingAmount !== undefined || pendingTonnage !== undefined)
+
   const title = t('modules.projectSalesSummary.title')
   const rootClassName = [
     'project-sales-summary',
@@ -175,6 +168,18 @@ export function ProjectSalesSummaryPanel({
             {summary.projectName}
           </Typography.Text>
         ) : null}
+        {/* 编辑器专属：紧贴单据表单备注行下方，与面板标题同一行，不另占一行。 */}
+        {showPending ? (
+          <Typography.Text
+            type="secondary"
+            className="project-sales-summary__pending"
+          >
+            {t('modules.projectSalesSummary.pendingHint', {
+              amount: formatAmount(pendingAmount ?? 0),
+              tonnage: formatWeight(pendingTonnage ?? 0),
+            })}
+          </Typography.Text>
+        ) : null}
       </div>
 
       <ProjectSalesSummaryStateArea
@@ -182,9 +187,6 @@ export function ProjectSalesSummaryPanel({
         loading={loading}
         summary={summary}
         retry={retry}
-        variant={variant}
-        {...(pendingAmount === undefined ? {} : { pendingAmount })}
-        {...(pendingTonnage === undefined ? {} : { pendingTonnage })}
       />
     </section>
   )

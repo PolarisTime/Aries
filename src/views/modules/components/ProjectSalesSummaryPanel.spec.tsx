@@ -324,6 +324,17 @@ describe('ProjectSalesSummaryPanel', () => {
       pendingTonnage: 7.89,
     })
     expect(text).toContain('含本单未保存合计：1234.56 元 / 7.890 吨')
+    // 位置契约：与面板标题同一行（header 内），不是三组指标下方一条孤立小字。
+    const header = container.querySelector('.project-sales-summary__header')
+    expect(header?.textContent).toContain('含本单未保存合计')
+    expect(
+      header?.querySelector('.project-sales-summary__pending'),
+    ).not.toBeNull()
+    expect(
+      container.querySelector(
+        '.project-sales-summary__metrics .project-sales-summary__pending',
+      ),
+    ).toBeNull()
   })
 
   it('详情态不显示「含本单」标注（pending 只在编辑器传入）', () => {
