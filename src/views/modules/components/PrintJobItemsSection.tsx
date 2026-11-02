@@ -653,22 +653,31 @@ export function PrintJobItemsSection({
     statementGroups.length > 0 ? (
       <div className="module-items-groups">
         {statementGroups.map((group) => (
-          <div className="module-items-group" key={group.key}>
+          <div
+            className={
+              'projectGroups' in group
+                ? 'module-items-group module-items-group--freight'
+                : 'module-items-group'
+            }
+            key={group.key}
+          >
             {'projectGroups' in group ? (
               <>
                 <FreightStatementItemGroupHeader group={group} />
-                {group.projectGroups.map((projectGroup) => (
-                  <div
-                    className="module-items-project-group"
-                    key={projectGroup.key}
-                  >
-                    <FreightStatementProjectGroupHeader
-                      group={projectGroup}
-                      showSubtotal={false}
-                    />
-                    {printItemsTable(projectGroup.items as PrintRecordItem[])}
-                  </div>
-                ))}
+                <div className="module-items-freight-group-body">
+                  {group.projectGroups.map((projectGroup) => (
+                    <div
+                      className="module-items-project-group"
+                      key={projectGroup.key}
+                    >
+                      <FreightStatementProjectGroupHeader
+                        group={projectGroup}
+                        showSubtotal={false}
+                      />
+                      {printItemsTable(projectGroup.items as PrintRecordItem[])}
+                    </div>
+                  ))}
+                </div>
               </>
             ) : (
               <>

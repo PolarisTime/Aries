@@ -40,6 +40,7 @@ const printRecordItemSchema = z.object({
   projectName: z.string().optional(),
   sourceSalesOrderItemId: z.string().optional(),
   sourceFreightBillId: z.string().optional(),
+  sourceFreightBillTime: z.string().optional(),
   sourceFreightBillUnitPrice: z.string().optional(),
   sourceFreightBillTotalFreight: z.string().optional(),
 })
@@ -87,6 +88,7 @@ export interface PrintRecordItem {
   projectName?: string
   sourceSalesOrderItemId?: string
   sourceFreightBillId?: string
+  sourceFreightBillTime?: string
   sourceFreightBillUnitPrice?: string
   sourceFreightBillTotalFreight?: string
 }
