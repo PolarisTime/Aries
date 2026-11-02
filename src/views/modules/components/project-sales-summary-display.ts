@@ -15,9 +15,23 @@ export function formatUsagePercent(rate: number | null): string {
   return `${(rate * 100).toFixed(2)}%`
 }
 
-/** 是否超过 100%（唯一判定处）。 */
-export function isQuotaExceeded(rate: number | null): boolean {
-  return rate !== null && Number.isFinite(rate) && rate > 1
+/**
+ * 是否超过合同限额（唯一判定处）。
+ *
+ * <p>判定基准是后端返回的「超出额」{@code max(已用 − 合同, 0)}，<b>不是</b>使用率
+ * {@code rate > 1}。使用率按 4 位小数展示，拿它判定会与金额口径打架：</p>
+ *
+ * <ul>
+ *   <li>已用比合同多 0.01 元 → rate 展示为 {@code 100.00%}，{@code rate > 1} 为假 →
+ *       进度条蓝色，但「已超出合同金额 0.01 元」的提示会出现；</li>
+ *   <li>已用超出额小到被金额精度归零 → rate 可能仍 {@code > 1} → 进度条红色，
+ *       但超限提示不出现。</li>
+ * </ul>
+ *
+ * <p>进度条与超限提示都调用本函数，两者因此永远一致；使用率只负责展示百分比与刻度。</p>
+ */
+export function isQuotaExceeded(exceeded: number | null | undefined): boolean {
+  return typeof exceeded === 'number' && Number.isFinite(exceeded) && exceeded > 0
 }
 
 /**

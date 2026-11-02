@@ -14,6 +14,8 @@ interface QuotaRowProps {
   /** 进度条的可访问名：读屏必须能分辨是哪一条额度。 */
   ariaLabel: string
   rate: number | null
+  /** 该行额度的超出额（后端 `max(已用 − 合同, 0)`）；超限判定只看它，不看 rate。 */
+  exceeded: number
   contractText: string
   remainingText: string
 }
@@ -29,17 +31,18 @@ function QuotaRow({
   label,
   ariaLabel,
   rate,
+  exceeded,
   contractText,
   remainingText,
 }: QuotaRowProps) {
-  const exceeded = isQuotaExceeded(rate)
+  const isExceeded = isQuotaExceeded(exceeded)
   return (
     <div className="project-sales-summary__quota-row">
       <div className="project-sales-summary__quota-head">
         <span className="project-sales-summary__quota-label">{label}</span>
         <span
           className={`project-sales-summary__quota-percent${
-            exceeded ? ' project-sales-summary__quota-percent--exceeded' : ''
+            isExceeded ? ' project-sales-summary__quota-percent--exceeded' : ''
           }`}
         >
           {formatUsagePercent(rate)}
@@ -48,7 +51,7 @@ function QuotaRow({
       <Progress
         className="project-sales-summary__quota-progress"
         percent={toBarPercent(rate)}
-        status={exceeded ? 'exception' : 'normal'}
+        status={isExceeded ? 'exception' : 'normal'}
         showInfo={false}
         aria-label={ariaLabel}
       />
@@ -84,13 +87,14 @@ export function ProjectSalesSummaryQuota({ summary }: Props) {
     )
   }
 
+  // 与进度条共用 isQuotaExceeded：判定只有一个出口，提示与红条不会各说各话。
   const exceededLines = [
-    summary.exceededAmount > 0
+    isQuotaExceeded(summary.exceededAmount)
       ? t('modules.projectSalesSummary.exceededAmount', {
           value: formatAmount(summary.exceededAmount),
         })
       : null,
-    summary.exceededTonnage > 0
+    isQuotaExceeded(summary.exceededTonnage)
       ? t('modules.projectSalesSummary.exceededTonnage', {
           value: formatWeight(summary.exceededTonnage),
         })
@@ -103,6 +107,7 @@ export function ProjectSalesSummaryQuota({ summary }: Props) {
         label={t('modules.projectSalesSummary.amountUsage')}
         ariaLabel={t('modules.projectSalesSummary.amountUsageAria')}
         rate={summary.amountUsageRate}
+        exceeded={summary.exceededAmount}
         contractText={t('modules.projectSalesSummary.contractAmount', {
           value: formatAmount(summary.contractAmount),
         })}
@@ -114,6 +119,7 @@ export function ProjectSalesSummaryQuota({ summary }: Props) {
         label={t('modules.projectSalesSummary.tonnageUsage')}
         ariaLabel={t('modules.projectSalesSummary.tonnageUsageAria')}
         rate={summary.tonnageUsageRate}
+        exceeded={summary.exceededTonnage}
         contractText={t('modules.projectSalesSummary.contractTonnage', {
           value: formatWeight(summary.contractTonnage),
         })}
