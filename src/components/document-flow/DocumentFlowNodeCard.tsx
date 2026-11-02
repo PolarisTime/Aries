@@ -7,7 +7,8 @@ import {
   type DocumentFlowTranslator,
   documentFlowNodeTooltip,
   documentFlowTypeLabel,
-  formatDocumentFlowMetric,
+  formatDocumentFlowAmount,
+  formatDocumentFlowWeight,
 } from './document-flow-meta'
 import {
   FLOW_NODE_HEIGHT,
@@ -18,10 +19,8 @@ import {
 /** 金额/重量文案：缺失即空串，调用方据此整段不渲染。 */
 function resolveNodeMetrics(node: DocumentFlowNode) {
   return {
-    amountText:
-      node.amount != null ? formatDocumentFlowMetric(node.amount) : '',
-    weightText:
-      node.weight != null ? formatDocumentFlowMetric(node.weight) : '',
+    amountText: formatDocumentFlowAmount(node.amount),
+    weightText: formatDocumentFlowWeight(node.weight),
   }
 }
 

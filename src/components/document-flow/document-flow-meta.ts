@@ -1,4 +1,5 @@
 import type { DocumentFlowNode } from '@/shared/schemas/document-flow'
+import { formatAmount, formatWeight } from '@/utils/formatters'
 import type { FlowLayoutEdge } from './flow-layout'
 
 /**
@@ -51,16 +52,47 @@ export const DOCUMENT_FLOW_TYPE_META: Readonly<
   },
 }
 
-/** 金额/重量：千分位 + 最多 2 位小数（金额上万后不分组读不出量级）。 */
-export function formatDocumentFlowMetric(
+/**
+ * 单据流里的金额 / 重量 / 件数文本。
+ *
+ * <p>三者共用「空值 → 空串、非数值 → 原样返回」这套兜底，但**数值口径必须各自走全站唯一出口**：
+ * 金额 {@link formatAmount}（2 位）、重量 {@link formatWeight}（3 位），且一律**不加千分位**
+ * （产品决定：数字要能直接复制进 Excel/搜索框，见 formatters 里的说明）。</p>
+ *
+ * <p>此前这里用 `toLocaleString('zh-CN', { useGrouping: true, maximumFractionDigits: 2 })`，
+ * 结果是：金额带千分位与全站约定相反，重量只剩 2 位小数（比表格列少一位），
+ * 同一张单据在流程图与列表里显示不同数值。</p>
+ */
+function numericOrNull(
+  value: number | string | null | undefined,
+): number | null {
+  if (value === null || value === undefined || value === '') return null
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? numeric : null
+}
+
+export function formatDocumentFlowAmount(
   value: number | string | null | undefined,
 ): string {
-  if (value === null || value === undefined || value === '') return ''
-  const numeric = Number(value)
-  if (!Number.isFinite(numeric)) return String(value)
+  const numeric = numericOrNull(value)
+  return numeric === null ? (value ? String(value) : '') : formatAmount(numeric)
+}
+
+export function formatDocumentFlowWeight(
+  value: number | string | null | undefined,
+): string {
+  const numeric = numericOrNull(value)
+  return numeric === null ? (value ? String(value) : '') : formatWeight(numeric)
+}
+
+export function formatDocumentFlowQuantity(
+  value: number | string | null | undefined,
+): string {
+  const numeric = numericOrNull(value)
+  if (numeric === null) return value ? String(value) : ''
   return numeric.toLocaleString('zh-CN', {
-    useGrouping: true,
-    maximumFractionDigits: 2,
+    useGrouping: false,
+    maximumFractionDigits: 0,
   })
 }
 
@@ -117,14 +149,14 @@ export function documentFlowEdgeMetricLabel(
   if (edge.quantity !== null) {
     parts.push(
       t('documentFlow.edgeQuantity', {
-        value: formatDocumentFlowMetric(edge.quantity),
+        value: formatDocumentFlowQuantity(edge.quantity),
       }),
     )
   }
   if (edge.weight !== null) {
     parts.push(
       t('documentFlow.edgeWeight', {
-        value: formatDocumentFlowMetric(edge.weight),
+        value: formatDocumentFlowWeight(edge.weight),
       }),
     )
   }
@@ -140,10 +172,10 @@ export function documentFlowNodeTooltip(
   return [
     `${documentFlowTypeLabel(t, node.type)} ${node.no ?? node.id}`,
     node.amount != null
-      ? `${t('documentFlow.amount')}: ${formatDocumentFlowMetric(node.amount)}`
+      ? `${t('documentFlow.amount')}: ${formatDocumentFlowAmount(node.amount)}`
       : '',
     node.weight != null
-      ? `${t('documentFlow.weight')}: ${formatDocumentFlowMetric(node.weight)}`
+      ? `${t('documentFlow.weight')}: ${formatDocumentFlowWeight(node.weight)}`
       : '',
     canOpenNode ? t('documentFlow.nodeHint') : '',
   ]

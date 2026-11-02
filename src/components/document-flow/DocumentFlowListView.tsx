@@ -9,7 +9,8 @@ import {
   documentFlowEdgeMetricLabel,
   documentFlowLinkTypeLabel,
   documentFlowTypeLabel,
-  formatDocumentFlowMetric,
+  formatDocumentFlowAmount,
+  formatDocumentFlowWeight,
 } from './document-flow-meta'
 
 interface Props {
@@ -48,10 +49,8 @@ function DocumentFlowListGroupBlock({
       <ul className="document-flow-list-rows">
         {group.entries.map(({ key, node }) => {
           const isCurrent = key === currentNodeKey
-          const amountText =
-            node.amount != null ? formatDocumentFlowMetric(node.amount) : ''
-          const weightText =
-            node.weight != null ? formatDocumentFlowMetric(node.weight) : ''
+          const amountText = formatDocumentFlowAmount(node.amount)
+          const weightText = formatDocumentFlowWeight(node.weight)
           return (
             <li
               key={key}

@@ -189,7 +189,7 @@ describe('DocumentFlowModal', () => {
     expect(edgeTitle?.textContent).toBe('入库')
   })
 
-  it('节点内直接展示金额与重量(仅在存在时, 金额千分位)', async () => {
+  it('节点内直接展示金额与重量(仅在存在时, 按全站格式)', async () => {
     mockedGetDocumentFlow.mockResolvedValue(flow)
     await renderModal()
 
@@ -198,10 +198,11 @@ describe('DocumentFlowModal', () => {
     const inboundNode = nodes[1]
 
     expect(orderNode.textContent).toContain('金额')
-    // 1000.00 → 1,000（千分位后仍最多 2 位小数）
-    expect(orderNode.textContent).toContain('1,000')
+    // 金额走 formatAmount：2 位小数、不带千分位（数字要能直接复制进 Excel）
+    expect(orderNode.textContent).toContain('1000.00')
     expect(orderNode.textContent).toContain('重量')
-    expect(orderNode.textContent).toContain('10')
+    // 重量走 formatWeight：3 位小数，与表格列同一口径
+    expect(orderNode.textContent).toContain('10.000')
 
     expect(inboundNode.querySelector('.document-flow-node-metrics')).toBeNull()
   })
@@ -288,11 +289,11 @@ describe('DocumentFlowModal', () => {
     const metrics = Array.from(
       document.body.querySelectorAll('.document-flow-edge-metric'),
     ).map((item) => item.textContent)
-    expect(metrics).toEqual(['10 件 · 12.5 吨'])
+    expect(metrics).toEqual(['10 件 · 12.500 吨'])
     // 类型与数量都进 <title>：读屏与悬浮仍能拿到完整语义
     expect(
       document.body.querySelector('.document-flow-edge title')?.textContent,
-    ).toBe('入库 · 10 件 · 12.5 吨')
+    ).toBe('入库 · 10 件 · 12.500 吨')
   })
 
   it('关系边只带 quantity 时不拼接空的重量段', async () => {
@@ -392,7 +393,8 @@ describe('DocumentFlowModal', () => {
     expect(rows[0]?.textContent).toContain('PO-1')
     expect(rows[0]?.textContent).toContain('已审核')
     expect(rows[0]?.textContent).toContain('金额')
-    expect(rows[0]?.textContent).toContain('1,000')
+    // 与节点卡片同一口径：formatAmount（2 位小数、无千分位）
+    expect(rows[0]?.textContent).toContain('1000.00')
     // 当前单据行有标记
     expect(
       document.body.querySelector('.document-flow-list-row-current'),
@@ -424,7 +426,7 @@ describe('DocumentFlowModal', () => {
 
     expect(
       document.body.querySelector('.document-flow-list-metric')?.textContent,
-    ).toBe('10 件 · 12.5 吨')
+    ).toBe('10 件 · 12.500 吨')
   })
 
   it('视图切换有可访问名（radiogroup + 业务 aria-label）', async () => {
