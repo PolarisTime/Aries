@@ -1,3 +1,16 @@
+# [14.12.0](https://github.com/PolarisTime/Aries/compare/v14.11.0...v14.12.0) (2026-11-02)
+
+
+### Bug Fixes
+
+* **customer-statement:** 抬头改为客户/项目优先，对账单号与关联订单后置 ([2803cf2](https://github.com/PolarisTime/Aries/commit/2803cf20e64fb5ce121f9883a055c47d8903e35d))
+* **editor:** 销售退货来源单号纳入抬头排序，统一全单据单号后置口径 ([862ba8d](https://github.com/PolarisTime/Aries/commit/862ba8dc6ab420352d954a04ca7c537d703f18bb))
+
+
+### Features
+
+* **print:** 打印作业明细去掉物流对账单的「出库单号」列 ([248d67b](https://github.com/PolarisTime/Aries/commit/248d67baa557d7f9420e15f37d06141e3bea9b20))
+
 # [14.11.0](https://github.com/PolarisTime/Aries/compare/v14.10.0...v14.11.0) (2026-11-02)
 
 
