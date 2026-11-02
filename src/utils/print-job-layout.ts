@@ -184,8 +184,8 @@ export const PRINT_JOB_LAYOUTS: Partial<Record<ModuleKey, PrintJobLayout>> = {
     options: COMMON_OPTIONS,
   },
   'sales-return': {
-    // 暂无默认打印模板：先隐藏入口，补齐模板后改为 true。
-    printable: false,
+    // 默认模板已登记，入口开放。
+    printable: true,
     statementGrouped: false,
     scrollableItems: false,
     counterpartyFields: ['customerName'],
@@ -301,8 +301,8 @@ export const PRINT_JOB_LAYOUTS: Partial<Record<ModuleKey, PrintJobLayout>> = {
     options: COMMON_OPTIONS,
   },
   payment: {
-    // 暂无默认打印模板：先隐藏入口，补齐模板后改为 true。
-    printable: false,
+    // 默认模板已登记，入口开放。
+    printable: true,
     statementGrouped: false,
     scrollableItems: false,
     counterpartyFields: ['counterpartyName'],
@@ -328,7 +328,8 @@ export const PRINT_JOB_LAYOUTS: Partial<Record<ModuleKey, PrintJobLayout>> = {
     },
   },
   receipt: {
-    printable: false,
+    // 默认模板已登记，入口开放。
+    printable: true,
     statementGrouped: false,
     scrollableItems: false,
     counterpartyFields: ['counterpartyName'],

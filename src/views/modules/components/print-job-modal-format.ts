@@ -132,7 +132,9 @@ export function summaryDateText(
   if (date.mode === 'range') {
     const [startField, endField] = date.fields
     const start = formatDate(record[startField] as string | undefined, '')
-    const end = formatDate(record[endField] as string | undefined, '')
+    const end = endField
+      ? formatDate(record[endField] as string | undefined, '')
+      : ''
     if (start && end) return `${start} ~ ${end}`
     return start || end || '-'
   }

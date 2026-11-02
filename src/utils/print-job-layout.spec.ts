@@ -32,20 +32,21 @@ describe('打印作业模块布局', () => {
     }
   })
 
-  it('无模板模块默认不提供打印入口', () => {
-    for (const key of ['sales-return', 'payment', 'receipt']) {
-      expect(getPrintJobLayout(key).printable, key).toBe(false)
-    }
-    for (const key of [
-      'sales-order',
+  it('补齐默认模板后 10 个打印目标都提供入口', () => {
+    const targets = [
       'purchase-order',
       'purchase-inbound',
+      'sales-order',
       'sales-outbound',
+      'sales-return',
       'freight-bill',
       'customer-statement',
       'freight-statement',
-    ]) {
-      expect(getPrintJobLayout(key).printable, key).toBe(true)
+      'receipt',
+      'payment',
+    ]
+    for (const key of targets) {
+      expect(getPrintJobLayout(key as ModuleKey).printable, key).toBe(true)
     }
   })
 
