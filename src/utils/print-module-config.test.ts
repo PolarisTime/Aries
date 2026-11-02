@@ -26,9 +26,8 @@ describe('print statement item layouts', () => {
     ])
   })
 
-  it('matches the freight statement detail columns', () => {
+  it('matches the freight statement detail columns (单号已上提到分组行)', () => {
     expect(fieldKeys('freight-statement')).toEqual([
-      'sourceNo',
       'brand',
       'spec',
       'material',
@@ -74,6 +73,7 @@ describe('打印字段与页面列边界', () => {
         getPrintItemColumnAlign(field),
       )
     }
-    expect(seen.size).toBeGreaterThanOrEqual(12)
+    // 单号列已从物流对账单打印明细移除（上提到分组行），并集从 12 降到 11
+    expect(seen.size).toBe(11)
   })
 })

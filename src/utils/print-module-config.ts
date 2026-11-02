@@ -57,7 +57,7 @@ const CUSTOMER_STATEMENT_PRINT_ITEM_FIELDS: PrintItemFieldSpec[] = [
 ]
 
 const FREIGHT_STATEMENT_PRINT_ITEM_FIELDS: PrintItemFieldSpec[] = [
-  { key: 'sourceNo', labelKey: 'modules.columns.outboundNo' },
+  // 单号已上提到打印分组行（「客户 / 单号」行），明细列不再重复同一张物流单号
   { key: 'brand', labelKey: 'modules.print.itemBrand' },
   { key: 'spec', labelKey: 'modules.columns.spec' },
   { key: 'material', labelKey: 'modules.columns.material' },
