@@ -131,15 +131,13 @@ export function summaryDateText(
   if (!record || !date) return '-'
   if (date.mode === 'range') {
     const [startField, endField] = date.fields
-    const start = formatDate(record[startField] as string | undefined, '')
-    const end = endField
-      ? formatDate(record[endField] as string | undefined, '')
-      : ''
+    const start = formatDate(record[startField], '')
+    const end = endField ? formatDate(record[endField], '') : ''
     if (start && end) return `${start} ~ ${end}`
     return start || end || '-'
   }
   const [field] = date.fields
-  return formatDate(record[field] as string | undefined, '-')
+  return formatDate(record[field], '-')
 }
 
 function toNumberOrNull(value: unknown) {

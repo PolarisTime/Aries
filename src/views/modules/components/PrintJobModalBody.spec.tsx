@@ -194,7 +194,7 @@ describe('打印明细区 DndContext 的读屏接线', () => {
               startDate: '2026-09-22',
               endDate: '2026-10-11',
               settlementCompanyName: '熠祺建材',
-            } as ModuleRecord
+            }
           }
         />,
       )
