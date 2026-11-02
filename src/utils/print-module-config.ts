@@ -63,15 +63,15 @@ const FREIGHT_STATEMENT_PRINT_ITEM_FIELDS: PrintItemFieldSpec[] = [
   { key: 'weightTon', labelKey: 'modules.columns.weightTon' },
 ]
 
-/** 字段 key → 文案；后出现者覆盖前面的同名 key（对账单/物流对账单沿用页面列文案）。 */
-const FIELD_SPECS = Object.fromEntries(
+/** 字段 key → 文案（Map 查找，避免明细列逐行线性查数组）。 */
+const FIELD_SPECS = new Map<PrintItemFieldKey, PrintItemFieldSpec>(
   [
     ...FULL_PRINT_ITEM_FIELDS,
     ...CUSTOMER_STATEMENT_PRINT_ITEM_FIELDS,
     ...FREIGHT_STATEMENT_PRINT_ITEM_FIELDS,
-    { key: 'sourceNo', labelKey: 'modules.print.itemSourceNo' },
-  ].map((field) => [field.key, field]),
-) as Record<PrintItemFieldKey, PrintItemFieldSpec>
+    { key: 'sourceNo' as const, labelKey: 'modules.print.itemSourceNo' },
+  ].map((field) => [field.key, field] as const),
+)
 
 /** 明细数据列固定宽度（px）：合计宽度控制在弹窗标准宽度内，避免横向滚动。 */
 const PRINT_ITEM_COLUMN_WIDTHS: Record<PrintItemFieldKey, number> = {
@@ -135,9 +135,16 @@ const FREIGHT_STATEMENT_FIELD_ALIGNS: Partial<
 /** 按模块布局返回明细列（已排除「能力支持但默认隐藏」的列）。 */
 export function getPrintItemFields(moduleKey: string): PrintItemFieldSpec[] {
   const layout = getPrintJobLayout(moduleKey)
-  return layout.itemFields
-    .filter((key) => !layout.hiddenItemFields.includes(key))
-    .map((key) => FIELD_SPECS[key])
+  const hidden = new Set(layout.hiddenItemFields)
+  const fields: PrintItemFieldSpec[] = []
+  for (const key of layout.itemFields) {
+    if (hidden.has(key)) continue
+    const spec = FIELD_SPECS.get(key)
+    if (spec) {
+      fields.push(spec)
+    }
+  }
+  return fields
 }
 
 export function getPrintItemColumnWidth(field: PrintItemFieldSpec): number {
