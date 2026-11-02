@@ -15,7 +15,10 @@ import type {
   FreightStatementSortDirection,
   FreightStatementSortMode,
 } from '@/views/modules/freight-statement-item-groups'
-import type { DocumentChargeItemDraft } from '@/views/modules/module-editor-draft-adapter'
+import {
+  sumChargeItemAmount,
+  type DocumentChargeItemDraft,
+} from '@/views/modules/module-editor-draft-adapter'
 import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleEditorExpensePanel } from './ModuleEditorExpensePanel'
 import { ModuleItemGroupsView } from './ModuleItemGroupsView'
@@ -159,11 +162,8 @@ export function ModuleEditorItemsSection({
   const [activeItemTab, setActiveItemTab] = useState<'goods' | 'expenses'>(
     'goods',
   )
-  const expenseTotalAmount = expenseItems.reduce(
-    (sum, item) =>
-      sum + (Number.isFinite(Number(item.amount)) ? Number(item.amount) : 0),
-    0,
-  )
+  // 附加费用合计只有一个出口：sumChargeItemAmount（保存载荷、列表列、本处都取它）。
+  const expenseTotalAmount = sumChargeItemAmount(expenseItems)
   const itemGroups = useMemo(
     () => buildModuleItemGroups(config.key, items),
     [config.key, items],
