@@ -1,3 +1,11 @@
+# [14.10.0](https://github.com/PolarisTime/Aries/compare/v14.9.0...v14.10.0) (2026-11-02)
+
+
+### Features
+
+* **editor:** 单据抬头单号移到最后，客户/供应商与项目前置 ([5181862](https://github.com/PolarisTime/Aries/commit/5181862b9b594ac4239a2ce723dbd2a985891574))
+* **statement:** 物流对账单明细按来源单据成卡，补日期与数值对齐 ([67d062e](https://github.com/PolarisTime/Aries/commit/67d062e88aead10355a93f7274a66818e1e231b8))
+
 # [14.9.0](https://github.com/PolarisTime/Aries/compare/v14.8.0...v14.9.0) (2026-11-02)
 
 
