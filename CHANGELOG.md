@@ -1,3 +1,10 @@
+# [14.9.0](https://github.com/PolarisTime/Aries/compare/v14.8.0...v14.9.0) (2026-11-02)
+
+
+### Features
+
+* **document-flow:** 单据流改为按单据类型固定分列（泳道） ([7229c81](https://github.com/PolarisTime/Aries/commit/7229c81c7767a9628b4a8508253c83fa21e7e297))
+
 # [14.8.0](https://github.com/PolarisTime/Aries/compare/v14.7.0...v14.8.0) (2026-11-01)
 
 
