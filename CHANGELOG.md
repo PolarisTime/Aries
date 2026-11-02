@@ -1,3 +1,15 @@
+# [14.11.0](https://github.com/PolarisTime/Aries/compare/v14.10.0...v14.11.0) (2026-11-02)
+
+
+### Bug Fixes
+
+* **project-sales-summary:** 「含本单未保存合计」移到面板标题行，不再孤悬底部 ([07567b9](https://github.com/PolarisTime/Aries/commit/07567b9316f5994c817c14fa0c2979bdc91c0478))
+
+
+### Features
+
+* **print:** 打印预览明细同步卡片分组布局并透出来源单据日期 ([95813cf](https://github.com/PolarisTime/Aries/commit/95813cf26fb8a36080f0d8a617f35c8988ee8e92))
+
 # [14.10.0](https://github.com/PolarisTime/Aries/compare/v14.9.0...v14.10.0) (2026-11-02)
 
 
