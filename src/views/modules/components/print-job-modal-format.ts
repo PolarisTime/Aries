@@ -1,7 +1,10 @@
 import { getCustomerProjectOptions } from '@/module-system/core/module-option-resolvers'
 import type { PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
-import { formatAmount as formatAmountValue } from '@/utils/formatters'
+import {
+  formatAmount as formatAmountValue,
+  formatDate,
+} from '@/utils/formatters'
 import { formatDecimal, sumValues } from '@/utils/money'
 import type {
   PrintItemFieldKey,
@@ -44,8 +47,11 @@ export function recordOrderNo(record?: ModuleRecord) {
   return record ? firstText(record, SUMMARY_FIELDS) : ''
 }
 
-export function recordCounterparty(record?: ModuleRecord) {
-  return record ? firstText(record, COUNTERPARTY_FIELDS) : ''
+export function recordCounterparty(
+  record?: ModuleRecord,
+  fields: string[] = COUNTERPARTY_FIELDS,
+) {
+  return record ? firstText(record, fields) : ''
 }
 
 /** 记录所属项目 id; 无项目返回空串(此时不记忆打印模板偏好)。 */
@@ -102,6 +108,36 @@ export function numericTotal(values: unknown[]) {
   // 在多行明细时与单据差 0.001 吨，打印件与屏幕对不上账。
   const total = sumValues(values)
   return total > 0 ? total : null
+}
+
+/** 金额合计（明细逐行金额相加，舍到分）；无非零金额时返回 null。 */
+export function numericAmountTotal(values: unknown[]) {
+  const total = sumValues(values, 2)
+  return total > 0 ? total : null
+}
+
+/**
+ * 汇总条「日期」行的取值：single 取第一个非空字段，range 拼「起 ~ 止」。
+ *
+ * <p>标签与字段都来自模块布局（`print-job-layout`），不再在这里按 moduleKey 判断。</p>
+ */
+export function summaryDateText(
+  record: ModuleRecord | undefined,
+  date: {
+    fields: [string] | [string, string]
+    mode: 'single' | 'range'
+  } | null,
+) {
+  if (!record || !date) return '-'
+  if (date.mode === 'range') {
+    const [startField, endField] = date.fields
+    const start = formatDate(record[startField] as string | undefined, '')
+    const end = formatDate(record[endField] as string | undefined, '')
+    if (start && end) return `${start} ~ ${end}`
+    return start || end || '-'
+  }
+  const [field] = date.fields
+  return formatDate(record[field] as string | undefined, '-')
 }
 
 function toNumberOrNull(value: unknown) {

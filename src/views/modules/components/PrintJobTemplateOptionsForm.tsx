@@ -11,6 +11,7 @@ import {
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PrintTemplateRecord } from '@/shared/schemas'
+import type { PrintJobOptionsSpec } from '@/utils/print-job-layout'
 import {
   isValidSplitPieceCount,
   type PrintJobFormValues,
@@ -18,17 +19,18 @@ import {
 
 interface Props {
   form: FormInstance<PrintJobFormValues>
+  /** 该模块可用的打印选项（由 `print-job-layout` 的模块布局决定）。 */
+  options: PrintJobOptionsSpec
   templates: PrintTemplateRecord[]
   templateOptions: Array<{ label: ReactNode; value: string }>
-  isSalesOrder: boolean
 }
 
 /** 打印作业弹窗的模板选择与打印选项参数区。 */
 export function PrintJobTemplateOptionsForm({
   form,
+  options,
   templates,
   templateOptions,
-  isSalesOrder,
 }: Props) {
   const { t } = useTranslation()
   const selectedPrintOptions = Form.useWatch('printOptions', form) ?? []
@@ -66,25 +68,31 @@ export function PrintJobTemplateOptionsForm({
         </Typography.Text>
         <Form.Item name="printOptions" noStyle>
           <Checkbox.Group className="flex flex-wrap items-center gap-x-6 gap-y-1">
-            {isSalesOrder ? (
+            {options.hideUnitPrice ? (
               <Checkbox value="hideUnitPrice">
                 {t('modules.print.hideUnitPrice')}
               </Checkbox>
             ) : null}
-            <Checkbox value="hideRemark">
-              {t('modules.print.hideRemark')}
-            </Checkbox>
-            {isSalesOrder ? (
+            {options.hideRemark ? (
+              <Checkbox value="hideRemark">
+                {t('modules.print.hideRemark')}
+              </Checkbox>
+            ) : null}
+            {options.brandOverride ? (
               <Checkbox value="enableBrandOverride">
                 {t('modules.print.enableBrandOverride')}
               </Checkbox>
             ) : null}
-            <Checkbox value="enableItemSelection">
-              {t('modules.print.enableItemSelection')}
-            </Checkbox>
-            <Checkbox value="enableSplitPrint">
-              {t('modules.print.enableSplitPrint')}
-            </Checkbox>
+            {options.itemSelection ? (
+              <Checkbox value="enableItemSelection">
+                {t('modules.print.enableItemSelection')}
+              </Checkbox>
+            ) : null}
+            {options.split ? (
+              <Checkbox value="enableSplitPrint">
+                {t('modules.print.enableSplitPrint')}
+              </Checkbox>
+            ) : null}
           </Checkbox.Group>
         </Form.Item>
         {splitPrintEnabled ? (

@@ -7,23 +7,27 @@ import { useTranslation } from 'react-i18next'
 import type { PrintRecordItem } from '@/api/system/print-template'
 import type { PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
-import { formatDate } from '@/utils/formatters'
-import {
-  getPrintItemFields,
-  isStatementPrintModule,
-  supportsSalesOrderPrintOption,
-} from '@/utils/print-module-config'
+import { getPrintJobLayout } from '@/utils/print-job-layout'
+import { getPrintItemFields } from '@/utils/print-module-config'
 import { PrintJobHeader } from '@/views/modules/components/PrintJobHeader'
 import { PrintJobItemsSection } from '@/views/modules/components/PrintJobItemsSection'
-import { PrintJobModalSummaryBar } from '@/views/modules/components/PrintJobModalSummaryBar'
+import {
+  PrintJobModalSummaryBar,
+  type PrintJobSummaryInfoItem,
+  type PrintJobSummaryTotalItem,
+} from '@/views/modules/components/PrintJobModalSummaryBar'
 import { PrintJobTemplateOptionsForm } from '@/views/modules/components/PrintJobTemplateOptionsForm'
 import { buildPrintJobDragAccessibility } from '@/views/modules/components/print-job-item-drag-a11y'
 import {
   fieldText,
+  formatAmount,
+  formattedTotal,
+  numericAmountTotal,
   numericTotal,
   projectSummary,
   recordCounterparty,
   recordOrderNo,
+  summaryDateText,
   templateTypeLabel,
 } from '@/views/modules/components/print-job-modal-format'
 import type { PrintJobFormValues } from '@/views/modules/components/print-job-modal-state'
@@ -87,23 +91,13 @@ export function PrintJobModalBody({
   sensors,
 }: Props) {
   const { t } = useTranslation()
-  const isSalesOrder = supportsSalesOrderPrintOption(moduleKey)
-  const statementPrintModule = isStatementPrintModule(moduleKey)
-  /*
-   * 对账单没有「交货日期」，只有起止日期：汇总条此时显示「对账期间」。
-   * 继续用 deliveryDate 会让客户/物流对账单永远显示「交货日期：-」。
-   */
-  const statementPeriod = statementPrintModule
-    ? [primaryRecord?.startDate, primaryRecord?.endDate]
-        .map((value) => (value ? formatDate(value, '') : ''))
-        .filter(Boolean)
-        .join(' ~ ')
-    : ''
+  // 模块布局是打印作业所有区域（Header/汇总/选项/明细列）的唯一差异来源。
+  const layout = getPrintJobLayout(moduleKey)
+  const mergeEquivalentItemsAvailable = layout.options.merge
   const printItemFields = useMemo(
     () => getPrintItemFields(moduleKey),
     [moduleKey],
   )
-  const mergeEquivalentItemsAvailable = isSalesOrder
   const templateOptions = useMemo(
     () =>
       templates.map((template) => ({
@@ -118,12 +112,88 @@ export function PrintJobModalBody({
     [t, templates],
   )
 
-  const totalQuantity = numericTotal(
-    itemState.selectedPrintItems.map((item) => item.quantity),
+  const totalQuantity = useMemo(
+    () =>
+      layout.summary.quantity
+        ? numericTotal(
+            itemState.selectedPrintItems.map((item) => item.quantity),
+          )
+        : null,
+    [itemState.selectedPrintItems, layout.summary.quantity],
   )
-  const totalWeight = numericTotal(
-    itemState.selectedPrintItems.map((item) => item.weightTon),
+  const totalWeight = useMemo(
+    () =>
+      layout.summary.weight
+        ? numericTotal(
+            itemState.selectedPrintItems.map((item) => item.weightTon),
+          )
+        : null,
+    [itemState.selectedPrintItems, layout.summary.weight],
   )
+  /*
+   * 金额合计：优先逐行金额求和（与单据行级舍入同口径），明细没有金额时
+   * 回退到表头字段（物流单 totalFreight、对账单 salesAmount、收付款单 amount）。
+   */
+  const totalAmount = useMemo(() => {
+    if (!layout.summary.amount) return null
+    const fromItems = numericAmountTotal(
+      itemState.selectedPrintItems.map((item) => item.amount),
+    )
+    if (fromItems != null) return fromItems
+    const headerValue = layout.summary.amount.headerFields
+      .map((field) => primaryRecord?.[field])
+      .find((value) => value != null && String(value).trim() !== '')
+    return numericAmountTotal(headerValue == null ? [] : [headerValue])
+  }, [itemState.selectedPrintItems, layout.summary.amount, primaryRecord])
+
+  const infoItems = useMemo<PrintJobSummaryInfoItem[]>(() => {
+    const items: PrintJobSummaryInfoItem[] = []
+    if (layout.summary.date) {
+      items.push({
+        label: t(layout.summary.date.labelKey),
+        value: summaryDateText(primaryRecord, layout.summary.date),
+        maxWidth: 260,
+      })
+    }
+    if (layout.summary.remark) {
+      items.push({
+        label: t('modules.print.recordRemark'),
+        value: fieldText(primaryRecord?.remark),
+        maxWidth: 320,
+      })
+    }
+    if (layout.summary.settlementCompany) {
+      items.push({
+        label: t('modules.print.currentSettlementCompany'),
+        value: fieldText(primaryRecord?.settlementCompanyName),
+        maxWidth: 280,
+      })
+    }
+    return items
+  }, [layout.summary, primaryRecord, t])
+
+  const totals = useMemo<PrintJobSummaryTotalItem[]>(() => {
+    const items: PrintJobSummaryTotalItem[] = []
+    if (layout.summary.quantity) {
+      items.push({
+        label: t('modules.print.totalQuantity'),
+        value: formattedTotal(totalQuantity, 0),
+      })
+    }
+    if (layout.summary.weight) {
+      items.push({
+        label: t('modules.print.totalWeight'),
+        value: formattedTotal(totalWeight),
+      })
+    }
+    if (layout.summary.amount) {
+      items.push({
+        label: t(layout.summary.amount.labelKey),
+        value: totalAmount == null ? '-' : formatAmount(totalAmount),
+      })
+    }
+    return items
+  }, [layout.summary, t, totalAmount, totalQuantity, totalWeight])
   /*
    * 明细区 DndContext 的读屏产物: 中文操作说明 + 只播报「第 N 行 + 物料名 + 位次」的
    * 播报器(dnd-kit 默认文案会把 19 位雪花 id 念出来, 用户对不回是哪一行)。
@@ -141,7 +211,10 @@ export function PrintJobModalBody({
   return (
     <Flex vertical gap="middle">
       <PrintJobHeader
-        counterpartyName={recordCounterparty(primaryRecord)}
+        counterpartyName={recordCounterparty(
+          primaryRecord,
+          layout.counterpartyFields,
+        )}
         moduleTitle={moduleTitle}
         orderNo={recordOrderNo(primaryRecord)}
         projectSummaryText={projectSummary(primaryRecord)}
@@ -150,26 +223,11 @@ export function PrintJobModalBody({
       />
       <PrintJobTemplateOptionsForm
         form={form}
+        options={layout.options}
         templates={templates}
         templateOptions={templateOptions}
-        isSalesOrder={isSalesOrder}
       />
-      <PrintJobModalSummaryBar
-        dateLabel={
-          statementPrintModule
-            ? t('modules.print.statementPeriod')
-            : t('modules.print.deliveryDate')
-        }
-        recordDeliveryDate={
-          statementPrintModule
-            ? statementPeriod || '-'
-            : formatDate(primaryRecord?.deliveryDate, '-')
-        }
-        recordRemark={fieldText(primaryRecord?.remark)}
-        settlementCompanyName={fieldText(primaryRecord?.settlementCompanyName)}
-        totalQuantity={totalQuantity}
-        totalWeight={totalWeight}
-      />
+      <PrintJobModalSummaryBar infoItems={infoItems} totals={totals} />
       <Flex justify="space-between" align="center" gap="small" wrap="wrap">
         <Typography.Text type="secondary">
           {itemSelectionEnabled
@@ -211,7 +269,7 @@ export function PrintJobModalBody({
         >
           <div
             className={
-              statementPrintModule ? 'print-job-items-scroll' : undefined
+              layout.scrollableItems ? 'print-job-items-scroll' : undefined
             }
           >
             <PrintJobItemsSection
@@ -226,7 +284,7 @@ export function PrintJobModalBody({
               brandOverrideEnabled={brandOverrideEnabled}
               brandOverridesByItemId={brandOverridesByItemId}
               dispatch={dispatch}
-              isStatementPrintModule={statementPrintModule}
+              isStatementPrintModule={layout.statementGrouped}
               itemSelectionEnabled={itemSelectionEnabled}
               printItemFields={printItemFields}
               printItemsError={printItemsError}

@@ -1,11 +1,15 @@
 /**
- * 打印作业按业务模块拆分配置：不同模块显示不同的打印选项和明细字段。
- * 销售订单（sales-order）支持单价/金额列与隐藏单价/品牌替换等选项；
- * 客户对账单、物流对账单复用业务页面的分组字段顺序，物流对账单金额在分组行展示。
+ * 打印明细字段的展示细节（文案、宽度、对齐）。
+ *
+ * <p>模块差异（显示哪些列、哪些默认隐藏、汇总条与选项）的**唯一来源**是
+ * {@link getPrintJobLayout}（`utils/print-job-layout`）；本文件只负责把字段 key
+ * 映射成文案与列宽，并提供兼容导出。新增/调整模块行为请改布局配置，不要在这里加
+ * `moduleKey === 'xxx'` 分支。</p>
  */
 
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { isModuleKey } from '@/module-system/core/module-key'
+import { getPrintJobLayout } from '@/utils/print-job-layout'
 
 /** 打印明细中可展示的取值字段（对应 PrintRecordItem 上的字符串属性）。 */
 export type PrintItemFieldKey =
@@ -43,21 +47,11 @@ const FULL_PRINT_ITEM_FIELDS: PrintItemFieldSpec[] = [
 ]
 
 const CUSTOMER_STATEMENT_PRINT_ITEM_FIELDS: PrintItemFieldSpec[] = [
-  { key: 'brand', labelKey: 'modules.print.itemBrand' },
-  { key: 'category', labelKey: 'modules.print.itemCategory' },
-  { key: 'material', labelKey: 'modules.print.itemMaterial' },
-  { key: 'spec', labelKey: 'modules.print.itemSpec' },
-  { key: 'length', labelKey: 'modules.print.itemLength' },
-  { key: 'quantity', labelKey: 'modules.print.itemQuantity' },
+  ...FULL_PRINT_ITEM_FIELDS,
   { key: 'quantityUnit', labelKey: 'modules.columns.quantityUnit' },
-  { key: 'pieceWeightTon', labelKey: 'modules.print.itemPieceWeight' },
-  { key: 'weightTon', labelKey: 'modules.print.itemWeight' },
-  { key: 'unitPrice', labelKey: 'modules.print.itemUnitPrice' },
-  { key: 'amount', labelKey: 'modules.print.itemAmount' },
 ]
 
 const FREIGHT_STATEMENT_PRINT_ITEM_FIELDS: PrintItemFieldSpec[] = [
-  // 单号已上提到打印分组行（「客户 / 单号」行），明细列不再重复同一张物流单号
   { key: 'brand', labelKey: 'modules.print.itemBrand' },
   { key: 'spec', labelKey: 'modules.columns.spec' },
   { key: 'material', labelKey: 'modules.columns.material' },
@@ -69,9 +63,15 @@ const FREIGHT_STATEMENT_PRINT_ITEM_FIELDS: PrintItemFieldSpec[] = [
   { key: 'weightTon', labelKey: 'modules.columns.weightTon' },
 ]
 
-const NON_SALES_PRINT_ITEM_FIELDS = FULL_PRINT_ITEM_FIELDS.filter(
-  (field) => field.key !== 'unitPrice' && field.key !== 'amount',
-)
+/** 字段 key → 文案；后出现者覆盖前面的同名 key（对账单/物流对账单沿用页面列文案）。 */
+const FIELD_SPECS = Object.fromEntries(
+  [
+    ...FULL_PRINT_ITEM_FIELDS,
+    ...CUSTOMER_STATEMENT_PRINT_ITEM_FIELDS,
+    ...FREIGHT_STATEMENT_PRINT_ITEM_FIELDS,
+    { key: 'sourceNo', labelKey: 'modules.print.itemSourceNo' },
+  ].map((field) => [field.key, field]),
+) as Record<PrintItemFieldKey, PrintItemFieldSpec>
 
 /** 明细数据列固定宽度（px）：合计宽度控制在弹窗标准宽度内，避免横向滚动。 */
 const PRINT_ITEM_COLUMN_WIDTHS: Record<PrintItemFieldKey, number> = {
@@ -132,23 +132,12 @@ const FREIGHT_STATEMENT_FIELD_ALIGNS: Partial<
   weightTon: 'center',
 }
 
-const PRINT_ITEM_FIELDS_BY_MODULE = {
-  'customer-statement': CUSTOMER_STATEMENT_PRINT_ITEM_FIELDS,
-  'freight-statement': FREIGHT_STATEMENT_PRINT_ITEM_FIELDS,
-  'sales-order': FULL_PRINT_ITEM_FIELDS,
-  'sales-return': FULL_PRINT_ITEM_FIELDS,
-} satisfies Partial<Record<ModuleKey, PrintItemFieldSpec[]>>
-
+/** 按模块布局返回明细列（已排除「能力支持但默认隐藏」的列）。 */
 export function getPrintItemFields(moduleKey: string): PrintItemFieldSpec[] {
-  if (isModuleKey(moduleKey)) {
-    const specific = (
-      PRINT_ITEM_FIELDS_BY_MODULE as Partial<
-        Record<ModuleKey, PrintItemFieldSpec[]>
-      >
-    )[moduleKey]
-    return specific ?? NON_SALES_PRINT_ITEM_FIELDS
-  }
-  return NON_SALES_PRINT_ITEM_FIELDS
+  const layout = getPrintJobLayout(moduleKey)
+  return layout.itemFields
+    .filter((key) => !layout.hiddenItemFields.includes(key))
+    .map((key) => FIELD_SPECS[key])
 }
 
 export function getPrintItemColumnWidth(field: PrintItemFieldSpec): number {
@@ -180,21 +169,13 @@ export function getPrintItemColumnAlign(
   return overrides?.[field.key] || PRINT_ITEM_FIELD_ALIGNS[field.key]
 }
 
-/** 销售订单专属的打印选项模块（其他模块隐藏）。 */
-const SALES_ORDER_PRINT_OPTION_MODULES = new Set<ModuleKey>(['sales-order'])
-
+/** 销售订单专属打印选项（隐藏单价 / 品牌替换 / 合并拆分），由布局配置派生。 */
 export function supportsSalesOrderPrintOption(moduleKey: string): boolean {
-  return (
-    isModuleKey(moduleKey) && SALES_ORDER_PRINT_OPTION_MODULES.has(moduleKey)
-  )
+  const { options } = getPrintJobLayout(moduleKey)
+  return options.merge || options.split || options.brandOverride
 }
 
-/** 对账单类打印模块：明细按对账单分组渲染。 */
-const STATEMENT_PRINT_MODULES = new Set<ModuleKey>([
-  'customer-statement',
-  'freight-statement',
-])
-
+/** 对账单类打印模块（按来源单/项目分组渲染），由布局配置派生。 */
 export function isStatementPrintModule(moduleKey: string): boolean {
-  return isModuleKey(moduleKey) && STATEMENT_PRINT_MODULES.has(moduleKey)
+  return getPrintJobLayout(moduleKey).statementGrouped
 }

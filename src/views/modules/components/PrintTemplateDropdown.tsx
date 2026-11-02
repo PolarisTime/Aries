@@ -16,6 +16,7 @@ import type { PrintRenderOptions } from '@/hooks/useBusinessGridPrintActions'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
+import { getPrintJobLayout } from '@/utils/print-job-layout'
 import { filterPrintTemplatesBySettlementCompany } from '@/utils/print-template-settlement'
 import { PrintJobModal } from '@/views/modules/components/PrintJobModal'
 
@@ -50,13 +51,18 @@ export function PrintTemplateDropdown({
 }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
-  const supportsPrintTemplate = isPrintTemplateTarget(moduleKey)
+  // 没有打印模板/业务暂不支持的模块不渲染入口；是否可打印由模块布局声明。
+  const printable = getPrintJobLayout(moduleKey).printable
+  const supportsPrintTemplate = isPrintTemplateTarget(moduleKey) && printable
   const { data: templates = [] } = useQuery<PrintTemplateRecord[]>({
     queryKey: QUERY_KEYS.printableTemplates(moduleKey),
     queryFn: ({ signal }) => listPrintTemplates(moduleKey, signal),
     staleTime: 5 * 60 * 1000,
     enabled: supportsPrintTemplate,
   })
+  if (!printable) {
+    return null
+  }
   const activeTemplates = templates.filter(
     (tpl) => tpl.status == null || tpl.status === 'ACTIVE',
   )

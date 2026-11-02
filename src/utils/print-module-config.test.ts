@@ -52,6 +52,7 @@ describe('打印字段与页面列边界', () => {
       'spec',
       'length',
       'quantity',
+      'quantityUnit',
       'pieceWeightTon',
       'weightTon',
       'unitPrice',
