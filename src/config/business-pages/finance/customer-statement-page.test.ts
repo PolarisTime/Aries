@@ -5,6 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import '@/i18n'
 import { buildQueryParams } from '@/api/business/business-listing-filtering'
 import { financeModuleEndpointContracts } from '@/api/contracts/module-contracts-finance'
+import { moveDocumentNoFieldsToSectionEnd } from '@/module-system/presentation/module-field-layout'
 import { renderProjectNameCell } from '@/utils/project-display'
 import { customerStatementPageConfig } from './customer-statement-page'
 import {
@@ -18,6 +19,43 @@ beforeAll(async () => {
 })
 
 describe('客户对账单红字展示配置', () => {
+  /**
+   * 抬头口径（与销售订单/出库统一）：第 1 行业务对象，第 2 行日期与金额，
+   * 第 3 行方向/状态后再接单号（运行时把主单号与来源单号排到段末），备注整行。
+   */
+  it('抬头行序：客户/项目在前，单号与来源订单在后', () => {
+    const formFields = customerStatementPageConfig.formFields ?? []
+    const ordered = moveDocumentNoFieldsToSectionEnd(
+      formFields,
+      [
+        customerStatementPageConfig.primaryNoKey,
+        customerStatementPageConfig.parentImport?.parentFieldKey,
+      ].filter((key): key is string => Boolean(key)),
+    )
+    const keysOfRow = (row: number) =>
+      ordered.filter((field) => field.row === row).map((field) => field.key)
+
+    expect(keysOfRow(1)).toEqual([
+      'customerId',
+      'projectId',
+      'settlementCompanyId',
+      'customerCode',
+    ])
+    expect(keysOfRow(2)).toEqual([
+      'startDate',
+      'endDate',
+      'salesAmount',
+      'closingAmount',
+    ])
+    expect(keysOfRow(3)).toEqual([
+      'direction',
+      'status',
+      'statementNo',
+      'sourceOrderNos',
+    ])
+    expect(keysOfRow(4)).toEqual(['remark'])
+  })
+
   it('筛选包含方向分段选项（蓝字/红字）', () => {
     const directionFilter = customerStatementPageConfig.filters.find(
       (filter) => filter.key === 'billDirection',

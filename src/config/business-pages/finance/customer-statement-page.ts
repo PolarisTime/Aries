@@ -313,6 +313,11 @@ export const customerStatementPageConfig: ModulePageConfig = {
       key: 'remark',
     },
   ],
+  /*
+   * 抬头口径（与销售订单/出库统一）：第 1 行业务对象「客户 → 项目 → 结算主体 → 客户编码」，
+   * 第 2 行日期与金额，第 3 行「方向 / 状态」之后接单号（对账单号 + 关联销售订单，
+   * 运行时由 moveDocumentNoFieldsToSectionEnd 排到该行末尾），备注整行收尾。
+   */
   formFields: [
     {
       key: 'customerId',
@@ -323,17 +328,18 @@ export const customerStatementPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'statementNo',
-      label: i18next.t('modules.pages.customerStatement.statementNo'),
-      type: 'input',
+      key: 'projectId',
+      label: i18next.t('modules.pages.customerStatement.project'),
+      type: 'select',
       required: true,
-      disabled: true,
+      options: getCustomerProjectOptions,
       row: 1,
     },
     {
-      key: 'sourceOrderNos',
-      label: i18next.t('modules.pages.customerStatement.relatedSalesOrders'),
-      type: 'input',
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
       disabled: true,
       row: 1,
     },
@@ -343,27 +349,6 @@ export const customerStatementPageConfig: ModulePageConfig = {
       type: 'input',
       disabled: true,
       row: 1,
-    },
-    {
-      key: 'settlementCompanyId',
-      label: SETTLEMENT_COMPANY_LABEL,
-      type: 'select',
-      options: getSettlementCompanyOptions,
-      disabled: true,
-      /*
-       * row 2 而不是 1：row 1 已有客户/单号/来源订单/客户编码 4 个 span=6 字段，
-       * 再加一个就是 30 栅格 > 24，antd 会把第 5 个挤到下一行最左，看起来像排版坏了。
-       * 挪到 row 2 后正好 4 + 4 两整行。
-       */
-      row: 2,
-    },
-    {
-      key: 'projectId',
-      label: i18next.t('modules.pages.customerStatement.project'),
-      type: 'select',
-      required: true,
-      options: getCustomerProjectOptions,
-      row: 2,
     },
     {
       key: 'startDate',
@@ -389,7 +374,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       precision: 2,
       defaultValue: 0,
       disabled: true,
-      row: 3,
+      row: 2,
     },
     {
       key: 'closingAmount',
@@ -399,7 +384,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       precision: 2,
       defaultValue: 0,
       disabled: true,
-      row: 3,
+      row: 2,
     },
     {
       key: 'direction',
@@ -425,6 +410,21 @@ export const customerStatementPageConfig: ModulePageConfig = {
       type: 'select',
       defaultValue: DOCUMENT_STATUS.PENDING_CONFIRM,
       options: statementStatusOptions,
+      disabled: true,
+      row: 3,
+    },
+    {
+      key: 'statementNo',
+      label: i18next.t('modules.pages.customerStatement.statementNo'),
+      type: 'input',
+      required: true,
+      disabled: true,
+      row: 3,
+    },
+    {
+      key: 'sourceOrderNos',
+      label: i18next.t('modules.pages.customerStatement.relatedSalesOrders'),
+      type: 'input',
       disabled: true,
       row: 3,
     },
