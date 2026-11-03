@@ -62,6 +62,61 @@ export const readPriceMode = (supplierId: string): PriceEntryMode =>
 export const draftsKey = (supplierId: string) =>
   `aries:supplier-quote-drafts:${supplierId}`
 
+/** 草稿的结构：品牌 →（行键 → 价格；{@code null} 表示明确清空）。 */
+export type StoredDrafts = Record<string, Record<string, number | null>>
+
+/**
+ * 读取该供应商上次未保存的草稿。
+ *
+ * <p>为什么必须有：自动保存有 800ms 防抖，保存失败（网络/版本冲突）还会把改动留在内存里；
+ * 只要用户在这个窗口内切页或刷新，改动就静默消失、只能重敲。原界面把草稿写进 localStorage
+ * 并在回到页面时提示「已恢复 / 放弃」，重做工作台时这段能力丢了，2026-11-03 补回。</p>
+ *
+ * <p>解析失败（人工改坏 / 旧版本结构）一律当作没有草稿，不抛错 —— 草稿是辅助，
+ * 不能因为它坏了就打不开页面。</p>
+ */
+export function readDrafts(supplierId: string): StoredDrafts {
+  try {
+    const raw = window.localStorage.getItem(draftsKey(supplierId))
+    if (!raw) return {}
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return {}
+    const result: StoredDrafts = {}
+    for (const [brandName, draft] of Object.entries(
+      parsed as Record<string, unknown>,
+    )) {
+      if (!brandName || !draft || typeof draft !== 'object') continue
+      const prices: Record<string, number | null> = {}
+      for (const [rowKey, value] of Object.entries(
+        draft as Record<string, unknown>,
+      )) {
+        if (value === null) {
+          prices[rowKey] = null
+        } else if (typeof value === 'number' && Number.isFinite(value)) {
+          prices[rowKey] = value
+        }
+      }
+      if (Object.keys(prices).length) result[brandName] = prices
+    }
+    return result
+  } catch {
+    return {}
+  }
+}
+
+/** 写入（空则删除）该供应商的未保存草稿；写失败（隐私模式/配额）静默忽略。 */
+export function writeDrafts(supplierId: string, drafts: StoredDrafts): void {
+  try {
+    if (!Object.keys(drafts).length) {
+      window.localStorage.removeItem(draftsKey(supplierId))
+      return
+    }
+    window.localStorage.setItem(draftsKey(supplierId), JSON.stringify(drafts))
+  } catch {
+    // 存不下不影响本次录入：内存里的草稿仍在，自动保存照常跑
+  }
+}
+
 /** 单元格标识：品牌 + 行键，用于键盘移动与粘贴定位（用不可见分隔符避免品牌名里的 `:`）。 */
 export const cellIdOf = (brandName: string, rowKey: string) =>
   `${brandName}\u0000${rowKey}`

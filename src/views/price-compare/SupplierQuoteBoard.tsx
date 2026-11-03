@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons'
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  Alert,
   Button,
   Checkbox,
   DatePicker,
@@ -68,7 +69,11 @@ import {
   undoDrafts,
 } from './supplier-quote-edits'
 import { parseClipboardGrid, roundPrice } from './supplier-quote-grid'
-import { gridQueryKey } from './supplier-quote-view-prefs'
+import {
+  gridQueryKey,
+  readDrafts,
+  writeDrafts,
+} from './supplier-quote-view-prefs'
 import './supplier-price.css'
 
 /** 一列的保存状态：安静地告诉用户「存了没」，不需要点保存按钮。 */
@@ -121,6 +126,10 @@ export function SupplierQuoteBoard() {
   const [history, setHistory] = useState<DraftHistory>(EMPTY_HISTORY)
   const [keyword, setKeyword] = useState('')
   const [onlyUnpriced, setOnlyUnpriced] = useState(false)
+  /** 本次进页是否从 localStorage 恢复了上次未保存的草稿（恢复后提示「已恢复 / 放弃」）。 */
+  const [restoredDrafts, setRestoredDrafts] = useState(false)
+  /** 已完成「恢复判断」的供应商；只有它等于当前供应商时才允许把草稿写回本地。 */
+  const [draftsRestoredFor, setDraftsRestoredFor] = useState<string>()
 
   const suppliersQuery = useQuery({
     queryKey: QUERY_KEYS.masterOptions.supplier,
@@ -343,6 +352,37 @@ export function SupplierQuoteBoard() {
   const applyDrafts = (next: Record<string, BrandDraft>) => {
     setHistory((current) => pushHistory(current, draftsRef.current))
     commitDrafts(next)
+  }
+
+  /*
+   * 草稿的本地持久化 —— 自动保存有 800ms 防抖，保存失败还会把改动留在内存；
+   * 只要用户在这个窗口内切页或刷新，改动就静默消失。写进 localStorage 后回到页面能恢复。
+   *
+   * 两个 effect 的先后顺序很重要：先「恢复判断」再「写回」，否则首次挂载时空草稿会立刻
+   * 把待恢复的内容删掉。用 draftsRestoredFor 当作「该供应商已完成恢复判断」的闸门。
+   */
+  useEffect(() => {
+    if (!supplierId || draftsRestoredFor === supplierId) return
+    const stored = readDrafts(supplierId)
+    if (Object.keys(stored).length) {
+      commitDrafts(stored)
+      setRestoredDrafts(true)
+    }
+    setDraftsRestoredFor(supplierId)
+  }, [supplierId, draftsRestoredFor])
+
+  useEffect(() => {
+    if (!supplierId || draftsRestoredFor !== supplierId) return
+    writeDrafts(supplierId, drafts)
+    if (!Object.keys(drafts).length) setRestoredDrafts(false)
+  }, [drafts, supplierId, draftsRestoredFor])
+
+  /** 放弃恢复出来的草稿：清空草稿与本地存储，价格回到服务端值。 */
+  const discardRestoredDrafts = () => {
+    commitDrafts({})
+    setHistory(EMPTY_HISTORY)
+    setRestoredDrafts(false)
+    if (supplierId) writeDrafts(supplierId, {})
   }
 
   /** 把保存结果写回缓存：不刷新页面也能立刻看到刚存的值。 */
@@ -1028,6 +1068,19 @@ export function SupplierQuoteBoard() {
           </Typography.Text>
         ) : null}
       </Flex>
+
+      {restoredDrafts ? (
+        <Alert
+          showIcon
+          action={
+            <Button size="small" onClick={discardRestoredDrafts}>
+              {t('priceCompare.supplierPrice.discardDrafts')}
+            </Button>
+          }
+          title={t('priceCompare.supplierPrice.draftsRestored')}
+          type="warning"
+        />
+      ) : null}
 
       {brandNames.length === 0 ? (
         <Typography.Text type="secondary">

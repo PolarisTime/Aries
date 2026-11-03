@@ -277,6 +277,70 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     expect(cellInput('万泰 HRB400E 12 9米')?.value).toBe('3280')
   })
 
+  /**
+   * 回归（2026-11-03）：自动保存有 800ms 防抖，且保存失败时改动只留在内存里。原界面把未保存
+   * 草稿写进 localStorage、回到页面提示「已恢复 / 放弃」；重做工作台时这段能力丢了，
+   * 于是切页或刷新会静默丢掉刚敲的价格。这里锁两条：刷新后能恢复、能一键放弃。
+   */
+  it('刷新后恢复上次未保存的草稿，并可一键放弃', async () => {
+    window.localStorage.setItem(
+      'aries:supplier-quote-drafts:s1',
+      JSON.stringify({ 中天: { '直条|HRB400E|12|9米': 3290 } }),
+    )
+
+    await render()
+
+    // 恢复的草稿覆盖服务端值，并给出可放弃的提示
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3290')
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3290')
+    expect(container.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.draftsRestored'),
+    )
+
+    const discard = Array.from(container.querySelectorAll('button')).find(
+      (node) =>
+        node.textContent === i18n.t('priceCompare.supplierPrice.discardDrafts'),
+    )
+    expect(discard, '应有「放弃草稿」按钮').toBeDefined()
+    await act(async () => {
+      discard?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    // 放弃后回到服务端价格，提示消失，本地存储也清掉
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3280')
+    expect(container.textContent).not.toContain(
+      i18n.t('priceCompare.supplierPrice.draftsRestored'),
+    )
+    expect(
+      window.localStorage.getItem('aries:supplier-quote-drafts:s1'),
+    ).toBeNull()
+  })
+
+  it('改动会写入本地草稿，保存成功后自动清除', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+
+    await typePrice('中天 HRB400E 12 9米', '3299')
+    // 防抖期间还没落库，但本地必须已经有草稿（否则此刻刷新就丢了）
+    expect(
+      JSON.parse(
+        window.localStorage.getItem('aries:supplier-quote-drafts:s1') ?? '{}',
+      ),
+    ).toEqual({ 中天: { '直条|HRB400E|12|9米': 3299 } })
+
+    await flushAutosave()
+    // 自动保存完成后草稿清空，本地存储随之删除
+    await waitFor(
+      () =>
+        window.localStorage.getItem('aries:supplier-quote-drafts:s1') === null,
+    )
+    expect(
+      window.localStorage.getItem('aries:supplier-quote-drafts:s1'),
+    ).toBeNull()
+  })
+
   it('不再渲染满屏「—」：没有价的格子就是可输入的空格', async () => {
     priceApi.fetchSpecRows.mockResolvedValue([ROW_A, ROW_B, ROW_PANLUO])
     await render()
