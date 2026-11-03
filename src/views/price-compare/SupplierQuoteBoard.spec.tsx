@@ -1,0 +1,356 @@
+// @vitest-environment jsdom
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { act, createElement, type ReactNode } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import '@/i18n'
+import i18n from 'i18next'
+import type { SupplierPriceGrid } from '@/api/market/supplier-price-lists'
+
+const priceApi = vi.hoisted(() => ({
+  fetchSpecRows: vi.fn(),
+  fetchSupplierPriceGrid: vi.fn(),
+  addSupplierPriceColumn: vi.fn(),
+  saveSupplierPriceColumnItems: vi.fn(),
+  removeSupplierPriceColumn: vi.fn(),
+}))
+
+const supplierApi = vi.hoisted(() => ({ fetchSupplierOptions: vi.fn() }))
+const materialBrands = vi.hoisted(() => ({ useMaterialBrands: vi.fn() }))
+const permissions = vi.hoisted(() => ({ canWrite: true }))
+const feedback = vi.hoisted(() => ({
+  message: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+  },
+  modal: { confirm: vi.fn() },
+}))
+
+vi.mock('@/api/market/supplier-price-lists', () => priceApi)
+vi.mock('@/api/master/supplier-options', () => supplierApi)
+vi.mock('@/hooks/useMaterialBrands', () => materialBrands)
+vi.mock('@/utils/antd-app', () => feedback)
+vi.mock('@/hooks/usePermission', () => ({
+  useHasPermission: () => permissions.canWrite,
+}))
+
+import { SupplierQuotePage } from './SupplierQuotePage'
+
+const ROW_A = { category: '直条', material: 'HRB400E', spec: 12, length: '9米' }
+const ROW_B = { category: '直条', material: 'HRB400E', spec: 14, length: '9米' }
+const ROW_PANLUO = {
+  category: '盘螺',
+  material: 'HRB400',
+  spec: 8,
+  length: '-',
+}
+
+const SUPPLIER = {
+  id: 's1',
+  supplierCode: 'S001',
+  supplierName: '浙江铁都钢材有限公司',
+  brands: ['中天'],
+  value: 's1',
+  label: '浙江铁都钢材有限公司',
+}
+
+const COLUMN = {
+  listId: 'l1',
+  supplierId: 's1',
+  supplierName: '浙江铁都钢材有限公司',
+  quotedOn: '2026-10-29',
+  updatedAt: null,
+  warehouse: null,
+  version: 3,
+}
+
+function gridWithColumn(): SupplierPriceGrid {
+  return {
+    brandName: '中天',
+    columns: [COLUMN],
+    rows: [
+      {
+        ...ROW_A,
+        prices: { l1: 3280 },
+        priceStatuses: { l1: 'NORMAL' },
+        remarks: {},
+      },
+      {
+        ...ROW_B,
+        prices: { l1: 3300 },
+        priceStatuses: {},
+        remarks: {},
+      },
+    ],
+  }
+}
+
+/** 自动保存的防抖时长是 800ms：等过去再断言。 */
+const flushAutosave = async () => {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 900))
+  })
+}
+
+describe('供应商报价表（供应商为主轴的报价工作台）', () => {
+  let container: HTMLDivElement
+  let root: Root
+  let queryClient: QueryClient
+
+  beforeEach(async () => {
+    await i18n.changeLanguage('zh-CN')
+    if (!window.matchMedia) {
+      window.matchMedia = (query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      })
+    }
+    if (!globalThis.ResizeObserver) {
+      globalThis.ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    }
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    window.localStorage.clear()
+
+    permissions.canWrite = true
+    priceApi.fetchSpecRows.mockReset().mockResolvedValue([ROW_A, ROW_B])
+    priceApi.fetchSupplierPriceGrid
+      .mockReset()
+      .mockResolvedValue(gridWithColumn())
+    priceApi.addSupplierPriceColumn.mockReset().mockResolvedValue(COLUMN)
+    priceApi.saveSupplierPriceColumnItems.mockReset().mockResolvedValue({
+      ...COLUMN,
+      version: 4,
+    })
+    priceApi.removeSupplierPriceColumn.mockReset().mockResolvedValue(undefined)
+    supplierApi.fetchSupplierOptions.mockReset().mockResolvedValue([SUPPLIER])
+    materialBrands.useMaterialBrands = vi.fn(() => ['中天', '永钢'])
+    feedback.message.success.mockReset()
+    feedback.message.error.mockReset()
+    feedback.message.info.mockReset()
+    feedback.message.warning.mockReset()
+    feedback.modal.confirm.mockReset()
+
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+    queryClient.clear()
+    document.body.innerHTML = ''
+  })
+
+  const flush = async () => {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  /** 轮询等待某个断言条件成立（网格与价格是异步回来的，固定 flush 次数不稳）。 */
+  async function waitFor(predicate: () => boolean, timeout = 2000) {
+    const startedAt = Date.now()
+    while (Date.now() - startedAt < timeout) {
+      if (predicate()) return
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20))
+      })
+    }
+  }
+
+  async function render() {
+    await act(async () => {
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(SupplierQuotePage) as ReactNode,
+        ),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+    // 等供应商自动选中 → 网格返回 → 行渲染出来
+    await waitFor(
+      () =>
+        container.querySelectorAll(
+          '.ant-table-tbody tr:not(.ant-table-measure-row)',
+        ).length > 0,
+    )
+  }
+
+  const headers = () =>
+    Array.from(container.querySelectorAll('.ant-table-thead th')).map(
+      (node) => node.textContent ?? '',
+    )
+  const rows = () =>
+    container.querySelectorAll(
+      '.ant-table-tbody tr:not(.ant-table-measure-row)',
+    )
+  const cellInput = (label: string) =>
+    container.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)
+
+  async function typePrice(label: string, value: string) {
+    const input = cellInput(label)
+    expect(input, `未找到价格输入框 ${label}`).not.toBeNull()
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.call(input, value)
+      input?.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  it('只有一家供应商时直接进入表格：行 = 商品，列 = 该供应商的经营品牌', async () => {
+    await render()
+
+    // 表头：材质/规格/定尺/品牌 + 品牌列 + 本行最低价
+    expect(headers().some((text) => text.includes('中天'))).toBe(true)
+    expect(headers().some((text) => text.includes('材质'))).toBe(true)
+    // 一个品牌只占一列（不再拆「品牌 → 材质 → 定尺」）
+    expect(headers().filter((text) => text.includes('中天'))).toHaveLength(1)
+    expect(rows()).toHaveLength(2)
+    // 服务端价格直接回显
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    expect(cellInput('中天 HRB400E 14 9米')?.value).toBe('3300')
+  })
+
+  it('不再渲染满屏「—」：没有价的格子就是可输入的空格', async () => {
+    priceApi.fetchSpecRows.mockResolvedValue([ROW_A, ROW_B, ROW_PANLUO])
+    await render()
+
+    // 盘螺行也有一格可输入（材质/定尺退回成行字段后，任何组合都能报价）
+    expect(cellInput('中天 HRB400 8 -')).not.toBeNull()
+  })
+
+  it('单元格改动后自动保存：未改动的行一并提交（整列替换不能丢）', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+
+    await typePrice('中天 HRB400E 12 9米', '3290')
+    await flushAutosave()
+
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledTimes(1)
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledWith(
+      'l1',
+      3,
+      [
+        { ...ROW_A, price: 3290, priceStatus: 'NORMAL' },
+        { ...ROW_B, price: 3300 },
+      ],
+    )
+  })
+
+  it('行末给出本行最低价品牌', async () => {
+    priceApi.fetchSpecRows.mockResolvedValue([ROW_A])
+    priceApi.fetchSupplierPriceGrid.mockResolvedValue({
+      brandName: '中天',
+      columns: [COLUMN],
+      rows: [
+        {
+          ...ROW_A,
+          prices: { l1: 3280 },
+          priceStatuses: {},
+          remarks: {},
+        },
+      ],
+    })
+    supplierApi.fetchSupplierOptions.mockResolvedValue([
+      {
+        ...SUPPLIER,
+        brands: ['中天', '永钢'],
+      },
+    ])
+    // 永钢这一列是新列（无价格）
+    priceApi.addSupplierPriceColumn.mockResolvedValue({
+      ...COLUMN,
+      listId: 'l2',
+      supplierId: 's2',
+      supplierName: '沙钢贸易',
+    })
+    await render()
+
+    await waitFor(() => (container.textContent ?? '').includes('中天 3280'))
+    expect(container.textContent).toContain('中天 3280')
+  })
+
+  it('搜索按材质/规格/定尺过滤行', async () => {
+    await render()
+
+    const search = container.querySelector<HTMLInputElement>(
+      `input[aria-label="${i18n.t('priceCompare.supplierPrice.searchSpecs')}"]`,
+    )
+    expect(search).not.toBeNull()
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.call(search, '14')
+      search?.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flush()
+
+    expect(rows()).toHaveLength(1)
+  })
+
+  it('清空某一格后保存：该条目从载荷里消失（服务端据此删除）', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+
+    await typePrice('中天 HRB400E 12 9米', '')
+    await flushAutosave()
+
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledWith(
+      'l1',
+      3,
+      [{ ...ROW_B, price: 3300 }],
+    )
+  })
+
+  it('只读账号不可编辑', async () => {
+    permissions.canWrite = false
+    await render()
+
+    expect(cellInput('中天 HRB400E 12 9米')?.disabled).toBe(true)
+    expect(container.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.readOnlyHint'),
+    )
+  })
+
+  it('供应商没有经营品牌时给出明确引导', async () => {
+    supplierApi.fetchSupplierOptions.mockResolvedValue([
+      { ...SUPPLIER, brands: [] },
+    ])
+    priceApi.fetchSupplierPriceGrid.mockResolvedValue({
+      brandName: '',
+      columns: [],
+      rows: [],
+    })
+    await render()
+
+    expect(container.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.noBrands'),
+    )
+  })
+})
