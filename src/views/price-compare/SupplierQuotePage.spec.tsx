@@ -430,7 +430,11 @@ describe('供应商报价表（Excel 式报价网格）', () => {
   })
 
   it('同一规格的 9米/12米 拆成两列：一行两个价格，各占一列', async () => {
-    priceApi.fetchSpecRows.mockResolvedValue([ROW_A])
+    // 定尺来自商品资料（行只取自商品资料），所以两个定尺要在 specs 里各有一条
+    priceApi.fetchSpecRows.mockResolvedValue([
+      ROW_A,
+      { ...ROW_A, length: '12米' },
+    ])
     priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
       Promise.resolve(
         brandName === '中天'
@@ -1135,6 +1139,8 @@ describe('供应商报价表（Excel 式报价网格）', () => {
       ROW_PANLUO,
       ROW_A,
       { ...ROW_A, length: '12米' },
+      // 商品资料里 14 只有 9米 → 它在 12米 列上必须是「—」，不能给可编辑空框
+      ROW_B,
     ])
     await render()
     await selectSupplier()

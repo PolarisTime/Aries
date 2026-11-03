@@ -105,30 +105,55 @@ export function serverCellsOf(
   return cells
 }
 
-/** 商品规格行：商品资料全量规格 + 历史报价里出现过、但已不在商品资料的规格。 */
+/**
+ * 报价表的行：**只取自商品资料**（`GET /materials?status=正常`）。
+ *
+ * <p>商品资料里同一条「类别|材质|规格|定尺」可能有多条重复记录（同一商品被反复录入），这里按该键
+ * 合并成一行并按 类别/材质/规格/定尺 排序 —— 表里一行 = 一个商品组合，只出现一次。</p>
+ *
+ * <p><b>历史价格表不参与建行</b>：品牌网格（`GET /supplier-price-lists/grid`）的行只用于给已存在的
+ * 行回填价格（见 {@link serverCellsOf}）。商品被停用/删除后，它的旧报价不再出现在表里（否则会出现
+ * 「只有一格能填、其余全是 —」的残行）；那些价格仍随保存原样提交，见 {@link buildColumnSavePlan}。</p>
+ */
 export function mergeQuoteRows(
-  ...groups: readonly (readonly (QuoteRow | SupplierPriceRow)[])[]
+  rows: readonly (QuoteRow | SupplierPriceRow)[],
 ): QuoteRow[] {
   const merged = new Map<string, QuoteRow>()
-  for (const group of groups) {
-    for (const row of group) {
-      const normalized: QuoteRow = {
-        category: row.category,
-        material: row.material,
-        spec: row.spec,
-        length: row.length,
-      }
-      const key = quoteRowKey(normalized)
-      if (!merged.has(key)) merged.set(key, normalized)
+  for (const row of rows) {
+    const normalized: QuoteRow = {
+      category: row.category,
+      material: row.material,
+      spec: row.spec,
+      length: row.length,
     }
+    const key = quoteRowKey(normalized)
+    if (!merged.has(key)) merged.set(key, normalized)
   }
-  return [...merged.values()].sort(
-    (left, right) =>
-      left.category.localeCompare(right.category) ||
-      left.material.localeCompare(right.material) ||
-      left.spec - right.spec ||
-      left.length.localeCompare(right.length),
+  return [...merged.values()].sort(compareQuoteRows)
+}
+
+/** 行序：类别 → 材质 → 规格 → 定尺。表格行序与保存条目序共用这一处，避免两处各排一遍。 */
+export function compareQuoteRows(left: QuoteRow, right: QuoteRow): number {
+  return (
+    left.category.localeCompare(right.category) ||
+    left.material.localeCompare(right.material) ||
+    left.spec - right.spec ||
+    left.length.localeCompare(right.length)
   )
+}
+
+/**
+ * 把保存条目键（`类别|材质|规格|定尺`）解析回行。
+ *
+ * <p>「商品资料里已经没有、但该列还存着价格」的历史行只能从 {@link ServerCell} 的键还原；
+ * 规格口径与商品资料一致（正整数），解析不出来的键丢弃 —— 宁可少一条条目，也不造非法商品组合。</p>
+ */
+export function quoteRowFromKey(key: string): QuoteRow | null {
+  const [category, material, specText, ...rest] = key.split('|')
+  if (category === undefined || material === undefined) return null
+  const spec = Number(specText)
+  if (!Number.isInteger(spec) || spec <= 0) return null
+  return { category, material, spec, length: rest.join('|') }
 }
 
 /**
@@ -161,11 +186,16 @@ export function brandColumnOrder(args: {
 /**
  * 生成某一品牌列的保存计划；无改动返回 null。
  *
- * <p>三条硬性规则：</p>
+ * <p><b>条目集合 = 可见行 ∪ 服务端已有条目</b>（不是 `rows` 单侧）。保存接口是
+ * `PUT .../items` 的**整列替换**：只提交 `rows` 会把「商品资料里已停用/删除、但该列还存着价格」
+ * 的历史行从服务端删掉 —— 那是静默数据丢失。历史行只能从 {@link ServerCell} 的键还原成行。</p>
+ *
+ * <p>四条硬性规则：</p>
  * <ol>
  *   <li><b>只提交价格非空的条目</b>：服务端按整组替换处理，「清空」= 省略该行；</li>
  *   <li><b>原样带回状态与备注</b>：接口未在编辑器里暴露这两项，若不回传，服务端会把
  *       「无货/待定/搭配」重置成 NORMAL、备注清空 —— 那是静默数据丢失；</li>
+ *   <li><b>历史行即使不在可见行里也必须提交</b>（见上）；</li>
  *   <li><b>新列且一个价都没有时不建列</b>：避免留下空价格表。</li>
  * </ol>
  */
@@ -178,11 +208,22 @@ export function buildColumnSavePlan(args: {
 }): ColumnSavePlan | null {
   if (draftCount(args.draft) === 0) return null
 
+  /*
+   * 先按「可见行」定基调，再把服务端有、可见行没有的历史条目补进来。
+   * 用 Map 而不是数组拼接：同一键只留一份（可见行与历史行重叠时以可见行为准，两者内容相同）。
+   */
+  const rowsByKey = new Map<string, QuoteRow>()
+  for (const row of args.rows) rowsByKey.set(quoteRowKey(row), row)
+  for (const key of args.serverCells.keys()) {
+    if (rowsByKey.has(key)) continue
+    const row = quoteRowFromKey(key)
+    if (row) rowsByKey.set(key, row)
+  }
+
+  const draft = args.draft ?? {}
   const items: SupplierPriceCellInput[] = []
-  for (const row of args.rows) {
-    const key = quoteRowKey(row)
+  for (const [key, row] of rowsByKey) {
     const server = args.serverCells.get(key)
-    const draft = args.draft ?? {}
     const price = key in draft ? draft[key] : server?.price
     if (price === null || price === undefined) continue
     items.push({

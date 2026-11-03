@@ -273,6 +273,10 @@ const specPageSchema = z.looseObject({
  * <p>「规格列满」的含义就是：表里把所有规格都列出来，供应商报了哪个就填哪个 —— 因此行不能只
  * 取"已有报价"的那些。</p>
  *
+ * <p>这是报价表**唯一**的行来源：历史价格表只用来往回填价格，不建行。所以 `status=正常` 是硬条件 ——
+ * 商品被停用后它的旧报价不再出现在表里；那些历史价格仍随保存整列提交而保留
+ * （见 `buildColumnSavePlan` 的「可见行 ∪ 服务端条目」）。</p>
+ *
  * <p><b>页大小必须 ≤ 200</b>：后端分页校验是「size 必须在 1 到 200 之间」，超过直接 422；
  * 用 500 时整个查询失败，页面会显示"没有可录入的规格"（实测踩过）。这里按 200/页翻页，
  * 最多 50 页（1 万行）兜底，避免数据异常时无限翻页。</p>
@@ -284,7 +288,7 @@ export async function fetchSpecRows(
   const size = 200
   for (let page = 0; page < 50; page += 1) {
     const payload = await apiGet(ENDPOINTS.MATERIALS, specPageSchema, {
-      // 报价表的行来自商品资料：禁用商品不再出现在报价表里，历史报价数据保持只读
+      // 行只取「正常」商品：停用商品的旧报价不再出现在表里（保存仍会原样带上，见 buildColumnSavePlan）
       params: { keyword: '', page, size, status: STATUS.NORMAL },
       ...(signal ? { signal } : {}),
     })

@@ -10,6 +10,7 @@ import {
   draftPrice,
   mergeQuoteRows,
   type QuoteRow,
+  quoteRowFromKey,
   quoteRowKey,
   revertDraftPrice,
   type ServerCell,
@@ -116,6 +117,44 @@ describe('构建保存计划：整组替换 + 不丢附加字段', () => {
     expect(plan?.items).toEqual([{ ...ROW_B, price: 3300 }])
   })
 
+  it('商品资料里已没有的历史行：不显示，但保存载荷仍带它的价格（整列替换不得清掉）', () => {
+    // 场景：商品资料停用了 螺纹钢 HRB400 40 12米，但该列仍存着它的报价。
+    // 行只取自商品资料 ⇒ 表里看不到这行；保存是 PUT 整列替换 ⇒ 载荷里必须仍有它。
+    const removed = row('螺纹钢', 'HRB400', 40, '12米')
+    const serverCells = new Map<string, ServerCell>([
+      [quoteRowKey(ROW_A), { price: 3280 }],
+      [quoteRowKey(removed), { price: 3500, remark: '停产前最后一版' }],
+    ])
+    const plan = buildColumnSavePlan({
+      brandName: '中天',
+      column: column('l1'),
+      rows: [ROW_A], // 可见行里没有 removed
+      draft: setDraftPrice(undefined, quoteRowKey(ROW_A), 3290),
+      serverCells,
+    })
+
+    expect(plan?.items).toEqual([
+      { ...ROW_A, price: 3290 },
+      { ...removed, price: 3500, remark: '停产前最后一版' },
+    ])
+  })
+
+  it('历史行被显式清空时仍按「省略该行」删除（清空语义不被并集吞掉）', () => {
+    const removed = row('螺纹钢', 'HRB400', 40, '12米')
+    const serverCells = new Map<string, ServerCell>([
+      [quoteRowKey(removed), { price: 3500 }],
+    ])
+    const plan = buildColumnSavePlan({
+      brandName: '中天',
+      column: column('l1'),
+      rows: [ROW_A],
+      draft: setDraftPrice(undefined, quoteRowKey(removed), null),
+      serverCells,
+    })
+
+    expect(plan?.items).toEqual([])
+  })
+
   it('报价状态与备注原样回传，避免被重置为 NORMAL/清空', () => {
     const serverCells = new Map<string, ServerCell>([
       [
@@ -189,14 +228,25 @@ describe('品牌列集合与顺序', () => {
 })
 
 describe('行集合与网格取值', () => {
-  it('商品资料规格与历史报价行合并、去重并按类别/材质/规格/定尺排序', () => {
-    const historical = [row('螺纹钢', 'HRB400', 14, '9米')]
-    expect(mergeQuoteRows([ROW_A, ROW_B], historical)).toEqual([ROW_A, ROW_B])
+  it('商品资料规格去重并按类别/材质/规格/定尺排序', () => {
+    expect(mergeQuoteRows([ROW_B, ROW_A, { ...ROW_A }])).toEqual([ROW_A, ROW_B])
   })
 
-  it('历史行即使不在商品资料里也保留', () => {
+  it('历史行不在商品资料里时不显示（表里只出现商品资料中的组合）', () => {
+    // 商品被停用/删除后，它的旧报价不建行：否则会出现「只有一格能填、其余全是 —」的残行
     const removed = row('螺纹钢', 'HRB400', 40, '12米')
-    expect(mergeQuoteRows([ROW_A], [removed])).toEqual([ROW_A, removed])
+    expect(mergeQuoteRows([ROW_A])).toEqual([ROW_A])
+    expect(mergeQuoteRows([ROW_A])).not.toContainEqual(removed)
+  })
+
+  it('quoteRowFromKey 把服务端条目键解析回行，非法键丢弃', () => {
+    expect(quoteRowFromKey('螺纹钢|HRB400|12|9米')).toEqual(ROW_A)
+    // 盘螺的定尺是 '-'，解析后要原样保留（不能被当成空串）
+    expect(quoteRowFromKey('盘螺|HRB400|8|-')).toEqual(
+      row('盘螺', 'HRB400', 8, '-'),
+    )
+    expect(quoteRowFromKey('螺纹钢|HRB400|abc|9米')).toBeNull()
+    expect(quoteRowFromKey('螺纹钢|HRB400|0|9米')).toBeNull()
   })
 
   it('serverCellsOf 只取本列价格，忽略其它供应商列', () => {

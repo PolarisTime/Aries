@@ -284,10 +284,8 @@ export function SupplierQuotePage() {
     const visibleViews = allViews.filter(
       (view) => shown.has(view.brandName) || view.column !== null,
     )
-    const rowList = mergeQuoteRows(
-      specsQuery.data ?? [],
-      visibleViews.flatMap((view) => view.grid?.rows ?? []),
-    )
+    // 行只取自商品资料：历史价格表（grid.rows）只经 serverCellsOf 回填价格，不建行
+    const rowList = mergeQuoteRows(specsQuery.data ?? [])
     return {
       views: visibleViews,
       viewByBrand: new Map(visibleViews.map((view) => [view.brandName, view])),
