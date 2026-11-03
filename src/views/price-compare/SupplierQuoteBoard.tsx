@@ -97,7 +97,6 @@ const ROW_HEAD_WIDTHS = {
   category: 56,
 } as const
 const BRAND_COLUMN_WIDTH = 96
-const CHEAPEST_COLUMN_WIDTH = 104
 
 /** 定尺排序：9米 → 12米 → 其它 → 不分定尺(-)，与报价单习惯一致。 */
 const sortLengths = (left: string, right: string) => {
@@ -1187,28 +1186,6 @@ export function SupplierQuoteBoard() {
       }
     }
 
-    columns.push({
-      // 表头必须有文案：留空会渲染成一列「没有标题的空白列」，看起来像多出来的脏列
-      title: t('priceCompare.supplierPrice.lowestPrice'),
-      key: 'cheapest',
-      width: CHEAPEST_COLUMN_WIDTH,
-      render: (_value, row) => {
-        const cheapest = cheapestOfSpec(
-          group.category,
-          group.cellColumns,
-          row.spec,
-        )
-        // 没报价就留空：一列全是「—」只会让人以为页面坏了
-        if (!cheapest) return null
-        return (
-          <span className="supplier-price-cheapest-label">
-            {cheapest.brandName} {cheapest.material}
-            {cheapest.length === '-' ? '' : ` ${cheapest.length}`}{' '}
-            {cheapest.price}
-          </span>
-        )
-      },
-    })
     return columns
   }
 
@@ -1414,8 +1391,7 @@ export function SupplierQuoteBoard() {
                   scroll={{
                     x:
                       ROW_HEAD_WIDTHS.spec +
-                      group.cellColumns.length * BRAND_COLUMN_WIDTH +
-                      CHEAPEST_COLUMN_WIDTH,
+                      group.cellColumns.length * BRAND_COLUMN_WIDTH,
                   }}
                   size="small"
                   tableLayout="fixed"

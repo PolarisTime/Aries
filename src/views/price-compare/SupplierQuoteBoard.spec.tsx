@@ -510,7 +510,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     )
   })
 
-  it('行末给出本行最低价品牌', async () => {
+  it('最低价格子高亮（最低价列已移除，改用单元格高亮表达）', async () => {
     priceApi.fetchSpecRows.mockResolvedValue([ROW_A])
     priceApi.fetchSupplierPriceGrid.mockResolvedValue({
       brandName: '中天',
@@ -539,11 +539,24 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     })
     await render()
 
-    // 定尺变成列之后，最低价要带上定尺（否则多个定尺列的最低价分不清是哪一个）
+    // 只有一个品牌有价：该格打上高亮类，行末不再单列「最低价」
     await waitFor(() =>
-      (container.textContent ?? '').includes('中天 HRB400E 9米 3280'),
+      Boolean(
+        container.querySelector(
+          '.supplier-price-cheapest input[aria-label="中天 HRB400E 12 9米"]',
+        ),
+      ),
     )
-    expect(container.textContent).toContain('中天 HRB400E 9米 3280')
+    const cheapest = container.querySelector(
+      '.supplier-price-cheapest input[aria-label="中天 HRB400E 12 9米"]',
+    )
+    expect(cheapest).not.toBeNull()
+    // 没有价的永钢不算最低价
+    expect(
+      container.querySelector(
+        '.supplier-price-cheapest input[aria-label="永钢 HRB400E 12 9米"]',
+      ),
+    ).toBeNull()
   })
 
   it('搜索按材质/规格/定尺过滤行', async () => {
