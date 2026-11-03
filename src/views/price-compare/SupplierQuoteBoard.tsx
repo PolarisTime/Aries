@@ -16,6 +16,7 @@ import {
   Flex,
   Input,
   InputNumber,
+  Select,
   Table,
   Tabs,
   Tooltip,
@@ -185,7 +186,9 @@ export function SupplierQuoteBoard() {
   const canUpdate = useHasPermission('supplier-price-lists:update')
   const canDelete = useHasPermission('supplier-price-lists:delete')
 
-  /** 当前激活的供应商标签页（key = supplierId）。 */
+  /** 已打开的供应商标签页（key = supplierId）；按需打开、可关闭。 */
+  const [openSupplierIds, setOpenSupplierIds] = useState<string[]>([])
+  /** 当前激活的供应商标签页。 */
   const [activeSupplierId, setActiveSupplierId] = useState<string>()
   const [quotedOn, setQuotedOn] = useState(() => dayjs())
   /** 未落库的改动：品牌 →（行键 → 价格；null = 明确清空）。 */
@@ -220,11 +223,18 @@ export function SupplierQuoteBoard() {
 
   const suppliers = suppliersQuery.data ?? []
 
+  const supplierId = activeSupplierId
+
   /*
-   * 供应商标签是**常驻**的：所有供应商都在标签栏里，不需要「添加 / 关闭」。
-   * 因此默认激活第一个（用户没选过时），页面不会一进来就空白。
+   * 默认把第一个供应商开成标签页：标签是按需打开/关闭的（antd 规范：只有 card 类型支持
+   * 添加与关闭），但不能让用户一进来面对空白页。
    */
-  const supplierId = activeSupplierId ?? suppliers[0]?.value
+  useEffect(() => {
+    if (suppliers.length === 0 || openSupplierIds.length > 0) return
+    const first = suppliers[0].value
+    setOpenSupplierIds([first])
+    setActiveSupplierId(first)
+  }, [openSupplierIds.length, suppliers])
 
   const supplier = useMemo(
     () => suppliers.find((option) => option.value === supplierId),
@@ -763,13 +773,36 @@ export function SupplierQuoteBoard() {
     })
   }
 
-  /** 切换供应商标签：标签常驻，只需要确认丢弃草稿后切过去。 */
+  /** 切换供应商标签：有未保存草稿时先确认（切页会丢弃草稿）。 */
   const switchSupplierTab = (nextSupplierId: string) => {
     if (nextSupplierId === supplierId) return
     confirmDiscardIfDirty(() => {
       resetBoardState()
       setActiveSupplierId(nextSupplierId)
     })
+  }
+
+  /** 打开（或激活）某个供应商的标签页。 */
+  const openSupplierTab = (nextSupplierId: string) => {
+    setOpenSupplierIds((current) =>
+      current.includes(nextSupplierId) ? current : [...current, nextSupplierId],
+    )
+    switchSupplierTab(nextSupplierId)
+  }
+
+  /** 关闭标签页：关掉当前页时按 antd 示例切到左邻，没有左邻就切第一个。 */
+  const closeSupplierTab = (closingId: string) => {
+    const close = () => {
+      const remaining = openSupplierIds.filter((id) => id !== closingId)
+      setOpenSupplierIds(remaining)
+      if (closingId !== activeSupplierId) return
+      const closedIndex = openSupplierIds.indexOf(closingId)
+      const nextActive = remaining[Math.max(0, closedIndex - 1)] ?? remaining[0]
+      resetBoardState()
+      setActiveSupplierId(nextActive)
+    }
+    if (closingId === activeSupplierId) confirmDiscardIfDirty(close)
+    else close()
   }
 
   const removeBrand = (brandName: string) => {
@@ -1159,22 +1192,59 @@ export function SupplierQuoteBoard() {
     return columns
   }
 
+  /** 还没打开的供应商（「添加」下拉的候选）。 */
+  const unopenedSuppliers = suppliers.filter(
+    (option) => !openSupplierIds.includes(option.value),
+  )
+
   /*
-   * 供应商标签是**常驻**的：全部供应商都在标签栏里，横向滚动，不需要「添加」也不需要「关闭」。
+   * 标签页管理按 antd 规范来：**只有 `editable-card` 类型支持添加与关闭**，
+   * 溢出由内置的 `more`（省略号）自动折叠，不用自己算宽度。
    *
-   * 为什么不做成「按需打开的标签页 + 添加下拉」：供应商有四十多家，下拉会把整屏铺满成一列
-   * 公司名（实测就是这样），既难找又难用；常驻标签横向一扫就能看到全部，切起来也只剩一次点击。
+   * 「添加」不用 `onEdit('add')` 弹菜单：供应商四十多家，菜单会铺成一整屏（用户已反馈过）。
+   * 改成标签栏右侧一个**可搜索的 Select**，输入公司名即时过滤，选中即打开标签。
    */
   const supplierTabs = (
     <Tabs
       activeKey={supplierId}
-      items={suppliers.map((option) => ({
-        key: option.value,
-        label: option.label,
+      hideAdd
+      items={openSupplierIds.map((id) => ({
+        key: id,
+        label: suppliers.find((option) => option.value === id)?.label ?? id,
       }))}
       onChange={switchSupplierTab}
+      onEdit={(
+        targetKey: React.MouseEvent | React.KeyboardEvent | string,
+        action: 'add' | 'remove',
+      ) => {
+        if (action === 'remove' && typeof targetKey === 'string') {
+          closeSupplierTab(targetKey)
+        }
+      }}
       style={{ width: '100%' }}
-      type="card"
+      tabBarExtraContent={{
+        right: (
+          <Select
+            aria-label={t('priceCompare.supplierPrice.addSupplierTab')}
+            loading={suppliersQuery.isPending}
+            notFoundContent={
+              unopenedSuppliers.length
+                ? undefined
+                : t('priceCompare.supplierPrice.allSuppliersOpened')
+            }
+            onChange={(value: string) => openSupplierTab(value)}
+            options={unopenedSuppliers.map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+            placeholder={t('priceCompare.supplierPrice.addSupplierTab')}
+            showSearch={{ optionFilterProp: 'label' }}
+            style={{ width: 220 }}
+            value={null}
+          />
+        ),
+      }}
+      type="editable-card"
     />
   )
 

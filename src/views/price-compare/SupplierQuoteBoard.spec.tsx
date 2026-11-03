@@ -387,10 +387,10 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
    * 实测数据：商品资料里 `圆钢` 品牌有 HPB300 20/32（该品牌既不是经营品牌、也没有价格表）。
    */
   /**
-   * 供应商标签是**常驻**的：全部供应商都在标签栏里（一个标签 = 一个供应商，标签名用公司全称），
-   * 不需要「添加」也不需要「关闭」。供应商四十多家时，下拉会把整屏铺成一列公司名，所以不这么做。
+   * 标签页管理（按 antd 规范：只有 `editable-card` 支持添加与关闭，溢出用内置 more 折叠）：
+   * 按需打开、可关闭，添加走右侧**可搜索 Select**（不用下拉菜单 —— 四十多家会铺满一屏）。
    */
-  it('供应商以常驻标签页展示：标签名是公司名称，没有添加/关闭入口', async () => {
+  it('供应商标签页可关闭，添加入口是可搜索的选择器', async () => {
     supplierApi.fetchSupplierOptions.mockResolvedValue([
       SUPPLIER,
       { ...SUPPLIER, id: 's2', value: 's2', label: '杭州中金钢铁有限公司' },
@@ -398,16 +398,15 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     await render()
 
-    const tabs = Array.from(
-      document.querySelectorAll('.supplier-price-page .ant-tabs-tab'),
-    )
-    expect(tabs.map((node) => node.textContent?.trim())).toEqual([
-      '浙江铁都钢材有限公司',
-      '杭州中金钢铁有限公司',
-    ])
-    // 常驻标签没有关闭按钮，也没有「添加供应商」入口
-    expect(document.querySelector('.ant-tabs-tab-remove')).toBeNull()
-    expect(container.querySelector('.ant-tabs-nav-add')).toBeNull()
+    const tab = () =>
+      document.querySelector('.supplier-price-page .ant-tabs-tab')
+    expect(tab()?.textContent).toContain('浙江铁都钢材有限公司')
+    // 可关闭：editable-card 自带 ×
+    expect(tab()?.querySelector('.ant-tabs-tab-remove')).not.toBeNull()
+    // 添加入口是可搜索的 Select，而不是把全部供应商铺成菜单
+    const addSelect = document.querySelector('.supplier-price-page .ant-select')
+    expect(addSelect).not.toBeNull()
+    expect(container.textContent).not.toContain('杭州中金钢铁有限公司')
   })
 
   it('不成列的品牌（如圆钢）不会把自己的规格变成空行', async () => {
