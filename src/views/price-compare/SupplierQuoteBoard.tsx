@@ -1,6 +1,5 @@
 import {
   DeleteOutlined,
-  PlusOutlined,
   RedoOutlined,
   ReloadOutlined,
   SearchOutlined,
@@ -186,9 +185,7 @@ export function SupplierQuoteBoard() {
   const canUpdate = useHasPermission('supplier-price-lists:update')
   const canDelete = useHasPermission('supplier-price-lists:delete')
 
-  /** 已打开的供应商标签页（key = supplierId）；一个标签页 = 一个供应商。 */
-  const [openSupplierIds, setOpenSupplierIds] = useState<string[]>([])
-  /** 当前激活的标签页。 */
+  /** 当前激活的供应商标签页（key = supplierId）。 */
   const [activeSupplierId, setActiveSupplierId] = useState<string>()
   const [quotedOn, setQuotedOn] = useState(() => dayjs())
   /** 未落库的改动：品牌 →（行键 → 价格；null = 明确清空）。 */
@@ -223,19 +220,11 @@ export function SupplierQuoteBoard() {
 
   const suppliers = suppliersQuery.data ?? []
 
-  const supplierId = activeSupplierId
-
   /*
-   * 只有一个供应商时自动开一个标签页，少一步点击。
-   * 用 effect 而不是渲染期 setState：开标签页是状态变更，不能在渲染里做。
+   * 供应商标签是**常驻**的：所有供应商都在标签栏里，不需要「添加 / 关闭」。
+   * 因此默认激活第一个（用户没选过时），页面不会一进来就空白。
    */
-  useEffect(() => {
-    if (suppliers.length !== 1) return
-    if (openSupplierIds.length > 0) return
-    const only = suppliers[0].value
-    setOpenSupplierIds([only])
-    setActiveSupplierId(only)
-  }, [openSupplierIds.length, suppliers])
+  const supplierId = activeSupplierId ?? suppliers[0]?.value
 
   const supplier = useMemo(
     () => suppliers.find((option) => option.value === supplierId),
@@ -774,36 +763,13 @@ export function SupplierQuoteBoard() {
     })
   }
 
-  const openSupplierTab = (nextSupplierId: string) => {
-    setOpenSupplierIds((current) =>
-      current.includes(nextSupplierId) ? current : [...current, nextSupplierId],
-    )
-    if (nextSupplierId === activeSupplierId) return
-    confirmDiscardIfDirty(() => {
-      resetBoardState()
-      setActiveSupplierId(nextSupplierId)
-    })
-  }
-
+  /** 切换供应商标签：标签常驻，只需要确认丢弃草稿后切过去。 */
   const switchSupplierTab = (nextSupplierId: string) => {
-    if (nextSupplierId === activeSupplierId) return
+    if (nextSupplierId === supplierId) return
     confirmDiscardIfDirty(() => {
       resetBoardState()
       setActiveSupplierId(nextSupplierId)
     })
-  }
-
-  /** 关标签页：关掉当前页时切到相邻页；没有剩余页就回到「请添加供应商」。 */
-  const closeSupplierTab = (closingId: string) => {
-    const close = () => {
-      const remaining = openSupplierIds.filter((id) => id !== closingId)
-      setOpenSupplierIds(remaining)
-      if (closingId !== activeSupplierId) return
-      resetBoardState()
-      setActiveSupplierId(remaining[remaining.length - 1])
-    }
-    if (closingId === activeSupplierId) confirmDiscardIfDirty(close)
-    else close()
   }
 
   const removeBrand = (brandName: string) => {
@@ -1193,66 +1159,23 @@ export function SupplierQuoteBoard() {
     return columns
   }
 
-  /** 还没打开的供应商（「＋」菜单的候选）。 */
-  const unopenedSuppliers = suppliers.filter(
-    (option) => !openSupplierIds.includes(option.value),
-  )
-
   /*
-   * 一张标签页 = 一个供应商，标签名用公司全称（业务上就是用公司名认供应商）。
-   * 关闭走 editable-card 自带的 ×，「＋」放在右侧额外区：候选列表按公司名筛选，
-   * 42 家供应商不会把菜单撑爆。
+   * 供应商标签是**常驻**的：全部供应商都在标签栏里，横向滚动，不需要「添加」也不需要「关闭」。
+   *
+   * 为什么不做成「按需打开的标签页 + 添加下拉」：供应商有四十多家，下拉会把整屏铺满成一列
+   * 公司名（实测就是这样），既难找又难用；常驻标签横向一扫就能看到全部，切起来也只剩一次点击。
    */
   const supplierTabs = (
-    <Flex align="center" gap={8} style={{ width: '100%' }}>
-      <Tabs
-        activeKey={supplierId}
-        hideAdd
-        items={openSupplierIds.map((id) => ({
-          key: id,
-          label: suppliers.find((option) => option.value === id)?.label ?? id,
-        }))}
-        onChange={switchSupplierTab}
-        onEdit={(
-          targetKey: React.MouseEvent | React.KeyboardEvent | string,
-          action: 'add' | 'remove',
-        ) => {
-          if (action === 'remove' && typeof targetKey === 'string') {
-            closeSupplierTab(targetKey)
-          }
-        }}
-        style={{ flex: '1 1 auto', minWidth: 0 }}
-        type="editable-card"
-      />
-      <Dropdown
-        menu={{
-          items: unopenedSuppliers.length
-            ? unopenedSuppliers.map((option) => ({
-                key: option.value,
-                label: option.label,
-              }))
-            : [
-                {
-                  key: '__empty__',
-                  disabled: true,
-                  label: t('priceCompare.supplierPrice.allSuppliersOpened'),
-                },
-              ],
-          onClick: ({ key }) => {
-            if (key !== '__empty__') openSupplierTab(key)
-          },
-        }}
-        trigger={['click']}
-      >
-        <Button
-          aria-label={t('priceCompare.supplierPrice.addSupplierTab')}
-          icon={<PlusOutlined />}
-          loading={suppliersQuery.isPending}
-        >
-          {t('priceCompare.supplierPrice.addSupplierTab')}
-        </Button>
-      </Dropdown>
-    </Flex>
+    <Tabs
+      activeKey={supplierId}
+      items={suppliers.map((option) => ({
+        key: option.value,
+        label: option.label,
+      }))}
+      onChange={switchSupplierTab}
+      style={{ width: '100%' }}
+      type="card"
+    />
   )
 
   if (!supplierId) {
@@ -1260,9 +1183,7 @@ export function SupplierQuoteBoard() {
       <Flex vertical gap={12} className="supplier-price-page">
         {supplierTabs}
         <Typography.Text type="secondary">
-          {openSupplierIds.length === 0
-            ? t('priceCompare.supplierPrice.pickSupplier')
-            : t('priceCompare.supplierPrice.pickSupplier')}
+          {t('priceCompare.supplierPrice.pickSupplier')}
         </Typography.Text>
       </Flex>
     )

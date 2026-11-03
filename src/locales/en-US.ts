@@ -2995,8 +2995,6 @@ export const enUS = {
       saveNothing: 'Nothing to save',
       material: 'Material',
       specNo: 'Size',
-      addSupplierTab: 'Add supplier',
-      allSuppliersOpened: 'All suppliers opened',
       length: 'Length',
       viewModeBrands: 'Brands as columns',
       viewModeSpecs: 'Specs across columns',
