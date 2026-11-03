@@ -1,5 +1,6 @@
 import {
   DeleteOutlined,
+  EllipsisOutlined,
   RedoOutlined,
   ReloadOutlined,
   SearchOutlined,
@@ -103,6 +104,8 @@ const ROW_HEAD_WIDTHS = {
  * 一屏看不下几列；四位数（几万块一吨）已经覆盖实际报价。
  */
 const BRAND_COLUMN_WIDTH = 64
+/* 单定尺（盘螺）时品牌表头直接坐在价格列上，64px 放不下「武钢汉钢」+ ⋯，列宽单独放宽。 */
+const BRAND_FLAT_COLUMN_WIDTH = 96
 
 /** 定尺排序：9米 → 12米 → 其它 → 不分定尺(-)，与报价单习惯一致。 */
 const sortLengths = (left: string, right: string) => {
@@ -994,65 +997,71 @@ export function SupplierQuoteBoard() {
    * <p>类别已经由分区标题表达，所以表里不再保留「品牌（类别）」列；定尺子列只取这一张表
    * 用得到的，盘螺表就不会出现 9米/12米 这种永远空着的列。</p>
    */
-  /** 品牌列头：品牌名 + 保存状态圆点 + 「清空/移除本列」菜单（列定义与表头两处共用）。 */
+  /**
+   * 品牌列头：品牌名**独立居中**，保存状态与「更多」图标贴在格子右侧。
+   *
+   * <p>三段式而不是 flex 居中：品牌名绝对定位铺满整格并居中，右侧工具叠在上面，
+   * 所以工具出现/消失（保存中、保存失败、⋯）都不会把品牌文字挤偏。</p>
+   */
   const brandHeaderOf = (brandName: string) => (
-    <Flex align="center" gap={4} justify="center">
-      <span style={{ whiteSpace: 'nowrap' }}>{brandName}</span>
-      {saveState[brandName] === 'saving' ? (
-        <span aria-hidden="true" style={dotStyle('#faad14')} />
-      ) : null}
-      {saveState[brandName] === 'error' ? (
-        <Tooltip
-          title={t('priceCompare.supplierPrice.saveFailed', {
-            names: brandName,
-          })}
-        >
-          <Button
-            aria-label={t('priceCompare.supplierPrice.saveFailed', {
+    <span className="supplier-price-brand-head">
+      <span className="supplier-price-brand-head-title">{brandName}</span>
+      <span className="supplier-price-brand-head-tools">
+        {saveState[brandName] === 'saving' ? (
+          <span aria-hidden="true" style={dotStyle('#faad14')} />
+        ) : null}
+        {saveState[brandName] === 'error' ? (
+          <Tooltip
+            title={t('priceCompare.supplierPrice.saveFailed', {
               names: brandName,
             })}
+          >
+            <Button
+              aria-label={t('priceCompare.supplierPrice.saveFailed', {
+                names: brandName,
+              })}
+              size="small"
+              type="text"
+              onClick={() => void saveBrand(brandName)}
+            >
+              <span style={dotStyle('#ff4d4f')} />
+            </Button>
+          </Tooltip>
+        ) : null}
+        <Dropdown
+          trigger={['click']}
+          menu={{
+            items: [
+              {
+                key: 'clear',
+                icon: <DeleteOutlined />,
+                label: t('priceCompare.supplierPrice.clearColumn'),
+                disabled: !canUpdate,
+              },
+              {
+                key: 'remove',
+                danger: true,
+                label: t('priceCompare.supplierPrice.removeColumn'),
+                disabled: !canDelete,
+              },
+            ],
+            onClick: ({ key }) => {
+              if (key === 'clear') clearBrand(brandName)
+              if (key === 'remove') removeBrand(brandName)
+            },
+          }}
+        >
+          <Button
+            aria-label={t('priceCompare.supplierPrice.removeColumnA11y', {
+              name: brandName,
+            })}
+            icon={<EllipsisOutlined />}
             size="small"
             type="text"
-            onClick={() => void saveBrand(brandName)}
-          >
-            <span style={dotStyle('#ff4d4f')} />
-          </Button>
-        </Tooltip>
-      ) : null}
-      <Dropdown
-        trigger={['click']}
-        menu={{
-          items: [
-            {
-              key: 'clear',
-              icon: <DeleteOutlined />,
-              label: t('priceCompare.supplierPrice.clearColumn'),
-              disabled: !canUpdate,
-            },
-            {
-              key: 'remove',
-              danger: true,
-              label: t('priceCompare.supplierPrice.removeColumn'),
-              disabled: !canDelete,
-            },
-          ],
-          onClick: ({ key }) => {
-            if (key === 'clear') clearBrand(brandName)
-            if (key === 'remove') removeBrand(brandName)
-          },
-        }}
-      >
-        <Button
-          aria-label={t('priceCompare.supplierPrice.removeColumnA11y', {
-            name: brandName,
-          })}
-          size="small"
-          type="text"
-        >
-          ⋯
-        </Button>
-      </Dropdown>
-    </Flex>
+          />
+        </Dropdown>
+      </span>
+    </span>
   )
 
   /**
@@ -1085,7 +1094,10 @@ export function SupplierQuoteBoard() {
       const materialColumns: ColumnsType<SpecRow> = []
       {
         const lengthKeys = [...lengths.keys()].sort(sortLengths)
-        const cellOf = (length: string): ColumnsType<SpecRow>[number] => {
+        const cellOf = (
+          length: string,
+          width: number,
+        ): ColumnsType<SpecRow>[number] => {
           const columnIndex = sheet.cellColumns.findIndex(
             (column) =>
               column.brandName === brandName &&
@@ -1096,7 +1108,7 @@ export function SupplierQuoteBoard() {
           return {
             title: length === '-' ? '—' : length,
             key: `${brandName}\u0000${material}\u0000${length}`,
-            width: BRAND_COLUMN_WIDTH,
+            width,
             // 金额与表头（定尺名）都居中：一列里文字与数字对齐在同一条中轴上
             align: 'center' as const,
             render: (_value: unknown, row: SpecRow) => {
@@ -1197,11 +1209,13 @@ export function SupplierQuoteBoard() {
             title: material,
             key: `${brandName}\u0000${material}`,
             align: 'center',
-            children: lengthKeys.map(cellOf),
+            children: lengthKeys.map((length) =>
+              cellOf(length, BRAND_COLUMN_WIDTH),
+            ),
           })
         } else {
           materialColumns.push({
-            ...cellOf(lengthKeys[0] ?? '-'),
+            ...cellOf(lengthKeys[0] ?? '-', BRAND_FLAT_COLUMN_WIDTH),
             title: material,
             key: `${brandName}\u0000${material}`,
             align: 'center',

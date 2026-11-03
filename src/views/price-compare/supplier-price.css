@@ -367,3 +367,47 @@
   + .supplier-price-sheet-category {
   margin-top: 0;
 }
+
+/*
+ * 品牌列头：品牌名独立水平居中，状态点与「更多」图标贴右侧，不参与居中计算。
+ *
+ * 三段式：标题绝对定位铺满整格 + text-align:center；工具条绝对定位靠右。
+ * 这样「保存中」「保存失败」「⋯」出现或消失都不会把品牌文字挤向左。
+ */
+.supplier-price-brand-head {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 20px;
+}
+
+.supplier-price-brand-head-title {
+  position: absolute;
+  inset-inline: 0;
+  text-align: center;
+  white-space: nowrap;
+  /*
+   * 只给右侧工具留 20px，左侧留 4px：盘螺的品牌列只有 96px，
+   * 两边都留 20px 会把「武钢汉钢」挤到和 ⋯ 图标重叠。
+   */
+  padding-inline: 4px 20px;
+}
+
+.supplier-price-brand-head-tools {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  transform: translateY(-50%);
+}
+
+/*
+ * 价格输入框固定 64px（4 位数字）并居中，即使所在列被表头放宽（盘螺单定尺列 96px）
+ * 也不跟着变宽 —— 钱数的宽度由位数决定，不该由表头文字决定。
+ */
+.supplier-price-board .supplier-price-sheet-input.ant-input-number {
+  max-width: 64px;
+  margin-inline: auto;
+}
