@@ -1,20 +1,18 @@
 import type { TFunction } from 'i18next'
 import type { ReactNode } from 'react'
+import { saveSupplierBrandSpecs } from '@/api/master/supplier-brand-specs'
 import { enabledStatusOptions } from '@/constants/module-options'
 import { STATUS } from '@/constants/status-constants'
 import { asString } from '@/utils/type-narrowing'
 import type { MasterDataPageSpec, MasterOption } from './master-data-types'
-
-const asBrandList = (value: unknown): string[] =>
-  Array.isArray(value)
-    ? value.flatMap((item) => {
-        const brand = asString(item).trim()
-        return brand ? [brand] : []
-      })
-    : []
+import { renderSupplierBrandSpecField } from './SupplierBrandSpecField'
+import {
+  brandListOf,
+  supplierBrandSpecPayload,
+} from './supplier-brand-spec-model'
 
 function formatBrands(value: unknown): ReactNode {
-  const brands = asBrandList(value)
+  const brands = brandListOf(value)
   return brands.length ? brands.join('、') : '-'
 }
 
@@ -174,6 +172,19 @@ export function buildSupplierSpec(
         options: brandOptions,
       },
       {
+        /*
+         * 品牌规格配置：一个字段里给每个经营品牌各开一个穿梭框。
+         * 与 brands 同属「基本信息」区块、紧跟在经营品牌下方 —— 它配的就是上面那些品牌。
+         */
+        section: t('modules.formSections.basic'),
+        key: 'brandSpecs',
+        label: t('modules.pages.supplier.colBrandSpecs'),
+        type: 'input',
+        span: 24,
+        description: t('modules.pages.supplier.brandSpecsHint'),
+        render: renderSupplierBrandSpecField,
+      },
+      {
         section: t('modules.formSections.contact'),
         key: 'contactName',
         label: t('modules.pages.supplier.colContactName'),
@@ -198,7 +209,13 @@ export function buildSupplierSpec(
       supplierCode: asString(record?.supplierCode),
       supplierName: asString(record?.supplierName),
       shortName: asString(record?.shortName),
-      brands: asBrandList(record?.brands),
+      brands: brandListOf(record?.brands),
+      /*
+       * 编辑态的品牌规格配置要另外拉一次接口，拉到之前必须是 `undefined`（未知）而不是 `[]`：
+       * 空数组的含义是"用户清空了配置"，保存时会把服务端配置整集替换掉。
+       * 新建时没有配置可言，用 `[]` 表示"确定没有显式配置"。
+       */
+      brandSpecs: record ? undefined : [],
       contactName: asString(record?.contactName),
       contactPhone: asString(record?.contactPhone),
       city: asString(record?.city),
@@ -210,12 +227,35 @@ export function buildSupplierSpec(
       supplierCode: asString(values.supplierCode),
       supplierName: values.supplierName,
       shortName: values.shortName ?? '',
-      brands: asBrandList(values.brands),
+      brands: brandListOf(values.brands),
       contactName: values.contactName ?? '',
       contactPhone: values.contactPhone ?? '',
       city: values.city ?? '',
       status: values.status,
       remark: values.remark ?? '',
     }),
+    /*
+     * 品牌规格配置有独立端点（`PUT /suppliers/{id}/brand-specs`，整集替换），而且需要供应商 id，
+     * 所以只能在供应商保存成功后提交 —— 新建供应商时也才有 id。
+     *
+     * 两条保护：
+     * 1. `brandSpecs === undefined` 表示"配置没读到"（接口失败/还没返回），此时跳过 PUT，
+     *    绝不能用空数组把服务端已有配置清掉；
+     * 2. 只提交**当前经营品牌**范围内的组合：品牌在本次编辑里被移除时，它的旧配置不能跟着发上去
+     *    （后端会以"品牌不属于该供应商"返回 422）。
+     */
+    afterSave: async ({ values, saved }) => {
+      const draft = values.brandSpecs
+      if (draft === undefined) return
+      const items = supplierBrandSpecPayload(
+        Array.isArray(draft) ? draft : [],
+        brandListOf(values.brands),
+      )
+      try {
+        await saveSupplierBrandSpecs(String(saved.id), items)
+      } catch {
+        throw new Error(t('modules.pages.supplier.brandSpecsSaveFailed'))
+      }
+    },
   }
 }

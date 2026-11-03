@@ -178,6 +178,9 @@ export const ENDPOINTS = {
   PROJECT_SALES_SUMMARY: (projectId: string | number) =>
     `/projects/${pathSegment(projectId)}/sales-summary`,
   SUPPLIERS_OPTIONS: '/suppliers/options',
+  /** 供应商品牌规格配置：每个经营品牌允许报价的「类别 + 材质 + 规格 + 定尺」（PUT 整集替换）。 */
+  SUPPLIER_BRAND_SPECS: (supplierId: string | number) =>
+    `/suppliers/${pathSegment(supplierId)}/brand-specs`,
   CARRIERS_OPTIONS: '/carriers/options',
   MATERIALS: '/materials',
   MATERIAL_CATEGORIES: '/material-categories/options',

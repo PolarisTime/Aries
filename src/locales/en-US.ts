@@ -2058,6 +2058,31 @@ export const enUS = {
         brandsTransferLeft: 'Available',
         brandsTransferRight: 'Selected',
         brandsTransferEmpty: 'No operating brands selected',
+        colBrandSpecs: 'Brand Spec Configuration',
+        brandSpecsHint:
+          'Limit the specs and lengths each operating brand may quote: the price board only shows the checked combinations. All are checked by default (full list from material data); uncheck some to store an explicit configuration, and check them all again to fall back to the default.',
+        brandSpecsEmpty:
+          'Select operating brands first, then configure quotable specs per brand',
+        brandSpecsDefaultFull: 'Default: all',
+        brandSpecsConfigured: '{{count}} configured',
+        brandSpecsConfigure: 'Configure',
+        brandSpecsConfigureA11y: 'Configure quotable specs for {{name}}',
+        brandSpecsDialogTitle: 'Quotable specs for {{name}}',
+        brandSpecsDialogHint:
+          'Check the category · material · spec · length combinations this brand may quote. Checking everything equals the default full list and stores no configuration.',
+        brandSpecsTransferA11y: 'Spec transfer for {{name}} ({{field}})',
+        brandSpecsColLength: 'Length',
+        brandSpecsLoading: 'Loading material data…',
+        brandSpecsNoCombos:
+          'No spec combinations for {{name}} in material data',
+        brandSpecsCombosLoadFailed:
+          'Failed to load material data, configuration is unavailable',
+        brandSpecsEmptySelection:
+          'Keep at least one item: uncheck the specs this brand does not quote',
+        brandSpecsLoadFailed: 'Failed to load brand spec configuration',
+        brandSpecsRetry: 'Retry',
+        brandSpecsSaveFailed:
+          'Supplier saved, but the brand spec configuration failed to save. Reopen the supplier and save again.',
         colContactName: 'Contact',
         colContactPhone: 'Phone',
         colCity: 'City',
@@ -2970,7 +2995,6 @@ export const enUS = {
       saveNothing: 'Nothing to save',
       material: 'Material',
       specNo: 'Size',
-      lowestPrice: 'Lowest price',
       addSupplierTab: 'Add supplier',
       allSuppliersOpened: 'All suppliers opened',
       length: 'Length',

@@ -12,9 +12,14 @@ import {
 } from 'antd'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { LegacyModuleRecord } from '@/types/module-record'
 import { WorkspaceOverlay } from '@/views/modules/components/WorkspaceOverlay'
 import { MasterTableTransferField } from './MasterTableTransferField'
-import type { MasterFormFieldSpec, MasterFormValues } from './master-data-types'
+import type {
+  MasterFormFieldRenderContext,
+  MasterFormFieldSpec,
+  MasterFormValues,
+} from './master-data-types'
 
 interface Props {
   open: boolean
@@ -22,13 +27,20 @@ interface Props {
   form: FormInstance<MasterFormValues>
   formFields: MasterFormFieldSpec[]
   formValues: MasterFormValues
+  /** 正在编辑的记录（新建为 null）；模块专属控件据此读取服务端附属数据。 */
+  record: LegacyModuleRecord | null
   saving: boolean
   onValuesChange: (values: MasterFormValues) => void
   onClose: () => void
   onSave: () => void
 }
 
-function renderFieldControl(field: MasterFormFieldSpec): ReactNode {
+function renderFieldControl(
+  field: MasterFormFieldSpec,
+  context: MasterFormFieldRenderContext,
+): ReactNode {
+  // 模块专属控件优先：通用编辑器不认识具体模块（如供应商的品牌规格配置）
+  if (field.render) return field.render(context)
   if (field.type === 'transfer') {
     return (
       <MasterTableTransferField
@@ -77,6 +89,7 @@ export function MasterDataEditor({
   form,
   formFields,
   formValues,
+  record,
   saving,
   onValuesChange,
   onClose,
@@ -150,6 +163,13 @@ export function MasterDataEditor({
                     name={field.key}
                     label={field.label}
                     initialValue={field.defaultValue}
+                    /* 长说明：ⓘ 负责视觉，extra 让读屏也能通过 aria-describedby 听到 */
+                    {...(field.description
+                      ? {
+                          tooltip: field.description,
+                          extra: field.description,
+                        }
+                      : {})}
                     rules={
                       field.required
                         ? [
@@ -163,7 +183,12 @@ export function MasterDataEditor({
                         : undefined
                     }
                   >
-                    {renderFieldControl(field)}
+                    {renderFieldControl(field, {
+                      values: formValues,
+                      record,
+                      label: field.label,
+                      disabled: saving,
+                    })}
                   </Form.Item>
                 </Col>
               ))}

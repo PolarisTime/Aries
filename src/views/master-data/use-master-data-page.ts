@@ -204,8 +204,31 @@ export function useMasterDataPage(spec: MasterDataPageSpec) {
         values,
         editorBaseRecord,
       )
-      await saveBusinessModule(moduleKey, draft)
-      message.success(t('modules.saveResult.success'))
+      const saved = await saveBusinessModule(moduleKey, draft)
+      /*
+       * 模块专属收尾（如供应商的品牌规格配置）：附属数据自带端点、且需要记录 id，
+       * 所以只能在记录保存之后提交 —— 新建时也才有 id。
+       *
+       * 失败时记录已经落库：提示「保存成功但附属配置失败」并照常关闭编辑器刷列表，
+       * 不能把编辑框留着让用户再点一次保存（那会覆盖刚存好的记录）。
+       */
+      let afterSaveError: unknown = null
+      if (spec.afterSave) {
+        try {
+          await spec.afterSave({ values, saved })
+        } catch (error) {
+          afterSaveError = error
+        }
+      }
+      if (afterSaveError) {
+        message.error(
+          afterSaveError instanceof Error
+            ? afterSaveError.message
+            : t('api.saveFailed'),
+        )
+      } else {
+        message.success(t('modules.saveResult.success'))
+      }
       setEditorOpen(false)
       setEditorBaseRecord(null)
       clearSelection()

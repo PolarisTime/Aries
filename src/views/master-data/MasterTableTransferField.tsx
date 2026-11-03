@@ -18,7 +18,7 @@ import {
 import type { MasterOption } from './master-data-types'
 import './master-table-transfer.css'
 
-type TransferItem = { key: string; title: string }
+export type TransferItem = { key: string; title: string }
 
 interface Props {
   value?: (string | number)[]
@@ -143,32 +143,49 @@ export function MasterTableTransferField({
   )
 }
 
-type TableTransferProps = {
-  dataSource: TransferItem[]
-  columns: TableColumnsType<TransferItem>
+type TableTransferProps<Item extends TransferItem> = {
+  dataSource: Item[]
+  columns: TableColumnsType<Item>
   /** 由 Form.Item 注入：已选 key 列表。 */
   value?: string[]
   /** 由 Form.Item 注入。 */
   onChange?: (targetKeys: string[]) => void
+  /** 两栏固定高度（px）：品牌列表默认 380，规格列表条目更多时由调用方按需放大。 */
+  sectionHeight?: number
+  /** 表体滚动高度（px）；与两栏高度一起保证弹窗不被条目数撑高。 */
+  scrollY?: number
+  /**
+   * 无障碍名：Transfer 自身没有可访问名（`titles` 只命名左右两栏），
+   * 读屏只会念「穿梭框」。传了就包一层 `role="group"` 承载这个名字。
+   */
+  ariaLabel?: string
 }
 
-/** Transfer + Table：左右两栏都用表格展示，点击整行即可移动（antd 官方 Table Transfer 形态）。 */
-function TableTransfer({
+/**
+ * Transfer + Table：左右两栏都用表格展示，点击整行即可移动（antd 官方 Table Transfer 形态）。
+ *
+ * <p>泛型化是为了让「品牌」与「品牌规格」共用同一套穿梭框接线（搜索、整行点击、
+ * 批量选择、两栏定高）；两处各写一份会出现"一处能整行点选、另一处不能"的体验差异。</p>
+ */
+export function TableTransfer<Item extends TransferItem>({
   dataSource,
   columns,
   value,
   onChange,
-}: TableTransferProps) {
+  sectionHeight = 380,
+  scrollY = 280,
+  ariaLabel,
+}: TableTransferProps<Item>) {
   const targetKeys = value ?? []
   const { t } = useTranslation()
   const listDisabled = false
-  return (
-    <Transfer
+  const transfer = (
+    <Transfer<Item>
       className="master-transfer"
       dataSource={dataSource}
       styles={{
         // 两栏固定高度：表格在内部滚动，品牌 30+ 条也不会把弹窗撑高
-        section: { height: 380 },
+        section: { height: sectionHeight },
       }}
       filterOption={(input, item) => item.title.includes(input)}
       onChange={(nextKeys) => onChange?.(nextKeys.map(toKey))}
@@ -192,7 +209,7 @@ function TableTransfer({
         selectedKeys,
         disabled: transferDisabled,
       }) => {
-        const rowSelection: TableProps<TransferItem>['rowSelection'] = {
+        const rowSelection: TableProps<Item>['rowSelection'] = {
           getCheckboxProps: () => ({ disabled: transferDisabled }),
           onChange(selectedRowKeys) {
             onItemSelectAll(selectedRowKeys, 'replace')
@@ -205,13 +222,13 @@ function TableTransfer({
           ],
         }
         return (
-          <Table<TransferItem>
+          <Table<Item>
             columns={columns}
             dataSource={filteredItems}
             pagination={false}
             rowSelection={rowSelection}
             rowKey="key"
-            scroll={{ y: 280 }}
+            scroll={{ y: scrollY }}
             size="small"
             style={{ pointerEvents: listDisabled ? 'none' : undefined }}
             onRow={({ key }) => ({
@@ -225,5 +242,12 @@ function TableTransfer({
         )
       }}
     </Transfer>
+  )
+  if (!ariaLabel) return transfer
+  // Transfer 没有可访问名：用 fieldset 承载名字（role="group" 的语义元素），读屏才听得出这是哪一项的穿梭框
+  return (
+    <fieldset className="master-transfer-group" aria-label={ariaLabel}>
+      {transfer}
+    </fieldset>
   )
 }

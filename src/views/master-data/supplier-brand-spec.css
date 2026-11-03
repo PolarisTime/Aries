@@ -1,0 +1,35 @@
+/*
+ * 供应商资料：品牌规格配置字段。
+ *
+ * 表单里是「每个经营品牌一行」的清单（品牌名 + 当前状态 + 配置按钮），
+ * 具体勾选在二级弹窗的表格穿梭框里（复用 master-transfer 样式）。
+ *
+ * 间距只用 4px 阶梯令牌（AGENTS《间距：只用 8 的倍数》里允许的 --space-* 阶梯），
+ * 行与行之间用 --space-xs（8px），不叠加 antd 默认的 24px margin-bottom。
+ */
+.supplier-brand-spec {
+  width: 100%;
+}
+
+.supplier-brand-spec-row {
+  min-height: var(--app-control-height, 32px);
+}
+
+/* 品牌名给固定最小宽度：同一字段内各行竖边对齐，扫读时不跳 */
+.supplier-brand-spec-name {
+  min-width: 96px;
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 状态标签占满中间，把「配置」按钮推到行尾，各行按钮同一条竖线 */
+.supplier-brand-spec-state {
+  flex: 1;
+  min-width: 0;
+}
+
+.supplier-brand-spec-dialog {
+  width: 100%;
+}

@@ -33,6 +33,23 @@ vi.mock('@/views/modules/components/ModuleAttachmentModal', () => ({
   ModuleAttachmentModal: () => null,
 }))
 
+/* 品牌规格配置的两次取数都 mock 掉：单测不连真实后端（接口由后端并行实现中）。 */
+const { saveSupplierBrandSpecsMock } = vi.hoisted(() => ({
+  saveSupplierBrandSpecsMock: vi.fn(),
+}))
+vi.mock('@/api/master/supplier-brand-specs', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/api/master/supplier-brand-specs')>()
+  return {
+    ...actual,
+    fetchSupplierBrandSpecs: vi.fn(() => Promise.resolve([])),
+    saveSupplierBrandSpecs: saveSupplierBrandSpecsMock,
+  }
+})
+vi.mock('@/api/market/supplier-price-lists', () => ({
+  fetchSpecRows: vi.fn(() => Promise.resolve([])),
+}))
+
 const supplierRows = [
   {
     id: '9001',
@@ -297,14 +314,19 @@ describe('buildSupplierSpec 经营品牌', () => {
       'city',
       'status',
       'brands',
+      'brandSpecs',
     ])
     const brands = basic.find((field) => field.key === 'brands')
     expect(brands?.span).toBe(18)
     expect(brands?.fullRow).toBeUndefined()
+    // 品牌规格配置整行：每个经营品牌一行（名称 + 状态 + 配置按钮），需要横向空间
+    const brandSpecs = basic.find((field) => field.key === 'brandSpecs')
+    expect(brandSpecs?.span).toBe(24)
+    expect(brandSpecs?.render).toBeTypeOf('function')
     // 其余普通字段保持四等分（span 缺省 = 6），保证各区块竖边对齐
     expect(
       basic
-        .filter((field) => field.key !== 'brands')
+        .filter((field) => field.key !== 'brands' && field.key !== 'brandSpecs')
         .every((field) => field.span === undefined),
     ).toBe(true)
   })
@@ -321,5 +343,100 @@ describe('buildSupplierSpec 经营品牌', () => {
       ['中天'],
     )
     expect(spec.buildValues({ id: '2' }).brands).toEqual([])
+  })
+})
+
+describe('buildSupplierSpec 品牌规格配置', () => {
+  const spec = buildSupplierSpec(i18n.getFixedT('zh-CN'), [])
+
+  const brandSpecItem = (
+    overrides: Partial<{ brandName: string; spec: number }> = {},
+  ) => ({
+    brandName: '萍钢',
+    category: '直条',
+    material: 'HRB400E',
+    spec: 12,
+    length: '9米',
+    ...overrides,
+  })
+
+  beforeEach(() => {
+    saveSupplierBrandSpecsMock.mockReset()
+    saveSupplierBrandSpecsMock.mockResolvedValue([])
+  })
+
+  it('回填：编辑态是「未知」（undefined），新建态是「确定没有显式配置」（[]）', () => {
+    // 编辑态若回填 []，保存时会用空数组把服务端配置整集替换掉
+    expect(spec.buildValues({ id: '1' }).brandSpecs).toBeUndefined()
+    expect(spec.buildValues(null).brandSpecs).toEqual([])
+  })
+
+  it('供应商记录里不带 brandSpecs（它有自己的端点，不混进模块保存载荷）', () => {
+    const record = spec.buildRecord({ supplierName: '沙钢' }, null)
+
+    expect('brandSpecs' in record).toBe(false)
+  })
+
+  it('保存后把配置 PUT 到 /suppliers/{id}/brand-specs', async () => {
+    await spec.afterSave?.({
+      values: {
+        brands: ['萍钢', '中天'],
+        brandSpecs: [brandSpecItem({ spec: 14 }), brandSpecItem({ spec: 12 })],
+      },
+      saved: { id: '9001' },
+    })
+
+    expect(saveSupplierBrandSpecsMock).toHaveBeenCalledTimes(1)
+    const [supplierId, items] = saveSupplierBrandSpecsMock.mock.calls[0]
+    expect(supplierId).toBe('9001')
+    expect(items.map((item: { spec: number }) => item.spec)).toEqual([12, 14])
+  })
+
+  it('只提交当前经营品牌范围内的组合（品牌被移除时不发它的旧配置）', async () => {
+    await spec.afterSave?.({
+      values: {
+        brands: ['萍钢'],
+        brandSpecs: [
+          brandSpecItem(),
+          brandSpecItem({ brandName: '永钢', spec: 16 }),
+        ],
+      },
+      saved: { id: '9001' },
+    })
+
+    expect(
+      saveSupplierBrandSpecsMock.mock.calls[0][1].map(
+        (item: { brandName: string }) => item.brandName,
+      ),
+    ).toEqual(['萍钢'])
+  })
+
+  it('配置没读到（undefined）时跳过 PUT，绝不用空数组覆盖服务端配置', async () => {
+    await spec.afterSave?.({
+      values: { brands: ['萍钢'], brandSpecs: undefined },
+      saved: { id: '9001' },
+    })
+
+    expect(saveSupplierBrandSpecsMock).not.toHaveBeenCalled()
+  })
+
+  it('全部取消勾选（[]）时提交空数组 = 清空配置', async () => {
+    await spec.afterSave?.({
+      values: { brands: ['萍钢'], brandSpecs: [] },
+      saved: { id: '9001' },
+    })
+
+    expect(saveSupplierBrandSpecsMock.mock.calls[0][1]).toEqual([])
+  })
+
+  it('配置保存失败时抛出「供应商已保存但配置没存上」的明确错误', async () => {
+    saveSupplierBrandSpecsMock.mockRejectedValue(new Error('422'))
+
+    await expect(
+      spec.afterSave?.({
+        values: { brands: ['萍钢'], brandSpecs: [brandSpecItem()] },
+        saved: { id: '9001' },
+      }),
+    ).rejects.toThrow(/供应商已保存/)
   })
 })

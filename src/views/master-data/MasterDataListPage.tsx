@@ -105,6 +105,7 @@ export function MasterDataListPage({ spec }: { spec: MasterDataPageSpec }) {
           form={page.form}
           formFields={spec.formFields}
           formValues={page.formValues}
+          record={page.editorBaseRecord}
           saving={page.saving}
           onValuesChange={page.setFormValues}
           onClose={page.closeEditor}
