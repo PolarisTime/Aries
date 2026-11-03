@@ -149,20 +149,38 @@ export function SupplierQuoteBoard() {
   )
 
   /**
-   * 品牌列 = 供应商资料里维护的「经营品牌」。
+   * 「经营品牌」= 供应商资料里维护的品牌，是品牌列的**主口径**。
    *
    * <p>品牌来自主数据，报价页不自己发明；「加品牌」本质上也是给这家供应商建一条
    * (供应商, 品牌) 价格表，仍以主数据为最后口径。</p>
    */
-  const brandNames = useMemo(() => {
-    const declared = (supplier?.brands ?? []).map((name) => name.trim())
+  const declaredBrands = useMemo(
+    () => (supplier?.brands ?? []).map((name) => name.trim()).filter(Boolean),
+    [supplier?.brands],
+  )
+
+  /**
+   * 需要查询价格表的候选品牌 = 经营品牌 ∪ 商品品牌全集 ∪ 本次会话新建的列。
+   *
+   * <p><b>为什么必须含「商品品牌全集」</b>：供应商的经营品牌被改小过、或历史上先有价格表、
+   * 后补主数据时，库里会存在「不在经营品牌里、但确实有报价」的品牌。只按经营品牌取数会让这些
+   * 历史价格在界面彻底消失（数据还在库中，却没有任何入口能看到、维护它）。
+   * 曾经专门有一条测试锁这个行为，重做工作台时被裁掉过，2026-11-03 按真实数据复现后补回：
+   * 实测某供应商经营品牌为「武钢汉钢/萍钢/铜陵富鑫」，但库里有「中天」「万泰」两张价格表
+   * （万泰含 2 条价格）。</p>
+   */
+  const candidateBrands = useMemo(() => {
     const extra = Object.keys(columns)
-    return [...new Set([...declared, ...extra].filter(Boolean))]
-  }, [columns, supplier?.brands])
+    return [
+      ...new Set(
+        [...declaredBrands, ...materialBrands, ...extra].filter(Boolean),
+      ),
+    ]
+  }, [columns, declaredBrands, materialBrands])
 
   const gridQueries = useQueries({
     queries: supplierId
-      ? brandNames.map((brandName) => ({
+      ? candidateBrands.map((brandName) => ({
           queryKey: gridQueryKey(brandName),
           queryFn: ({ signal }: { signal: AbortSignal }) =>
             fetchSupplierPriceGrid(brandName, signal),
@@ -171,23 +189,58 @@ export function SupplierQuoteBoard() {
       : [],
   })
 
+  /** 品牌 → 网格。以 Map 传递，避免下游还要按下标回查 candidateBrands。 */
+  const gridByBrand = useMemo(() => {
+    const map = new Map<string, SupplierPriceGrid | undefined>()
+    candidateBrands.forEach((brandName, index) => {
+      map.set(brandName, gridQueries[index]?.data)
+    })
+    return map
+  }, [candidateBrands, gridQueries])
+
+  /** 该供应商在这个品牌下的价格表列；没有则 null（= 该品牌尚未建列）。 */
+  const columnOf = useCallback(
+    (brandName: string): SupplierPriceColumn | null =>
+      columns[brandName] ??
+      gridByBrand
+        .get(brandName)
+        ?.columns.find((item) => item.supplierId === supplierId) ??
+      null,
+    [columns, gridByBrand, supplierId],
+  )
+
+  /**
+   * 实际展示的品牌列 = 经营品牌 ∪ 本次新建的列 ∪ **库里已有价格表的品牌**。
+   *
+   * <p>前两类是「用户要报的品牌」（即使还没建列也必须显示，否则没地方输入）；
+   * 最后一类是「历史价格不能被藏起来」的保证：不在经营品牌里、但只要库里有列就照常成列，
+   * 用户能看见也能继续维护它。</p>
+   */
+  const brandNames = useMemo(() => {
+    const declared = new Set(declaredBrands)
+    const created = new Set(Object.keys(columns))
+    return candidateBrands.filter(
+      (brandName) =>
+        declared.has(brandName) ||
+        created.has(brandName) ||
+        columnOf(brandName) !== null,
+    )
+  }, [candidateBrands, columnOf, columns, declaredBrands])
+
   /** 品牌 → 网格 / 该供应商的列 / 服务端价格。三张表一次算好，避免每格都重算一遍。 */
   const byBrand = useMemo(() => {
     const grids = new Map<string, SupplierPriceGrid | undefined>()
     const columnMap = new Map<string, SupplierPriceColumn | null>()
     const cellMap = new Map<string, Map<string, ServerCell>>()
-    brandNames.forEach((brandName, index) => {
-      const grid = gridQueries[index]?.data
-      const column =
-        columns[brandName] ??
-        grid?.columns.find((item) => item.supplierId === supplierId) ??
-        null
+    for (const brandName of brandNames) {
+      const grid = gridByBrand.get(brandName)
+      const column = columnOf(brandName)
       grids.set(brandName, grid)
       columnMap.set(brandName, column)
       cellMap.set(brandName, serverCellsOf(grid, column))
-    })
+    }
     return { grids, columns: columnMap, cells: cellMap }
-  }, [brandNames, columns, gridQueries, supplierId])
+  }, [brandNames, columnOf, gridByBrand])
 
   const byBrandRef = useRef(byBrand)
 

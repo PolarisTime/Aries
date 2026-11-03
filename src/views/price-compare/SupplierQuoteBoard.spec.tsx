@@ -235,6 +235,48 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     expect(cellInput('中天 HRB400E 14 9米')?.value).toBe('3300')
   })
 
+  /**
+   * 回归（2026-11-03 按真实数据复现）：品牌列只按「供应商经营品牌」取数时，
+   * 库里已有价格表、但不在经营品牌里的品牌会整列消失 —— 历史价格还在库中，却没有任何入口
+   * 能看到或维护它。实测某供应商经营品牌是「武钢汉钢/萍钢/铜陵富鑫」，而库里有「中天」「万泰」
+   * 两张价格表。旧界面有一条测试锁这个行为，重做工作台时被裁掉，这里补回。
+   */
+  it('不在经营品牌里、但库里已有价格表的品牌仍然成列（历史价格不能被藏起来）', async () => {
+    supplierApi.fetchSupplierOptions.mockResolvedValue([
+      { ...SUPPLIER, brands: ['中天'] },
+    ])
+    // 万泰不在经营品牌里，但商品品牌全集里有它（构建候选品牌的发现来源）
+    materialBrands.useMaterialBrands = vi.fn(() => ['中天', '万泰'])
+    // 万泰的价格表列 id 是 l9，价格必须挂在 l9 上，才能验证「历史价格照常回显」
+    const wanTaiColumn = { ...COLUMN, listId: 'l9' }
+    priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
+      Promise.resolve(
+        brandName === '万泰'
+          ? {
+              brandName: '万泰',
+              columns: [wanTaiColumn],
+              rows: [
+                {
+                  ...ROW_A,
+                  prices: { l9: 3280 },
+                  priceStatuses: { l9: 'NORMAL' },
+                  remarks: {},
+                },
+              ],
+            }
+          : gridWithColumn(),
+      ),
+    )
+
+    await render()
+
+    await waitFor(() => headers().some((text) => text.includes('万泰')))
+    expect(headers().some((text) => text.includes('万泰'))).toBe(true)
+    // 该品牌的历史价格照常回显，并且可继续编辑
+    await waitFor(() => cellInput('万泰 HRB400E 12 9米')?.value === '3280')
+    expect(cellInput('万泰 HRB400E 12 9米')?.value).toBe('3280')
+  })
+
   it('不再渲染满屏「—」：没有价的格子就是可输入的空格', async () => {
     priceApi.fetchSpecRows.mockResolvedValue([ROW_A, ROW_B, ROW_PANLUO])
     await render()
