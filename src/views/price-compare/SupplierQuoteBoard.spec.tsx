@@ -452,31 +452,46 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     await render()
 
+    // 两个类别左右并排（直条在左、盘螺在右），按标题取而不是按顺序取
     const sections = Array.from(
       document.querySelectorAll('.supplier-price-sheet-category'),
     )
     expect(sections).toHaveLength(2)
+    const sectionOf = (name: string) =>
+      sections.find((node) =>
+        node
+          .querySelector('.supplier-price-transposed-category')
+          ?.textContent?.includes(name),
+      ) as HTMLElement
 
-    const headersOfSection = (index: number) =>
-      Array.from(sections[index].querySelectorAll('.ant-table-thead th')).map(
-        (node) => (node.textContent ?? '').trim(),
+    const headersOfSection = (node: HTMLElement) =>
+      Array.from(node.querySelectorAll('.ant-table-thead th')).map((th) =>
+        (th.textContent ?? '').trim(),
       )
 
     // 盘螺表：一个品牌一列（不分定尺，所以连「—」子表头都不该有），不出现 9米/12米
-    expect(sections[0].textContent).toContain('盘螺')
-    expect(headersOfSection(0).some((text) => text.includes('9米'))).toBe(false)
-    expect(headersOfSection(0).some((text) => text.includes('12米'))).toBe(
+    const panluo = sectionOf('盘螺')
+    expect(headersOfSection(panluo).some((text) => text.includes('9米'))).toBe(
       false,
     )
-    expect(headersOfSection(0).some((text) => text.includes('中天'))).toBe(true)
-    expect(headersOfSection(0)).not.toContain('—')
+    expect(headersOfSection(panluo).some((text) => text.includes('12米'))).toBe(
+      false,
+    )
+    expect(headersOfSection(panluo).some((text) => text.includes('中天'))).toBe(
+      true,
+    )
+    expect(headersOfSection(panluo)).not.toContain('—')
     // 盘螺照样能录价（定尺是 '-'）
     expect(cellInput('中天 HRB400 8 -')).not.toBeNull()
 
     // 直条表：9米 / 12米 都在
-    expect(sections[1].textContent).toContain('直条')
-    expect(headersOfSection(1).some((text) => text.includes('9米'))).toBe(true)
-    expect(headersOfSection(1).some((text) => text.includes('12米'))).toBe(true)
+    const zhiliao = sectionOf('直条')
+    expect(headersOfSection(zhiliao).some((text) => text.includes('9米'))).toBe(
+      true,
+    )
+    expect(
+      headersOfSection(zhiliao).some((text) => text.includes('12米')),
+    ).toBe(true)
   })
 
   it('不再渲染满屏「—」：没有价的格子就是可输入的空格', async () => {

@@ -343,3 +343,27 @@
 .supplier-price-board .ant-table-thead > tr > th {
   white-space: nowrap;
 }
+
+/*
+ * 报价工作台：类别（直条 / 盘螺）左右并排，而不是上下堆叠。
+ *
+ * 两类商品互不相干，上下排会让用户滚过一整张直条表才看到盘螺；并排后一屏同时看得到。
+ * 每栏宽度按内容走（价格列固定 64px），不拉伸；栏内各自滚动，互不影响。
+ */
+.supplier-price-board-columns {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--space-lg, 24px);
+}
+
+.supplier-price-board-columns > .supplier-price-sheet-category {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+/* 并排时去掉「相邻类别上间距」那条纵向规则的影响 */
+.supplier-price-board-columns
+  > .supplier-price-sheet-category
+  + .supplier-price-sheet-category {
+  margin-top: 0;
+}

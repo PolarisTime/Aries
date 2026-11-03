@@ -142,7 +142,7 @@ const cellColumnsOf = (
 }
 
 /** 类别显示顺序：盘螺在前、直条在后，其余按字典序接在后面（不硬编码业务清单，只定优先级）。 */
-const PREFERRED_CATEGORY_ORDER = ['盘螺', '直条']
+const PREFERRED_CATEGORY_ORDER = ['直条', '盘螺']
 
 /** 一个价格列 = 类别 + 品牌 + 材质 + 定尺；材质与定尺都已经进了表头。 */
 type CellColumn = {
@@ -1399,7 +1399,7 @@ export function SupplierQuoteBoard() {
           onKeyDownCapture={guardUndoRedo}
           onPaste={handlePaste}
         >
-          <div className="supplier-price-sheet-body">
+          <div className="supplier-price-sheet-body supplier-price-board-columns">
             {categoryGroups.map((group) => (
               <div
                 className="supplier-price-sheet-category"
