@@ -1,3 +1,11 @@
+## [15.0.4](https://github.com/PolarisTime/Aries/compare/v15.0.3...v15.0.4) (2026-11-03)
+
+
+### Bug Fixes
+
+* **price-compare:** 恢复未保存草稿的本地持久化 ([3a2d36a](https://github.com/PolarisTime/Aries/commit/3a2d36abde9df3aa4b76f9a48798427aae791fb3))
+* **price-compare:** 草稿恢复 effect 的依赖补上 commitDrafts ([7816d01](https://github.com/PolarisTime/Aries/commit/7816d01a794faf3cad7eb3b6ae1a599d0f97b93b))
+
 ## [15.0.3](https://github.com/PolarisTime/Aries/compare/v15.0.2...v15.0.3) (2026-11-03)
 
 
