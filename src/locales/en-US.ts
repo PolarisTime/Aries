@@ -2971,6 +2971,8 @@ export const enUS = {
       material: 'Material',
       specNo: 'Size',
       lowestPrice: 'Lowest price',
+      addSupplierTab: 'Add supplier',
+      allSuppliersOpened: 'All suppliers opened',
       length: 'Length',
       viewModeBrands: 'Brands as columns',
       viewModeSpecs: 'Specs across columns',

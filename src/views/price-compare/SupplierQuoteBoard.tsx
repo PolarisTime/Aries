@@ -18,6 +18,7 @@ import {
   Input,
   InputNumber,
   Table,
+  Tabs,
   Tooltip,
   Typography,
 } from 'antd'
@@ -188,7 +189,10 @@ export function SupplierQuoteBoard() {
   const canUpdate = useHasPermission('supplier-price-lists:update')
   const canDelete = useHasPermission('supplier-price-lists:delete')
 
-  const [pickedSupplierId, setPickedSupplierId] = useState<string>()
+  /** 已打开的供应商标签页（key = supplierId）；一个标签页 = 一个供应商。 */
+  const [openSupplierIds, setOpenSupplierIds] = useState<string[]>([])
+  /** 当前激活的标签页。 */
+  const [activeSupplierId, setActiveSupplierId] = useState<string>()
   const [quotedOn, setQuotedOn] = useState(() => dayjs())
   /** 未落库的改动：品牌 →（行键 → 价格；null = 明确清空）。 */
   const [drafts, setDrafts] = useState<Record<string, BrandDraft>>({})
@@ -222,13 +226,19 @@ export function SupplierQuoteBoard() {
 
   const suppliers = suppliersQuery.data ?? []
 
+  const supplierId = activeSupplierId
+
   /*
-   * 只选了一个供应商时直接进入，少一步点击（「傻瓜式」的第一条：别让人先做无意义的选择）。
-   * 用派生值而不是 effect 里 setState：少一轮渲染，也不会踩「effect 里同步状态」的问题。
+   * 只有一个供应商时自动开一个标签页，少一步点击。
+   * 用 effect 而不是渲染期 setState：开标签页是状态变更，不能在渲染里做。
    */
-  const supplierId =
-    pickedSupplierId ??
-    (suppliers.length === 1 ? suppliers[0].value : undefined)
+  useEffect(() => {
+    if (suppliers.length !== 1) return
+    if (openSupplierIds.length > 0) return
+    const only = suppliers[0].value
+    setOpenSupplierIds([only])
+    setActiveSupplierId(only)
+  }, [openSupplierIds.length, suppliers])
 
   const supplier = useMemo(
     () => suppliers.find((option) => option.value === supplierId),
@@ -740,19 +750,21 @@ export function SupplierQuoteBoard() {
     flushDirtyBrands()
   }
 
-  const changeSupplier = (nextSupplierId: string) => {
-    const applyChange = () => {
-      setPickedSupplierId(nextSupplierId)
-      commitDrafts({})
-      setHistory(EMPTY_HISTORY)
-      setSavedValues({})
-      setColumns({})
-      setSaveState({})
-      setKeyword('')
-      setOnlyUnpriced(false)
-    }
+  /** 切到某个供应商前先清空这一屏的临时状态（草稿、历史、搜索、新建列缓存）。 */
+  const resetBoardState = () => {
+    commitDrafts({})
+    setHistory(EMPTY_HISTORY)
+    setSavedValues({})
+    setColumns({})
+    setSaveState({})
+    setKeyword('')
+    setOnlyUnpriced(false)
+  }
+
+  /** 有未保存改动时先确认：切标签页会丢弃草稿，不能静默丢。 */
+  const confirmDiscardIfDirty = (run: () => void) => {
     if (Object.keys(drafts).length === 0) {
-      applyChange()
+      run()
       return
     }
     modal.confirm({
@@ -761,8 +773,40 @@ export function SupplierQuoteBoard() {
       okText: t('priceCompare.supplierPrice.discardOk'),
       okButtonProps: { danger: true },
       cancelText: t('common.cancel'),
-      onOk: applyChange,
+      onOk: run,
     })
+  }
+
+  const openSupplierTab = (nextSupplierId: string) => {
+    setOpenSupplierIds((current) =>
+      current.includes(nextSupplierId) ? current : [...current, nextSupplierId],
+    )
+    if (nextSupplierId === activeSupplierId) return
+    confirmDiscardIfDirty(() => {
+      resetBoardState()
+      setActiveSupplierId(nextSupplierId)
+    })
+  }
+
+  const switchSupplierTab = (nextSupplierId: string) => {
+    if (nextSupplierId === activeSupplierId) return
+    confirmDiscardIfDirty(() => {
+      resetBoardState()
+      setActiveSupplierId(nextSupplierId)
+    })
+  }
+
+  /** 关标签页：关掉当前页时切到相邻页；没有剩余页就回到「请添加供应商」。 */
+  const closeSupplierTab = (closingId: string) => {
+    const close = () => {
+      const remaining = openSupplierIds.filter((id) => id !== closingId)
+      setOpenSupplierIds(remaining)
+      if (closingId !== activeSupplierId) return
+      resetBoardState()
+      setActiveSupplierId(remaining[remaining.length - 1])
+    }
+    if (closingId === activeSupplierId) confirmDiscardIfDirty(close)
+    else close()
   }
 
   /** 加一个品牌列：给这家供应商建一条 (供应商, 品牌) 价格表。 */
@@ -1196,35 +1240,76 @@ export function SupplierQuoteBoard() {
     return columns
   }
 
-  const supplierPicker = (
-    <Dropdown
-      trigger={['click']}
-      menu={{
-        items: suppliers.map((option) => ({
-          key: option.value,
-          label: option.label,
-        })),
-        onClick: ({ key }) => changeSupplier(key),
-      }}
-    >
-      <Button loading={suppliersQuery.isPending} size="large">
-        {supplier?.label ?? t('priceCompare.supplierPrice.supplierPlaceholder')}{' '}
-        ▾
-      </Button>
-    </Dropdown>
+  /** 还没打开的供应商（「＋」菜单的候选）。 */
+  const unopenedSuppliers = suppliers.filter(
+    (option) => !openSupplierIds.includes(option.value),
+  )
+
+  /*
+   * 一张标签页 = 一个供应商，标签名用公司全称（业务上就是用公司名认供应商）。
+   * 关闭走 editable-card 自带的 ×，「＋」放在右侧额外区：候选列表按公司名筛选，
+   * 42 家供应商不会把菜单撑爆。
+   */
+  const supplierTabs = (
+    <Flex align="center" gap={8} style={{ width: '100%' }}>
+      <Tabs
+        activeKey={supplierId}
+        hideAdd
+        items={openSupplierIds.map((id) => ({
+          key: id,
+          label: suppliers.find((option) => option.value === id)?.label ?? id,
+        }))}
+        onChange={switchSupplierTab}
+        onEdit={(
+          targetKey: React.MouseEvent | React.KeyboardEvent | string,
+          action: 'add' | 'remove',
+        ) => {
+          if (action === 'remove' && typeof targetKey === 'string') {
+            closeSupplierTab(targetKey)
+          }
+        }}
+        style={{ flex: '1 1 auto', minWidth: 0 }}
+        type="editable-card"
+      />
+      <Dropdown
+        menu={{
+          items: unopenedSuppliers.length
+            ? unopenedSuppliers.map((option) => ({
+                key: option.value,
+                label: option.label,
+              }))
+            : [
+                {
+                  key: '__empty__',
+                  disabled: true,
+                  label: t('priceCompare.supplierPrice.allSuppliersOpened'),
+                },
+              ],
+          onClick: ({ key }) => {
+            if (key !== '__empty__') openSupplierTab(key)
+          },
+        }}
+        trigger={['click']}
+      >
+        <Button
+          aria-label={t('priceCompare.supplierPrice.addSupplierTab')}
+          icon={<PlusOutlined />}
+          loading={suppliersQuery.isPending}
+        >
+          {t('priceCompare.supplierPrice.addSupplierTab')}
+        </Button>
+      </Dropdown>
+    </Flex>
   )
 
   if (!supplierId) {
     return (
       <Flex vertical gap={12} className="supplier-price-page">
-        <Flex align="center" gap={8} wrap>
-          <Typography.Text strong>
-            {t('priceCompare.supplierPrice.supplier')}
-          </Typography.Text>
-          {supplierPicker}
-        </Flex>
+        {supplierTabs}
         <Typography.Text type="secondary">
-          {t('priceCompare.supplierPrice.pickSupplier')}
+          {openSupplierIds.length === 0
+            ? t('priceCompare.supplierPrice.pickSupplier')
+            : t('priceCompare.supplierPrice.pickSupplier')}
         </Typography.Text>
       </Flex>
     )
@@ -1232,11 +1317,8 @@ export function SupplierQuoteBoard() {
 
   return (
     <Flex vertical gap={12} className="supplier-price-page">
+      {supplierTabs}
       <Flex align="center" gap={8} wrap>
-        <Typography.Text strong>
-          {t('priceCompare.supplierPrice.supplier')}
-        </Typography.Text>
-        {supplierPicker}
         <Tooltip title={t('priceCompare.supplierPrice.quotedOnHint')}>
           <DatePicker
             allowClear={false}
