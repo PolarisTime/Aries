@@ -1,3 +1,10 @@
+## [15.0.2](https://github.com/PolarisTime/Aries/compare/v15.0.1...v15.0.2) (2026-11-03)
+
+
+### Bug Fixes
+
+* **price-compare:** 恢复「未登记品牌的历史价格表」可见性 ([9f786c6](https://github.com/PolarisTime/Aries/commit/9f786c6e81c3af26dbbb7cd1152689b68dd9ed1f))
+
 ## [15.0.1](https://github.com/PolarisTime/Aries/compare/v15.0.0...v15.0.1) (2026-11-03)
 
 
