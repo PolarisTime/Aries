@@ -1,3 +1,10 @@
+## [15.0.1](https://github.com/PolarisTime/Aries/compare/v15.0.0...v15.0.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **price-compare:** 报价表行只取自商品资料，历史价格随保存保留 ([20556d0](https://github.com/PolarisTime/Aries/commit/20556d0cedeea2c4cf60bebf2fe7e964794979c2))
+
 # [15.0.0](https://github.com/PolarisTime/Aries/compare/v14.12.0...v15.0.0) (2026-11-03)
 
 
