@@ -396,8 +396,9 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     })
     await render()
 
-    await waitFor(() => (container.textContent ?? '').includes('中天 3280'))
-    expect(container.textContent).toContain('中天 3280')
+    // 定尺变成列之后，最低价要带上定尺（否则多个定尺列的最低价分不清是哪一个）
+    await waitFor(() => (container.textContent ?? '').includes('中天 9米 3280'))
+    expect(container.textContent).toContain('中天 9米 3280')
   })
 
   it('搜索按材质/规格/定尺过滤行', async () => {
