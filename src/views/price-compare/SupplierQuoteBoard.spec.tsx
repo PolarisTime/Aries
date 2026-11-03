@@ -358,38 +358,38 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     await render()
 
-    const table = document.querySelector('.supplier-price-sheet')
-    const headerText = () =>
-      Array.from(table?.querySelectorAll('.ant-table-thead tr') ?? []).map(
-        (row) =>
-          Array.from(row.querySelectorAll('th')).map((th) =>
-            (th.textContent ?? '').trim(),
-          ),
-      )
+    // 材质做成二级 tab：中天只有 HRB400E，萍钢只有 HRB400，两个材质各一个 tab
+    const materialTabs = Array.from(
+      document.querySelectorAll('.ant-tabs-tab'),
+    ).map((node) => node.textContent?.trim())
+    expect(materialTabs).toContain('HRB400E')
+    expect(materialTabs).toContain('HRB400')
 
-    // 材质层：中天只有 HRB400E，萍钢只有 HRB400
-    const all = headerText().flat()
-    expect(all).toContain('HRB400E')
-    expect(all).toContain('HRB400')
-
-    // 中天那一组里有 9米 与 12米；萍钢那一组只有 9米（没有 12米 列）
+    // 默认第一个材质 tab（HRB400E）：只有中天的 9米/12米 两列
     expect(cellInput('中天 HRB400E 12 9米')).not.toBeNull()
     expect(cellInput('中天 HRB400E 12 12米')).not.toBeNull()
+    expect(cellInput('萍钢 HRB400 12 9米')).toBeNull()
+
+    // 切到 HRB400 tab：只有萍钢的 9米，没有 12米（商品资料里没有）
+    const hr400Tab = Array.from(
+      document.querySelectorAll('.ant-tabs-tab'),
+    ).find((node) => node.textContent?.trim() === 'HRB400') as
+      | HTMLElement
+      | undefined
+    await act(async () => {
+      hr400Tab?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await waitFor(() => cellInput('萍钢 HRB400 12 9米') !== null)
     expect(cellInput('萍钢 HRB400 12 9米')).not.toBeNull()
-    // 萍钢没有 HRB400E，也没有 12米：这些格子**根本不存在**（不是留空）
-    expect(cellInput('萍钢 HRB400E 12 9米')).toBeNull()
     expect(cellInput('萍钢 HRB400 12 12米')).toBeNull()
   })
 
   /**
-   * 回归（2026-11-03 用户提问「以品牌来筛选怎么会进表」）：列按品牌筛、行却按整个类别的规格
-   * 并集算，会让「只属于不成列品牌」的规格变成整行没有任何可填格子的死行。
-   * 实测数据：商品资料里 `圆钢` 品牌有 HPB300 20/32（该品牌既不是经营品牌、也没有价格表）。
+   * 盘螺不分定尺、直条分 9米/12米。混在一张表里时盘螺行在 9米/12米 上永远是空格，
+   * 表头宽度还要按两类定尺的并集算。拆成两张表后，每张表只保留自己用得到的定尺列。
    */
-  /**
-   * 标签页管理（按 antd 规范：只有 `editable-card` 支持添加与关闭，溢出用内置 more 折叠）：
-   * 按需打开、可关闭，添加走右侧**可搜索 Select**（不用下拉菜单 —— 四十多家会铺满一屏）。
-   */
+  /** 标签页管理（antd：只有 `editable-card` 支持添加与关闭，溢出用内置 more 折叠）。 */
   it('供应商标签页可关闭，添加入口是可搜索的选择器', async () => {
     supplierApi.fetchSupplierOptions.mockResolvedValue([
       SUPPLIER,
@@ -401,17 +401,17 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     const tab = () =>
       document.querySelector('.supplier-price-page .ant-tabs-tab')
     expect(tab()?.textContent).toContain('浙江铁都钢材有限公司')
-    // 可关闭：editable-card 自带 ×
     expect(tab()?.querySelector('.ant-tabs-tab-remove')).not.toBeNull()
-    // 添加入口是可搜索的 Select，而不是把全部供应商铺成菜单
-    const addSelect = document.querySelector('.supplier-price-page .ant-select')
-    expect(addSelect).not.toBeNull()
+    // 添加是 Select（可搜索），不是把四十多家铺成菜单
+    expect(
+      document.querySelector('.supplier-price-page .ant-select'),
+    ).not.toBeNull()
     expect(container.textContent).not.toContain('杭州中金钢铁有限公司')
   })
 
+  /** 回归：只属于不成列品牌（如商品资料 brand='圆钢'）的规格不该变成空行。 */
   it('不成列的品牌（如圆钢）不会把自己的规格变成空行', async () => {
     priceApi.fetchSpecRows.mockResolvedValue([
-      // 成列品牌：中天 HRB400E 12 9米
       {
         brand: '中天',
         category: '直条',
@@ -419,7 +419,6 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
         spec: 12,
         length: '9米',
       },
-      // 不成列品牌：圆钢 HPB300 20/32（供应商没经营它，也没有价格表）
       {
         brand: '圆钢',
         category: '直条',
@@ -438,19 +437,11 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     await render()
 
-    // 表里只有中天这一个品牌列
     expect(cellInput('中天 HRB400E 12 9米')).not.toBeNull()
-    // 圆钢不成列，它的材质不该出现在表头
-    expect(headers().some((text) => text.includes('HPB300'))).toBe(false)
-    // 它独有的规格 20 / 32 也不该变成空行
-    expect(rows()).toHaveLength(1)
     expect(container.textContent).not.toContain('HPB300')
+    expect(rows()).toHaveLength(1)
   })
 
-  /**
-   * 盘螺不分定尺、直条分 9米/12米。混在一张表里时盘螺行在 9米/12米 上永远是空格，
-   * 表头宽度还要按两类定尺的并集算。拆成两张表后，每张表只保留自己用得到的定尺列。
-   */
   it('盘螺与直条分成两张表，且各自只保留用得到的定尺列', async () => {
     priceApi.fetchSpecRows.mockResolvedValue([
       ROW_PANLUO,

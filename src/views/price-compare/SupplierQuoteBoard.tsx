@@ -96,7 +96,13 @@ const ROW_HEAD_WIDTHS = {
   spec: 52,
   category: 56,
 } as const
-const BRAND_COLUMN_WIDTH = 96
+/*
+ * 价格列宽 = 刚好装下 4 位数字。
+ * 14px 字宽约 7px/位 → 4 位 ≈ 28px，加输入框左右内边距（0.25em×2）与单元格内边距（0.3em×2）
+ * 约 16px，再留一点余量：64px。**不要给得更宽**：价格列一宽，整表就被拉得很散，
+ * 一屏看不下几列；四位数（几万块一吨）已经覆盖实际报价。
+ */
+const BRAND_COLUMN_WIDTH = 64
 
 /** 定尺排序：9米 → 12米 → 其它 → 不分定尺(-)，与报价单习惯一致。 */
 const sortLengths = (left: string, right: string) => {
@@ -422,61 +428,75 @@ export function SupplierQuoteBoard() {
        * 「整行没有任何可填格子」的死行 —— 用户看到的正是这种行。列按品牌筛、行却按全量算，
        * 是口径不一致。</p>
        */
-      const specSet = new Set<number>()
+      /*
+       * 材质做成二级 tab：每个材质一张表（行 = 规格，列 = 品牌 × 定尺）。
+       * 行的范围也只取**该材质**下的组合，避免出现「这一页没有任何可填格子」的行。
+       */
+      const materialNames: string[] = []
       for (const column of cellColumns) {
-        const specsOfColumn =
-          category?.byBrand
-            .get(column.brandName)
-            ?.materials.get(column.material)
-            ?.get(column.length) ?? []
-        for (const spec of specsOfColumn) specSet.add(spec)
+        if (!materialNames.includes(column.material)) {
+          materialNames.push(column.material)
+        }
       }
-      let specs = [...specSet].sort((left, right) => left - right)
-      if (needle) {
-        // 规格可以直接按数字匹配；材质/定尺名命中时保留该类别下这些材质拥有的规格
-        const materialMatch = cellColumns.some((column) =>
-          `${column.material} ${column.length}`.toLowerCase().includes(needle),
+      const sheets = materialNames.map((material) => {
+        const materialColumns = cellColumns.filter(
+          (column) => column.material === material,
         )
-        specs = specs.filter(
-          (spec) => materialMatch || String(spec).includes(needle),
-        )
-      }
-      const rows: SpecRow[] = specs.map((spec) => ({ spec }))
-      if (onlyUnpriced) {
-        rows.splice(
-          0,
-          rows.length,
-          ...rows.filter((row) =>
-            cellColumns.every((column) => {
-              if (
-                !catalogHas(
-                  category,
-                  column.brandName,
-                  column.material,
-                  row.spec,
-                  column.length,
-                )
-              ) {
-                return true
-              }
-              const key = quoteRowKey(leafOfSpec(column, row.spec))
-              const price =
-                savedValues[column.brandName]?.[key] ??
-                serverPriceOf(column.brandName, key)
-              return price === undefined || price === null
-            }),
-          ),
-        )
-      }
-      const indexBySpec = new Map<number, number>()
-      for (const [index, row] of rows.entries())
-        indexBySpec.set(row.spec, index)
+        const specSet = new Set<number>()
+        for (const column of materialColumns) {
+          const specsOfColumn =
+            category?.byBrand
+              .get(column.brandName)
+              ?.materials.get(column.material)
+              ?.get(column.length) ?? []
+          for (const spec of specsOfColumn) specSet.add(spec)
+        }
+        let specs = [...specSet].sort((left, right) => left - right)
+        if (needle) {
+          const lengthHit = materialColumns.some((column) =>
+            column.length.toLowerCase().includes(needle),
+          )
+          specs = specs.filter(
+            (spec) => lengthHit || String(spec).includes(needle),
+          )
+        }
+        const rows: SpecRow[] = specs.map((spec) => ({ spec }))
+        if (onlyUnpriced) {
+          rows.splice(
+            0,
+            rows.length,
+            ...rows.filter((row) =>
+              materialColumns.every((column) => {
+                if (
+                  !catalogHas(
+                    category,
+                    column.brandName,
+                    column.material,
+                    row.spec,
+                    column.length,
+                  )
+                ) {
+                  return true
+                }
+                const key = quoteRowKey(leafOfSpec(column, row.spec))
+                const price =
+                  savedValues[column.brandName]?.[key] ??
+                  serverPriceOf(column.brandName, key)
+                return price === undefined || price === null
+              }),
+            ),
+          )
+        }
+        const indexBySpec = new Map<number, number>()
+        for (const [index, row] of rows.entries()) {
+          indexBySpec.set(row.spec, index)
+        }
+        return { material, rows, indexBySpec, cellColumns: materialColumns }
+      })
       return {
         categoryName,
         category,
-        rows,
-        indexBySpec,
-        cellColumns,
+        sheets,
       }
     })
   }, [brandNames, catalog, keyword, onlyUnpriced, savedValues, serverPriceOf])
@@ -858,6 +878,7 @@ export function SupplierQuoteBoard() {
    */
   const anchorRef = useRef<{
     category: string
+    material: string
     columnIndex: number
     rowKey: string
   } | null>(null)
@@ -880,8 +901,11 @@ export function SupplierQuoteBoard() {
     const group = categoryGroups.find(
       (candidate) => candidate.categoryName === anchor.category,
     )
-    if (!group) return
-    const startRow = group.indexBySpec.get(Number(anchor.rowKey)) ?? -1
+    const sheet = group?.sheets.find(
+      (candidate) => candidate.material === anchor.material,
+    )
+    if (!group || !sheet) return
+    const startRow = sheet.indexBySpec.get(Number(anchor.rowKey)) ?? -1
     const startColumn = anchor.columnIndex
     if (startRow < 0 || startColumn < 0) return
     event.preventDefault()
@@ -892,8 +916,8 @@ export function SupplierQuoteBoard() {
     let dropped = 0
     matrix.forEach((values, rowOffset) => {
       values.forEach((raw, columnOffset) => {
-        const row = group.rows[startRow + rowOffset]
-        const column = group.cellColumns[startColumn + columnOffset]
+        const row = sheet.rows[startRow + rowOffset]
+        const column = sheet.cellColumns[startColumn + columnOffset]
         if (!row || !column) {
           dropped += 1
           return
@@ -1037,8 +1061,9 @@ export function SupplierQuoteBoard() {
    * <p>三级表头都来自商品资料：某个品牌没有的材质、没有的定尺，连列都不出现（见
    * {@link buildBrandCatalog}）。只有一个定尺时（盘螺）不套定尺层，避免每个品牌头顶挂一个「—」。</p>
    */
-  const columnsOfCategory = (
+  const columnsOfSheet = (
     group: (typeof categoryGroups)[number],
+    sheet: (typeof categoryGroups)[number]['sheets'][number],
   ): ColumnsType<SpecRow> => {
     const columns: ColumnsType<SpecRow> = [
       {
@@ -1051,20 +1076,23 @@ export function SupplierQuoteBoard() {
       },
     ]
 
+    const material = sheet.material
     for (const brandName of brandNames) {
-      const brandCatalog = group.category?.byBrand.get(brandName)
-      if (!brandCatalog) continue
+      const lengths = group.category?.byBrand
+        .get(brandName)
+        ?.materials.get(material)
+      if (!lengths) continue
       const materialColumns: ColumnsType<SpecRow> = []
-      for (const [material, lengths] of brandCatalog.materials) {
+      {
         const lengthKeys = [...lengths.keys()].sort(sortLengths)
         const cellOf = (length: string): ColumnsType<SpecRow>[number] => {
-          const columnIndex = group.cellColumns.findIndex(
+          const columnIndex = sheet.cellColumns.findIndex(
             (column) =>
               column.brandName === brandName &&
               column.material === material &&
               column.length === length,
           )
-          const column = group.cellColumns[columnIndex]
+          const column = sheet.cellColumns[columnIndex]
           return {
             title: length === '-' ? '—' : length,
             key: `${brandName}\u0000${material}\u0000${length}`,
@@ -1089,7 +1117,7 @@ export function SupplierQuoteBoard() {
               const value = cellValueOfLeaf(brandName, leaf)
               const cheapest = cheapestOfSpec(
                 group.category,
-                group.cellColumns,
+                sheet.cellColumns,
                 row.spec,
               )
               const isCheapest =
@@ -1112,6 +1140,7 @@ export function SupplierQuoteBoard() {
                   onFocus={() => {
                     anchorRef.current = {
                       category: group.categoryName,
+                      material,
                       columnIndex,
                       rowKey: String(row.spec),
                     }
@@ -1125,8 +1154,8 @@ export function SupplierQuoteBoard() {
                   }
                   onKeyDown={(event) => {
                     const move = (delta: number) => {
-                      const index = group.indexBySpec.get(row.spec) ?? -1
-                      const target = group.rows[index + delta]
+                      const index = sheet.indexBySpec.get(row.spec) ?? -1
+                      const target = sheet.rows[index + delta]
                       if (!target) return
                       const targetLeaf = leafOfSpec(column, target.spec)
                       if (
@@ -1354,7 +1383,9 @@ export function SupplierQuoteBoard() {
             {t('priceCompare.supplierPrice.retry')}
           </Button>
         </Flex>
-      ) : categoryGroups.every((group) => group.rows.length === 0) ? (
+      ) : categoryGroups.every((group) =>
+          group.sheets.every((sheet) => sheet.rows.length === 0),
+        ) ? (
         <Empty description={t('priceCompare.supplierPrice.empty')} />
       ) : (
         /*
@@ -1377,29 +1408,40 @@ export function SupplierQuoteBoard() {
                 <Typography.Text className="supplier-price-transposed-category">
                   {group.categoryName}
                 </Typography.Text>
-                <Table<SpecRow>
-                  bordered
-                  columns={columnsOfCategory(group)}
-                  dataSource={group.rows}
-                  pagination={false}
-                  rowKey={(row) => row.spec}
-                  /*
-                   * 列少时**不给 scroll.x**：给了固定宽度，表格就只占那么多，右侧留一大片
-                   * 页面空白（用户反馈的「最右边还是空行」就是它）。不给则表格宽度 100%，
-                   * 多出来的宽度按比例摊到各列，正好铺满内容区。
-                   * 列多到装不下时（>12 列）才给固定宽度，让表体内部横向滚动。
-                   */
-                  scroll={
-                    group.cellColumns.length > 12
-                      ? {
+                {/*
+                 * 材质做成二级 tab：一个材质一张表（行 = 规格，列 = 品牌 × 定尺）。
+                 * 直条有 HRB400/HRB400E/HRB500E 三种材质，混在一张表里列会翻三倍；
+                 * 分开后每张表只有该材质的列，价格列宽压到 4 位数字也放得下。
+                 */}
+                <Tabs
+                  destroyOnHidden={false}
+                  items={group.sheets.map((sheet) => ({
+                    key: sheet.material,
+                    label: sheet.material,
+                    children: (
+                      <Table<SpecRow>
+                        bordered
+                        columns={columnsOfSheet(group, sheet)}
+                        dataSource={sheet.rows}
+                        pagination={false}
+                        rowKey={(row) => row.spec}
+                        /*
+                         * 始终给 `scroll.x`：表格宽度 = 各列宽之和，**不随容器拉伸**。
+                         * 之前不传 scroll 时表格会撑满 100%，价格列被摊到几百像素宽
+                         * （用户反馈「怎么变成自动拉伸了」）。
+                         */
+                        scroll={{
                           x:
                             ROW_HEAD_WIDTHS.spec +
-                            group.cellColumns.length * BRAND_COLUMN_WIDTH,
-                        }
-                      : undefined
-                  }
+                            sheet.cellColumns.length * BRAND_COLUMN_WIDTH,
+                        }}
+                        size="small"
+                        tableLayout="fixed"
+                      />
+                    ),
+                  }))}
                   size="small"
-                  tableLayout="fixed"
+                  type="card"
                 />
               </div>
             ))}
