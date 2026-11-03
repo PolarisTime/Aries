@@ -1,3 +1,10 @@
+## [15.0.3](https://github.com/PolarisTime/Aries/compare/v15.0.2...v15.0.3) (2026-11-03)
+
+
+### Bug Fixes
+
+* **i18n:** 移除重设计后失效的动态 key 白名单项 ([6a4cee5](https://github.com/PolarisTime/Aries/commit/6a4cee5ec5dc6ac851d7e5db5a52ec0dc3c61e39))
+
 ## [15.0.2](https://github.com/PolarisTime/Aries/compare/v15.0.1...v15.0.2) (2026-11-03)
 
 
