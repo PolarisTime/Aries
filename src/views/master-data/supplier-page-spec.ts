@@ -5,7 +5,7 @@ import { enabledStatusOptions } from '@/constants/module-options'
 import { STATUS } from '@/constants/status-constants'
 import { asString } from '@/utils/type-narrowing'
 import type { MasterDataPageSpec, MasterOption } from './master-data-types'
-import { renderSupplierBrandSpecField } from './SupplierBrandSpecField'
+import { renderSupplierBrandSpecField } from './supplier-brand-spec-field-adapter'
 import {
   brandListOf,
   supplierBrandSpecPayload,

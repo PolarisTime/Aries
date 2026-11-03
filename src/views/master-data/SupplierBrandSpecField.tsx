@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { TableColumnsType } from 'antd'
 import { Button, Empty, Flex, Modal, Spin, Tag, Typography } from 'antd'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchSpecRows } from '@/api/market/supplier-price-lists'
 import {
@@ -15,10 +15,8 @@ import {
   dialogLevelProps,
 } from '@/components/dialog-levels'
 import { TableTransfer, type TransferItem } from './MasterTableTransferField'
-import type { MasterFormFieldRenderContext } from './master-data-types'
 import {
   applyBrandSpecSelection,
-  brandListOf,
   brandSpecOptionsOf,
   configuredBrandSpecCount,
   selectedBrandSpecKeys,
@@ -83,19 +81,20 @@ export function SupplierBrandSpecField({
   })
 
   /*
-   * 把读到的配置写回表单值：每个供应商只播种一次。
+   * 表单值的权威来源：用户改过就用表单值（`value`），否则用读到的服务端配置。
    *
-   * 守卫「value !== undefined」是防止覆盖用户已改的内容（例如接口慢、用户先点了配置并确认）：
-   * 此时表单值已经有明确含义，服务端值不能再盖回去。
+   * 刻意**不在 effect 里把读到的配置回写表单**（那会多一轮渲染，且容易覆盖用户刚改的内容）：
+   * 回填只影响界面与后续计算，表单值保持 `undefined` 直到用户真的改了它 ——
+   * 于是"只改别的字段"的保存不会白白 PUT 一次配置。
    */
-  const seededForRef = useRef<string | undefined>(undefined)
-  const configData = configQuery.data
-  useEffect(() => {
-    if (!recordId || !configData || seededForRef.current === recordId) return
-    seededForRef.current = recordId
-    if (value !== undefined) return
-    onChange?.(normalizeSupplierBrandSpecs(configData))
-  }, [configData, onChange, recordId, value])
+  const loadedItems = useMemo(
+    () =>
+      configQuery.data
+        ? normalizeSupplierBrandSpecs(configQuery.data)
+        : undefined,
+    [configQuery.data],
+  )
+  const draft = value ?? loadedItems
 
   const specsQuery = useQuery({
     queryKey: specRowsQueryKey,
@@ -138,19 +137,14 @@ export function SupplierBrandSpecField({
           <Typography.Text type="danger">
             {t('modules.pages.supplier.brandSpecsLoadFailed')}
           </Typography.Text>
-          <Button
-            onClick={() => {
-              seededForRef.current = undefined
-              void configQuery.refetch()
-            }}
-          >
+          <Button onClick={() => void configQuery.refetch()}>
             {t('modules.pages.supplier.brandSpecsRetry')}
           </Button>
         </Flex>
       ) : null}
 
       {brands.map((brand) => {
-        const configuredCount = configuredBrandSpecCount(value, brand)
+        const configuredCount = configuredBrandSpecCount(draft, brand)
         return (
           <Flex
             align="center"
@@ -189,14 +183,14 @@ export function SupplierBrandSpecField({
           key={configuringBrand}
           brand={configuringBrand}
           brandLabel={label}
-          draft={value}
+          draft={draft}
           loading={specsQuery.isPending}
           failed={specsQuery.isError}
           options={options}
           onCancel={() => setConfiguringBrand(undefined)}
           onConfirm={(keys) => {
             onChange?.(
-              applyBrandSpecSelection(value, configuringBrand, options, keys),
+              applyBrandSpecSelection(draft, configuringBrand, options, keys),
             )
             setConfiguringBrand(undefined)
           }}
@@ -339,24 +333,5 @@ function BrandSpecDialog({
         ) : null}
       </Flex>
     </Modal>
-  )
-}
-
-/**
- * 供 `MasterFormFieldSpec.render` 使用的适配器：把表单上下文翻译成控件 props。
- *
- * <p>放在这个模块里而不是 `supplier-page-spec.ts`：通用编辑器不认识供应商模块，
- * 而 spec 文件是纯声明（`.ts`，不写 JSX）。</p>
- */
-export function renderSupplierBrandSpecField(
-  context: MasterFormFieldRenderContext,
-) {
-  return (
-    <SupplierBrandSpecField
-      brands={brandListOf(context.values.brands)}
-      disabled={context.disabled}
-      label={context.label}
-      recordId={context.record ? String(context.record.id) : undefined}
-    />
   )
 }

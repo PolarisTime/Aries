@@ -293,13 +293,17 @@ describe('供应商品牌规格配置控件', () => {
     expect(okButton.disabled).toBe(true)
   })
 
-  it('已有配置回填：显示已配置项数，弹窗按配置预选', async () => {
+  it('已有配置回填：显示已配置项数，弹窗按配置预选，但不回写表单值', async () => {
     fetchSupplierBrandSpecsMock.mockResolvedValue([item({ spec: 12 })])
     await render({ recordId: '9001' })
 
     expect(fetchSupplierBrandSpecsMock).toHaveBeenCalledTimes(1)
     expect(container.textContent).toContain('已配置 1 项')
-    expect(currentValue()).toEqual([item({ spec: 12 })])
+    /*
+     * 读到的配置**故意不回写表单值**：表单值保持 undefined，保存时才不会因为"只改了电话"
+     * 就白白整集 PUT 一次配置。用户一旦在弹窗里确认，才由 onChange 写入表单值。
+     */
+    expect(currentValue()).toBeUndefined()
 
     await clickButton('配置规格')
     // 只有 1 项在右侧已选栏，另外 2 项在左侧可选
