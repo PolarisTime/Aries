@@ -341,6 +341,47 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     ).toBeNull()
   })
 
+  /**
+   * 盘螺不分定尺、直条分 9米/12米。混在一张表里时盘螺行在 9米/12米 上永远是空格，
+   * 表头宽度还要按两类定尺的并集算。拆成两张表后，每张表只保留自己用得到的定尺列。
+   */
+  it('盘螺与直条分成两张表，且各自只保留用得到的定尺列', async () => {
+    priceApi.fetchSpecRows.mockResolvedValue([
+      ROW_PANLUO,
+      ROW_A,
+      ROW_B,
+      { ...ROW_B, spec: 14, length: '12米' },
+    ])
+
+    await render()
+
+    const sections = Array.from(
+      document.querySelectorAll('.supplier-price-sheet-category'),
+    )
+    expect(sections).toHaveLength(2)
+
+    const headersOfSection = (index: number) =>
+      Array.from(sections[index].querySelectorAll('.ant-table-thead th')).map(
+        (node) => (node.textContent ?? '').trim(),
+      )
+
+    // 盘螺表：一个品牌一列（不分定尺，所以连「—」子表头都不该有），不出现 9米/12米
+    expect(sections[0].textContent).toContain('盘螺')
+    expect(headersOfSection(0).some((text) => text.includes('9米'))).toBe(false)
+    expect(headersOfSection(0).some((text) => text.includes('12米'))).toBe(
+      false,
+    )
+    expect(headersOfSection(0).some((text) => text.includes('中天'))).toBe(true)
+    expect(headersOfSection(0)).not.toContain('—')
+    // 盘螺照样能录价（定尺是 '-'）
+    expect(cellInput('中天 HRB400 8 -')).not.toBeNull()
+
+    // 直条表：9米 / 12米 都在
+    expect(sections[1].textContent).toContain('直条')
+    expect(headersOfSection(1).some((text) => text.includes('9米'))).toBe(true)
+    expect(headersOfSection(1).some((text) => text.includes('12米'))).toBe(true)
+  })
+
   it('不再渲染满屏「—」：没有价的格子就是可输入的空格', async () => {
     priceApi.fetchSpecRows.mockResolvedValue([ROW_A, ROW_B, ROW_PANLUO])
     await render()

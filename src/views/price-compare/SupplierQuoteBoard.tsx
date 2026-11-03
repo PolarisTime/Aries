@@ -425,6 +425,50 @@ export function SupplierQuoteBoard() {
     serverPriceOf,
   ])
 
+  /**
+   * 按类别拆表：盘螺一张、直条一张。
+   *
+   * <p>两类商品的定尺完全不同 —— 盘螺不分定尺（值为 {@code '-'}），直条分 9米/12米。
+   * 混在一张表里时，每行都会出现一半用不上的定尺格子（盘螺行在 9米/12米 上永远空着），
+   * 而且表头宽度按两类定尺的并集算，横着滚很远。拆开后每张表只保留自己用得到的定尺列。</p>
+   *
+   * <p>表格顺序沿用 `CATEGORY_ORDER`（盘螺在前、直条在后），与报价单习惯一致。</p>
+   */
+  const categoryGroups = useMemo(() => {
+    const order: string[] = []
+    const byCategory = new Map<string, QuoteRow[]>()
+    for (const row of displayRows) {
+      const list = byCategory.get(row.category)
+      if (list) {
+        list.push(row)
+        continue
+      }
+      byCategory.set(row.category, [row])
+      order.push(row.category)
+    }
+    return order.map((category) => {
+      const rows = byCategory.get(category) ?? []
+      // 只保留这张表真正用得到的定尺；顺序沿用全局定尺顺序
+      const categoryLengths = lengths.filter((length) =>
+        rows.some((row) => comboKeys.has(quoteRowKey(leafOf(row, length)))),
+      )
+      const indexByKey = new Map<string, number>()
+      for (const [index, row] of rows.entries()) {
+        indexByKey.set(matrixKeyOf(row), index)
+      }
+      return {
+        category,
+        rows,
+        indexByKey,
+        lengths: categoryLengths,
+        /** 该表的列顺序：品牌 × 定尺（粘贴按列下标落格、↑↓ 在同一列内移动）。 */
+        cellColumns: brandNames.flatMap((brandName) =>
+          categoryLengths.map((length) => ({ brandName, length })),
+        ),
+      }
+    })
+  }, [brandNames, comboKeys, displayRows, lengths])
+
   /* ---------------------------------------------------------------- 自动保存 */
 
   /*
@@ -781,7 +825,15 @@ export function SupplierQuoteBoard() {
 
   /* ---------------------------------------------------------------- 粘贴与撤销 */
 
-  const anchorRef = useRef<{ columnIndex: number; rowKey: string } | null>(null)
+  /**
+   * 粘贴锚点：哪一张类别表（category）+ 第几列（品牌 × 定尺）+ 哪一行。
+   * 拆表后同一页有多张 Table，锚点必须带上类别才能定位回落点。
+   */
+  const anchorRef = useRef<{
+    category: string
+    columnIndex: number
+    rowKey: string
+  } | null>(null)
 
   /**
    * 从 Excel 粘贴：以当前格为左上角，**向下填规格、向右填「品牌 × 定尺」列**。
@@ -798,9 +850,11 @@ export function SupplierQuoteBoard() {
     if (!text) return
     const matrix = parseClipboardGrid(text)
     if (!matrix.length) return
-    const startRow = displayRows.findIndex(
-      (row) => `${row.category}|${row.material}|${row.spec}` === anchor.rowKey,
+    const group = categoryGroups.find(
+      (candidate) => candidate.category === anchor.category,
     )
+    if (!group) return
+    const startRow = group.indexByKey.get(anchor.rowKey) ?? -1
     const startColumn = anchor.columnIndex
     if (startRow < 0 || startColumn < 0) return
     event.preventDefault()
@@ -811,8 +865,8 @@ export function SupplierQuoteBoard() {
     let dropped = 0
     matrix.forEach((values, rowOffset) => {
       values.forEach((raw, columnOffset) => {
-        const row = displayRows[startRow + rowOffset]
-        const column = cellColumns[startColumn + columnOffset]
+        const row = group.rows[startRow + rowOffset]
+        const column = group.cellColumns[startColumn + columnOffset]
         if (!row || !column) {
           dropped += 1
           return
@@ -881,25 +935,76 @@ export function SupplierQuoteBoard() {
     0,
   )
 
-  /*
-   * 列顺序：品牌 × 定尺 拍平后的有序清单（粘贴按列下标落格、键盘在同一列内上下移动）。
-   * 不做 useMemo：元素数 = 品牌数 × 定尺数（几十个），比 memo 开销还小；
-   * 且 React Compiler 无法为该 memo 保留缓存，会报「Existing memoization could not be preserved」。
+  /**
+   * 一张类别表（盘螺 / 直条）的列定义。
+   *
+   * <p>类别已经由分区标题表达，所以表里不再保留「品牌（类别）」列；定尺子列只取这一张表
+   * 用得到的，盘螺表就不会出现 9米/12米 这种永远空着的列。</p>
    */
-  const cellColumns = brandNames.flatMap((brandName) =>
-    lengths.map((length) => ({ brandName, length })),
+  /** 品牌列头：品牌名 + 保存状态圆点 + 「清空/移除本列」菜单（列定义与表头两处共用）。 */
+  const brandHeaderOf = (brandName: string) => (
+    <Flex align="center" gap={4} justify="center">
+      <span style={{ whiteSpace: 'nowrap' }}>{brandName}</span>
+      {saveState[brandName] === 'saving' ? (
+        <span aria-hidden="true" style={dotStyle('#faad14')} />
+      ) : null}
+      {saveState[brandName] === 'error' ? (
+        <Tooltip
+          title={t('priceCompare.supplierPrice.saveFailed', {
+            names: brandName,
+          })}
+        >
+          <Button
+            aria-label={t('priceCompare.supplierPrice.saveFailed', {
+              names: brandName,
+            })}
+            size="small"
+            type="text"
+            onClick={() => void saveBrand(brandName)}
+          >
+            <span style={dotStyle('#ff4d4f')} />
+          </Button>
+        </Tooltip>
+      ) : null}
+      <Dropdown
+        trigger={['click']}
+        menu={{
+          items: [
+            {
+              key: 'clear',
+              icon: <DeleteOutlined />,
+              label: t('priceCompare.supplierPrice.clearColumn'),
+              disabled: !canUpdate,
+            },
+            {
+              key: 'remove',
+              danger: true,
+              label: t('priceCompare.supplierPrice.removeColumn'),
+              disabled: !canDelete,
+            },
+          ],
+          onClick: ({ key }) => {
+            if (key === 'clear') clearBrand(brandName)
+            if (key === 'remove') removeBrand(brandName)
+          },
+        }}
+      >
+        <Button
+          aria-label={t('priceCompare.supplierPrice.removeColumnA11y', {
+            name: brandName,
+          })}
+          size="small"
+          type="text"
+        >
+          ⋯
+        </Button>
+      </Dropdown>
+    </Flex>
   )
 
-  /** 行键 → 可见行下标：↑/↓ 移动时直接查表，不在每格做一次 indexOf。 */
-  const rowIndexByKey = useMemo(() => {
-    const map = new Map<string, number>()
-    displayRows.forEach((row, index) => {
-      map.set(`${row.category}|${row.material}|${row.spec}`, index)
-    })
-    return map
-  }, [displayRows])
-
-  const columnsOfTable: ColumnsType<QuoteRow> = [
+  const columnsOfCategory = (
+    group: (typeof categoryGroups)[number],
+  ): ColumnsType<QuoteRow> => [
     {
       title: t('priceCompare.supplierPrice.material'),
       key: 'material',
@@ -915,79 +1020,14 @@ export function SupplierQuoteBoard() {
       fixed: 'left',
       render: (_value, row) => row.spec,
     },
-    {
-      title: t('priceCompare.supplierPrice.brand'),
-      key: 'category',
-      width: ROW_HEAD_WIDTHS.category,
-      align: 'center',
-      render: (_value, row) => row.category,
-    },
-    ...brandNames.map<ColumnsType<QuoteRow>[number]>((brandName) => ({
-      title: (
-        <Flex align="center" gap={4} justify="center">
-          <span>{brandName}</span>
-          {saveState[brandName] === 'saving' ? (
-            <span aria-hidden="true" style={dotStyle('#faad14')} />
-          ) : null}
-          {saveState[brandName] === 'error' ? (
-            <Tooltip
-              title={t('priceCompare.supplierPrice.saveFailed', {
-                names: brandName,
-              })}
-            >
-              <Button
-                aria-label={t('priceCompare.supplierPrice.saveFailed', {
-                  names: brandName,
-                })}
-                size="small"
-                type="text"
-                onClick={() => void saveBrand(brandName)}
-              >
-                <span style={dotStyle('#ff4d4f')} />
-              </Button>
-            </Tooltip>
-          ) : null}
-          <Dropdown
-            trigger={['click']}
-            menu={{
-              items: [
-                {
-                  key: 'clear',
-                  icon: <DeleteOutlined />,
-                  label: t('priceCompare.supplierPrice.clearColumn'),
-                  disabled: !canUpdate,
-                },
-                {
-                  key: 'remove',
-                  danger: true,
-                  label: t('priceCompare.supplierPrice.removeColumn'),
-                  disabled: !canDelete,
-                },
-              ],
-              onClick: ({ key }) => {
-                if (key === 'clear') clearBrand(brandName)
-                if (key === 'remove') removeBrand(brandName)
-              },
-            }}
-          >
-            <Button
-              aria-label={t('priceCompare.supplierPrice.removeColumnA11y', {
-                name: brandName,
-              })}
-              size="small"
-              type="text"
-            >
-              ⋯
-            </Button>
-          </Dropdown>
-        </Flex>
-      ),
-      key: brandName,
+    ...brandNames.map<ColumnsType<QuoteRow>[number]>((brandName) => {
       /*
-       * 品牌 = 分组表头，定尺 = 它的子列（Excel 报价单的常见形态：行是规格，列是品牌 × 定尺）。
-       * 一个定尺都没有时（理论上不会发生）退回单列，避免出现空表头。
+       * 品牌表头：品牌名 + 保存状态圆点 + 「清空/移除本列」菜单。
+       * 这张表只有一个定尺时（盘螺不分定尺）不套子表头，直接把品牌当列头。
        */
-      children: lengths.map((length) => ({
+      const headerTitle = brandHeaderOf(brandName)
+
+      const cellOf = (length: string): ColumnsType<QuoteRow>[number] => ({
         title: length === '-' ? '—' : length,
         key: `${brandName}\u0000${length}`,
         width: BRAND_COLUMN_WIDTH,
@@ -1004,7 +1044,7 @@ export function SupplierQuoteBoard() {
             value > 0 &&
             cheapest?.brandName === brandName &&
             cheapest?.length === length
-          const columnIndex = cellColumns.findIndex(
+          const columnIndex = group.cellColumns.findIndex(
             (column) =>
               column.brandName === brandName && column.length === length,
           )
@@ -1020,7 +1060,11 @@ export function SupplierQuoteBoard() {
               style={{ width: '100%' }}
               value={value}
               onFocus={() => {
-                anchorRef.current = { columnIndex, rowKey: matrixKeyOf(row) }
+                anchorRef.current = {
+                  category: group.category,
+                  columnIndex,
+                  rowKey: matrixKeyOf(row),
+                }
               }}
               onChange={(next) =>
                 updateCell(
@@ -1031,8 +1075,8 @@ export function SupplierQuoteBoard() {
               }
               onKeyDown={(event) => {
                 const move = (delta: number) => {
-                  const index = rowIndexByKey.get(matrixKeyOf(row)) ?? -1
-                  const target = displayRows[index + delta]
+                  const index = group.indexByKey.get(matrixKeyOf(row)) ?? -1
+                  const target = group.rows[index + delta]
                   if (!target) return
                   const targetLeafKey = quoteRowKey(leafOf(target, length))
                   if (!comboKeys.has(targetLeafKey)) return
@@ -1057,8 +1101,19 @@ export function SupplierQuoteBoard() {
             />
           )
         },
-      })),
-    })),
+      })
+      return group.lengths.length > 1
+        ? {
+            title: headerTitle,
+            key: brandName,
+            children: group.lengths.map(cellOf),
+          }
+        : {
+            ...cellOf(group.lengths[0] ?? '-'),
+            title: headerTitle,
+            key: brandName,
+          }
+    }),
     {
       /*
        * 本行最低价：不再需要表头文案（内容自带「品牌 + 价格」），
@@ -1241,24 +1296,32 @@ export function SupplierQuoteBoard() {
           onPaste={handlePaste}
         >
           <div className="supplier-price-sheet-body">
-            <Table<QuoteRow>
-              bordered
-              columns={columnsOfTable}
-              dataSource={displayRows}
-              pagination={false}
-              rowKey={(row) => quoteRowKey(row)}
-              scroll={{
-                x:
-                  ROW_HEAD_WIDTHS.material +
-                  ROW_HEAD_WIDTHS.spec +
-                  ROW_HEAD_WIDTHS.category +
-                  cellColumns.length * BRAND_COLUMN_WIDTH +
-                  CHEAPEST_COLUMN_WIDTH,
-                y: 'calc(100vh - 320px)',
-              }}
-              size="small"
-              sticky
-            />
+            {categoryGroups.map((group) => (
+              <div
+                className="supplier-price-sheet-category"
+                key={group.category}
+              >
+                <Typography.Text className="supplier-price-transposed-category">
+                  {group.category}
+                </Typography.Text>
+                <Table<QuoteRow>
+                  bordered
+                  columns={columnsOfCategory(group)}
+                  dataSource={group.rows}
+                  pagination={false}
+                  rowKey={(row) => matrixKeyOf(row)}
+                  scroll={{
+                    x:
+                      ROW_HEAD_WIDTHS.material +
+                      ROW_HEAD_WIDTHS.spec +
+                      group.cellColumns.length * BRAND_COLUMN_WIDTH +
+                      CHEAPEST_COLUMN_WIDTH,
+                  }}
+                  size="small"
+                  tableLayout="fixed"
+                />
+              </div>
+            ))}
           </div>
         </div>
       )}
