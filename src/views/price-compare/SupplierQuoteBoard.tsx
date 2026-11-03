@@ -1462,10 +1462,6 @@ export function SupplierQuoteBoard() {
           </div>
         </div>
       )}
-
-      <Typography.Text type="secondary">
-        {t('priceCompare.supplierPrice.entryHint')}
-      </Typography.Text>
     </Flex>
   )
 }
