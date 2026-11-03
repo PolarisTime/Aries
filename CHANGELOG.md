@@ -1,3 +1,10 @@
+# [15.1.0](https://github.com/PolarisTime/Aries/compare/v15.0.4...v15.1.0) (2026-11-03)
+
+
+### Features
+
+* **price-compare:** 材质进表头，品牌列只取商品资料里该品牌真实经营的范围 ([6925c8d](https://github.com/PolarisTime/Aries/commit/6925c8d15550aa2f4075ae53a078ac602be8f905))
+
 ## [15.0.4](https://github.com/PolarisTime/Aries/compare/v15.0.3...v15.0.4) (2026-11-03)
 
 
