@@ -3031,6 +3031,38 @@ export const zhCN = {
         '按品牌取价格表里的最低价，只填**空着的**格子，已有的一律不动',
       fillNothing: '没有可带价的价格表报价',
       fillDone: '已从价格表带入 {{count}} 处（取各品牌最低价）',
+      /*
+       * 以下为 Excel 式网格操作（区域选择、填充、算式、异常价、批量调价、列宽）。
+       * 快捷键文案统一为「按键：行为」，与 entryHint 里的按键说明保持同一写法。
+       */
+      selectionCount: '已选 {{count}} 格',
+      clearSelection: '清空选区（Delete）',
+      fillDown: '向下填充（Ctrl+D）',
+      fillRight: '向右填充（Ctrl+R）',
+      fillApplied: '已填充 {{count}} 格',
+      fillSkipped: '{{count}} 格因商品资料里没有该组合被跳过',
+      clearApplied: '已清空 {{count}} 格',
+      clearNothing: '选区内没有可清空的价格',
+      formulaInvalid: '算式无效：{{text}}',
+      formulaNoBase: '以运算符开头时需要这一格已有价格',
+      formulaDivideByZero: '算式里出现了除以 0',
+      formulaNegative: '结果不能为负数',
+      batchAdjust: '批量调价',
+      batchAdjustTitle: '批量调价（已选 {{count}} 格）',
+      batchAdjustPlaceholder: '例如 +50、-30、*1.02',
+      batchAdjustHint:
+        '以 + - * / 开头表示在当前价上调整；否则把所有已填格子设为该价（空格跳过）',
+      batchAdjustApplied: '已调整 {{count}} 格',
+      batchAdjustNothing: '选区内没有可调整的价格',
+      abnormalPrice: '高于本行最低价 {{ratio}}%（最低 {{min}}）',
+      cheapestHint: '本行最低价',
+      resizeColumn: '调整「{{name}}」列宽',
+      resizeColumnHint: '拖动调整列宽；聚焦后按左右方向键调整，Home 恢复默认',
+      shortcuts: '快捷键',
+      shortcutTab: 'Tab / Shift+Tab：横向移动到下一格 / 上一格',
+      shortcutFill: 'Ctrl+D / Ctrl+R：把选区首行向下 / 首列向右填满',
+      shortcutDelete: 'Delete：清空选区内已有价格',
+      shortcutClear: 'Esc：放弃本格正在输入的算式',
     },
     spotSync: {
       /*

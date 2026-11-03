@@ -404,10 +404,112 @@
 }
 
 /*
- * 价格输入框固定 64px（4 位数字）并居中，即使所在列被表头放宽（盘螺单定尺列 96px）
- * 也不跟着变宽 —— 钱数的宽度由位数决定，不该由表头文字决定。
+ * 价格格：Excel 式**文本输入**（可以直接敲算式 `3200+50`），因此不再是 antd 的 InputNumber。
+ *
+ * 宽度跟随列宽（`width: 100%`）：列宽可被用户拖动 / 方向键调整，输入框若固定 64px 就会出现
+ * 「列拉宽了、数字还挤在中间一小块」的割裂感。高度与内边距共用表格自己的行高变量，
+ * 字号变化时一起长；数字用等宽数字并对齐列头中轴。
  */
-.supplier-price-board .supplier-price-sheet-input.ant-input-number {
-  max-width: 64px;
-  margin-inline: auto;
+.supplier-price-board .ant-input.supplier-price-sheet-input {
+  width: 100%;
+  height: var(--supplier-price-row-height, 25px);
+  padding-block: 0;
+  padding-inline: 0.25em;
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/*
+ * 本行最低价：淡绿底 + success 描边。
+ *
+ * 与另外两个状态必须能一眼分开：异常价用 warning（黄）、选中态用 primary（蓝），最低价用
+ * success（绿）。三者的判定与取值都来自同一次 `rowPriceStats`（见组件里的 minBySpec）：
+ * 最低价 == min，异常价则严格高于 min×1.05，所以这两种状态不会同时出现在一格上；
+ * 选中态声明在最后（见下），一格既是最低价又被选中时，先看选区。
+ */
+.supplier-price-board .ant-input.supplier-price-cheapest {
+  border-color: var(--ant-color-success-border, #b7eb8f);
+  background: var(--ant-color-success-bg, #f6ffed);
+}
+
+/*
+ * 异常价：高于本行最低价 5%（唯一口径见 `supplier-quote-price.ts` 的 isAbnormalPrice）。
+ *
+ * 底色与描边都用主题 token（`--ant-color-warning-*`），不写死十六进制：站点换主题 / 暗色模式
+ * 时标黄仍然协调。它同时也是「鼠标悬停看到高出多少」的那格（见组件里的 Tooltip）。
+ */
+.supplier-price-board .ant-input.supplier-price-cell-abnormal {
+  border-color: var(--ant-color-warning-border, #ffe58f);
+  background: var(--ant-color-warning-bg, #fffbe6);
+}
+
+/*
+ * 选中态（区域选择 / Shift 扩展 / 拖拽框选）。
+ *
+ * 用 primary 的浅色底 + 主题色描边，而不是半透明遮罩：报价表里每个格子都是一个输入框，
+ * 遮罩会挡住数字本身。放在异常价规则**之后**：一格既被选中又是异常价时，先看选区。
+ */
+.supplier-price-board .ant-input.supplier-price-cell-selected {
+  border-color: var(--ant-color-primary, #1677ff);
+  background: var(--ant-color-primary-bg, #e6f4ff);
+}
+
+/*
+ * 列宽把手：表头叶子格右侧的可拖动 / 可聚焦竖条。
+ *
+ * 命中区必须 ≥24×24（WCAG 2.2 SC 2.5.8 Target Size Minimum）：只画 2px 的话鼠标根本
+ * 抓不住，触屏与手抖用户更按不到。视觉上只留一条 2px 竖线（::after），命中区是透明的，
+ * 所以不会真的挡住表头文字。把手在**叶子表头行**，而 ⋯ 按钮在品牌表头行（上一行），
+ * 两者不在同一行，不会互相遮挡。
+ */
+.supplier-price-col-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 给把手留出右侧空间，文字仍然居中在剩下的区域里 */
+  padding-inline-end: 20px;
+  /* 与把手命中区同高：24px 的把手必须放得进这一格（WCAG 2.5.8） */
+  min-height: 24px;
+}
+
+.supplier-price-col-head-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.supplier-price-col-resize {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  cursor: col-resize;
+}
+
+.supplier-price-col-resize::after {
+  content: "";
+  position: absolute;
+  inset-block: 20%;
+  inset-inline-end: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--ant-color-border, #d9d9d9);
+}
+
+.supplier-price-col-resize:hover::after,
+.supplier-price-col-resize:focus-visible::after {
+  background: var(--ant-color-primary, #1677ff);
+}
+
+/* 键盘聚焦要有可见焦点框，否则「Tab 到这里了」完全看不出来 */
+.supplier-price-col-resize:focus-visible {
+  outline: 2px solid var(--ant-color-primary, #1677ff);
+  outline-offset: -2px;
 }

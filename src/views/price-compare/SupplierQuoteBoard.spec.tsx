@@ -550,21 +550,22 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     await render()
 
     // 只有一个品牌有价：该格打上高亮类，行末不再单列「最低价」
+    // 价格格已从 InputNumber 换成 Input（可敲算式），状态类因此挂在 input 本身而不是外层
     await waitFor(() =>
       Boolean(
         container.querySelector(
-          '.supplier-price-cheapest input[aria-label="中天 HRB400E 12 9米"]',
+          'input.supplier-price-cheapest[aria-label="中天 HRB400E 12 9米"]',
         ),
       ),
     )
     const cheapest = container.querySelector(
-      '.supplier-price-cheapest input[aria-label="中天 HRB400E 12 9米"]',
+      'input.supplier-price-cheapest[aria-label="中天 HRB400E 12 9米"]',
     )
     expect(cheapest).not.toBeNull()
     // 没有价的永钢不算最低价
     expect(
       container.querySelector(
-        '.supplier-price-cheapest input[aria-label="永钢 HRB400E 12 9米"]',
+        'input.supplier-price-cheapest[aria-label="永钢 HRB400E 12 9米"]',
       ),
     ).toBeNull()
   })

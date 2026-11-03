@@ -3090,6 +3090,39 @@ export const enUS = {
       fillNothing: 'No quotes available in the price list',
       fillDone:
         'Filled {{count}} cell(s) from the price list (lowest per brand)',
+      selectionCount: '{{count}} cell(s) selected',
+      clearSelection: 'Clear selection (Delete)',
+      fillDown: 'Fill down (Ctrl+D)',
+      fillRight: 'Fill right (Ctrl+R)',
+      fillApplied: 'Filled {{count}} cell(s)',
+      fillSkipped:
+        '{{count}} cell(s) skipped: the material data has no such combination',
+      clearApplied: 'Cleared {{count}} cell(s)',
+      clearNothing: 'No prices to clear in the selection',
+      formulaInvalid: 'Invalid formula: {{text}}',
+      formulaNoBase:
+        'An operator at the start needs an existing price in this cell',
+      formulaDivideByZero: 'The formula divides by 0',
+      formulaNegative: 'The result cannot be negative',
+      batchAdjust: 'Batch adjust',
+      batchAdjustTitle: 'Batch adjust ({{count}} cell(s) selected)',
+      batchAdjustPlaceholder: 'e.g. +50, -30, *1.02',
+      batchAdjustHint:
+        'A leading + - * / adjusts the current price; otherwise every filled cell is set to that price (blank cells are skipped)',
+      batchAdjustApplied: 'Adjusted {{count}} cell(s)',
+      batchAdjustNothing: 'No prices to adjust in the selection',
+      abnormalPrice:
+        '{{ratio}}% above this row’s lowest price (lowest {{min}})',
+      cheapestHint: 'Lowest price in this row',
+      resizeColumn: 'Resize the "{{name}}" column',
+      resizeColumnHint:
+        'Drag to resize; when focused, use the left/right arrow keys; Home restores the default',
+      shortcuts: 'Keyboard shortcuts',
+      shortcutTab: 'Tab / Shift+Tab: move to the next cell / previous cell',
+      shortcutFill:
+        'Ctrl+D / Ctrl+R: fill the selection down from the first row / right from the first column',
+      shortcutDelete: 'Delete: clear existing prices in the selection',
+      shortcutClear: 'Esc: discard the formula being typed in this cell',
     },
     spotSync: {
       action: 'Sync spot prices',
