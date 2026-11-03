@@ -1,3 +1,28 @@
+# [15.0.0](https://github.com/PolarisTime/Aries/compare/v14.12.0...v15.0.0) (2026-11-03)
+
+
+* refactor(routing)!: 下线被并页与个人账号的旧深链路由 ([f6daeca](https://github.com/PolarisTime/Aries/commit/f6daeca4014a0ee57d60bb251e9d7255b8284e50))
+
+
+### Bug Fixes
+
+* **document-flow:** 金额/重量/件数改用全站格式出口，去掉自写千分位 ([395e629](https://github.com/PolarisTime/Aries/commit/395e6290955b5254d7e3e50769ffe31fe0972740))
+* **modules:** 合同超限判定收敛到单一出口，进度条与提示不再各说各话 ([55678c7](https://github.com/PolarisTime/Aries/commit/55678c7999f007382ddc294f4f9f89848f42be95))
+* **price-compare:** 报价页改用主数据共享查询键，保存品牌后立即按品牌建列 ([a642108](https://github.com/PolarisTime/Aries/commit/a642108eb41f5480572f7a46c2aaa87e71a3086f))
+* **print:** 打印作业合计走十进制口径，对账单汇总条显示对账期间 ([76d8f97](https://github.com/PolarisTime/Aries/commit/76d8f972f7772dec164044a7b897f7cbf0b8827e))
+
+
+### Features
+
+* **print:** 打印作业按模块布局配置化，显式可打印与字段错配修复 ([7d86257](https://github.com/PolarisTime/Aries/commit/7d8625797af2000c9ebbe54d9886e2e3dab1787d))
+* **print:** 补齐模板后开放销售退货/付款/收款打印入口 ([be8e6f6](https://github.com/PolarisTime/Aries/commit/be8e6f66e24e85f391f896e73e9d79e8a0df5003))
+
+
+### BREAKING CHANGES
+
+* /material-categories、/value-alias、/length-premium、
+/quote-region、/account 五个路径不再存在；进入对应标签请使用宿主页的 ?tab=。
+
 # [14.12.0](https://github.com/PolarisTime/Aries/compare/v14.11.0...v14.12.0) (2026-11-02)
 
 
