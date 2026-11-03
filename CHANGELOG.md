@@ -1,3 +1,11 @@
+# [15.2.0](https://github.com/PolarisTime/Aries/compare/v15.1.1...v15.2.0) (2026-11-03)
+
+
+### Features
+
+* **master-data:** 供应商资料支持按品牌配置允许报价的规格与定尺 ([cc7255b](https://github.com/PolarisTime/Aries/commit/cc7255bac5266460e86d5a897555c16a7a1e8bc4))
+* **price-compare:** 供应商选择改为 antd 标签页，支持增删 ([7f6c513](https://github.com/PolarisTime/Aries/commit/7f6c513037338cec2c34e5ed44d4ad9df7c30e4f))
+
 ## [15.1.1](https://github.com/PolarisTime/Aries/compare/v15.1.0...v15.1.1) (2026-11-03)
 
 
