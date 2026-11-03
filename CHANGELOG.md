@@ -1,3 +1,10 @@
+## [15.1.1](https://github.com/PolarisTime/Aries/compare/v15.1.0...v15.1.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **price-compare:** 品牌列严格按经营品牌，行不再出现死行，最低价列补表头 ([f2e316f](https://github.com/PolarisTime/Aries/commit/f2e316fdc597858321076f4511b674a6a18630c6))
+
 # [15.1.0](https://github.com/PolarisTime/Aries/compare/v15.0.4...v15.1.0) (2026-11-03)
 
 
