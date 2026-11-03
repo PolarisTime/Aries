@@ -105,7 +105,7 @@ export function SupplierQuoteBoard() {
   const canUpdate = useHasPermission('supplier-price-lists:update')
   const canDelete = useHasPermission('supplier-price-lists:delete')
 
-  const [supplierId, setSupplierId] = useState<string>()
+  const [pickedSupplierId, setPickedSupplierId] = useState<string>()
   const [quotedOn, setQuotedOn] = useState(() => dayjs())
   /** 未落库的改动：品牌 →（行键 → 价格；null = 明确清空）。 */
   const [drafts, setDrafts] = useState<Record<string, BrandDraft>>({})
@@ -134,19 +134,19 @@ export function SupplierQuoteBoard() {
   })
 
   const suppliers = suppliersQuery.data ?? []
+
+  /*
+   * 只选了一个供应商时直接进入，少一步点击（「傻瓜式」的第一条：别让人先做无意义的选择）。
+   * 用派生值而不是 effect 里 setState：少一轮渲染，也不会踩「effect 里同步状态」的问题。
+   */
+  const supplierId =
+    pickedSupplierId ??
+    (suppliers.length === 1 ? suppliers[0].value : undefined)
+
   const supplier = useMemo(
     () => suppliers.find((option) => option.value === supplierId),
     [supplierId, suppliers],
   )
-
-  /*
-   * 只选了一个供应商时直接进入，少一步点击（「傻瓜式」的第一条：别让人先做无意义的选择）。
-   */
-  useEffect(() => {
-    if (!supplierId && suppliers.length === 1) {
-      setSupplierId(suppliers[0].value)
-    }
-  }, [supplierId, suppliers])
 
   /**
    * 品牌列 = 供应商资料里维护的「经营品牌」。
@@ -190,7 +190,10 @@ export function SupplierQuoteBoard() {
   }, [brandNames, columns, gridQueries, supplierId])
 
   const byBrandRef = useRef(byBrand)
-  byBrandRef.current = byBrand
+
+  useEffect(() => {
+    byBrandRef.current = byBrand
+  }, [byBrand])
 
   /** 商品的全部行（只来自商品资料）——保存载荷必须用它，不能用过滤后的行。 */
   const allRows = useMemo(
@@ -198,7 +201,10 @@ export function SupplierQuoteBoard() {
     [specsQuery.data],
   )
   const allRowsRef = useRef(allRows)
-  allRowsRef.current = allRows
+
+  useEffect(() => {
+    allRowsRef.current = allRows
+  }, [allRows])
 
   const serverPriceOf = useCallback(
     (brandName: string, key: string) =>
@@ -258,18 +264,32 @@ export function SupplierQuoteBoard() {
 
   /* ---------------------------------------------------------------- 自动保存 */
 
-  const draftsRef = useRef(drafts)
-  draftsRef.current = drafts
+  /*
+   * 异步保存要读到「最新值」，但**不能在渲染期写 ref**（会破坏并发渲染与 React Compiler 的
+   * 优化假设）。草稿走 commitDrafts（只在事件/异步回调里写），其余用 effect 在提交后同步。
+   */
+  const draftsRef = useRef<Record<string, BrandDraft>>({})
   const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const savingRef = useRef(new Set<string>())
   const quotedOnRef = useRef(quotedOn)
-  quotedOnRef.current = quotedOn
   const supplierIdRef = useRef(supplierId)
-  supplierIdRef.current = supplierId
+
+  useEffect(() => {
+    quotedOnRef.current = quotedOn
+  }, [quotedOn])
+
+  useEffect(() => {
+    supplierIdRef.current = supplierId
+  }, [supplierId])
+
+  const commitDrafts = (next: Record<string, BrandDraft>) => {
+    draftsRef.current = next
+    setDrafts(next)
+  }
 
   const applyDrafts = (next: Record<string, BrandDraft>) => {
     setHistory((current) => pushHistory(current, draftsRef.current))
-    setDrafts(next)
+    commitDrafts(next)
   }
 
   /** 把保存结果写回缓存：不刷新页面也能立刻看到刚存的值。 */
@@ -343,18 +363,21 @@ export function SupplierQuoteBoard() {
     const snapshot = draftsRef.current[brandName]
     if (draftCount(snapshot) === 0) return
 
-    let target = byBrandRef.current.columns.get(brandName) ?? null
+    const existing = byBrandRef.current.columns.get(brandName) ?? null
     const serverCells = byBrandRef.current.cells.get(brandName) ?? new Map()
     savingRef.current.add(brandName)
     setSaveState((current) => ({ ...current, [brandName]: 'saving' }))
     try {
-      if (!target) {
-        target = await addSupplierPriceColumn({
-          brandName,
-          supplierId: currentSupplierId,
-          quotedOn: quotedOnRef.current.format('YYYY-MM-DD'),
-        })
-        const created = target
+      // 没有列就先建一条 (供应商, 品牌) 价格表，再整列提交
+      const created = existing
+        ? null
+        : await addSupplierPriceColumn({
+            brandName,
+            supplierId: currentSupplierId,
+            quotedOn: quotedOnRef.current.format('YYYY-MM-DD'),
+          })
+      const target = existing ?? created
+      if (created) {
         setColumns((current) => ({ ...current, [brandName]: created }))
       }
       const plan = buildColumnSavePlan({
@@ -365,14 +388,14 @@ export function SupplierQuoteBoard() {
         serverCells,
       })
       if (!plan) {
-        setDrafts((current) => {
-          const next = { ...current }
-          delete next[brandName]
-          return next
-        })
+        const cleared = { ...draftsRef.current }
+        delete cleared[brandName]
+        commitDrafts(cleared)
         setSaveState((current) => ({ ...current, [brandName]: 'saved' }))
         return
       }
+      // target 一定非空（刚创建或本来就存在）；这里的守卫只用于满足类型收窄
+      if (!target) return
       const saved = await saveSupplierPriceColumnItems(
         target.listId,
         target.version,
@@ -394,18 +417,17 @@ export function SupplierQuoteBoard() {
         return { ...current, [brandName]: values }
       })
       // 只丢弃「已提交的那部分」草稿：保存期间继续敲的格子留着，接着自动存
-      setDrafts((current) => {
-        const now = current[brandName]
-        if (!now) return current
+      const now = draftsRef.current[brandName]
+      if (now) {
         const rest: BrandDraft = { ...now }
         for (const [key, value] of Object.entries(snapshot ?? {})) {
           if (rest[key] === value) delete rest[key]
         }
-        const next = { ...current }
+        const next = { ...draftsRef.current }
         if (Object.keys(rest).length === 0) delete next[brandName]
         else next[brandName] = rest
-        return next
-      })
+        commitDrafts(next)
+      }
       setSaveState((current) => ({ ...current, [brandName]: 'saved' }))
     } catch {
       // 失败保留草稿：用户不必重敲，点列头圆点即可重试
@@ -463,22 +485,20 @@ export function SupplierQuoteBoard() {
   const undo = () => {
     const next = undoDrafts(history, draftsRef.current)
     setHistory(next.history)
-    setDrafts(next.drafts)
-    draftsRef.current = next.drafts
+    commitDrafts(next.drafts)
     flushDirtyBrands()
   }
   const redo = () => {
     const next = redoDrafts(history, draftsRef.current)
     setHistory(next.history)
-    setDrafts(next.drafts)
-    draftsRef.current = next.drafts
+    commitDrafts(next.drafts)
     flushDirtyBrands()
   }
 
   const changeSupplier = (nextSupplierId: string) => {
     const applyChange = () => {
-      setSupplierId(nextSupplierId)
-      setDrafts({})
+      setPickedSupplierId(nextSupplierId)
+      commitDrafts({})
       setHistory(EMPTY_HISTORY)
       setSavedValues({})
       setColumns({})
@@ -542,12 +562,11 @@ export function SupplierQuoteBoard() {
           delete next[brandName]
           return next
         })
-        setDrafts((current) => {
-          if (!current[brandName]) return current
-          const next = { ...current }
-          delete next[brandName]
-          return next
-        })
+        if (draftsRef.current[brandName]) {
+          const nextDrafts = { ...draftsRef.current }
+          delete nextDrafts[brandName]
+          commitDrafts(nextDrafts)
+        }
         await queryClient.invalidateQueries({
           queryKey: gridQueryKey(brandName),
         })
@@ -648,13 +667,12 @@ export function SupplierQuoteBoard() {
 
   /* ---------------------------------------------------------------- 渲染 */
 
-  const brandColumnOptions = useMemo(
-    () =>
-      materialBrands
-        .filter((brand) => !brandNames.includes(brand))
-        .map((brand) => ({ key: brand, label: brand })),
-    [brandNames, materialBrands],
-  )
+  const brandColumnOptions = useMemo(() => {
+    const selected = new Set(brandNames)
+    return materialBrands
+      .filter((brand) => !selected.has(brand))
+      .map((brand) => ({ key: brand, label: brand }))
+  }, [brandNames, materialBrands])
 
   const pendingCount = Object.values(drafts).reduce(
     (sum, draft) => sum + draftCount(draft),
@@ -663,6 +681,15 @@ export function SupplierQuoteBoard() {
 
   const cellKey = (brandName: string, rowKey: string) =>
     `${brandName}\u0000${rowKey}`
+
+  /** 行键 → 可见行下标：↑/↓ 移动时直接查表，不在每格做一次 indexOf。 */
+  const rowIndexByKey = useMemo(() => {
+    const map = new Map<string, number>()
+    displayRows.forEach((row, index) => {
+      map.set(quoteRowKey(row), index)
+    })
+    return map
+  }, [displayRows])
 
   const columnsOfTable: ColumnsType<QuoteRow> = [
     {
@@ -786,7 +813,7 @@ export function SupplierQuoteBoard() {
             }
             onKeyDown={(event) => {
               const move = (delta: number) => {
-                const index = displayRows.indexOf(row)
+                const index = rowIndexByKey.get(quoteRowKey(row)) ?? -1
                 const target = displayRows[index + delta]
                 if (!target) return
                 const node = document.querySelector<HTMLInputElement>(
