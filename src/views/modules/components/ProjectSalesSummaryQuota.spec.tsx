@@ -26,7 +26,9 @@ vi.mock('react-i18next', async () => {
 
 import { ProjectSalesSummaryQuota } from './ProjectSalesSummaryQuota'
 
-function summaryOf(overrides: Partial<ProjectSalesSummary>): ProjectSalesSummary {
+function summaryOf(
+  overrides: Partial<ProjectSalesSummary>,
+): ProjectSalesSummary {
   return {
     projectId: '9007199254740993',
     projectName: '华东钢铁项目',

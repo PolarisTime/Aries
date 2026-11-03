@@ -16,8 +16,8 @@ import type {
   FreightStatementSortMode,
 } from '@/views/modules/freight-statement-item-groups'
 import {
-  sumChargeItemAmount,
   type DocumentChargeItemDraft,
+  sumChargeItemAmount,
 } from '@/views/modules/module-editor-draft-adapter'
 import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleEditorExpensePanel } from './ModuleEditorExpensePanel'

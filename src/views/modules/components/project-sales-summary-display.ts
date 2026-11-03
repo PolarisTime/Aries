@@ -31,7 +31,9 @@ export function formatUsagePercent(rate: number | null): string {
  * <p>进度条与超限提示都调用本函数，两者因此永远一致；使用率只负责展示百分比与刻度。</p>
  */
 export function isQuotaExceeded(exceeded: number | null | undefined): boolean {
-  return typeof exceeded === 'number' && Number.isFinite(exceeded) && exceeded > 0
+  return (
+    typeof exceeded === 'number' && Number.isFinite(exceeded) && exceeded > 0
+  )
 }
 
 /**
