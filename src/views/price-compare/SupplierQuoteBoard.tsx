@@ -839,14 +839,18 @@ export function SupplierQuoteBoard() {
       },
     })),
     {
-      title: t('priceCompare.supplierPrice.basePriceColumn'),
+      /*
+       * 本行最低价：不再需要表头文案（内容自带「品牌 + 价格」），
+       * 也不借用「基价」这类语义不同的既有文案键。
+       */
+      title: '',
       key: 'cheapest',
       width: 176,
       render: (_value, row) => {
         const cheapest = cheapestOfRow(row)
         if (!cheapest) return <span className="supplier-price-cell-na">—</span>
         return (
-          <span>
+          <span className="supplier-price-cheapest-label">
             {cheapest.brandName} {cheapest.price}
           </span>
         )
