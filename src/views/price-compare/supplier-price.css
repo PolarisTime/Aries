@@ -318,3 +318,28 @@
 .supplier-price-transposed-base {
   box-shadow: inset 3px 0 0 var(--ant-color-primary);
 }
+
+/*
+ * 供应商报价工作台：金额与表头一律居中。
+ *
+ * 通用规则把价格输入框右对齐（`.ant-input-number-input { text-align: right }`，那是给
+ * 报单比价的数字列用的）。报价表这里列头是「材质 / 定尺」，金额跟着列头中轴走更整齐，
+ * 所以用 `.supplier-price-board` 修饰类单独覆盖，不影响其它用 `.supplier-price-sheet` 的页面。
+ *
+ * 垂直居中：通用规则已给 th/td 设了 `vertical-align: middle`，但 antd 会给分组表头
+ * （`ant-table-thead th`）加自己的行高；这里再显式声明一次，避免分组表头在窄列里贴顶。
+ */
+.supplier-price-board .ant-table-thead > tr > th,
+.supplier-price-board .ant-table-tbody > tr > td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.supplier-price-board .ant-input-number-input {
+  text-align: center;
+}
+
+/* 表头允许两行（品牌名 + 保存状态）时不换行挤压 */
+.supplier-price-board .ant-table-thead > tr > th {
+  white-space: nowrap;
+}

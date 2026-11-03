@@ -1070,7 +1070,8 @@ export function SupplierQuoteBoard() {
             title: length === '-' ? '—' : length,
             key: `${brandName}\u0000${material}\u0000${length}`,
             width: BRAND_COLUMN_WIDTH,
-            align: 'right' as const,
+            // 金额与表头（定尺名）都居中：一列里文字与数字对齐在同一条中轴上
+            align: 'center' as const,
             render: (_value: unknown, row: SpecRow) => {
               if (
                 !catalogHas(
@@ -1167,6 +1168,7 @@ export function SupplierQuoteBoard() {
           materialColumns.push({
             title: material,
             key: `${brandName}\u0000${material}`,
+            align: 'center',
             children: lengthKeys.map(cellOf),
           })
         } else {
@@ -1174,6 +1176,7 @@ export function SupplierQuoteBoard() {
             ...cellOf(lengthKeys[0] ?? '-'),
             title: material,
             key: `${brandName}\u0000${material}`,
+            align: 'center',
           })
         }
       }
@@ -1181,6 +1184,7 @@ export function SupplierQuoteBoard() {
         columns.push({
           title: brandHeaderOf(brandName),
           key: brandName,
+          align: 'center',
           children: materialColumns,
         })
       }
@@ -1369,7 +1373,7 @@ export function SupplierQuoteBoard() {
          * 一屏只能看到二十来行，就是「不像 Excel」的直接原因。
          */
         <div
-          className="supplier-price-sheet supplier-price-sheet-shell"
+          className="supplier-price-sheet supplier-price-sheet-shell supplier-price-board"
           onKeyDownCapture={guardUndoRedo}
           onPaste={handlePaste}
         >
@@ -1388,11 +1392,21 @@ export function SupplierQuoteBoard() {
                   dataSource={group.rows}
                   pagination={false}
                   rowKey={(row) => row.spec}
-                  scroll={{
-                    x:
-                      ROW_HEAD_WIDTHS.spec +
-                      group.cellColumns.length * BRAND_COLUMN_WIDTH,
-                  }}
+                  /*
+                   * 列少时**不给 scroll.x**：给了固定宽度，表格就只占那么多，右侧留一大片
+                   * 页面空白（用户反馈的「最右边还是空行」就是它）。不给则表格宽度 100%，
+                   * 多出来的宽度按比例摊到各列，正好铺满内容区。
+                   * 列多到装不下时（>12 列）才给固定宽度，让表体内部横向滚动。
+                   */
+                  scroll={
+                    group.cellColumns.length > 12
+                      ? {
+                          x:
+                            ROW_HEAD_WIDTHS.spec +
+                            group.cellColumns.length * BRAND_COLUMN_WIDTH,
+                        }
+                      : undefined
+                  }
                   size="small"
                   tableLayout="fixed"
                 />
