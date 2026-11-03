@@ -54,6 +54,7 @@ import {
   type SupplierPriceGrid,
 } from '@/api/market/supplier-price-lists'
 import { fetchSupplierOptions } from '@/api/master/supplier-options'
+import { QUERY_KEYS } from '@/constants/query-keys'
 import { useLengthPremiumOptions } from '@/hooks/useLengthPremiumOptions'
 import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import { useHasPermission } from '@/hooks/usePermission'
@@ -200,8 +201,17 @@ export function SupplierQuotePage() {
   const gridRef = useRef<HTMLDivElement>(null)
   const anchorRef = useRef<{ brandName: string; rowKey: string } | null>(null)
 
+  /**
+   * 供应商（含经营品牌）必须用**主数据共享的查询键**，不能用本页私有 key。
+   *
+   * <p>保存供应商资料后，通用保存链路调用 {@code reloadMasterOptionsForModule('supplier')}
+   * → {@code reloadSupplierOptions()} 只刷新 {@code QUERY_KEYS.masterOptions.supplier} 这一条缓存。
+   * 此前这里用了私有 key {@code ['supplier-price-suppliers']} + {@code staleTime: Infinity}，
+   * 于是标签页保活（只 display:none）时永远不刷新：用户刚维护完经营品牌回到报价页，
+   * 看到的仍是「该供应商还没有经营品牌」。</p>
+   */
   const suppliersQuery = useQuery({
-    queryKey: ['supplier-price-suppliers'],
+    queryKey: QUERY_KEYS.masterOptions.supplier,
     queryFn: () => fetchSupplierOptions(),
     staleTime: Number.POSITIVE_INFINITY,
   })

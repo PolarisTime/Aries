@@ -9,6 +9,7 @@ import type {
   SupplierPriceGrid,
   SupplierPriceSpecRow,
 } from '@/api/market/supplier-price-lists'
+import { QUERY_KEYS } from '@/constants/query-keys'
 
 const priceApi = vi.hoisted(() => ({
   fetchSpecRows: vi.fn(),
@@ -602,6 +603,44 @@ describe('供应商报价表（Excel 式报价网格）', () => {
       i18n.t('priceCompare.supplierPrice.noBrands'),
     )
     expect(sheet()).toBeNull()
+  })
+
+  /**
+   * 回归：报价页此前用私有查询键 + staleTime Infinity，标签页保活（只 display:none）时永不刷新，
+   * 于是「供应商资料 → 经营品牌」保存完回到报价页仍显示「该供应商还没有经营品牌」。
+   * 现在页面读主数据共享键，保存链路刷新同一键即可让页面立刻按品牌建列。
+   */
+  it('供应商经营品牌保存后（刷新主数据共享键）报价页立即按品牌建列', async () => {
+    supplierApi.fetchSupplierOptions.mockResolvedValue([
+      { ...SUPPLIER, brands: [] },
+    ])
+    priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
+      Promise.resolve(emptyGrid(brandName)),
+    )
+    await render()
+    await selectSupplier()
+
+    expect(container.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.noBrands'),
+    )
+
+    // 模拟保存链路：reloadSupplierOptions() = fetchQuery(共享键, staleTime: 0)
+    supplierApi.fetchSupplierOptions.mockResolvedValue([
+      { ...SUPPLIER, brands: ['中天'] },
+    ])
+    await act(async () => {
+      await queryClient.fetchQuery({
+        queryKey: QUERY_KEYS.masterOptions.supplier,
+        queryFn: () => supplierApi.fetchSupplierOptions(),
+        staleTime: 0,
+      })
+    })
+    await flush()
+
+    expect(container.textContent).not.toContain(
+      i18n.t('priceCompare.supplierPrice.noBrands'),
+    )
+    expect(sheetHeaders().some((text) => text.includes('中天'))).toBe(true)
   })
 
   it('规格列表加载失败时提示错误并可重试，而不是显示成「没有报价」', async () => {
