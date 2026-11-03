@@ -344,10 +344,11 @@ export function SupplierQuoteBoard() {
     supplierIdRef.current = supplierId
   }, [supplierId])
 
-  const commitDrafts = (next: Record<string, BrandDraft>) => {
+  /** 稳定引用：草稿恢复 effect 依赖它，普通函数每次渲染都会换身份、把 effect 变成每次都跑。 */
+  const commitDrafts = useCallback((next: Record<string, BrandDraft>) => {
     draftsRef.current = next
     setDrafts(next)
-  }
+  }, [])
 
   const applyDrafts = (next: Record<string, BrandDraft>) => {
     setHistory((current) => pushHistory(current, draftsRef.current))
@@ -369,7 +370,7 @@ export function SupplierQuoteBoard() {
       setRestoredDrafts(true)
     }
     setDraftsRestoredFor(supplierId)
-  }, [supplierId, draftsRestoredFor])
+  }, [commitDrafts, supplierId, draftsRestoredFor])
 
   useEffect(() => {
     if (!supplierId || draftsRestoredFor !== supplierId) return
