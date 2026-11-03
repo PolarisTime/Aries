@@ -38,9 +38,39 @@ vi.mock('@/hooks/usePermission', () => ({
 
 import { SupplierQuotePage } from './SupplierQuotePage'
 
-const ROW_A = { category: '直条', material: 'HRB400E', spec: 12, length: '9米' }
-const ROW_B = { category: '直条', material: 'HRB400E', spec: 14, length: '9米' }
+/*
+ * 商品资料行必须带 brand：报价表的列 = 品牌 × 材质 × 定尺，全部来自商品资料自己的品牌字段。
+ */
+const ROW_A = {
+  brand: '中天',
+  category: '直条',
+  material: 'HRB400E',
+  spec: 12,
+  length: '9米',
+}
+const ROW_B = {
+  brand: '中天',
+  category: '直条',
+  material: 'HRB400E',
+  spec: 14,
+  length: '9米',
+}
+const ROW_A12 = {
+  brand: '中天',
+  category: '直条',
+  material: 'HRB400E',
+  spec: 12,
+  length: '12米',
+}
+const ROW_WANTAI = {
+  brand: '万泰',
+  category: '盘螺',
+  material: 'HRB400E',
+  spec: 6,
+  length: '-',
+}
 const ROW_PANLUO = {
+  brand: '中天',
   category: '盘螺',
   material: 'HRB400',
   spec: 8,
@@ -87,6 +117,12 @@ function gridWithColumn(): SupplierPriceGrid {
   }
 }
 
+/** 保存载荷里不含 brand（品牌由价格表列本身确定），断言时从行夹具里剔除。 */
+const withoutBrand = (row: Record<string, unknown>) => {
+  const { brand: _brand, ...rest } = row
+  return rest
+}
+
 /** 自动保存的防抖时长是 800ms：等过去再断言。 */
 const flushAutosave = async () => {
   await act(async () => {
@@ -126,7 +162,9 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     window.localStorage.clear()
 
     permissions.canWrite = true
-    priceApi.fetchSpecRows.mockReset().mockResolvedValue([ROW_A, ROW_B])
+    priceApi.fetchSpecRows
+      .mockReset()
+      .mockResolvedValue([ROW_A, ROW_A12, ROW_B])
     priceApi.fetchSupplierPriceGrid
       .mockReset()
       .mockResolvedValue(gridWithColumn())
@@ -224,11 +262,12 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
   it('只有一家供应商时直接进入表格：行 = 商品，列 = 该供应商的经营品牌', async () => {
     await render()
 
-    // 表头：材质/规格/定尺/品牌 + 品牌列 + 本行最低价
-    expect(headers().some((text) => text.includes('中天'))).toBe(true)
-    expect(headers().some((text) => text.includes('材质'))).toBe(true)
-    // 一个品牌只占一列（不再拆「品牌 → 材质 → 定尺」）
+    // 表头：规格 + 「品牌 → 材质 → 定尺」三级
+    expect(headers().some((text) => text.includes('规格'))).toBe(true)
+    // 品牌作为一级表头只出现一次，材质与定尺挂在它下面
     expect(headers().filter((text) => text.includes('中天'))).toHaveLength(1)
+    expect(headers()).toContain('HRB400E')
+    expect(headers()).toContain('9米')
     expect(rows()).toHaveLength(2)
     // 服务端价格直接回显
     await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
@@ -247,6 +286,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     ])
     // 万泰不在经营品牌里，但商品品牌全集里有它（构建候选品牌的发现来源）
     materialBrands.useMaterialBrands = vi.fn(() => ['中天', '万泰'])
+    priceApi.fetchSpecRows.mockResolvedValue([ROW_PANLUO, ROW_WANTAI])
     // 万泰的价格表列 id 是 l9，价格必须挂在 l9 上，才能验证「历史价格照常回显」
     const wanTaiColumn = { ...COLUMN, listId: 'l9' }
     priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
@@ -257,7 +297,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
               columns: [wanTaiColumn],
               rows: [
                 {
-                  ...ROW_A,
+                  ...ROW_WANTAI,
                   prices: { l9: 3280 },
                   priceStatuses: { l9: 'NORMAL' },
                   remarks: {},
@@ -273,8 +313,8 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     await waitFor(() => headers().some((text) => text.includes('万泰')))
     expect(headers().some((text) => text.includes('万泰'))).toBe(true)
     // 该品牌的历史价格照常回显，并且可继续编辑
-    await waitFor(() => cellInput('万泰 HRB400E 12 9米')?.value === '3280')
-    expect(cellInput('万泰 HRB400E 12 9米')?.value).toBe('3280')
+    await waitFor(() => cellInput('万泰 HRB400E 6 -')?.value === '3280')
+    expect(cellInput('万泰 HRB400E 6 -')?.value).toBe('3280')
   })
 
   /**
@@ -342,6 +382,66 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
   })
 
   /**
+   * 核心口径（2026-11-03 用户提问「规格是预设的吗、能不能从商品资料提取对应品牌规格、没有就不添加」）：
+   * 列不是预设的，而是按**每个品牌在商品资料里真实经营**的「材质 × 定尺」生成 ——
+   * 萍钢没有 HRB400E、没有 12米，就不该给它这些列；中天有就出现。
+   */
+  it('每个品牌的材质/定尺列只取商品资料里该品牌真实存在的组合', async () => {
+    priceApi.fetchSpecRows.mockResolvedValue([
+      // 中天：HRB400E 的 9米 与 12米 都有
+      {
+        brand: '中天',
+        category: '直条',
+        material: 'HRB400E',
+        spec: 12,
+        length: '9米',
+      },
+      {
+        brand: '中天',
+        category: '直条',
+        material: 'HRB400E',
+        spec: 12,
+        length: '12米',
+      },
+      // 萍钢：只有 HRB400 的 9米
+      {
+        brand: '萍钢',
+        category: '直条',
+        material: 'HRB400',
+        spec: 12,
+        length: '9米',
+      },
+    ])
+    supplierApi.fetchSupplierOptions.mockResolvedValue([
+      { ...SUPPLIER, brands: ['中天', '萍钢'] },
+    ])
+
+    await render()
+
+    const table = document.querySelector('.supplier-price-sheet')
+    const headerText = () =>
+      Array.from(table?.querySelectorAll('.ant-table-thead tr') ?? []).map(
+        (row) =>
+          Array.from(row.querySelectorAll('th')).map((th) =>
+            (th.textContent ?? '').trim(),
+          ),
+      )
+
+    // 材质层：中天只有 HRB400E，萍钢只有 HRB400
+    const all = headerText().flat()
+    expect(all).toContain('HRB400E')
+    expect(all).toContain('HRB400')
+
+    // 中天那一组里有 9米 与 12米；萍钢那一组只有 9米（没有 12米 列）
+    expect(cellInput('中天 HRB400E 12 9米')).not.toBeNull()
+    expect(cellInput('中天 HRB400E 12 12米')).not.toBeNull()
+    expect(cellInput('萍钢 HRB400 12 9米')).not.toBeNull()
+    // 萍钢没有 HRB400E，也没有 12米：这些格子**根本不存在**（不是留空）
+    expect(cellInput('萍钢 HRB400E 12 9米')).toBeNull()
+    expect(cellInput('萍钢 HRB400 12 12米')).toBeNull()
+  })
+
+  /**
    * 盘螺不分定尺、直条分 9米/12米。混在一张表里时盘螺行在 9米/12米 上永远是空格，
    * 表头宽度还要按两类定尺的并集算。拆成两张表后，每张表只保留自己用得到的定尺列。
    */
@@ -402,8 +502,8 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
       'l1',
       3,
       [
-        { ...ROW_A, price: 3290, priceStatus: 'NORMAL' },
-        { ...ROW_B, price: 3300 },
+        { ...withoutBrand(ROW_A), price: 3290, priceStatus: 'NORMAL' },
+        { ...withoutBrand(ROW_B), price: 3300 },
       ],
     )
   })
@@ -438,8 +538,10 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     await render()
 
     // 定尺变成列之后，最低价要带上定尺（否则多个定尺列的最低价分不清是哪一个）
-    await waitFor(() => (container.textContent ?? '').includes('中天 9米 3280'))
-    expect(container.textContent).toContain('中天 9米 3280')
+    await waitFor(() =>
+      (container.textContent ?? '').includes('中天 HRB400E 9米 3280'),
+    )
+    expect(container.textContent).toContain('中天 HRB400E 9米 3280')
   })
 
   it('搜索按材质/规格/定尺过滤行', async () => {
@@ -472,7 +574,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledWith(
       'l1',
       3,
-      [{ ...ROW_B, price: 3300 }],
+      [{ ...withoutBrand(ROW_B), price: 3300 }],
     )
   })
 

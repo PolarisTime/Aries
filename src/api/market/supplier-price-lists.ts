@@ -248,8 +248,15 @@ export async function fetchLowestBrandQuotes(
   return quotes
 }
 
-/** 商品规格行（「规格列满」的数据来源：商品资料全量规格）。 */
+/**
+ * 商品规格行（「规格列满」的数据来源：商品资料全量规格）。
+ *
+ * <p>{@code brand} 是商品资料自己的品牌字段 —— 有了它，报价表才能只给某个品牌列出它
+ * **真实经营**的「材质 × 定尺 × 规格」，而不是把所有品牌的组合并成一张全量表。</p>
+ */
 export type SupplierPriceSpecRow = {
+  /** 商品资料的品牌；历史价格表行来自后端时可能没有该字段。 */
+  brand?: string
   category: string
   material: string
   spec: number
@@ -257,6 +264,7 @@ export type SupplierPriceSpecRow = {
 }
 
 const specRowSchema = z.looseObject({
+  brand: z.string().nullish(),
   category: z.string().nullish(),
   material: z.string().nullish(),
   spec: numberLike.nullish(),
@@ -298,6 +306,7 @@ export async function fetchSpecRows(
       // 规格必须是正整数（后端条目表 spec 是 integer）；杂费类等无规格的行不参与价格表
       if (spec === null || !Number.isInteger(spec) || spec <= 0) continue
       rows.push({
+        brand: (row.brand ?? '').trim(),
         category: row.category ?? '',
         material: row.material ?? '',
         spec,

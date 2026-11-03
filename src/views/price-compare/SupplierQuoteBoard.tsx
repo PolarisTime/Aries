@@ -51,10 +51,13 @@ import { useHasPermission } from '@/hooks/usePermission'
 import { message, modal } from '@/utils/antd-app'
 import {
   type BrandDraft,
+  buildBrandCatalog,
   buildColumnSavePlan,
+  type CategoryCatalog,
+  catalogHas,
   draftCount,
   draftPrice,
-  mergeQuoteRows,
+  mergeSpecRows,
   type QuoteRow,
   quoteRowKey,
   type ServerCell,
@@ -96,21 +99,66 @@ const ROW_HEAD_WIDTHS = {
 const BRAND_COLUMN_WIDTH = 96
 const CHEAPEST_COLUMN_WIDTH = 104
 
-/** 表格行的键（不含定尺）：定尺已经是列，行只区分 类别+材质+规格。 */
-const matrixKeyOf = (row: QuoteRow) =>
-  `${row.category}|${row.material}|${row.spec}`
+/** 定尺排序：9米 → 12米 → 其它 → 不分定尺(-)，与报价单习惯一致。 */
+const sortLengths = (left: string, right: string) => {
+  if (left === right) return 0
+  if (left === '-') return 1
+  if (right === '-') return -1
+  const leftMeters = Number.parseInt(left, 10)
+  const rightMeters = Number.parseInt(right, 10)
+  if (Number.isFinite(leftMeters) && Number.isFinite(rightMeters)) {
+    return leftMeters - rightMeters
+  }
+  return left.localeCompare(right)
+}
 
-/** 行 + 定尺 → 真正的商品组合（保存载荷的键就是它）。 */
-const leafOf = (row: QuoteRow, length: string): QuoteRow => ({
-  category: row.category,
-  material: row.material,
-  spec: row.spec,
-  length,
-})
+/** 该类别下的列顺序：品牌 → 材质 → 定尺（只含商品资料里真实存在的组合）。 */
+const cellColumnsOf = (
+  category: CategoryCatalog | undefined,
+  brandNames: readonly string[],
+): CellColumn[] => {
+  if (!category) return []
+  const columns: CellColumn[] = []
+  for (const brandName of brandNames) {
+    const brandCatalog = category.byBrand.get(brandName)
+    if (!brandCatalog) continue
+    for (const [material, lengths] of brandCatalog.materials) {
+      for (const length of [...lengths.keys()].sort(sortLengths)) {
+        columns.push({
+          category: category.category,
+          brandName,
+          material,
+          length,
+        })
+      }
+    }
+  }
+  return columns
+}
 
-/** 单元格定位键：列下标 + 商品组合键（列下标已包含品牌与定尺）。 */
+/** 类别显示顺序：盘螺在前、直条在后，其余按字典序接在后面（不硬编码业务清单，只定优先级）。 */
+const PREFERRED_CATEGORY_ORDER = ['盘螺', '直条']
+
+/** 一个价格列 = 类别 + 品牌 + 材质 + 定尺；材质与定尺都已经进了表头。 */
+type CellColumn = {
+  category: string
+  brandName: string
+  material: string
+  length: string
+}
+
+/** 单元格定位键：列下标 + 商品组合键（列下标已包含品牌、材质与定尺）。 */
 const cellKey = (columnIndex: number, leafKey: string) =>
   `${columnIndex}\u0000${leafKey}`
+
+/** 列 + 规格 → 真正的商品组合（保存载荷的键就是它）。 */
+const leafOfSpec = (column: CellColumn, spec: number): QuoteRow => ({
+  brand: column.brandName,
+  category: column.category,
+  material: column.material,
+  spec,
+  length: column.length,
+})
 
 const dotStyle = (color: string): CSSProperties => ({
   width: 6,
@@ -289,52 +337,16 @@ export function SupplierQuoteBoard() {
 
   /** 商品的全部行（只来自商品资料）——保存载荷必须用它，不能用过滤后的行。 */
   const allRows = useMemo(
-    () => mergeQuoteRows(specsQuery.data ?? []),
+    () => mergeSpecRows(specsQuery.data ?? []),
     [specsQuery.data],
   )
 
-  /**
-   * 表格行 = 「类别 + 材质 + 规格」；**定尺不再占行**，而是每个品牌下的独立列。
-   *
-   * <p>原来一行 = 一个 (材质, 规格, 定尺) 组合，于是同一个规格会拆成「9米」「12米」两行，
-   * 行数翻倍、一屏看不出对比。现在 9米/12米 抽成列：一个规格一行，横着看就是一张
-   * Excel 报价单（行 = 规格，列 = 品牌 × 定尺）。</p>
-   */
-  const matrixRows = useMemo(() => {
-    const seen = new Map<string, QuoteRow>()
-    for (const row of allRows) {
-      const key = `${row.category}|${row.material}|${row.spec}`
-      if (!seen.has(key)) seen.set(key, row)
-    }
-    return [...seen.values()]
-  }, [allRows])
+  /** 商品资料按品牌切好的目录：行 = 规格，列 = 品牌 × 材质 × 定尺（唯一口径，见 buildBrandCatalog）。 */
+  const catalog = useMemo(() => buildBrandCatalog(allRows), [allRows])
 
-  /** 存在的商品组合（含定尺）：表格里没有的组合留空、不给输入框。 */
-  const comboKeys = useMemo(
-    () => new Set(allRows.map((row) => quoteRowKey(row))),
-    [allRows],
-  )
+  /** 表格行：只有规格（材质与定尺都已经在表头里）。 */
+  type SpecRow = { spec: number }
 
-  /**
-   * 定尺列：取商品资料里出现过的定尺，按「9米 → 12米 → 其它 → 不分定尺(-)」排序。
-   *
-   * <p>盘螺没有定尺（值为 {@code '-'}），排在最后并显示为「—」，这样直条与盘螺共用一张表
-   * 也不会把「不分定尺」挤到最左边。</p>
-   */
-  const lengths = useMemo(() => {
-    const set = new Set(allRows.map((row) => row.length))
-    return [...set].sort((left, right) => {
-      if (left === right) return 0
-      if (left === '-') return 1
-      if (right === '-') return -1
-      const leftMeters = Number.parseInt(left, 10)
-      const rightMeters = Number.parseInt(right, 10)
-      if (Number.isFinite(leftMeters) && Number.isFinite(rightMeters)) {
-        return leftMeters - rightMeters
-      }
-      return left.localeCompare(right)
-    })
-  }, [allRows])
   const allRowsRef = useRef(allRows)
 
   useEffect(() => {
@@ -360,114 +372,110 @@ export function SupplierQuoteBoard() {
   }
 
   /**
-   * 行级「最低价」：在该行所有 品牌 × 定尺 的有效格子里取最低。
+   * 行级「最低价」：在该规格下所有存在的（品牌 × 材质 × 定尺）格子里取最低。
    *
-   * <p>定尺变成列之后，一行可能有多个可比价格（中天9米 3280 / 中天12米 3320 / 萍钢9米 3270），
-   * 「本行最低」必须跨定尺比较，否则会漏掉更便宜的另一个定尺。</p>
+   * <p>材质与定尺都进了表头，所以一行可能有几十个可比价格；「本行最低」必须跨它们比较，
+   * 否则会漏掉更便宜的材质/定尺组合。</p>
    */
-  const cheapestOfRow = (
-    row: QuoteRow,
-  ): { brandName: string; length: string; price: number } | undefined => {
+  const cheapestOfSpec = (
+    category: CategoryCatalog | undefined,
+    cellColumns: readonly CellColumn[],
+    spec: number,
+  ):
+    | { brandName: string; material: string; length: string; price: number }
+    | undefined => {
     let cheapest:
-      | { brandName: string; length: string; price: number }
+      | { brandName: string; material: string; length: string; price: number }
       | undefined
-    for (const brandName of brandNames) {
-      for (const length of lengths) {
-        const leaf = leafOf(row, length)
-        if (!comboKeys.has(quoteRowKey(leaf))) continue
-        const price = cellValueOfLeaf(brandName, leaf)
-        if (price === null || price <= 0) continue
-        if (!cheapest || price < cheapest.price) {
-          cheapest = { brandName, length, price }
-        }
+    for (const column of cellColumns) {
+      if (
+        !catalogHas(
+          category,
+          column.brandName,
+          column.material,
+          spec,
+          column.length,
+        )
+      ) {
+        continue
+      }
+      const price = cellValueOfLeaf(column.brandName, leafOfSpec(column, spec))
+      if (price === null || price <= 0) continue
+      if (!cheapest || price < cheapest.price) {
+        cheapest = { ...column, price }
       }
     }
     return cheapest
   }
 
-  const displayRows = useMemo(() => {
-    const needle = keyword.trim().toLowerCase()
-    let list = matrixRows
-    if (needle) {
-      list = list.filter((row) =>
-        `${row.category} ${row.material} ${row.spec} ${row.length}`
-          .toLowerCase()
-          .includes(needle),
-      )
-    }
-    if (onlyUnpriced) {
-      /*
-       * 「未填」= 该行所有（品牌 × 定尺）有效格子都还没有值，按**已落库/已保存**判断，
-       * 不看本次草稿：否则边敲边消失，录入被打断。
-       */
-      list = list.filter((row) =>
-        brandNames.every((brandName) =>
-          lengths.every((length) => {
-            const leaf = leafOf(row, length)
-            const key = quoteRowKey(leaf)
-            if (!comboKeys.has(key)) return true
-            const price =
-              savedValues[brandName]?.[key] ?? serverPriceOf(brandName, key)
-            return price === undefined || price === null
-          }),
-        ),
-      )
-    }
-    return list
-  }, [
-    brandNames,
-    comboKeys,
-    keyword,
-    lengths,
-    matrixRows,
-    onlyUnpriced,
-    savedValues,
-    serverPriceOf,
-  ])
-
   /**
-   * 按类别拆表：盘螺一张、直条一张。
+   * 每个类别的表格数据：行 = 规格，列 = 品牌 × 材质 × 定尺。
    *
-   * <p>两类商品的定尺完全不同 —— 盘螺不分定尺（值为 {@code '-'}），直条分 9米/12米。
-   * 混在一张表里时，每行都会出现一半用不上的定尺格子（盘螺行在 9米/12米 上永远空着），
-   * 而且表头宽度按两类定尺的并集算，横着滚很远。拆开后每张表只保留自己用得到的定尺列。</p>
-   *
-   * <p>表格顺序沿用 `CATEGORY_ORDER`（盘螺在前、直条在后），与报价单习惯一致。</p>
+   * <p>行的范围来自该类别商品资料里出现过的全部规格；搜索按规格与材质过滤，
+   * 「只看未填」按已落库值判断（不看草稿，否则边敲边消失）。</p>
    */
   const categoryGroups = useMemo(() => {
     const order: string[] = []
-    const byCategory = new Map<string, QuoteRow[]>()
-    for (const row of displayRows) {
-      const list = byCategory.get(row.category)
-      if (list) {
-        list.push(row)
-        continue
-      }
-      byCategory.set(row.category, [row])
-      order.push(row.category)
+    for (const categoryName of PREFERRED_CATEGORY_ORDER) {
+      if (catalog.has(categoryName)) order.push(categoryName)
     }
-    return order.map((category) => {
-      const rows = byCategory.get(category) ?? []
-      // 只保留这张表真正用得到的定尺；顺序沿用全局定尺顺序
-      const categoryLengths = lengths.filter((length) =>
-        rows.some((row) => comboKeys.has(quoteRowKey(leafOf(row, length)))),
-      )
-      const indexByKey = new Map<string, number>()
-      for (const [index, row] of rows.entries()) {
-        indexByKey.set(matrixKeyOf(row), index)
+    for (const categoryName of catalog.keys()) {
+      if (!order.includes(categoryName)) order.push(categoryName)
+    }
+
+    const needle = keyword.trim().toLowerCase()
+    return order.map((categoryName) => {
+      const category = catalog.get(categoryName)
+      const cellColumns = cellColumnsOf(category, brandNames)
+      let specs = category?.specs ?? []
+      if (needle) {
+        // 规格可以直接按数字匹配；材质/定尺名命中时保留该类别下这些材质拥有的规格
+        const materialMatch = cellColumns.some((column) =>
+          `${column.material} ${column.length}`.toLowerCase().includes(needle),
+        )
+        specs = specs.filter(
+          (spec) => materialMatch || String(spec).includes(needle),
+        )
       }
+      const rows: SpecRow[] = specs.map((spec) => ({ spec }))
+      if (onlyUnpriced) {
+        rows.splice(
+          0,
+          rows.length,
+          ...rows.filter((row) =>
+            cellColumns.every((column) => {
+              if (
+                !catalogHas(
+                  category,
+                  column.brandName,
+                  column.material,
+                  row.spec,
+                  column.length,
+                )
+              ) {
+                return true
+              }
+              const key = quoteRowKey(leafOfSpec(column, row.spec))
+              const price =
+                savedValues[column.brandName]?.[key] ??
+                serverPriceOf(column.brandName, key)
+              return price === undefined || price === null
+            }),
+          ),
+        )
+      }
+      const indexBySpec = new Map<number, number>()
+      for (const [index, row] of rows.entries())
+        indexBySpec.set(row.spec, index)
       return {
+        categoryName,
         category,
         rows,
-        indexByKey,
-        lengths: categoryLengths,
-        /** 该表的列顺序：品牌 × 定尺（粘贴按列下标落格、↑↓ 在同一列内移动）。 */
-        cellColumns: brandNames.flatMap((brandName) =>
-          categoryLengths.map((length) => ({ brandName, length })),
-        ),
+        indexBySpec,
+        cellColumns,
       }
     })
-  }, [brandNames, comboKeys, displayRows, lengths])
+  }, [brandNames, catalog, keyword, onlyUnpriced, savedValues, serverPriceOf])
 
   /* ---------------------------------------------------------------- 自动保存 */
 
@@ -851,10 +859,10 @@ export function SupplierQuoteBoard() {
     const matrix = parseClipboardGrid(text)
     if (!matrix.length) return
     const group = categoryGroups.find(
-      (candidate) => candidate.category === anchor.category,
+      (candidate) => candidate.categoryName === anchor.category,
     )
     if (!group) return
-    const startRow = group.indexByKey.get(anchor.rowKey) ?? -1
+    const startRow = group.indexBySpec.get(Number(anchor.rowKey)) ?? -1
     const startColumn = anchor.columnIndex
     if (startRow < 0 || startColumn < 0) return
     event.preventDefault()
@@ -871,12 +879,21 @@ export function SupplierQuoteBoard() {
           dropped += 1
           return
         }
-        const leaf = leafOf(row, column.length)
-        const key = quoteRowKey(leaf)
-        if (!comboKeys.has(key)) {
+        // 商品资料里没有这个「品牌 + 材质 + 定尺 + 规格」：丢弃该格，不写脏数据
+        if (
+          !catalogHas(
+            group.category,
+            column.brandName,
+            column.material,
+            row.spec,
+            column.length,
+          )
+        ) {
           dropped += 1
           return
         }
+        const leaf = leafOfSpec(column, row.spec)
+        const key = quoteRowKey(leaf)
         const brandName = column.brandName
         const trimmed = raw.trim()
         if (trimmed === '') {
@@ -1002,140 +1019,186 @@ export function SupplierQuoteBoard() {
     </Flex>
   )
 
+  /**
+   * 一张类别表（盘螺 / 直条）的列定义：行 = 规格，列 = 品牌 → 材质 → 定尺。
+   *
+   * <p>三级表头都来自商品资料：某个品牌没有的材质、没有的定尺，连列都不出现（见
+   * {@link buildBrandCatalog}）。只有一个定尺时（盘螺）不套定尺层，避免每个品牌头顶挂一个「—」。</p>
+   */
   const columnsOfCategory = (
     group: (typeof categoryGroups)[number],
-  ): ColumnsType<QuoteRow> => [
-    {
-      title: t('priceCompare.supplierPrice.material'),
-      key: 'material',
-      width: ROW_HEAD_WIDTHS.material,
-      fixed: 'left',
-      render: (_value, row) => row.material,
-    },
-    {
-      title: t('priceCompare.supplierPrice.specNo'),
-      key: 'spec',
-      width: ROW_HEAD_WIDTHS.spec,
-      align: 'center',
-      fixed: 'left',
-      render: (_value, row) => row.spec,
-    },
-    ...brandNames.map<ColumnsType<QuoteRow>[number]>((brandName) => {
-      /*
-       * 品牌表头：品牌名 + 保存状态圆点 + 「清空/移除本列」菜单。
-       * 这张表只有一个定尺时（盘螺不分定尺）不套子表头，直接把品牌当列头。
-       */
-      const headerTitle = brandHeaderOf(brandName)
+  ): ColumnsType<SpecRow> => {
+    const columns: ColumnsType<SpecRow> = [
+      {
+        title: t('priceCompare.supplierPrice.specNo'),
+        key: 'spec',
+        width: ROW_HEAD_WIDTHS.spec,
+        align: 'center',
+        fixed: 'left',
+        render: (_value, row) => row.spec,
+      },
+    ]
 
-      const cellOf = (length: string): ColumnsType<QuoteRow>[number] => ({
-        title: length === '-' ? '—' : length,
-        key: `${brandName}\u0000${length}`,
-        width: BRAND_COLUMN_WIDTH,
-        align: 'right' as const,
-        render: (_value: unknown, row: QuoteRow) => {
-          const leaf = leafOf(row, length)
-          const key = quoteRowKey(leaf)
-          // 商品资料里没有这个「材质+规格+定尺」组合：留空，不给输入框
-          if (!comboKeys.has(key)) return null
-          const value = cellValueOfLeaf(brandName, leaf)
-          const cheapest = cheapestOfRow(row)
-          const isCheapest =
-            value !== null &&
-            value > 0 &&
-            cheapest?.brandName === brandName &&
-            cheapest?.length === length
+    for (const brandName of brandNames) {
+      const brandCatalog = group.category?.byBrand.get(brandName)
+      if (!brandCatalog) continue
+      const materialColumns: ColumnsType<SpecRow> = []
+      for (const [material, lengths] of brandCatalog.materials) {
+        const lengthKeys = [...lengths.keys()].sort(sortLengths)
+        const cellOf = (length: string): ColumnsType<SpecRow>[number] => {
           const columnIndex = group.cellColumns.findIndex(
             (column) =>
-              column.brandName === brandName && column.length === length,
+              column.brandName === brandName &&
+              column.material === material &&
+              column.length === length,
           )
-          return (
-            <InputNumber
-              aria-label={`${brandName} ${row.material} ${row.spec} ${length}`}
-              className={`supplier-price-sheet-input${isCheapest ? ' supplier-price-cheapest' : ''}`}
-              data-grid-cell={cellKey(columnIndex, key)}
-              controls={false}
-              disabled={!canUpdate}
-              min={0}
-              size="small"
-              style={{ width: '100%' }}
-              value={value}
-              onFocus={() => {
-                anchorRef.current = {
-                  category: group.category,
-                  columnIndex,
-                  rowKey: matrixKeyOf(row),
-                }
-              }}
-              onChange={(next) =>
-                updateCell(
+          const column = group.cellColumns[columnIndex]
+          return {
+            title: length === '-' ? '—' : length,
+            key: `${brandName}\u0000${material}\u0000${length}`,
+            width: BRAND_COLUMN_WIDTH,
+            align: 'right' as const,
+            render: (_value: unknown, row: SpecRow) => {
+              if (
+                !catalogHas(
+                  group.category,
                   brandName,
-                  key,
-                  typeof next === 'number' ? roundPrice(next) : null,
+                  material,
+                  row.spec,
+                  length,
                 )
+              ) {
+                // 商品资料里没有这个「品牌 + 材质 + 定尺 + 规格」：格子都不出现
+                return null
               }
-              onKeyDown={(event) => {
-                const move = (delta: number) => {
-                  const index = group.indexByKey.get(matrixKeyOf(row)) ?? -1
-                  const target = group.rows[index + delta]
-                  if (!target) return
-                  const targetLeafKey = quoteRowKey(leafOf(target, length))
-                  if (!comboKeys.has(targetLeafKey)) return
-                  const node = document.querySelector<HTMLInputElement>(
-                    `input[data-grid-cell="${cellKey(columnIndex, targetLeafKey)}"]`,
-                  )
-                  if (!node) return
-                  event.preventDefault()
-                  node.focus()
-                  node.select()
-                }
-                if (event.key === 'ArrowDown' || event.key === 'Enter') {
-                  move(1)
-                  return
-                }
-                if (event.key === 'ArrowUp') {
-                  move(-1)
-                  return
-                }
-                if (event.key === 'Escape') event.currentTarget.blur()
-              }}
-            />
-          )
-        },
-      })
-      return group.lengths.length > 1
-        ? {
-            title: headerTitle,
-            key: brandName,
-            children: group.lengths.map(cellOf),
+              const leaf = leafOfSpec(column, row.spec)
+              const key = quoteRowKey(leaf)
+              const value = cellValueOfLeaf(brandName, leaf)
+              const cheapest = cheapestOfSpec(
+                group.category,
+                group.cellColumns,
+                row.spec,
+              )
+              const isCheapest =
+                value !== null &&
+                value > 0 &&
+                cheapest?.brandName === brandName &&
+                cheapest?.material === material &&
+                cheapest?.length === length
+              return (
+                <InputNumber
+                  aria-label={`${brandName} ${material} ${row.spec} ${length}`}
+                  className={`supplier-price-sheet-input${isCheapest ? ' supplier-price-cheapest' : ''}`}
+                  data-grid-cell={cellKey(columnIndex, key)}
+                  controls={false}
+                  disabled={!canUpdate}
+                  min={0}
+                  size="small"
+                  style={{ width: '100%' }}
+                  value={value}
+                  onFocus={() => {
+                    anchorRef.current = {
+                      category: group.categoryName,
+                      columnIndex,
+                      rowKey: String(row.spec),
+                    }
+                  }}
+                  onChange={(next) =>
+                    updateCell(
+                      brandName,
+                      key,
+                      typeof next === 'number' ? roundPrice(next) : null,
+                    )
+                  }
+                  onKeyDown={(event) => {
+                    const move = (delta: number) => {
+                      const index = group.indexBySpec.get(row.spec) ?? -1
+                      const target = group.rows[index + delta]
+                      if (!target) return
+                      const targetLeaf = leafOfSpec(column, target.spec)
+                      if (
+                        !catalogHas(
+                          group.category,
+                          brandName,
+                          material,
+                          target.spec,
+                          length,
+                        )
+                      ) {
+                        return
+                      }
+                      const node = document.querySelector<HTMLInputElement>(
+                        `input[data-grid-cell="${cellKey(columnIndex, quoteRowKey(targetLeaf))}"]`,
+                      )
+                      if (!node) return
+                      event.preventDefault()
+                      node.focus()
+                      node.select()
+                    }
+                    if (event.key === 'ArrowDown' || event.key === 'Enter') {
+                      move(1)
+                      return
+                    }
+                    if (event.key === 'ArrowUp') {
+                      move(-1)
+                      return
+                    }
+                    if (event.key === 'Escape') event.currentTarget.blur()
+                  }}
+                />
+              )
+            },
           }
-        : {
-            ...cellOf(group.lengths[0] ?? '-'),
-            title: headerTitle,
-            key: brandName,
-          }
-    }),
-    {
+        }
+        if (lengthKeys.length > 1) {
+          materialColumns.push({
+            title: material,
+            key: `${brandName}\u0000${material}`,
+            children: lengthKeys.map(cellOf),
+          })
+        } else {
+          materialColumns.push({
+            ...cellOf(lengthKeys[0] ?? '-'),
+            title: material,
+            key: `${brandName}\u0000${material}`,
+          })
+        }
+      }
+      if (materialColumns.length) {
+        columns.push({
+          title: brandHeaderOf(brandName),
+          key: brandName,
+          children: materialColumns,
+        })
+      }
+    }
+
+    columns.push({
       /*
-       * 本行最低价：不再需要表头文案（内容自带「品牌 + 价格」），
-       * 也不借用「基价」这类语义不同的既有文案键。
+       * 本行最低价：内容自带「品牌 材质 定尺 价格」，表头不再占用文案键。
        */
       title: '',
       key: 'cheapest',
       width: CHEAPEST_COLUMN_WIDTH,
       render: (_value, row) => {
-        const cheapest = cheapestOfRow(row)
+        const cheapest = cheapestOfSpec(
+          group.category,
+          group.cellColumns,
+          row.spec,
+        )
         // 没报价就留空：一列全是「—」只会让人以为页面坏了
         if (!cheapest) return null
         return (
           <span className="supplier-price-cheapest-label">
-            {cheapest.brandName}
+            {cheapest.brandName} {cheapest.material}
             {cheapest.length === '-' ? '' : ` ${cheapest.length}`}{' '}
             {cheapest.price}
           </span>
         )
       },
-    },
-  ]
+    })
+    return columns
+  }
 
   const supplierPicker = (
     <Dropdown
@@ -1281,7 +1344,7 @@ export function SupplierQuoteBoard() {
             {t('priceCompare.supplierPrice.retry')}
           </Button>
         </Flex>
-      ) : displayRows.length === 0 ? (
+      ) : categoryGroups.every((group) => group.rows.length === 0) ? (
         <Empty description={t('priceCompare.supplierPrice.empty')} />
       ) : (
         /*
@@ -1299,20 +1362,19 @@ export function SupplierQuoteBoard() {
             {categoryGroups.map((group) => (
               <div
                 className="supplier-price-sheet-category"
-                key={group.category}
+                key={group.categoryName}
               >
                 <Typography.Text className="supplier-price-transposed-category">
-                  {group.category}
+                  {group.categoryName}
                 </Typography.Text>
-                <Table<QuoteRow>
+                <Table<SpecRow>
                   bordered
                   columns={columnsOfCategory(group)}
                   dataSource={group.rows}
                   pagination={false}
-                  rowKey={(row) => matrixKeyOf(row)}
+                  rowKey={(row) => row.spec}
                   scroll={{
                     x:
-                      ROW_HEAD_WIDTHS.material +
                       ROW_HEAD_WIDTHS.spec +
                       group.cellColumns.length * BRAND_COLUMN_WIDTH +
                       CHEAPEST_COLUMN_WIDTH,

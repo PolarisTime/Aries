@@ -115,6 +115,143 @@ export function serverCellsOf(
  * 行回填价格（见 {@link serverCellsOf}）。商品被停用/删除后，它的旧报价不再出现在表里（否则会出现
  * 「只有一格能填、其余全是 —」的残行）；那些价格仍随保存原样提交，见 {@link buildColumnSavePlan}。</p>
  */
+/** 行键：`材质|规格|定尺`（表格里行已经不含品牌与类别，见 {@link buildBrandCatalog}）。 */
+export const catalogCellKeyOf = (
+  material: string,
+  spec: number,
+  length: string,
+): string => `${material}|${spec}|${length}`
+
+/** 一个品牌的列结构：材质 → 定尺 → 该定尺下这个品牌真实经营过的规格。 */
+export type BrandCatalog = {
+  /** 材质 → 定尺 → 规格集合 */
+  materials: Map<string, Map<string, Set<number>>>
+}
+
+/** 一个类别（盘螺 / 直条）的完整目录：行是规格，列是「品牌 × 材质 × 定尺」。 */
+export type CategoryCatalog = {
+  category: string
+  /** 表格行：该类别的全部规格（升序、去重） */
+  specs: number[]
+  /** 品牌 → 目录；只含该品牌在商品资料里**真实存在**的组合 */
+  byBrand: Map<string, BrandCatalog>
+}
+
+/**
+ * 从商品资料构建按品牌切分的报价目录 —— 报价表的行/列口径**唯一来源**。
+ *
+ * <p>商品资料的每条记录都带 `brand`，所以「某品牌经营哪些 材质 × 定尺 × 规格」是确切已知的。
+ * 之前只按「全体商品的并集」建表，于是万泰的 HRB400 格子、中天没有的 36/40 规格都会出现，
+ * 用户面对一堆永远填不了的格子。这里改成本地化口径：<b>商品资料里没有的组合，连列/格子都不出现</b>。</p>
+ *
+ * <p>没有品牌的记录（历史脏数据）会被忽略：它们无法归属到任何一个品牌列；但它们的旧报价仍由
+ * {@link buildColumnSavePlan} 的「服务端条目并集」保留，不会因为看不见就被删掉。</p>
+ */
+export function buildBrandCatalog(
+  rows: readonly QuoteRow[],
+): Map<string, CategoryCatalog> {
+  const result = new Map<string, CategoryCatalog>()
+  for (const row of rows) {
+    const brand = (row.brand ?? '').trim()
+    if (!brand) continue
+    let category = result.get(row.category)
+    if (!category) {
+      category = { category: row.category, specs: [], byBrand: new Map() }
+      result.set(row.category, category)
+    }
+    let catalog = category.byBrand.get(brand)
+    if (!catalog) {
+      catalog = { materials: new Map() }
+      category.byBrand.set(brand, catalog)
+    }
+    let lengths = catalog.materials.get(row.material)
+    if (!lengths) {
+      lengths = new Map()
+      catalog.materials.set(row.material, lengths)
+    }
+    let specs = lengths.get(row.length)
+    if (!specs) {
+      specs = new Set()
+      lengths.set(row.length, specs)
+    }
+    specs.add(row.spec)
+  }
+  for (const category of result.values()) {
+    const specs = new Set<number>()
+    for (const catalog of category.byBrand.values()) {
+      for (const lengths of catalog.materials.values()) {
+        for (const values of lengths.values()) {
+          for (const spec of values) specs.add(spec)
+        }
+      }
+    }
+    category.specs = [...specs].sort((left, right) => left - right)
+  }
+  return result
+}
+
+/** 该品牌在该类别下是否经营这个组合（决定格子在不在、能不能填）。 */
+export function catalogHas(
+  category: CategoryCatalog | undefined,
+  brand: string,
+  material: string,
+  spec: number,
+  length: string,
+): boolean {
+  return (
+    category?.byBrand
+      .get(brand)
+      ?.materials.get(material)
+      ?.get(length)
+      ?.has(spec) ?? false
+  )
+}
+
+/**
+ * 某个品牌在该类别下的全部商品组合（保存载荷用）。
+ *
+ * <p>保存是整列替换，所以必须把这个品牌**真实经营**的全部组合都带上；配合
+ * {@link buildColumnSavePlan} 对服务端历史条目的并集，历史价格不会被清掉。</p>
+ */
+export function brandCatalogRows(
+  category: CategoryCatalog | undefined,
+  brand: string,
+): QuoteRow[] {
+  const catalog = category?.byBrand.get(brand)
+  if (!category || !catalog) return []
+  const rows: QuoteRow[] = []
+  for (const [material, lengths] of catalog.materials) {
+    for (const [length, specs] of lengths) {
+      for (const spec of specs) {
+        rows.push({
+          brand,
+          category: category.category,
+          material,
+          spec,
+          length,
+        })
+      }
+    }
+  }
+  return rows
+}
+
+/**
+ * 规格行去重（**含品牌**）。
+ *
+ * <p>报价表的行来源必须保留品牌：同一组「类别|材质|规格|定尺」在不同品牌下是不同商品，
+ * 用 {@link quoteRowKey} 去重会把中天的 HRB400 12 和萍钢的 HRB400 12 合并成一条，
+ * 目录里就会丢掉一个品牌。</p>
+ */
+export function mergeSpecRows(rows: readonly QuoteRow[]): QuoteRow[] {
+  const seen = new Map<string, QuoteRow>()
+  for (const row of rows) {
+    const key = `${(row.brand ?? '').trim()}\u0000${quoteRowKey(row)}`
+    if (!seen.has(key)) seen.set(key, row)
+  }
+  return [...seen.values()]
+}
+
 export function mergeQuoteRows(
   rows: readonly (QuoteRow | SupplierPriceRow)[],
 ): QuoteRow[] {
