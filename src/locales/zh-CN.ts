@@ -2923,6 +2923,7 @@ export const zhCN = {
       saveNothing: '没有需要保存的改动',
       material: '材质',
       specNo: '规格',
+      lowestPrice: '最低价',
       length: '定尺',
       viewModeBrands: '品牌成列',
       viewModeSpecs: '规格横置',

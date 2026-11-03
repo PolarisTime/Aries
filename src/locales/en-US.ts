@@ -2970,6 +2970,7 @@ export const enUS = {
       saveNothing: 'Nothing to save',
       material: 'Material',
       specNo: 'Size',
+      lowestPrice: 'Lowest price',
       length: 'Length',
       viewModeBrands: 'Brands as columns',
       viewModeSpecs: 'Specs across columns',

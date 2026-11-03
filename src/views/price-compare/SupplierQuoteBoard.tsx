@@ -247,23 +247,19 @@ export function SupplierQuoteBoard() {
   )
 
   /**
-   * 需要查询价格表的候选品牌 = 经营品牌 ∪ 商品品牌全集 ∪ 本次会话新建的列。
+   * 需要查询价格表的品牌 = **供应商资料的经营品牌** ∪ 本次会话手动加的列。
    *
-   * <p><b>为什么必须含「商品品牌全集」</b>：供应商的经营品牌被改小过、或历史上先有价格表、
-   * 后补主数据时，库里会存在「不在经营品牌里、但确实有报价」的品牌。只按经营品牌取数会让这些
-   * 历史价格在界面彻底消失（数据还在库中，却没有任何入口能看到、维护它）。
-   * 曾经专门有一条测试锁这个行为，重做工作台时被裁掉过，2026-11-03 按真实数据复现后补回：
-   * 实测某供应商经营品牌为「武钢汉钢/萍钢/铜陵富鑫」，但库里有「中天」「万泰」两张价格表
-   * （万泰含 2 条价格）。</p>
+   * <p>口径只有一个：供应商资料里配了什么品牌，报价表就只出现这些品牌。
+   * 库里若残留不在经营品牌内的价格表（例如经营品牌被改小过），那些表**不展示、也不改写** ——
+   * 保存只针对展示出来的列，所以它们的数据原样留在库中，不会被清空。</p>
+   *
+   * <p>2026-11-03 曾按「历史价格不能被藏起来」把这类品牌也成列，用户指出与经营品牌配置不符，
+   * 已改回严格按经营品牌。</p>
    */
-  const candidateBrands = useMemo(() => {
-    const extra = Object.keys(columns)
-    return [
-      ...new Set(
-        [...declaredBrands, ...materialBrands, ...extra].filter(Boolean),
-      ),
-    ]
-  }, [columns, declaredBrands, materialBrands])
+  const candidateBrands = useMemo(
+    () => [...new Set([...declaredBrands, ...Object.keys(columns)])],
+    [columns, declaredBrands],
+  )
 
   const gridQueries = useQueries({
     queries: supplierId
@@ -296,23 +292,8 @@ export function SupplierQuoteBoard() {
     [columns, gridByBrand, supplierId],
   )
 
-  /**
-   * 实际展示的品牌列 = 经营品牌 ∪ 本次新建的列 ∪ **库里已有价格表的品牌**。
-   *
-   * <p>前两类是「用户要报的品牌」（即使还没建列也必须显示，否则没地方输入）；
-   * 最后一类是「历史价格不能被藏起来」的保证：不在经营品牌里、但只要库里有列就照常成列，
-   * 用户能看见也能继续维护它。</p>
-   */
-  const brandNames = useMemo(() => {
-    const declared = new Set(declaredBrands)
-    const created = new Set(Object.keys(columns))
-    return candidateBrands.filter(
-      (brandName) =>
-        declared.has(brandName) ||
-        created.has(brandName) ||
-        columnOf(brandName) !== null,
-    )
-  }, [candidateBrands, columnOf, columns, declaredBrands])
+  /** 展示的品牌列 = 供应商资料的经营品牌 ∪ 本次手动加的列（不再按「库里有没有价格表」扩展）。 */
+  const brandNames = candidateBrands
 
   /** 品牌 → 网格 / 该供应商的列 / 服务端价格。三张表一次算好，避免每格都重算一遍。 */
   const byBrand = useMemo(() => {
@@ -427,7 +408,24 @@ export function SupplierQuoteBoard() {
     return order.map((categoryName) => {
       const category = catalog.get(categoryName)
       const cellColumns = cellColumnsOf(category, brandNames)
-      let specs = category?.specs ?? []
+      /*
+       * 行只取**已成名品牌的**规格并集，不能取整个类别的规格并集。
+       *
+       * <p>商品资料里存在一些不成列的品牌（`圆钢`、`盘螺调直`、E2E 夹具等：既不是该供应商的
+       * 经营品牌，也没有任何价格表），如果行按整个类别的规格算，它们独有的规格会变成
+       * 「整行没有任何可填格子」的死行 —— 用户看到的正是这种行。列按品牌筛、行却按全量算，
+       * 是口径不一致。</p>
+       */
+      const specSet = new Set<number>()
+      for (const column of cellColumns) {
+        const specsOfColumn =
+          category?.byBrand
+            .get(column.brandName)
+            ?.materials.get(column.material)
+            ?.get(column.length) ?? []
+        for (const spec of specsOfColumn) specSet.add(spec)
+      }
+      let specs = [...specSet].sort((left, right) => left - right)
       if (needle) {
         // 规格可以直接按数字匹配；材质/定尺名命中时保留该类别下这些材质拥有的规格
         const materialMatch = cellColumns.some((column) =>
@@ -1174,10 +1172,8 @@ export function SupplierQuoteBoard() {
     }
 
     columns.push({
-      /*
-       * 本行最低价：内容自带「品牌 材质 定尺 价格」，表头不再占用文案键。
-       */
-      title: '',
+      // 表头必须有文案：留空会渲染成一列「没有标题的空白列」，看起来像多出来的脏列
+      title: t('priceCompare.supplierPrice.lowestPrice'),
       key: 'cheapest',
       width: CHEAPEST_COLUMN_WIDTH,
       render: (_value, row) => {

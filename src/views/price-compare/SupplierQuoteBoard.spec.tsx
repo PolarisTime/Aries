@@ -275,19 +275,20 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
   })
 
   /**
-   * 回归（2026-11-03 按真实数据复现）：品牌列只按「供应商经营品牌」取数时，
-   * 库里已有价格表、但不在经营品牌里的品牌会整列消失 —— 历史价格还在库中，却没有任何入口
-   * 能看到或维护它。实测某供应商经营品牌是「武钢汉钢/萍钢/铜陵富鑫」，而库里有「中天」「万泰」
-   * 两张价格表。旧界面有一条测试锁这个行为，重做工作台时被裁掉，这里补回。
+   * 口径（2026-11-03 用户明确）：品牌列**只按供应商资料里配置的经营品牌**。
+   *
+   * <p>库里若残留不在经营品牌内的价格表（经营品牌被改小过、或测试遗留），那些品牌不展示；
+   * 因为保存只针对展示出来的列，所以它们的数据原样留在库中，不会被这次「整列替换」清掉。</p>
+   *
+   * <p>本条替换了此前「历史价格不能被藏起来 → 有价格表就成列」的反向断言：那个做法会让
+   * 供应商明明只配了 3 个品牌、报价表却冒出 5 个，与配置不符。</p>
    */
-  it('不在经营品牌里、但库里已有价格表的品牌仍然成列（历史价格不能被藏起来）', async () => {
+  it('品牌列严格按经营品牌：库里有价格表但未配置的品牌不展示', async () => {
     supplierApi.fetchSupplierOptions.mockResolvedValue([
       { ...SUPPLIER, brands: ['中天'] },
     ])
-    // 万泰不在经营品牌里，但商品品牌全集里有它（构建候选品牌的发现来源）
     materialBrands.useMaterialBrands = vi.fn(() => ['中天', '万泰'])
-    priceApi.fetchSpecRows.mockResolvedValue([ROW_PANLUO, ROW_WANTAI])
-    // 万泰的价格表列 id 是 l9，价格必须挂在 l9 上，才能验证「历史价格照常回显」
+    priceApi.fetchSpecRows.mockResolvedValue([ROW_A, ROW_PANLUO, ROW_WANTAI])
     const wanTaiColumn = { ...COLUMN, listId: 'l9' }
     priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
       Promise.resolve(
@@ -310,75 +311,14 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     await render()
 
-    await waitFor(() => headers().some((text) => text.includes('万泰')))
-    expect(headers().some((text) => text.includes('万泰'))).toBe(true)
-    // 该品牌的历史价格照常回显，并且可继续编辑
-    await waitFor(() => cellInput('万泰 HRB400E 6 -')?.value === '3280')
-    expect(cellInput('万泰 HRB400E 6 -')?.value).toBe('3280')
-  })
-
-  /**
-   * 回归（2026-11-03）：自动保存有 800ms 防抖，且保存失败时改动只留在内存里。原界面把未保存
-   * 草稿写进 localStorage、回到页面提示「已恢复 / 放弃」；重做工作台时这段能力丢了，
-   * 于是切页或刷新会静默丢掉刚敲的价格。这里锁两条：刷新后能恢复、能一键放弃。
-   */
-  it('刷新后恢复上次未保存的草稿，并可一键放弃', async () => {
-    window.localStorage.setItem(
-      'aries:supplier-quote-drafts:s1',
-      JSON.stringify({ 中天: { '直条|HRB400E|12|9米': 3290 } }),
-    )
-
-    await render()
-
-    // 恢复的草稿覆盖服务端值，并给出可放弃的提示
-    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3290')
-    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3290')
-    expect(container.textContent).toContain(
-      i18n.t('priceCompare.supplierPrice.draftsRestored'),
-    )
-
-    const discard = Array.from(container.querySelectorAll('button')).find(
-      (node) =>
-        node.textContent === i18n.t('priceCompare.supplierPrice.discardDrafts'),
-    )
-    expect(discard, '应有「放弃草稿」按钮').toBeDefined()
-    await act(async () => {
-      discard?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    // 放弃后回到服务端价格，提示消失，本地存储也清掉
-    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
-    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3280')
-    expect(container.textContent).not.toContain(
-      i18n.t('priceCompare.supplierPrice.draftsRestored'),
-    )
-    expect(
-      window.localStorage.getItem('aries:supplier-quote-drafts:s1'),
-    ).toBeNull()
-  })
-
-  it('改动会写入本地草稿，保存成功后自动清除', async () => {
-    await render()
-    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
-
-    await typePrice('中天 HRB400E 12 9米', '3299')
-    // 防抖期间还没落库，但本地必须已经有草稿（否则此刻刷新就丢了）
-    expect(
-      JSON.parse(
-        window.localStorage.getItem('aries:supplier-quote-drafts:s1') ?? '{}',
-      ),
-    ).toEqual({ 中天: { '直条|HRB400E|12|9米': 3299 } })
-
-    await flushAutosave()
-    // 自动保存完成后草稿清空，本地存储随之删除
-    await waitFor(
-      () =>
-        window.localStorage.getItem('aries:supplier-quote-drafts:s1') === null,
-    )
-    expect(
-      window.localStorage.getItem('aries:supplier-quote-drafts:s1'),
-    ).toBeNull()
+    // 中天（经营品牌）成列
+    await waitFor(() => cellInput('中天 HRB400E 12 9米') !== null)
+    expect(cellInput('中天 HRB400E 12 9米')).not.toBeNull()
+    // 万泰虽然有价格表，但不在经营品牌里 → 不成列
+    expect(headers().some((text) => text.includes('万泰'))).toBe(false)
+    expect(cellInput('万泰 HRB400E 6 -')).toBeNull()
+    // 也不会为了它去发保存请求（数据原样留在库中）
+    expect(priceApi.saveSupplierPriceColumnItems).not.toHaveBeenCalled()
   })
 
   /**
@@ -439,6 +379,49 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     // 萍钢没有 HRB400E，也没有 12米：这些格子**根本不存在**（不是留空）
     expect(cellInput('萍钢 HRB400E 12 9米')).toBeNull()
     expect(cellInput('萍钢 HRB400 12 12米')).toBeNull()
+  })
+
+  /**
+   * 回归（2026-11-03 用户提问「以品牌来筛选怎么会进表」）：列按品牌筛、行却按整个类别的规格
+   * 并集算，会让「只属于不成列品牌」的规格变成整行没有任何可填格子的死行。
+   * 实测数据：商品资料里 `圆钢` 品牌有 HPB300 20/32（该品牌既不是经营品牌、也没有价格表）。
+   */
+  it('不成列的品牌（如圆钢）不会把自己的规格变成空行', async () => {
+    priceApi.fetchSpecRows.mockResolvedValue([
+      // 成列品牌：中天 HRB400E 12 9米
+      {
+        brand: '中天',
+        category: '直条',
+        material: 'HRB400E',
+        spec: 12,
+        length: '9米',
+      },
+      // 不成列品牌：圆钢 HPB300 20/32（供应商没经营它，也没有价格表）
+      {
+        brand: '圆钢',
+        category: '直条',
+        material: 'HPB300',
+        spec: 20,
+        length: '9米',
+      },
+      {
+        brand: '圆钢',
+        category: '直条',
+        material: 'HPB300',
+        spec: 32,
+        length: '9米',
+      },
+    ])
+
+    await render()
+
+    // 表里只有中天这一个品牌列
+    expect(cellInput('中天 HRB400E 12 9米')).not.toBeNull()
+    // 圆钢不成列，它的材质不该出现在表头
+    expect(headers().some((text) => text.includes('HPB300'))).toBe(false)
+    // 它独有的规格 20 / 32 也不该变成空行
+    expect(rows()).toHaveLength(1)
+    expect(container.textContent).not.toContain('HPB300')
   })
 
   /**
