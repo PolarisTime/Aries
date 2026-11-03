@@ -47,7 +47,6 @@ import {
 } from '@/api/market/supplier-price-lists'
 import { fetchSupplierOptions } from '@/api/master/supplier-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
-import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import { useHasPermission } from '@/hooks/usePermission'
 import { message, modal } from '@/utils/antd-app'
 import {
@@ -185,7 +184,6 @@ const dotStyle = (color: string): CSSProperties => ({
 export function SupplierQuoteBoard() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const materialBrands = useMaterialBrands()
   const canUpdate = useHasPermission('supplier-price-lists:update')
   const canDelete = useHasPermission('supplier-price-lists:delete')
 
@@ -809,25 +807,6 @@ export function SupplierQuoteBoard() {
     else close()
   }
 
-  /** 加一个品牌列：给这家供应商建一条 (供应商, 品牌) 价格表。 */
-  const addBrand = async (brandName: string) => {
-    const currentSupplierId = supplierIdRef.current
-    if (!currentSupplierId) return
-    try {
-      const column = await addSupplierPriceColumn({
-        brandName,
-        supplierId: currentSupplierId,
-        quotedOn: quotedOnRef.current.format('YYYY-MM-DD'),
-      })
-      setColumns((current) => ({ ...current, [brandName]: column }))
-      await queryClient.invalidateQueries({ queryKey: gridQueryKey(brandName) })
-    } catch {
-      message.error(
-        t('priceCompare.supplierPrice.saveFailed', { names: brandName }),
-      )
-    }
-  }
-
   const removeBrand = (brandName: string) => {
     const column = byBrandRef.current.columns.get(brandName) ?? null
     if (!column) {
@@ -981,13 +960,6 @@ export function SupplierQuoteBoard() {
   }
 
   /* ---------------------------------------------------------------- 渲染 */
-
-  const brandColumnOptions = useMemo(() => {
-    const selected = new Set(brandNames)
-    return materialBrands
-      .filter((brand) => !selected.has(brand))
-      .map((brand) => ({ key: brand, label: brand }))
-  }, [brandNames, materialBrands])
 
   const pendingCount = Object.values(drafts).reduce(
     (sum, draft) => sum + draftCount(draft),
@@ -1354,18 +1326,6 @@ export function SupplierQuoteBoard() {
         >
           {t('priceCompare.supplierPrice.refresh')}
         </Button>
-        <Dropdown
-          disabled={!canUpdate || brandColumnOptions.length === 0}
-          menu={{
-            items: brandColumnOptions,
-            onClick: ({ key }) => void addBrand(key),
-          }}
-          trigger={['click']}
-        >
-          <Button icon={<PlusOutlined />} style={{ marginInlineStart: 'auto' }}>
-            {t('priceCompare.supplierPrice.brand')}
-          </Button>
-        </Dropdown>
       </Flex>
 
       <Flex align="center" gap={8} wrap>
