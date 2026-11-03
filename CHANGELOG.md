@@ -1,3 +1,10 @@
+# [15.3.0](https://github.com/PolarisTime/Aries/compare/v15.2.0...v15.3.0) (2026-11-03)
+
+
+### Features
+
+* **price-compare:** 价格列固定 4 位数字宽，材质做成二级 tab ([3c9b0bf](https://github.com/PolarisTime/Aries/commit/3c9b0bf586bfe8db57dfddc8de6a8b738f82c631))
+
 # [15.2.0](https://github.com/PolarisTime/Aries/compare/v15.1.1...v15.2.0) (2026-11-03)
 
 
