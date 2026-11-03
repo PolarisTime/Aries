@@ -82,8 +82,6 @@ const DYNAMIC_KEY_WHITELIST = [
   'layouts.settings.${}',
   // src/config/business-pages/operations/purchase-order-rules.ts
   'modules.pages.purchaseOrder.${}',
-  // src/views/price-compare/SupplierQuotePage.tsx 与同目录 spec
-  'priceCompare.supplierPrice.${}',
   // src/views/price-compare/SpotSyncActions.tsx
   'priceCompare.spotSync.scope.${}.desc',
   'priceCompare.spotSync.scope.${}.title',
