@@ -1,3 +1,10 @@
+## [15.4.1](https://github.com/PolarisTime/Aries/compare/v15.4.0...v15.4.1) (2026-11-04)
+
+
+### Bug Fixes
+
+* **freight-bill:** 导入明细重量按来源实际重量分摊，不再用件重换算 ([94afd36](https://github.com/PolarisTime/Aries/commit/94afd36896f3d892134a8e572e265eb3caca3d84))
+
 # [15.4.0](https://github.com/PolarisTime/Aries/compare/v15.3.0...v15.4.0) (2026-11-04)
 
 
