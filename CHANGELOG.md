@@ -1,3 +1,10 @@
+# [15.4.0](https://github.com/PolarisTime/Aries/compare/v15.3.0...v15.4.0) (2026-11-04)
+
+
+### Features
+
+* **price-compare:** 供应商报价表支持 Excel 式选区与批量操作 ([f82aae2](https://github.com/PolarisTime/Aries/commit/f82aae250d86e02b0bc4b5e9549428c431f365af))
+
 # [15.3.0](https://github.com/PolarisTime/Aries/compare/v15.2.0...v15.3.0) (2026-11-03)
 
 
