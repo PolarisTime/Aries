@@ -70,14 +70,33 @@ export function transformSalesOrderItemsToFreightBillItems(
       // buildParentImportState 据此计算 _maxImportQuantity 并在多单合并时累加已分配量。
       const pieceWeightTon = Number(item.pieceWeightTon || 0)
       const unitPrice = Number(item.unitPrice || 0)
+      const sourceQuantity = Number(item.quantity || 0)
+      const sourceWeightTon = Number(item.weightTon || 0)
+      /*
+       * 重量口径：**来源实际重量按件数分摊**优先，件重换算只作兜底。
+       *
+       * <p>件重（pieceWeightTon）是名义值（盘螺常统一按 2.3 吨/件），与实际过磅重量常有差异；
+       * 2026-10-31 的物流单 374859547451334656 就是按 9 × 2.3 = 20.7 计算，而来源订单/出库实际
+       * 是 20.19 / 20.192，多计 1.018 吨运费。整单导入时 remainingQuantity == quantity，
+       * 分摊结果就是来源实际重量本身。</p>
+       */
+      const proratedWeightTon =
+        sourceWeightTon > 0 && sourceQuantity > 0
+          ? Number(
+              ((sourceWeightTon * remainingQuantity) / sourceQuantity).toFixed(
+                INTERNAL_WEIGHT_PRECISION,
+              ),
+            )
+          : undefined
       const weightTon =
-        pieceWeightTon > 0
+        proratedWeightTon ??
+        (pieceWeightTon > 0
           ? Number(
               (remainingQuantity * pieceWeightTon).toFixed(
                 INTERNAL_WEIGHT_PRECISION,
               ),
             )
-          : Number(item.weightTon || 0)
+          : sourceWeightTon)
       const amount = multiplyAmount(weightTon, unitPrice)
       return {
         ...base,

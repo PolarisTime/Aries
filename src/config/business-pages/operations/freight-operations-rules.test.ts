@@ -106,7 +106,7 @@ describe('freight-operations-rules', () => {
       })
     })
 
-    it('以行级 remainingQuantity 作为默认数量并按件重换算重量金额与上限', () => {
+    it('来源没有实际重量时按件重换算重量金额与上限', () => {
       const items = transformSalesOrderItemsToFreightBillItems(
         recordWith({
           orderNo: 'SO-9',
@@ -129,6 +129,61 @@ describe('freight-operations-rules', () => {
         remainingQuantity: 4,
         remainingWeightTon: 2,
         remainingAmount: 200,
+      })
+    })
+
+    /*
+     * 回归（2026-11-04 生产数据 374859547451334656）：来源有**实际过磅重量**时，
+     * 必须按「实际重量 × 剩余数量 / 来源数量」分摊，不能再用件重（名义值）换算。
+     * 盘螺 8：来源 10 件、实际 20.190 吨、件重 2.3；导入 9 件应为 18.171 吨（不是 20.7）。
+     */
+    it('来源有实际重量时按件数比例分摊，而不是件重 × 数量', () => {
+      const items = transformSalesOrderItemsToFreightBillItems(
+        recordWith({
+          orderNo: 'SO-9',
+          items: [
+            {
+              id: '1932500000000000005',
+              brand: '品牌甲',
+              quantity: 10,
+              remainingQuantity: 9,
+              weightTon: 20.19,
+              pieceWeightTon: 2.3,
+              unitPrice: 100,
+            },
+          ],
+        }),
+      )
+      expect(items[0]).toMatchObject({
+        quantity: 9,
+        weightTon: 18.171,
+        amount: 1817.1,
+        remainingWeightTon: 18.171,
+        remainingAmount: 1817.1,
+      })
+    })
+
+    it('整单导入时重量等于来源实际重量（不再受件重影响）', () => {
+      const items = transformSalesOrderItemsToFreightBillItems(
+        recordWith({
+          orderNo: 'SO-9',
+          items: [
+            {
+              id: '1932500000000000006',
+              brand: '品牌甲',
+              quantity: 9,
+              remainingQuantity: 9,
+              weightTon: 20.19,
+              pieceWeightTon: 2.3,
+              unitPrice: 25,
+            },
+          ],
+        }),
+      )
+      expect(items[0]).toMatchObject({
+        quantity: 9,
+        weightTon: 20.19,
+        amount: 504.75,
       })
     })
 
