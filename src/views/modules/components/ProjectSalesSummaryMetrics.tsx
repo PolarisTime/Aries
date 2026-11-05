@@ -1,5 +1,3 @@
-import type { DescriptionsProps } from 'antd'
-import { Descriptions } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ProjectSalesSummary } from '@/api/sales/project-sales-summary'
 import { formatAmount, formatWeight } from '@/utils/formatters'
@@ -20,66 +18,81 @@ interface Props {
 export function ProjectSalesSummaryMetrics({ summary }: Props) {
   const { t } = useTranslation()
 
-  const orderItems: DescriptionsProps['items'] = [
+  // 三组指标压成一行内联小字：组名加粗，指标按「标签 数值」成对出现。
+  // 不再用带标题的 bordered Descriptions —— 那张表会把每组撑成「一行标题 + 一行数据」，
+  // 三组叠起来就是六行，和面板表头的小字单行密度对不上。
+  const groups: Array<{
+    key: string
+    title: string
+    items: Array<{ key: string; label: string; value: string }>
+  }> = [
     {
-      key: 'orderAmount',
-      label: t('modules.projectSalesSummary.orderAmount'),
-      children: formatAmount(summary.orderAmount),
+      key: 'orders',
+      title: t('modules.projectSalesSummary.groupOrders'),
+      items: [
+        {
+          key: 'orderAmount',
+          label: t('modules.projectSalesSummary.orderAmount'),
+          value: formatAmount(summary.orderAmount),
+        },
+        {
+          key: 'orderTonnage',
+          label: t('modules.projectSalesSummary.orderTonnage'),
+          value: formatWeight(summary.orderTonnage),
+        },
+      ],
     },
     {
-      key: 'orderTonnage',
-      label: t('modules.projectSalesSummary.orderTonnage'),
-      children: formatWeight(summary.orderTonnage),
-    },
-  ]
-
-  const deliveryItems: DescriptionsProps['items'] = [
-    {
-      key: 'deliveredTonnage',
-      label: t('modules.projectSalesSummary.deliveredTonnage'),
-      children: formatWeight(summary.deliveredTonnage),
-    },
-  ]
-
-  const reconcileItems: DescriptionsProps['items'] = [
-    {
-      key: 'unreconciledAmount',
-      label: t('modules.projectSalesSummary.unreconciledAmount'),
-      children: formatAmount(summary.unreconciledAmount),
+      key: 'delivery',
+      title: t('modules.projectSalesSummary.groupDelivery'),
+      items: [
+        {
+          key: 'deliveredTonnage',
+          label: t('modules.projectSalesSummary.deliveredTonnage'),
+          value: formatWeight(summary.deliveredTonnage),
+        },
+      ],
     },
     {
-      key: 'unreconciledTonnage',
-      label: t('modules.projectSalesSummary.unreconciledTonnage'),
-      children: formatWeight(summary.unreconciledTonnage),
+      key: 'reconcile',
+      title: t('modules.projectSalesSummary.groupReconcile'),
+      items: [
+        {
+          key: 'unreconciledAmount',
+          label: t('modules.projectSalesSummary.unreconciledAmount'),
+          value: formatAmount(summary.unreconciledAmount),
+        },
+        {
+          key: 'unreconciledTonnage',
+          label: t('modules.projectSalesSummary.unreconciledTonnage'),
+          value: formatWeight(summary.unreconciledTonnage),
+        },
+      ],
     },
   ]
 
   return (
     <div className="project-sales-summary__metrics">
-      <Descriptions
-        className="project-sales-summary__metrics-group"
-        bordered
-        size="small"
-        column={{ xs: 1, sm: 2 }}
-        title={t('modules.projectSalesSummary.groupOrders')}
-        items={orderItems}
-      />
-      <Descriptions
-        className="project-sales-summary__metrics-group"
-        bordered
-        size="small"
-        column={{ xs: 1, sm: 2 }}
-        title={t('modules.projectSalesSummary.groupDelivery')}
-        items={deliveryItems}
-      />
-      <Descriptions
-        className="project-sales-summary__metrics-group"
-        bordered
-        size="small"
-        column={{ xs: 1, sm: 2 }}
-        title={t('modules.projectSalesSummary.groupReconcile')}
-        items={reconcileItems}
-      />
+      {groups.map((group) => (
+        <div key={group.key} className="project-sales-summary__metrics-group">
+          <span className="project-sales-summary__metrics-title">
+            {group.title}
+          </span>
+          {group.items.map((item) => (
+            <span
+              key={item.key}
+              className="project-sales-summary__metrics-item"
+            >
+              <span className="project-sales-summary__metrics-label">
+                {item.label}
+              </span>
+              <span className="project-sales-summary__metrics-value">
+                {item.value}
+              </span>
+            </span>
+          ))}
+        </div>
+      ))}
     </div>
   )
 }

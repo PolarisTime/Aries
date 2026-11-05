@@ -56,7 +56,7 @@ vi.mock('react-i18next', async () => {
 
 import { ProjectSalesSummaryPanel } from './ProjectSalesSummaryPanel'
 
-/** antd 的响应式栅格（`Descriptions column={{…}}`）在 jsdom 下需要 matchMedia。 */
+/** antd 组件内部会用 matchMedia 取断点，jsdom 未实现，这里给固定返回。 */
 vi.stubGlobal('matchMedia', (query: string) => ({
   matches: false,
   media: query,
@@ -176,7 +176,9 @@ describe('ProjectSalesSummaryPanel', () => {
     const groups = Array.from(
       container.querySelectorAll('.project-sales-summary__metrics-group'),
     ).map((group) => ({
-      title: group.querySelector('.ant-descriptions-title')?.textContent || '',
+      title:
+        group.querySelector('.project-sales-summary__metrics-title')
+          ?.textContent || '',
       text: group.textContent || '',
     }))
 
@@ -195,6 +197,37 @@ describe('ProjectSalesSummaryPanel', () => {
     // 对账组只有未对账金额/吨位
     expect(groups[2]?.text).toContain('未对账金额')
     expect(groups[2]?.text).toContain('未对账吨位')
+  })
+
+  it('每条额度压成一行，三组指标同排：结构契约锁住，回退成堆叠会失败', () => {
+    render({ ...idle, summary: summaryOf() })
+
+    const rows = Array.from(
+      container.querySelectorAll('.project-sales-summary__quota-row'),
+    )
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      // 标签 / 进度条 / 百分比 / 合同·剩余 必须在同一个行容器里
+      expect(
+        row.querySelector('.project-sales-summary__quota-label'),
+      ).not.toBeNull()
+      expect(row.querySelector('[role="progressbar"]')).not.toBeNull()
+      expect(
+        row.querySelector('.project-sales-summary__quota-percent'),
+      ).not.toBeNull()
+      expect(
+        row.querySelector('.project-sales-summary__quota-detail'),
+      ).not.toBeNull()
+      // 旧的「标签 + 百分比」独立包装层必须消失，否则又变回两段式堆叠
+      expect(row.querySelector('.project-sales-summary__quota-head')).toBeNull()
+    }
+
+    // 三组指标在同一个 flex 行容器里，而不是三张各自带标题的 Descriptions 表
+    const metrics = container.querySelector('.project-sales-summary__metrics')
+    expect(
+      metrics?.querySelectorAll('.project-sales-summary__metrics-group'),
+    ).toHaveLength(3)
+    expect(container.querySelector('.ant-descriptions')).toBeNull()
   })
 
   it('无有效合同时不渲染进度条，显示说明但其余指标照常展示', () => {

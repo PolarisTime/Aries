@@ -43,32 +43,44 @@
 .project-sales-summary__quota {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-xxs);
 }
 
+/*
+ * 每条额度压成一行：标签 · 行内细进度条 · 百分比 · 合同/剩余，全部基线对齐。
+ * 此前是「标签行 / 通栏进度条 / 合同·剩余行」三段堆叠，两条额度就要占掉 6 行。
+ */
 .project-sales-summary__quota-row {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-xxs);
+  flex-wrap: wrap;
+  gap: var(--space-xxs) var(--space-sm);
+  align-items: center;
   min-width: 0;
 }
 
-.project-sales-summary__quota-head {
-  display: flex;
-  gap: var(--space-xs);
-  align-items: baseline;
-  justify-content: space-between;
-}
-
 .project-sales-summary__quota-label {
+  flex: none;
   color: var(--ant-color-text, rgb(0 0 0 / 88%));
   font-size: var(--font-size-xs);
+}
+
+/*
+ * 行内细进度条：宽度不再通栏，给 220px 预算；窄屏靠 flex 收缩。
+ * 两条额度用同一预算，长度可比，读起来才知道哪个用得多。
+ */
+.project-sales-summary__quota-progress {
+  flex: 0 1 220px;
+  min-width: 96px;
+  margin: 0;
 }
 
 .project-sales-summary__quota-percent {
+  flex: none;
+  min-width: 3.5em;
   color: var(--ant-color-text, rgb(0 0 0 / 88%));
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 /* 超限：百分比文本本身也标红（颜色只是附加信息，数值始终以文本呈现）。 */
@@ -77,12 +89,9 @@
   font-weight: 600;
 }
 
-.project-sales-summary__quota-progress {
-  margin: 0;
-}
-
 .project-sales-summary__quota-detail {
   display: flex;
+  flex: 0 1 auto;
   flex-wrap: wrap;
   gap: var(--space-xs);
   color: var(--ant-color-text-secondary, rgb(0 0 0 / 45%));
@@ -90,16 +99,48 @@
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * 三组指标压成一行内联小字，与面板表头同密度：组间 24px、组内 8px。
+ * 组名用 600 字重当分隔，不加边框/竖线 —— 换行时竖线会悬在行首。
+ */
 .project-sales-summary__metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--space-xs);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-xl);
+  align-items: baseline;
   min-width: 0;
+  font-size: var(--font-size-xs);
 }
 
 .project-sales-summary__metrics-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs) var(--space-sm);
+  align-items: baseline;
   min-width: 0;
-  margin: 0;
+}
+
+.project-sales-summary__metrics-title {
+  color: var(--ant-color-text, rgb(0 0 0 / 88%));
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.project-sales-summary__metrics-item {
+  display: inline-flex;
+  gap: var(--space-xxs);
+  align-items: baseline;
+}
+
+.project-sales-summary__metrics-label {
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 45%));
+  font-size: var(--font-size-xs);
+}
+
+.project-sales-summary__metrics-value {
+  color: var(--ant-color-text, rgb(0 0 0 / 88%));
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
 }
 
 .project-sales-summary__pending {

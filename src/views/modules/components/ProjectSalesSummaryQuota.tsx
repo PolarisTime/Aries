@@ -38,27 +38,26 @@ function QuotaRow({
   const isExceeded = isQuotaExceeded(exceeded)
   return (
     <div className="project-sales-summary__quota-row">
-      <div className="project-sales-summary__quota-head">
-        <span className="project-sales-summary__quota-label">{label}</span>
-        <span
-          className={`project-sales-summary__quota-percent${
-            isExceeded ? ' project-sales-summary__quota-percent--exceeded' : ''
-          }`}
-        >
-          {formatUsagePercent(rate)}
-        </span>
-      </div>
+      <span className="project-sales-summary__quota-label">{label}</span>
       <Progress
         className="project-sales-summary__quota-progress"
         percent={toBarPercent(rate)}
+        size={['100%', 6]}
         status={isExceeded ? 'exception' : 'normal'}
         showInfo={false}
         aria-label={ariaLabel}
       />
-      <div className="project-sales-summary__quota-detail">
+      <span
+        className={`project-sales-summary__quota-percent${
+          isExceeded ? ' project-sales-summary__quota-percent--exceeded' : ''
+        }`}
+      >
+        {formatUsagePercent(rate)}
+      </span>
+      <span className="project-sales-summary__quota-detail">
         <span>{contractText}</span>
         <span>{remainingText}</span>
-      </div>
+      </span>
     </div>
   )
 }
