@@ -74,7 +74,10 @@ export function ProjectSalesSummaryMetrics({ summary }: Props) {
   return (
     <div className="project-sales-summary__metrics">
       {groups.map((group) => (
-        <div key={group.key} className="project-sales-summary__metrics-group">
+        <div
+          key={group.key}
+          className={`project-sales-summary__metrics-group project-sales-summary__metrics-group--${group.key}`}
+        >
           <span className="project-sales-summary__metrics-title">
             {group.title}
           </span>

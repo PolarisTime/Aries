@@ -39,21 +39,23 @@ function QuotaRow({
   return (
     <div className="project-sales-summary__quota-row">
       <span className="project-sales-summary__quota-label">{label}</span>
-      <Progress
-        className="project-sales-summary__quota-progress"
-        percent={toBarPercent(rate)}
-        size={['100%', 6]}
-        status={isExceeded ? 'exception' : 'normal'}
-        showInfo={false}
-        aria-label={ariaLabel}
-      />
-      <span
-        className={`project-sales-summary__quota-percent${
-          isExceeded ? ' project-sales-summary__quota-percent--exceeded' : ''
-        }`}
-      >
-        {formatUsagePercent(rate)}
-      </span>
+      <div className="project-sales-summary__quota-value">
+        <span
+          className={`project-sales-summary__quota-percent${
+            isExceeded ? ' project-sales-summary__quota-percent--exceeded' : ''
+          }`}
+        >
+          {formatUsagePercent(rate)}
+        </span>
+        <Progress
+          className="project-sales-summary__quota-progress"
+          percent={toBarPercent(rate)}
+          size={['100%', 4]}
+          status={isExceeded ? 'exception' : 'normal'}
+          showInfo={false}
+          aria-label={ariaLabel}
+        />
+      </div>
       <span className="project-sales-summary__quota-detail">
         <span>{contractText}</span>
         <span>{remainingText}</span>
