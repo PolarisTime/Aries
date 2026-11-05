@@ -29,6 +29,9 @@ import '@/styles/loading.css'
 import '@/styles/touch-targets.css'
 import '@/styles/layout-shell.css'
 import '@/styles/module-table.css'
+// 详情面卡片 / 指标条 / 等宽数字：详情页与列表行展开都依赖这些类，必须全局引入。
+// 只在组件内 import 会让没有渲染 MetricBar 的页面拿不到 .module-detail-card 与等宽数字。
+import '@/styles/module-detail.css'
 import '@/styles/table-column-resize.css'
 import '@/styles/dialog-levels.css'
 import '@/styles/pages.css'

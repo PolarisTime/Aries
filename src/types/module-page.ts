@@ -1,5 +1,5 @@
 import type { FormInstance } from 'antd'
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import type { SearchParams } from '@/types/api-raw'
 import type {
@@ -258,6 +258,51 @@ export interface ModuleEditorExtrasContext {
   expenseItems: readonly ModuleChargeAmountItem[]
 }
 
+/**
+ * 详情指标条上的一格指标（纯展示，不含业务计算）。
+ *
+ * <p>数值口径由调用方算好后传入：本层不认字段名、不做单位换算，避免同一个合计
+ * 在指标条与明细表里各算一遍（同一口径只在一处实现）。</p>
+ */
+export interface ModuleDetailMetric {
+  /** 稳定 key，用作 React 列表键。 */
+  key: string
+  /** 次要色 12px 标签。 */
+  label: string
+  /** 主值，18px / 600。 */
+  value: ReactNode
+  /** 主值下方的 12px 补充说明。 */
+  hint?: ReactNode
+  /** 0~100 的进度；**提供才渲染** 4px 细进度条，缺省表示该指标没有进度语义。 */
+  percent?: number
+  /**
+   * 主值语义色：warning / success 分别取 colorWarningText / colorSuccessText
+   * （Text 变体在浅色底上才够 WCAG AA 对比度），缺省用 colorText。
+   */
+  tone?: 'default' | 'warning' | 'success'
+}
+
+/**
+ * 明细合计行的一格。
+ *
+ * <p>用 {@link ModuleDetailSummaryCell.dataIndex} 与表头列横向对齐：列多的表一旦错位
+ * 整行数字都会串位，因此优先按 dataIndex 匹配列，只有**没有 dataIndex** 的单元格
+ * 才退化为按顺序填充。</p>
+ */
+export interface ModuleDetailSummaryCell {
+  /** 稳定 key，用作 React 列表键。 */
+  key: string
+  /** 对应明细列 `dataIndex`，用于横向对齐。 */
+  dataIndex?: string
+  /** 单元格内容。 */
+  value: ReactNode
+  /**
+   * 覆盖默认对齐；缺省沿用列定义，其中带 `module-detail-table-cell--numeric` 的
+   * 数值列缺省右对齐（合计行要能逐位对上下面的明细数字）。
+   */
+  align?: 'left' | 'center' | 'right'
+}
+
 export interface ModulePageConfig {
   key: ModuleKey
   title: string
@@ -343,4 +388,25 @@ export interface ModulePageConfig {
     lineItem?: string[]
     computed?: string[]
   }
+  /**
+   * 只读详情面顶部的指标条插槽。
+   *
+   * <p>公共层只声明"给我一个能按 record 渲染指标条的节点"，具体渲染哪个组件
+   * （通常是 ModuleDetailMetricBar，也可以是页面自定义的）由页面决定，
+   * 这样各页面并行改版时不会互相改同一个渲染出口。</p>
+   */
+  detailMetricsSlot?: ComponentType<{ record: ModuleRecord }>
+  /**
+   * 明细合计行数据投影。
+   *
+   * <p>入参是**当前明细行数组**（编辑器里是实时表单值，只读面里是快照），返回按列
+   * 对齐的合计单元格；返回 `null` 表示本次不展示合计（空明细或该模块没有合计），
+   * 消费方不得据此隐藏整张表格。</p>
+   *
+   * <p>合计口径必须收敛到调用方的一个函数里，指标条与合计行都取它的结果，
+   * 不要在两处各算一遍。</p>
+   */
+  detailSummary?: (ctx: {
+    items: ModuleLineItem[]
+  }) => ModuleDetailSummaryCell[] | null
 }

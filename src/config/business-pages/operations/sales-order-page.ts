@@ -1,5 +1,5 @@
 import i18next from 'i18next'
-import { createElement, Fragment } from 'react'
+import { createElement } from 'react'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
@@ -11,10 +11,12 @@ import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
+import { formatAmount, formatInteger, formatWeight } from '@/utils/formatters'
 import { renderProjectNameCell } from '@/utils/project-display'
 import { asString } from '@/utils/type-narrowing'
 import { NetPriceMatchChip } from '@/views/modules/components/NetPriceMatchChip'
 import { ProjectSalesSummaryPanel } from '@/views/modules/components/ProjectSalesSummaryPanel'
+import { SalesOrderDetailMetrics } from '@/views/modules/components/SalesOrderDetailMetrics'
 import { SalesOrderNetPriceCheck } from '@/views/modules/components/SalesOrderNetPriceCheck'
 import { SalesOrderNetPriceFiller } from '@/views/modules/components/SalesOrderNetPriceFiller'
 import { sumChargeItemAmount } from '@/views/modules/module-editor-draft-adapter'
@@ -525,19 +527,49 @@ export const salesOrdersPageConfig: ModulePageConfig = {
    * 只读详情面(详情弹窗 / 列表行「+」展开)没有取价工具栏, 由这里发起网价核查;
    * 否则「网价匹配」列在这两处永远显示「未核查」。
    *
-   * 同一个挂载点还要展示「项目数据」: 两处只读详情面共用它, 因此不必给通用详情组件
-   * 增加第二个扩展点。
+   * 「项目数据」卡片行已从这两处只读面移除: 同一批数据改由顶部指标条(detailMetricsSlot)
+   * 展示, 否则详情里会同时出现"卡片行 + 指标条"两份同源数字。编辑器侧的卡片行保留,
+   * 见 renderEditorExtras。
    */
   renderDetailExtras: ({ record }) =>
-    createElement(
-      Fragment,
-      null,
-      createElement(SalesOrderNetPriceCheck, { record }),
-      createElement(ProjectSalesSummaryPanel, {
-        projectId: asString(record.projectId),
-        variant: 'detail',
-      }),
-    ),
+    createElement(SalesOrderNetPriceCheck, { record }),
+  /** 详情顶部的四项指标条：合同金额/吨位使用率、送货对比、未对账。 */
+  detailMetricsSlot: SalesOrderDetailMetrics,
+  /*
+   * 明细表底部的合计行。
+   *
+   * 求和口径的唯一出口是 sumLineItemsBy（编辑器联动、保存载荷用的是同一个函数），
+   * 这里只把四项合计投影成按列对齐的单元格，不再写第二份 reduce 或 toLocaleString。
+   */
+  detailSummary: ({ items }) => {
+    if (!items.length) return null
+    return [
+      {
+        key: 'rowCount',
+        dataIndex: '#',
+        // 明细表没有「序号」列，合计行首格自带标签，避免只显示一个孤零零的数字。
+        value: `${i18next.t('modules.itemsSummary.rowCount')} ${items.length}`,
+      },
+      {
+        key: 'quantity',
+        dataIndex: 'quantity',
+        value: formatInteger(sumLineItemsBy(items, 'quantity')),
+        align: 'right',
+      },
+      {
+        key: 'weightTon',
+        dataIndex: 'weightTon',
+        value: formatWeight(sumLineItemsBy(items, 'weightTon')),
+        align: 'right',
+      },
+      {
+        key: 'amount',
+        dataIndex: 'amount',
+        value: formatAmount(sumLineItemsBy(items, 'amount')),
+        align: 'right',
+      },
+    ]
+  },
   /*
    * 编辑器(新建/编辑弹层)的「项目数据」: 需要「含本单」口径, 所以把草稿合计作为 pending 下发,
    * 并排除本单已保存的金额/吨位。合计口径复用 computeDraftTotals —— 与保存载荷同一出口,

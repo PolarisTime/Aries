@@ -97,6 +97,15 @@
   text-align: right !important;
 }
 
+/* 编辑器明细表底部的「草稿合计行」：只给合计行的数值补等宽数字。
+   编辑器里可编辑的数值单元格保持居中（居中便于定位输入框，是全站既有约定），
+   所以合计行不靠列上的 `module-detail-table-cell--numeric` 标记，而是自己的 scope。 */
+.module-detail-summary-row .module-editor-summary-number {
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
 .module-detail-table tbody > tr:hover > td {
   background: var(--theme-sider-surface);
 }

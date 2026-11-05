@@ -49,6 +49,16 @@ interface Props {
   /** 明细行右键菜单（按行 key 注入，与行内按钮共用同一份动作）。 */
   itemRowMenus?: RowContextMenuMap
   /**
+   * 合计行插槽（antd `Table` 的 `summary`），原样透传给每个分组下的明细表。
+   *
+   * <p>注意语义：分组视图下每个分组是**独立的表格**，antd 会用「该分组自己的行」
+   * 调用这个函数。所以它是「分组小计」而不是「整单合计」；需要整单合计时不要在
+   * 分组视图上使用它，应当在分组表之外单独渲染。</p>
+   *
+   * <p>不传时各行表格的行为与外观完全不变。</p>
+   */
+  summary?: TableProps<ModuleLineItem>['summary']
+  /**
    * 明细行序变化(整行长按拖动 / 键盘 Alt+↑↓ 落位): 新的 id 顺序即最终顺序。
    * <p>不传表示该模块不允许手工排序(只读、上游导入锁定、或行为表显式禁用),
    * 此时不挂任何拖动监听, 行序完全由上游/自动排序决定。</p>
@@ -76,6 +86,7 @@ export function ModuleItemGroupsView({
   components,
   rowClassName,
   itemRowMenus,
+  summary,
   onItemsReorder,
   describeRow,
 }: Props) {
@@ -154,6 +165,7 @@ export function ModuleItemGroupsView({
                     emptyText={emptyText}
                     rowClassName={rowClassName}
                     itemRowMenus={itemRowMenus}
+                    summary={summary}
                   />
                 </div>
               </div>
@@ -177,6 +189,7 @@ export function ModuleItemGroupsView({
                         emptyText={emptyText}
                         rowClassName={rowClassName}
                         itemRowMenus={itemRowMenus}
+                        summary={summary}
                       />
                     </div>
                   ))}
@@ -194,6 +207,7 @@ export function ModuleItemGroupsView({
                   emptyText={emptyText}
                   rowClassName={rowClassName}
                   itemRowMenus={itemRowMenus}
+                  summary={summary}
                 />
               </>
             ) : (
@@ -204,6 +218,7 @@ export function ModuleItemGroupsView({
                 emptyText={emptyText}
                 rowClassName={rowClassName}
                 itemRowMenus={itemRowMenus}
+                summary={summary}
               />
             )}
           </div>

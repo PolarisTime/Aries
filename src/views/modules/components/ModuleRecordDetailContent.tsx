@@ -1,6 +1,7 @@
 import { ReloadOutlined } from '@ant-design/icons'
 import type { DescriptionsProps } from 'antd'
 import { Button, Descriptions, Empty, Flex, Spin } from 'antd'
+import { createElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
 import {
@@ -16,6 +17,7 @@ import type {
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
+import { ModuleDetailSummaryRow } from './ModuleDetailSummaryRow'
 import { ModuleItemGroupsView } from './ModuleItemGroupsView'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { buildModuleItemGroups } from './module-item-groups'
@@ -221,77 +223,130 @@ export function ModuleRecordDetailContent({
 
   const detailItemColumns = config.detailItemColumns || config.itemColumns || []
   const detailFields = config.detailFields || []
-  const detailItemGroups = buildModuleItemGroups(config.key, record.items || [])
+  const detailItems = record.items || []
+  const detailItemGroups = buildModuleItemGroups(config.key, detailItems)
   const detailTableColumns = buildDetailItemColumns({
     columns: detailItemColumns,
     formatCellValue,
   })
 
-  return (
-    <>
-      {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
-      {config.renderDetailExtras?.({ record })}
-      {detailFields.length ? (
-        <ModuleRecordDetailFieldGrid
-          config={config}
-          fields={detailFields}
-          formatCellValue={formatCellValue}
-          record={record}
-        />
-      ) : null}
+  /*
+   * 指标条与合计行都是**可选插槽**：页面没配置时这里一个节点都不渲染，
+   * 不留下空 div、也不改变详情面原有的间距。
+   *
+   * 合计口径由 `config.detailSummary` 一处产出（销售订单即 sumLineItemsBy 的投影），
+   * 本组件只负责把结果放进表格 footer，不重复求和、不重复格式化。
+   */
+  const detailMetricsSlot = config.detailMetricsSlot
+  const detailSummaryCells = config.detailSummary
+    ? config.detailSummary({ items: detailItems })
+    : null
+  /*
+   * 没有明细行、或合计投影返回 null / 空数组时不渲染合计行 ——
+   * footer 里一条只有边框的空行比不显示更糟。
+   *
+   * 注意分组：ModuleItemGroupsView 分组渲染时每张分组表都会调用 summary（base-slot 已在
+   * 该 prop 上注明这是「分组小计」语义）。当前只有销售订单配置了 detailSummary，它不分组，
+   * 所以不会出现「每个分组都重复一遍整单合计」。
+   */
+  const hasDetailSummary =
+    detailItems.length > 0 && (detailSummaryCells?.length ?? 0) > 0
+  /*
+   * 合计行直接吃明细表的列定义（不再 `as` 收窄）：`ModuleDetailSummaryColumn.align`
+   * 现在与 antd 的 `AlignType` 同宽，列对象天然满足它的结构化约束。
+   */
 
-      {detailItemColumns.length ? (
-        <ModuleItemsPanel
-          title={config.detailItemTitle}
-          className="module-detail-items-panel"
-          items={record.items || []}
-          itemColumns={detailItemColumns}
-          actions={
-            <>
-              <Button
-                className="overlay-action-button"
-                icon={resolveModuleActionIcon('关闭')}
-                onClick={onClose}
-              >
-                {t('modules.detail.close')}
-              </Button>
-              {canPrint ? (
+  return (
+    <div className="module-detail-surface">
+      <div className="module-detail-card">
+        {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
+        {config.renderDetailExtras?.({ record })}
+        {/*
+          指标条：由页面通过 detailMetricsSlot 提供（销售订单是项目销售汇总的四项指标）。
+          插槽未配置时整块不渲染，不留空 div。
+        */}
+        {detailMetricsSlot
+          ? createElement(detailMetricsSlot, { record })
+          : null}
+        {detailFields.length ? (
+          <ModuleRecordDetailFieldGrid
+            config={config}
+            fields={detailFields}
+            formatCellValue={formatCellValue}
+            record={record}
+          />
+        ) : null}
+
+        {detailItemColumns.length ? (
+          <ModuleItemsPanel
+            title={config.detailItemTitle}
+            className="module-detail-items-panel"
+            items={detailItems}
+            itemColumns={detailItemColumns}
+            // 表尾已有 Table.Summary 合计行时，标题行的内联合计必须关掉（同一个口径不能两个出口）。
+            showSummary={!hasDetailSummary}
+            actions={
+              <>
                 <Button
                   className="overlay-action-button"
-                  icon={resolveModuleActionIcon('打印')}
+                  icon={resolveModuleActionIcon('关闭')}
+                  onClick={onClose}
                 >
-                  {t('modules.detail.print')}
+                  {t('modules.detail.close')}
                 </Button>
-              ) : null}
-            </>
-          }
-        >
-          <ModuleItemGroupsView
-            groups={detailItemGroups}
-            moduleKey={config.key}
-            columns={detailTableColumns}
-            emptyText={t('modules.detail.noDetailItems')}
-          />
-        </ModuleItemsPanel>
-      ) : (
-        <div className="mt-20">
-          <Button
-            className="overlay-action-button"
-            icon={resolveModuleActionIcon('关闭')}
-            onClick={onClose}
+                {canPrint ? (
+                  <Button
+                    className="overlay-action-button"
+                    icon={resolveModuleActionIcon('打印')}
+                  >
+                    {t('modules.detail.print')}
+                  </Button>
+                ) : null}
+              </>
+            }
           >
-            {t('modules.detail.close')}
-          </Button>
-          {canPrint && (
+            <ModuleItemGroupsView
+              groups={detailItemGroups}
+              moduleKey={config.key}
+              columns={detailTableColumns}
+              emptyText={t('modules.detail.noDetailItems')}
+              /*
+                合计行：列定义与明细表用同一份 detailTableColumns，合计数字才能逐列对齐
+                到上面的明细；cells 由 config.detailSummary 一处产出。插槽未配置、
+                没有明细行或插槽返回 null 时传 undefined，表格 footer 完全不出现。
+              */
+              summary={
+                hasDetailSummary
+                  ? () => (
+                      <ModuleDetailSummaryRow
+                        columns={detailTableColumns}
+                        cells={detailSummaryCells ?? []}
+                      />
+                    )
+                  : undefined
+              }
+            />
+          </ModuleItemsPanel>
+        ) : (
+          <div className="mt-20">
             <Button
-              className="overlay-action-button ml-8"
-              icon={resolveModuleActionIcon('打印')}
+              className="overlay-action-button"
+              icon={resolveModuleActionIcon('关闭')}
+              onClick={onClose}
             >
-              {t('modules.detail.print')}
+              {t('modules.detail.close')}
             </Button>
-          )}
-        </div>
-      )}
-    </>
+            {canPrint && (
+              <Button
+                className="overlay-action-button ml-8"
+                icon={resolveModuleActionIcon('打印')}
+              >
+                {t('modules.detail.print')}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

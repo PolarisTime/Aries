@@ -1,14 +1,10 @@
 import type { TableColumnsType } from 'antd'
 import { Alert, Button, Col, Empty, Row, Spin } from 'antd'
+import { createElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
-import {
-  formatDocumentReferenceText,
-  isDocumentReferenceField,
-} from '@/components/document-reference/document-reference-utils'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
-import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
 import type {
   ModuleLineItem,
   ModulePageConfig,
@@ -25,7 +21,9 @@ import {
   FreightStatementItemGroupHeader,
   FreightStatementProjectGroupHeader,
 } from './FreightStatementItemGroupHeader'
+import { ModuleDetailSummaryRow } from './ModuleDetailSummaryRow'
 import { ModuleItemsTable } from './ModuleItemsTable'
+import { buildDetailItemColumns } from './module-record-detail-columns'
 
 interface Props {
   config: ModulePageConfig
@@ -55,37 +53,22 @@ export function ModuleRecordDetailInline({
 }: Props) {
   const { t } = useTranslation()
   const { formatCellValue } = useModuleDisplaySupport()
+  /* 指标条插槽：页面未配置时为 undefined，详情面不渲染任何占位节点。 */
+  const detailMetricsSlot = config.detailMetricsSlot
   const itemColumns = config.detailItemColumns || config.itemColumns || []
-  const tableColumns: TableColumnsType<ModuleLineItem> = itemColumns.map(
-    (column) => ({
-      title: column.title,
-      dataIndex: column.dataIndex,
-      key: column.dataIndex,
-      width: column.width,
-      align:
-        column.align ||
-        (column.type === 'amount' ||
-        column.type === 'weight' ||
-        column.type === 'count'
-          ? 'right'
-          : 'center'),
-      render: (value: unknown, item: ModuleLineItem) => {
-        if (
-          column.dataIndex === 'pieceWeightTon' &&
-          shouldDisplayPieceWeightAsDash(item)
-        ) {
-          return '-'
-        }
-        if (isDocumentReferenceField(column.dataIndex)) {
-          // 单据引用列只展示单号纯文本（文本口径见 formatDocumentReferenceText）
-          return formatDocumentReferenceText(value) || '-'
-        }
-        if (column.render) {
-          return column.render(value, item)
-        }
-        return formatCellValue(value, column.type)
-      },
-    }),
+  /*
+   * 列构建**复用详情弹层那一个出口** `buildDetailItemColumns`，不再在这里手写第二份
+   * map（原本两处逻辑逐字重复：单重占位、单据引用、列自定义渲染、通用格式化）。
+   *
+   * <p>复用的关键收益是数值列会带上 `module-detail-table-cell--numeric` 标记：
+   * 少了它，行内展开的金额/重量既拿不到等宽数字、也拿不到右对齐，
+   * 合计行的数值单元格更不会命中 `tfoot` 的 `white-space: nowrap`（金额被折成两行）。</p>
+   */
+  const tableColumns: TableColumnsType<ModuleLineItem> = buildDetailItemColumns(
+    {
+      columns: itemColumns,
+      formatCellValue,
+    },
   )
 
   if (loading) {
@@ -182,6 +165,31 @@ export function ModuleRecordDetailInline({
   const hasItemColumns = tableColumns.length > 0
 
   const items = record.items || []
+  /*
+   * 合计行：四处明细表（freight-bill / freight-statement / customer-statement / 默认）
+   * 共用**同一个** summary 函数，不逐处复制。口径来自 `config.detailSummary`（唯一出口），
+   * 这里只负责渲染；列定义就是明细表自己的 tableColumns，合计数字才能逐列对齐。
+   *
+   * 插槽未配置、没有明细行、或插槽返回 null / 空数组时 `buildSummary` 为 undefined ——
+   * 表格 footer 完全不出现，与改动前的 DOM 一致。
+   *
+   * 分组分支（freight-bill / freight-statement / customer-statement）里每张分组表会各调用一次
+   * summary，语义上是「分组小计」；当前只有销售订单配置了 detailSummary 且走默认分支，
+   * 因此不会出现每个分组都重复一遍整单合计。
+   */
+  const summaryCells =
+    config.detailSummary && items.length
+      ? config.detailSummary({ items })
+      : null
+  /*
+   * 合计行直接吃明细表的列定义（不再 `as` 收窄）：`ModuleDetailSummaryColumn.align`
+   * 现在与 antd 的 `AlignType` 同宽，`TableColumnsType` 原样传入即可。
+   */
+  const buildSummary = summaryCells?.length
+    ? () => (
+        <ModuleDetailSummaryRow columns={tableColumns} cells={summaryCells} />
+      )
+    : undefined
   const renderItems = () => {
     if (config.key === 'freight-bill') {
       const groups = groupFreightBillItems(items)
@@ -191,6 +199,7 @@ export function ModuleRecordDetailInline({
             columns={tableColumns}
             dataSource={items}
             emptyText={t('modules.detail.noDetailItems')}
+            summary={buildSummary}
           />
         )
       }
@@ -204,6 +213,7 @@ export function ModuleRecordDetailInline({
                   columns={tableColumns}
                   dataSource={group.items}
                   emptyText={t('modules.detail.noDetailItems')}
+                  summary={buildSummary}
                 />
               </div>
             </div>
@@ -220,6 +230,7 @@ export function ModuleRecordDetailInline({
             columns={tableColumns}
             dataSource={items}
             emptyText={t('modules.detail.noDetailItems')}
+            summary={buildSummary}
           />
         )
       }
@@ -241,6 +252,7 @@ export function ModuleRecordDetailInline({
                     columns={tableColumns}
                     dataSource={projectGroup.items}
                     emptyText={t('modules.detail.noDetailItems')}
+                    summary={buildSummary}
                   />
                 </div>
               ))}
@@ -258,6 +270,7 @@ export function ModuleRecordDetailInline({
             columns={tableColumns}
             dataSource={items}
             emptyText={t('modules.detail.noDetailItems')}
+            summary={buildSummary}
           />
         )
       }
@@ -270,6 +283,7 @@ export function ModuleRecordDetailInline({
                 columns={tableColumns}
                 dataSource={group.items}
                 emptyText={t('modules.detail.noDetailItems')}
+                summary={buildSummary}
               />
             </div>
           ))}
@@ -282,23 +296,39 @@ export function ModuleRecordDetailInline({
         columns={tableColumns}
         dataSource={items}
         emptyText={t('modules.detail.noDetailItems')}
+        summary={buildSummary}
       />
     )
   }
 
+  /*
+   * 行展开容器：`module-record-detail-inline` 留在外层（它携带行展开条带的底色与上边框，
+   * 并让 `.module-record-detail-inline .module-items-table-shell { border: 0 }` 等既有
+   * 选择器继续命中），与 `module-detail-surface` 放在**同一个元素**上 —— 两者的留白不会
+   * 叠加两次；内层 `module-detail-card` 才是白卡，结构与详情弹层保持一致。
+   */
   return (
-    <div className="module-record-detail-inline">
-      {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
-      {config.renderDetailExtras?.({ record })}
-      {hasHeaderFields ? renderHeaderFields() : null}
-      {hasItemColumns ? renderItems() : null}
-      {!hasHeaderFields && !hasItemColumns ? (
-        <AppResult
-          status="info"
-          title={t('modules.detail.noDetailItems')}
-          className="module-record-detail-inline-empty"
-        />
-      ) : null}
+    <div className="module-detail-surface module-record-detail-inline">
+      <div className="module-detail-card">
+        {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
+        {config.renderDetailExtras?.({ record })}
+        {/*
+          指标条：由页面通过 detailMetricsSlot 提供（销售订单是项目销售汇总四项指标）。
+          插槽未配置时整块不渲染，不留空 div。
+        */}
+        {detailMetricsSlot
+          ? createElement(detailMetricsSlot, { record })
+          : null}
+        {hasHeaderFields ? renderHeaderFields() : null}
+        {hasItemColumns ? renderItems() : null}
+        {!hasHeaderFields && !hasItemColumns ? (
+          <AppResult
+            status="info"
+            title={t('modules.detail.noDetailItems')}
+            className="module-record-detail-inline-empty"
+          />
+        ) : null}
+      </div>
     </div>
   )
 }

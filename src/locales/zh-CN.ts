@@ -1244,6 +1244,12 @@ export const zhCN = {
       amount: '金额',
       expenseAmount: '附加费用合计',
       totalAmountWithExpense: '含附加费用合计',
+      /*
+       * 明细表底部「草稿合计行」的标签：{{rows}} 是草稿行数。
+       * 带附加费用时用第二句，避免同一张单据上「金额」既指货物额又指含费总额（P2-2 的老问题）。
+       */
+      summaryRow: '合计（{{rows}} 行）',
+      summaryRowWithExpense: '合计（{{rows}} 行，含附加费用）',
     },
     editorForm: {
       documentInfo: '单据信息',

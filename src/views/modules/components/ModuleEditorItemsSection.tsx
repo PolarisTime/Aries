@@ -21,6 +21,10 @@ import {
 } from '@/views/modules/module-editor-draft-adapter'
 import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleEditorExpensePanel } from './ModuleEditorExpensePanel'
+import {
+  ModuleEditorItemsSummary,
+  shouldAttachEditorDraftSummary,
+} from './ModuleEditorItemsSummary'
 import { ModuleItemGroupsView } from './ModuleItemGroupsView'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
 import { ModuleItemsToolbarActions } from './ModuleItemsToolbarActions'
@@ -172,6 +176,31 @@ export function ModuleEditorItemsSection({
     () => new Set(selectedItemIds),
     [selectedItemIds],
   )
+  /*
+   * 明细表底部的「草稿实时合计行」。
+   *
+   * <p>只有单分组时才挂：分组视图（`ModuleItemGroupsView`）会把同一份 `summary`
+   * 原样透传给**每个分组下的表格**，多分组时整单合计会在每组底部重复一遍；
+   * 分组小计要另做（改共享组件），不在本任务范围。</p>
+   *
+   * <p>合计口径全部来自 `ModuleEditorItemsSummary`（内部只调 `computeDraftTotals` +
+   * `sumLineItemsBy`），本组件不重复计算。行随 `items` 变化重渲染，因此是实时的。</p>
+   */
+  const renderItemSummary = useMemo(() => {
+    if (
+      !shouldAttachEditorDraftSummary(itemGroups.length, itemColumns.length)
+    ) {
+      return undefined
+    }
+    return () => (
+      <ModuleEditorItemsSummary
+        moduleKey={config.key}
+        items={items}
+        columns={itemColumns}
+        chargeTotal={expenseTotalAmount}
+      />
+    )
+  }, [config.key, expenseTotalAmount, itemColumns, itemGroups.length, items])
   const rowClassName = (record: ModuleLineItem) =>
     selectedItemIdSet.has(record.id) ? 'ant-table-row-selected' : ''
   const emptyText = config.parentImport
@@ -254,6 +283,8 @@ export function ModuleEditorItemsSection({
           <ModuleItemsPanel
             items={items}
             itemColumns={config.itemColumns}
+            // 表尾草稿合计行已挂上时，标题行的内联合计关掉，避免同一份合计出现两次。
+            showSummary={!renderItemSummary}
             expenseTotalAmount={
               supportsExpenseTab ? expenseTotalAmount : undefined
             }
@@ -289,6 +320,7 @@ export function ModuleEditorItemsSection({
               emptyText={emptyText}
               rowClassName={rowClassName}
               itemRowMenus={itemRowMenus}
+              summary={renderItemSummary}
               onItemsReorder={onItemsReorder}
             />
           </ModuleItemsPanel>

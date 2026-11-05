@@ -1,0 +1,129 @@
+/*
+ * 详情面视觉基座：底板 / 白卡 / 指标条 / 等宽数字。
+ *
+ * 约定：
+ * - 颜色一律走 antd cssVar（`var(--ant-*, 回退值)`），不在 CSS 里写死颜色值，
+ *   暗色主题切换时跟着 token 一起变；组件内能用 `theme.useToken()` 的地方优先用 token，
+ *   这里的 var() 是给「只挂 class、没有 React 样式」的容器兜底。
+ * - 数字等宽只用系统字体栈，不引入 webfont（首屏不能被字体下载阻塞）。
+ */
+
+/* 详情面底板：比白卡略深一档，让白卡浮起来 */
+.module-detail-surface {
+  padding: var(--space-md, 16px);
+  background: var(--ant-color-fill-quaternary, #f5f7fa);
+  border-radius: var(--ant-border-radius-lg, 8px);
+}
+
+/*
+ * 详情面白卡：指标区 / 描述区 / 明细区的分组容器。
+ *
+ * 纵向 gap 是**唯一**的行间留白出口：指标条、Descriptions、明细面板本身都没有
+ * margin-top，靠这里统一给 16px；反过来也不要再给子元素加 margin，否则会出现
+ * 24px/32px 这种「父级 gap + 子级 margin 各加一次」的间距。
+ *
+ * 只作用于卡片内部（flex 纵向布局），loading / error / 空态在外层分支提前返回、
+ * 不进这张卡，因此不会因为 gap 多出空白。
+ */
+.module-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 16px);
+  padding: var(--space-md, 16px);
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
+}
+
+/*
+ * 指标条：4 列等宽。宽度不够时列数递减，不横向滚动 ——
+ * 指标值多为「金额 + 单位」，挤成两行会盖掉 hint。
+ */
+.module-detail-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-md, 16px);
+  padding: var(--space-sm, 12px) var(--space-md, 16px);
+  background: var(--ant-color-fill-quaternary, #f5f7fa);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: var(--ant-border-radius-lg, 8px);
+}
+
+@media (max-width: 720px) {
+  .module-detail-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .module-detail-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 单格指标：label → value → 进度条 → hint 自上而下 */
+.module-detail-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs, 4px);
+  min-width: 0;
+}
+
+.module-detail-metric__label {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+}
+
+.module-detail-metric__value {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 24px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* antd Progress 自带上下外边距, 4px 细条不需要额外留白 */
+.module-detail-metric__progress {
+  margin: 0;
+}
+
+.module-detail-metric__hint {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+}
+
+/*
+ * 数值列等宽数字。
+ *
+ * 类名**复用** `module-detail-table-cell--numeric`（由 `buildDetailItemColumns` 打标、
+ * `pages.css` 提供右对齐），这里只补字体族：金额/重量/件数在详情表里上下扫读时，
+ * 小数点对齐靠等宽数字，右对齐单独做不到。
+ */
+.module-detail-table .module-detail-table-cell--numeric {
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 合计行：只加粗以区别于明细行，对齐与等宽字体沿用同一套 class */
+.module-detail-table tfoot tr.module-detail-summary-row > td {
+  font-weight: 600;
+}
+
+/*
+ * 合计行的数值单元格必须单行。
+ *
+ * 等宽字体 + 固定列宽（`table-layout: fixed`）下，`136180.02` 这种带两位小数的金额
+ * 会在窄列里被折成「136180.0 / 2」，读起来是另一个数。合计行只有一行，横向溢出由
+ * 表格自身的 `scroll.x` 兜住，不需要靠折行来省宽度。
+ */
+.module-detail-table
+  tfoot
+  tr.module-detail-summary-row
+  > td.module-detail-table-cell--numeric {
+  white-space: nowrap;
+}

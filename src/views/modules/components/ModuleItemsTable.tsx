@@ -16,6 +16,13 @@ interface Props<RecordType extends BaseRecord> {
   /** 行右键菜单：按行 key 注入，与业务列表复用同一套 RowContextMenu 原语。 */
   itemRowMenus?: RowContextMenuMap
   onRow?: TableProps<RecordType>['onRow']
+  /**
+   * 合计行插槽（antd `Table` 的 `summary`）。
+   *
+   * <p>原样透传给 Table：不传时表格行为与外观完全不变。典型用法是
+   * `summary={() => <ModuleDetailSummaryRow columns={columns} cells={cells} />}`。</p>
+   */
+  summary?: TableProps<RecordType>['summary']
   className?: string
 }
 
@@ -27,6 +34,7 @@ export function ModuleItemsTable<RecordType extends BaseRecord>({
   rowClassName,
   itemRowMenus,
   onRow,
+  summary,
   className,
 }: Props<RecordType>) {
   const scrollX = (() => {
@@ -75,6 +83,7 @@ export function ModuleItemsTable<RecordType extends BaseRecord>({
       locale={{ emptyText }}
       rowClassName={rowClassName}
       onRow={onRow}
+      summary={summary}
     />
   )
 

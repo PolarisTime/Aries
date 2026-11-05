@@ -16,6 +16,14 @@ interface Props {
   className?: string
   /** 合计展示形态；缺省 `inline`（标题行右侧内联文本）。 */
   summaryVariant?: EditorItemsSummaryVariant
+  /**
+   * 是否渲染标题行里的内联合计；缺省 `true`。
+   *
+   * <p>表格底部已经有 `Table.Summary` 合计行时（详情面 `config.detailSummary`、
+   * 编辑器草稿合计）必须传 `false`：否则同一份「行数/件数/重量/金额」会在
+   * 表头上方与表尾各出现一次，同一口径两个出口。</p>
+   */
+  showSummary?: boolean
   children: React.ReactNode
 }
 
@@ -27,11 +35,13 @@ export function ModuleItemsPanel({
   expenseTotalAmount,
   className,
   summaryVariant,
+  showSummary = true,
   children,
 }: Props) {
   const { t } = useTranslation()
   const resolvedTitle = title ?? t('modules.itemsPanel.defaultTitle')
-  const hasSummary = Array.isArray(items)
+  // 表尾已有合计行时不再画标题行的内联合计（避免同一口径两个出口）。
+  const hasSummary = showSummary && Array.isArray(items)
   const showAmountSummary =
     !itemColumns || itemColumns.some((column) => column.dataIndex === 'amount')
   const variant = summaryVariant ?? 'inline'

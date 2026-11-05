@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 
-import { Fragment, type ReactElement } from 'react'
+import type { ReactElement } from 'react'
 import { describe, expect, it } from 'vitest'
 import { salesOrdersPageConfig } from '@/config/business-pages/operations/sales-order-page'
 import type { ModuleLineItem, ModuleRecordInput } from '@/types/module-page'
 import type { ProjectSalesSummaryPanelProps } from '@/views/modules/components/ProjectSalesSummaryPanel'
 import { ProjectSalesSummaryPanel } from '@/views/modules/components/ProjectSalesSummaryPanel'
+import { SalesOrderDetailMetrics } from '@/views/modules/components/SalesOrderDetailMetrics'
 import { SalesOrderNetPriceCheck } from '@/views/modules/components/SalesOrderNetPriceCheck'
 
 const items = [
@@ -18,22 +19,20 @@ const form = {} as never
 
 type ExtrasProps = Partial<ProjectSalesSummaryPanelProps>
 
-function childrenOf(node: ReactElement): ReactElement[] {
-  const children = (node.props as { children?: unknown }).children
-  return (Array.isArray(children) ? children : [children]).filter(
-    Boolean,
-  ) as ReactElement[]
-}
-
 /**
- * 销售订单「项目数据」的**接线契约**（三处挂载中的两处由配置声明）。
+ * 销售订单「项目数据」的**接线契约**。
  *
- * <p>详情弹层与列表行展开共用 `renderDetailExtras`；编辑器走 `renderEditorExtras`。
- * 这里锁定三件容易在后续重构里悄悄断掉的事：</p>
+ * <p>本轮起只读详情面（详情弹层 / 列表行「+」展开）不再挂 `ProjectSalesSummaryPanel`
+ * 卡片行：同一批数据改由顶部指标条（`detailMetricsSlot`）与明细表底部合计行
+ * （`detailSummary`）承载，避免详情里出现「卡片行 + 指标条」两份同源数字。
+ * 编辑器侧仍保留卡片行（`renderEditorExtras`）。这里锁定四件容易在后续重构里
+ * 悄悄断掉的事：</p>
  * <ol>
- *   <li>两个挂载点都真的声明了「项目数据」面板（不是只声明了网价核查）；</li>
- *   <li>详情面不传 pending（后端已把本单计入），编辑器传 pending 且**排除本单**；</li>
- *   <li>pending 金额/吨位来自 `computeDraftTotals`（货物 + 附加费用），不是面板自己求和。</li>
+ *   <li>详情挂载点只剩网价核查，不再产出项目数据面板；</li>
+ *   <li>指标条与合计行两个插槽都已配置（漏一个，详情里就只剩一份数字）；</li>
+ *   <li>合计行的求和口径仍来自 `sumLineItemsBy`（与编辑器、保存载荷同一出口）；</li>
+ *   <li>编辑器仍传 pending 且**排除本单**，pending 金额/吨位来自 `computeDraftTotals`
+ *       （货物 + 附加费用），不是面板自己求和。</li>
  * </ol>
  */
 describe('销售订单「项目数据」接线', () => {
@@ -43,30 +42,35 @@ describe('销售订单「项目数据」接线', () => {
     projectId: '9007199254740993',
   } as unknown as ModuleRecordInput
 
-  it('详情弹层与行展开的挂载点同时包含网价核查与项目数据面板', () => {
+  it('详情挂载点只含网价核查，不再渲染项目数据卡片行', () => {
     const element = salesOrdersPageConfig.renderDetailExtras?.({
       record: record as never,
     }) as ReactElement
 
-    expect(element.type).toBe(Fragment)
-    const [netPrice, panel] = childrenOf(element)
-    expect(netPrice?.type).toBe(SalesOrderNetPriceCheck)
-    expect(panel?.type).toBe(ProjectSalesSummaryPanel)
-    expect(panel?.props).toMatchObject({
-      projectId: '9007199254740993',
-      variant: 'detail',
-    })
+    // 直接是网价核查节点：再包一层 Fragment 说明有别的挂载点被加了回来。
+    expect(element.type).toBe(SalesOrderNetPriceCheck)
+    expect(element.props).toMatchObject({ record })
   })
 
-  it('详情面不传 pending / excludeOrderId（本单已被后端计入合计）', () => {
-    const element = salesOrdersPageConfig.renderDetailExtras?.({
-      record: record as never,
-    }) as ReactElement
-    const panel = childrenOf(element)[1] as ReactElement<ExtrasProps>
+  it('详情面用指标条 + 合计行承载项目数据', () => {
+    // 指标条：契约是「页面声明用哪个组件」，不是「组件里写死」。
+    expect(salesOrdersPageConfig.detailMetricsSlot).toBe(
+      SalesOrderDetailMetrics,
+    )
 
-    expect(panel.props.pendingAmount).toBeUndefined()
-    expect(panel.props.pendingTonnage).toBeUndefined()
-    expect(panel.props.excludeOrderId).toBeUndefined()
+    // 合计行：按列对齐的四项，行数标签落在没有对应列的 '#' 槽上。
+    const cells = salesOrdersPageConfig.detailSummary?.({ items }) ?? []
+    expect(cells.map((cell) => cell.dataIndex)).toEqual([
+      '#',
+      'quantity',
+      'weightTon',
+      'amount',
+    ])
+    // 金额 100 + 200 = 300：只有货物、不含附加费用（那是编辑器 pending 的口径）。
+    expect(cells[3]?.value).toBe('300.00')
+    expect(String(cells[0]?.value)).toContain('行数')
+    // 空明细不展示合计（footer 里一条只有边框的空行比不显示更糟）。
+    expect(salesOrdersPageConfig.detailSummary?.({ items: [] })).toBeNull()
   })
 
   it('编辑器把草稿合计（货物 + 附加费用）作为 pending，并排除本单', () => {

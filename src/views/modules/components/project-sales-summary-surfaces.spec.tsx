@@ -81,7 +81,16 @@ const record = {
   id: '9007199254740995',
   orderNo: 'SO-1',
   projectId: '9007199254740993',
-  items: [{ id: 'r1', warehouseName: '升华物流', unitPrice: 3270 }],
+  items: [
+    {
+      id: 'r1',
+      warehouseName: '升华物流',
+      unitPrice: 3270,
+      quantity: 5,
+      weightTon: 12.5,
+      amount: 136180.02,
+    },
+  ],
 } as unknown as ModuleRecord
 
 /** 等 hook 的 300ms 防抖 + 请求 resolve 完成（真实定时器，避免与 antd 的 rAF 打桩冲突）。 */
@@ -92,12 +101,15 @@ const flushRequest = async () => {
 }
 
 /**
- * 「项目数据」面板在**两个只读详情面**上的真实挂载（详情弹层 + 列表行「+」展开）。
+ * 只读详情面的「项目数据」现在由**指标条 + 合计行**承载，不再挂卡片行。
  *
- * <p>两者都通过 `salesOrdersPageConfig.renderDetailExtras` 挂载同一个面板；这里不 mock
- * 通用详情组件，直接渲染真实组件 + 真实配置，用来锁住「需求的三处展示里的另外两处」。</p>
+ * <p>历史断言是「详情里能找到 `ProjectSalesSummaryPanel`（标题「项目数据」+ 合计金额）」，
+ * 本轮起同一批数据被拆成两块 DOM：顶部 `.module-detail-metric` 四项指标（合同金额/吨位
+ * 使用率、送货对比、未对账），底部 `tr.module-detail-summary-row` 合计行（行数/数量/重量/金额）。
+ * 用例保留、只换期望值，并继续保留「卡片行只出现在编辑器」这条负向断言 —— 否则重构时
+ * 很容易把卡片行加回来，详情里就出现两份同源数字。</p>
  */
-describe('项目数据面板的两个只读详情面', () => {
+describe('项目数据在两个只读详情面上的新形态（指标条 + 合计行）', () => {
   let container: HTMLDivElement
   let root: Root
 
@@ -117,7 +129,39 @@ describe('项目数据面板的两个只读详情面', () => {
     container.remove()
   })
 
-  it('列表行「+」展开区显示项目数据', async () => {
+  /** 两个详情面共用的「指标条 4 项 + 合计行」断言。 */
+  function expectMetricsAndSummaryRow() {
+    const text = container.textContent || ''
+
+    // 指标条：4 项，标签取真实 zh-CN 文案。
+    expect(container.querySelectorAll('.module-detail-metric')).toHaveLength(4)
+    expect(text).toContain('合同金额使用率')
+    expect(text).toContain('合同吨位使用率')
+    expect(text).toContain('合计送货吨位')
+    expect(text).toContain('未对账金额')
+    // 未对账金额来自汇总接口（-250.5 → ¥-250.50）。
+    expect(text).toContain('¥-250.50')
+
+    // 合计行：金额求自明细（136180.02），不是指标条里的订单金额。
+    const summaryRow = container.querySelector('tr.module-detail-summary-row')
+    expect(summaryRow).not.toBeNull()
+    expect(summaryRow?.textContent).toContain('136180.02')
+    /*
+     * 合计行第一格必须是「行数 1」：该单元格没有可对应的列（`dataIndex: '#'`），
+     * 必须落到最左侧空槽（仓库名称列）而不是追加到行末 —— 追加到行末会被横向滚动裁掉。
+     */
+    expect(summaryRow?.querySelector('td')?.textContent).toBe('行数 1')
+    // 数值列沿用同一个「数值列」class（等宽 + 合计行 nowrap 都按它命中）。
+    expect(
+      summaryRow?.querySelectorAll('td.module-detail-table-cell--numeric')
+        .length,
+    ).toBeGreaterThan(0)
+
+    // 负向断言：只读面不再出现「项目数据」卡片行（它只属于编辑器）。
+    expect(container.querySelector('.project-sales-summary')).toBeNull()
+  }
+
+  it('列表行「+」展开区显示指标条与合计行', async () => {
     act(() => {
       root.render(
         createElement(ModuleRecordDetailInline, {
@@ -131,18 +175,14 @@ describe('项目数据面板的两个只读详情面', () => {
     })
     await flushRequest()
 
-    const text = container.textContent || ''
-    expect(text).toContain('项目数据')
-    expect(text).toContain('合计金额')
-    expect(text).toContain('1234567.80')
-    expect(container.querySelectorAll('[role="progressbar"]')).toHaveLength(2)
+    expectMetricsAndSummaryRow()
     // 只读面按后端已计入本单的口径请求：不传 excludeOrderId / pending
     expect(fetchProjectSalesSummaryMock.mock.calls[0]?.[0]).toEqual({
       projectId: '9007199254740993',
     })
   })
 
-  it('详情弹窗显示项目数据', async () => {
+  it('详情弹窗显示指标条与合计行', async () => {
     act(() => {
       root.render(
         createElement(ModuleRecordDetailContent, {
@@ -157,9 +197,10 @@ describe('项目数据面板的两个只读详情面', () => {
     })
     await flushRequest()
 
-    const text = container.textContent || ''
-    expect(text).toContain('项目数据')
-    expect(text).toContain('华东钢铁项目')
-    expect(text).toContain('-250.50')
+    expectMetricsAndSummaryRow()
+    // 描述区仍在（指标条没有把既有字段挤掉）。
+    expect(
+      container.querySelector('.module-record-detail-descriptions'),
+    ).not.toBeNull()
   })
 })
