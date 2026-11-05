@@ -133,14 +133,20 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
   function expectMetricsAndSummaryRow() {
     const text = container.textContent || ''
 
-    // 指标条：4 项，标签取真实 zh-CN 文案。
+    // 指标卡：4 张，标签取真实 zh-CN 文案（第 4 张标题是「未对账汇总」）。
     expect(container.querySelectorAll('.module-detail-metric')).toHaveLength(4)
     expect(text).toContain('合同金额使用率')
     expect(text).toContain('合同吨位使用率')
     expect(text).toContain('合计送货吨位')
-    expect(text).toContain('未对账金额')
+    expect(text).toContain('未对账汇总')
     // 未对账金额来自汇总接口（-250.5 → ¥-250.50）。
     expect(text).toContain('¥-250.50')
+    // 使用率胶囊：无超限 → 「健康 / 充足」（判定只看后端下发的 exceeded*）
+    expect(text).toContain('健康')
+    expect(text).toContain('充足')
+    // 底行「标签：值」：合同额度与已用量都来自汇总接口
+    expect(text).toContain('总额：¥2000000.00')
+    expect(text).toContain('余：¥765432.20')
 
     // 合计行：金额求自明细（136180.02），不是指标条里的订单金额。
     const summaryRow = container.querySelector('tr.module-detail-summary-row')
@@ -214,10 +220,27 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
       container.querySelector('.module-detail-header__no')?.textContent,
     ).toBe('SO-1')
     /*
-     * 明细独立成第二张白卡：信息卡 + 明细卡各一张，两张卡同宽、同圆角、同边框。
-     * 这张单配了明细列，所以明细卡必须存在；信息卡承担顶栏与字段区。
+     * 三张白卡：① 顶栏卡（顶栏 + 四张指标卡）、② 业务信息卡（标题栏 + 字段网格）、
+     * ③ 明细卡。参考稿把「顶栏 + 指标」与「业务信息」拆成两张卡，因此卡片数从 2 变 3。
      */
-    expect(container.querySelectorAll('.module-detail-card')).toHaveLength(2)
+    expect(container.querySelectorAll('.module-detail-card')).toHaveLength(3)
+    expect(
+      container.querySelector('.module-detail-card--summary'),
+    ).not.toBeNull()
     expect(container.querySelector('.module-detail-card--items')).not.toBeNull()
+    // 业务信息卡有标题栏（蓝色竖条 + 文案）
+    expect(
+      container.querySelector('.module-detail-info__title')?.textContent,
+    ).toBe('订单业务信息')
+    // 顶栏右侧三个动作按钮接不到接口，一律禁用并带「未接入」说明
+    const headerButtons = container.querySelectorAll(
+      '.module-detail-header__actions button',
+    )
+    expect(headerButtons.length).toBeGreaterThanOrEqual(4)
+    expect(
+      Array.from(headerButtons).filter(
+        (button) => (button as HTMLButtonElement).disabled,
+      ),
+    ).toHaveLength(3)
   })
 })

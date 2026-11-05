@@ -26,10 +26,11 @@ function cssColor(value: string): string {
 }
 
 /**
- * 4 项指标，形状与销售订单一致：前两项带图标 + 括号次级说明，第 4 项是 warning。
+ * 4 张指标卡（紧凑形态）：前两项带图标 + 括号次级说明，第 4 张是 warning。
  *
- * <p>这里刻意**不再有 `percent`**：方案 B 的指标条是两行结构（label / 值 + 说明），
- * 4px 进度条会变成第三行把 4 格撑开，`ModuleDetailMetric` 因此不再声明该字段。</p>
+ * <p>这一组刻意**不传 `percent` / `capsule` / `stats`**：用来锁"可选字段缺省时"的形态
+ * （没有进度条就渲染同高的 1px 分隔线，不留灰色空轨道）。卡片式版式的完整形态见下面
+ * 「卡片式版式」那条用例。</p>
  */
 const fourMetrics: ModuleDetailMetric[] = [
   {
@@ -140,11 +141,14 @@ describe('ModuleDetailMetricBar', () => {
     expect(
       container.querySelectorAll('.module-detail-metric__icon'),
     ).toHaveLength(4)
-    // 默认 tone 的圆底取 colorPrimaryBg（浅色底是装饰，允许用原色系）
+    /*
+     * 图标圆底取 `colorBgContainer`（白）：卡片本身已经按 tone 上了浅色底
+     * （浅蓝/浅绿/琥珀），再铺一层同色系圆底会糊在一起看不出边界。
+     */
     const icon = container.querySelector<HTMLElement>(
       '.module-detail-metric__icon',
     )
-    expect(icon?.style.background).toBe(cssColor(tokenSet().colorPrimaryBg))
+    expect(icon?.style.background).toBe(cssColor(tokenSet().colorBgContainer))
     expect(icon?.getAttribute('aria-hidden')).toBe('true')
 
     render([{ key: 'plain', label: '没有图标', value: '1' }])
@@ -193,5 +197,68 @@ describe('ModuleDetailMetricBar', () => {
     render([])
 
     expect(container.innerHTML).toBe('')
+  })
+
+  /*
+   * 卡片式版式（参考稿）：胶囊 / 大号值 + 副值 / 进度条或分隔线 / 底行「标签：值」。
+   * 关键契约是**进度条只在传了 `percent` 时渲染**，没有进度条的卡片用同高的 1px 分隔线，
+   * 四张卡的底行因此始终对齐。
+   */
+  it('卡片式版式：胶囊 / 进度条 / 底行 stats 按可选字段渲染', () => {
+    render([
+      {
+        key: 'usage',
+        label: '合同金额使用率',
+        value: '3.44%',
+        subValue: '已用金额：¥289150.75',
+        tone: 'primary',
+        capsule: { text: '健康', tone: 'processing' },
+        percent: 34.4,
+        stats: {
+          left: { label: '总额', value: '¥8400000.00' },
+          right: { label: '余', value: '¥8110849.25' },
+        },
+      },
+      {
+        key: 'plain-card',
+        label: '合计送货吨位 / 总重量',
+        value: '53.186',
+        subValue: '/ 39.702 吨',
+        stats: {
+          // 只有标签（值在右组）
+          left: { label: '交货差异率' },
+          right: { value: '+13.484 吨（含在途）' },
+        },
+      },
+    ])
+
+    const cards = container.querySelectorAll('.module-detail-metric')
+    expect(cards).toHaveLength(2)
+
+    // 进度条：只有传了 percent 的那张卡有
+    expect(container.querySelectorAll('.ant-progress')).toHaveLength(1)
+    expect(cards[0]?.querySelector('[role="progressbar"]')).not.toBeNull()
+    // 没有进度条的卡片：渲染同高的 1px 分隔线，不渲染空轨道
+    expect(
+      cards[1]?.querySelector('.module-detail-metric__rule'),
+    ).not.toBeNull()
+
+    // 状态胶囊
+    expect(
+      cards[0]?.querySelector('.module-detail-metric__capsule')?.textContent,
+    ).toBe('健康')
+
+    // 副值与主值同行
+    expect(
+      cards[0]?.querySelector('.module-detail-metric__sub')?.textContent,
+    ).toBe('已用金额：¥289150.75')
+
+    // 底行：左组靠左、右组靠右；标签自带中文冒号，只有标签/只有值都允许
+    const stats = cards[0]?.querySelectorAll('.module-detail-metric__stat')
+    expect(stats?.[0]?.textContent).toBe('总额：¥8400000.00')
+    expect(stats?.[1]?.textContent).toBe('余：¥8110849.25')
+    const plainStats = cards[1]?.querySelectorAll('.module-detail-metric__stat')
+    expect(plainStats?.[0]?.textContent).toBe('交货差异率：')
+    expect(plainStats?.[1]?.textContent).toBe('+13.484 吨（含在途）')
   })
 })

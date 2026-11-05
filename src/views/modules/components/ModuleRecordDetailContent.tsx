@@ -228,14 +228,23 @@ export function ModuleRecordDetailContent({
    */
   const isPlanB = config.detailLayout === 'inline'
   /*
-   * 方案 B 的顶栏已经用状态标签呈现了 `status`，信息区不再重复同一个值（同一张卡里
-   * 上下两处「完成销售」）。判定与顶栏共用 `hasDetailHeaderStatus`：顶栏没渲染标签时
-   * （记录本身没有 status）保留该字段，状态不会凭空消失。
+   * 方案 B 的信息区字段：去掉顶栏已经呈现过的内容，避免同一张单的同一串数字在上下两处打架。
+   *
+   * - 状态：顶栏已经用标签呈现（判定与顶栏共用 `hasDetailHeaderStatus`，顶栏没渲染标签时保留字段）；
+   * - 其余（如主单号）由页面通过 `config.detailInfoHiddenKeys` 显式声明，不在这里猜字段名。
+   *
+   * 未配置 `detailLayout: 'inline'` 的模块**一个字段都不动**（DOM 与改造前逐字一致）。
    */
-  const infoFields =
-    isPlanB && hasDetailHeaderStatus(record)
-      ? detailFields.filter((field) => field.key !== 'status')
-      : detailFields
+  const hiddenInfoKeys = isPlanB
+    ? new Set(config.detailInfoHiddenKeys ?? [])
+    : null
+  const infoFields = detailFields.filter((field) => {
+    if (hiddenInfoKeys?.has(field.key)) return false
+    if (isPlanB && hasDetailHeaderStatus(record) && field.key === 'status') {
+      return false
+    }
+    return true
+  })
   const showItemsCard = detailItemColumns.length > 0
   /*
    * 信息卡是否有内容：顶栏 / 指标条 / 字段区 / 模块附加节点任一存在即可。
@@ -269,6 +278,108 @@ export function ModuleRecordDetailContent({
     </div>
   )
 
+  /*
+   * 明细卡：信息卡之外的白卡。plan B 与缺省布局共用同一段 JSX，
+   * 避免「同一个明细面板写两遍」——两处一旦分叉，合计行/空态就会只在其中一处生效。
+   */
+  const itemsCard = showItemsCard ? (
+    <div className="module-detail-card module-detail-card--items">
+      <ModuleItemsPanel
+        title={config.detailItemTitle}
+        className="module-detail-items-panel"
+        items={detailItems}
+        itemColumns={detailItemColumns}
+        // 表尾已有 Table.Summary 合计行时，标题行的内联合计必须关掉（同一个口径不能两个出口）。
+        showSummary={!hasDetailSummary}
+        /*
+         * 「关闭 / 打印」按钮行：方案 B 里关闭已经上移到卡片顶栏（返回箭头 + ×），
+         * 明细面板再放一个就是同一动作的第二个入口。缺省布局仍保留在这里
+         * （它的 DOM 位置与改造前一致）。
+         */
+        actions={isPlanB ? undefined : detailActions}
+      >
+        <ModuleItemGroupsView
+          groups={detailItemGroups}
+          moduleKey={config.key}
+          columns={detailTableColumns}
+          emptyText={t('modules.detail.noDetailItems')}
+          /*
+            合计行：列定义与明细表用同一份 detailTableColumns，合计数字才能逐列对齐
+            到上面的明细；cells 由 config.detailSummary 一处产出。插槽未配置、
+            没有明细行或插槽返回 null 时传 undefined，表格 footer 完全不出现。
+          */
+          summary={
+            hasDetailSummary
+              ? () => (
+                  <ModuleDetailSummaryRow
+                    columns={detailTableColumns}
+                    cells={detailSummaryCells ?? []}
+                  />
+                )
+              : undefined
+          }
+        />
+      </ModuleItemsPanel>
+    </div>
+  ) : null
+
+  /*
+   * 方案 B（`detailLayout: 'inline'`，当前仅销售订单）的三张卡：
+   *
+   * 1. 顶栏卡：顶栏（返回 / 标题 / 单号 / 状态 / 关联项目 / 动作按钮 / 关闭）+ 四张指标卡；
+   * 2. 业务信息卡：蓝色竖条标题栏 + 「标签：值」网格；
+   * 3. 明细卡：只读明细 + 表尾合计（与缺省布局共用上面同一段 JSX）。
+   *
+   * 与改造前的区别只是「谁和谁在同一张白卡里」：三张卡各自独立挂载，任一侧没有内容就不出现，
+   * 不会出现只有标题的空卡。
+   */
+  if (isPlanB) {
+    return (
+      <div className="module-detail-surface module-detail-surface--plan-b">
+        <div className="module-detail-card module-detail-card--summary">
+          {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
+          {config.renderDetailExtras?.({ record })}
+          {/*
+            顶栏：返回箭头与右上角 × 走**同一个** `onClose`（覆盖层的关闭本来就是
+            "退出当前详情、回到列表"），不新造第二套退场路径。
+          */}
+          <ModuleDetailHeader
+            config={config}
+            record={record}
+            onBack={onClose}
+            onClose={onClose}
+          />
+          {/*
+            指标卡：由页面通过 detailMetricsSlot 提供（销售订单是项目销售汇总的四张卡）。
+            插槽未配置时整块不渲染，不留空 div。
+          */}
+          {detailMetricsSlot
+            ? createElement(detailMetricsSlot, { record })
+            : null}
+        </div>
+
+        {/*
+          业务信息卡的标题栏右侧本可以放「最后更新于 …」，但销售订单接口没有更新时间字段
+          （`SalesOrderResponse` 只有 `version` 乐观锁版本，没有 updatedAt/createdAt），
+          所以这里**不传** `meta` —— 记录上取不到就不显示，不用当前时间冒充。
+        */}
+        {infoFields.length ? (
+          <div className="module-detail-card module-detail-card--info">
+            <ModuleDetailFieldGrid
+              config={config}
+              fields={infoFields}
+              formatCellValue={formatCellValue}
+              record={record}
+              title={config.detailInfoTitle}
+            />
+          </div>
+        ) : null}
+
+        {itemsCard}
+      </div>
+    )
+  }
+
   return (
     <div className="module-detail-surface">
       {showInfoCard ? (
@@ -276,81 +387,27 @@ export function ModuleRecordDetailContent({
           {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
           {config.renderDetailExtras?.({ record })}
           {/*
-            顶栏（方案 B 第一段）：标题 + 单号 + 状态标签，右侧是可选动作插槽。
-            未配置 `detailLayout: 'inline'` 的模块不渲染 —— 它们的标题在弹层外壳上即可。
-          */}
-          {isPlanB ? (
-            <ModuleDetailHeader config={config} record={record} />
-          ) : null}
-          {/*
-            指标条：由页面通过 detailMetricsSlot 提供（销售订单是项目销售汇总的四项指标）。
-            插槽未配置时整块不渲染，不留空 div。
+            这里是**缺省布局**（未配置 `detailLayout: 'inline'` 的 18 个模块）：卡片内没有顶栏，
+            标题由弹层外壳承担，DOM 与改造前逐字一致（方案 B 的分支在前面已提前 return）。
+
+            指标条仍按 `detailMetricsSlot` 渲染：插槽未配置时整块不渲染，不留空 div。
           */}
           {detailMetricsSlot
             ? createElement(detailMetricsSlot, { record })
             : null}
           {infoFields.length ? (
-            isPlanB ? (
-              /* 方案 B 的流式「标签：值」网格 */
-              <ModuleDetailFieldGrid
-                config={config}
-                fields={infoFields}
-                formatCellValue={formatCellValue}
-                record={record}
-              />
-            ) : (
-              <ModuleRecordDetailDescriptions
-                config={config}
-                fields={infoFields}
-                formatCellValue={formatCellValue}
-                record={record}
-              />
-            )
+            <ModuleRecordDetailDescriptions
+              config={config}
+              fields={infoFields}
+              formatCellValue={formatCellValue}
+              record={record}
+            />
           ) : null}
           {showItemsCard ? null : detailActions}
         </div>
       ) : null}
 
-      {/*
-        明细卡（方案 B 第四段）：与信息卡同宽、8px 圆角、1px 边框的第二张白卡，
-        表尾合计行沿用原实现。空明细由表格自己的 emptyText 呈现，不会出现「空卡」——
-        整张卡只在真有明细列时挂载。
-      */}
-      {showItemsCard ? (
-        <div className="module-detail-card module-detail-card--items">
-          <ModuleItemsPanel
-            title={config.detailItemTitle}
-            className="module-detail-items-panel"
-            items={detailItems}
-            itemColumns={detailItemColumns}
-            // 表尾已有 Table.Summary 合计行时，标题行的内联合计必须关掉（同一个口径不能两个出口）。
-            showSummary={!hasDetailSummary}
-            actions={detailActions}
-          >
-            <ModuleItemGroupsView
-              groups={detailItemGroups}
-              moduleKey={config.key}
-              columns={detailTableColumns}
-              emptyText={t('modules.detail.noDetailItems')}
-              /*
-                合计行：列定义与明细表用同一份 detailTableColumns，合计数字才能逐列对齐
-                到上面的明细；cells 由 config.detailSummary 一处产出。插槽未配置、
-                没有明细行或插槽返回 null 时传 undefined，表格 footer 完全不出现。
-              */
-              summary={
-                hasDetailSummary
-                  ? () => (
-                      <ModuleDetailSummaryRow
-                        columns={detailTableColumns}
-                        cells={detailSummaryCells ?? []}
-                      />
-                    )
-                  : undefined
-              }
-            />
-          </ModuleItemsPanel>
-        </div>
-      ) : null}
+      {itemsCard}
     </div>
   )
 }

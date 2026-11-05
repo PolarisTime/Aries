@@ -148,6 +148,21 @@ export interface ModuleDetailField {
   type?: ModuleColumnType
   row?: number
   fullRow?: boolean
+  /**
+   * 是否用「浅灰圆角底框 + 前置小图标」包裹值（只影响方案 B 的流式信息网格）。
+   *
+   * <p>典型用途是项目名称这类"地址/说明"性质的长值：底框把它从一串短字段里挑出来。
+   * 缺省(false)时值就是纯文本 —— 订单备注这类长文本**整行展示但不需要底框**，
+   * 因此不能拿「是否整行」当作「是否加框」的判定（两者语义不同，混用会让备注也被框住）。</p>
+   */
+  boxed?: boolean
+  /**
+   * 值是否用强调色（错误色）+ 粗体呈现（只影响方案 B 的流式信息网格）。
+   *
+   * <p>用于总金额这类需要在信息区里被第一眼看到的关键数值；缺省(false)时用正文色。
+   * 这是**纯展示标记**，不参与任何格式化或计算（值本身仍由列渲染 / 统一格式化出口产出）。</p>
+   */
+  emphasis?: boolean
 }
 
 export interface ModuleFormFieldDefinition {

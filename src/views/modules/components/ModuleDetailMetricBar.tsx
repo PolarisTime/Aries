@@ -1,32 +1,173 @@
-import { theme } from 'antd'
-import type { ModuleDetailMetric } from '@/types/module-page'
+import { Progress, theme } from 'antd'
+import type { CSSProperties, ReactNode } from 'react'
+import type {
+  ModuleDetailMetric,
+  ModuleDetailMetricStat,
+  ModuleDetailMetricStats,
+} from '@/types/module-page'
 import '@/styles/module-detail.css'
 
 export interface ModuleDetailMetricBarProps {
-  /** 指标格。数值由调用方算好传入，本组件不做字段识别与单位换算。 */
+  /** 指标卡。数值由调用方算好传入，本组件不做字段识别与单位换算。 */
   metrics: ModuleDetailMetric[]
 }
 
 /**
- * 详情指标条：4 列等宽的只读指标区（设计稿「方案 B」的紧凑横条）。
+ * 指标卡的颜色/底色口径（**唯一出口**）。
  *
- * <p>每格结构固定为「32px 圆形图标底 + 右侧两行」：第一行 label（11-12px 次要色），
- * 第二行「值（12-13px / 700）+ 括号次级说明（10-11px 次要色）」**同行**。指标条的
- * 底色、上下 1px 分隔线、以及「出血到卡片左右边缘」的横向负边距都在
- * `styles/module-detail.css` 里，组件只负责结构与语义色。</p>
+ * <p>四个 tone 对应参考稿的四张卡：`primary` 浅蓝（合同金额使用率）、`success` 浅绿
+ * （合同吨位使用率）、`default` 白底（本单送货）、`warning` 琥珀（未对账汇总）。
+ * 全部取 `theme.useToken()`，不写死色值，暗色主题下跟着 token 一起变。</p>
  *
- * <p>颜色全部取 `theme.useToken()`，不写死色值；**主值色用 Text 变体**
- * （colorWarningText / colorSuccessText）而不是 colorWarning / colorSuccess：后者在
- * 浅色底上对比度约 1.9:1，12-13px 的字达不到 WCAG AA 的 4.5:1。图标圆底是纯装饰
- * （`aria-hidden`），才允许用同色系浅底。</p>
+ * <p>为什么主值/标签色都走 `<X>Text` 而不是 `color<X>`：antd 6 把 `*Text` 退化成了基础色，
+ * 而基础色在自带的浅底上对比度只有 1.8~3.3:1，达不到 WCAG AA 的 4.5:1；
+ * 本仓库 `styles/antd-theme.ts` 已把 `colorWarningText / colorSuccessText / colorInfoText
+ * 覆写成"对同色系浅底 ≥4.5:1"的实际取值，因此这里直接复用。</p>
+ */
+function resolveToneStyle(
+  tone: ModuleDetailMetric['tone'],
+  tokens: ReturnType<typeof theme.useToken>['token'],
+): {
+  card: CSSProperties
+  label: string
+  value: string
+  secondary: string
+  bar: string
+  track: string
+} {
+  const base = {
+    label: tokens.colorTextSecondary,
+    value: tokens.colorText,
+    secondary: tokens.colorTextSecondary,
+    bar: tokens.colorPrimary,
+    track: tokens.colorFillSecondary,
+  }
+  if (tone === 'warning') {
+    return {
+      card: {
+        background: tokens.colorWarningBg,
+        borderColor: tokens.colorWarningBorder,
+      },
+      ...base,
+      label: tokens.colorWarningText,
+      value: tokens.colorWarningText,
+      bar: tokens.colorWarning,
+    }
+  }
+  if (tone === 'primary') {
+    return {
+      card: {
+        background: tokens.colorPrimaryBg,
+        borderColor: tokens.colorPrimaryBgHover,
+      },
+      ...base,
+    }
+  }
+  if (tone === 'success') {
+    return {
+      card: {
+        background: tokens.colorSuccessBg,
+        borderColor: tokens.colorSuccessBgHover,
+      },
+      ...base,
+      bar: tokens.colorSuccess,
+    }
+  }
+  return { card: {}, ...base }
+}
+
+/** 状态胶囊的颜色口径（与 tone 同源，不另写一套色值）。 */
+function resolveCapsuleStyle(
+  capsuleTone: NonNullable<ModuleDetailMetric['capsule']>['tone'],
+  tokens: ReturnType<typeof theme.useToken>['token'],
+): CSSProperties {
+  /*
+   * 胶囊比卡片底色深**一档**（`*BgHover` 而不是 `*Bg`）：卡片本身就已经是同色系浅底，
+   * 同色胶囊会糊进背景里看不出边界。文字一律取 `<X>Text`（本仓库覆写成"对浅底 ≥4.5:1"）。
+   */
+  if (capsuleTone === 'success') {
+    return {
+      color: tokens.colorSuccessText,
+      background: tokens.colorSuccessBgHover,
+      borderColor: tokens.colorSuccessBorder,
+    }
+  }
+  if (capsuleTone === 'warning') {
+    return {
+      color: tokens.colorWarningText,
+      background: tokens.colorWarningBgHover,
+      borderColor: tokens.colorWarningBorder,
+    }
+  }
+  /*
+   * `processing`（参考稿里的「健康」）：主色系深一档浅底 + 主色系描边。
+   * 文字取 `colorPrimaryActive`(#0958d9) 而不是 `colorPrimary`(#1677ff)：
+   * 后者对浅底约 3.3:1，12px 文字不达 AA。
+   */
+  return {
+    color: tokens.colorPrimaryActive,
+    background: tokens.colorPrimaryBgHover,
+    borderColor: tokens.colorPrimaryBorder,
+  }
+}
+
+/**
+ * 底行的一组「标签 + 值」。
  *
- * <p>`tone === 'warning'` 时**整格**加一层 `colorWarningBg`：未对账是待办性质，
- * 需要在 4 格里被第一时间看到；该格的 label 与值都用 `colorWarningText`，值另用等宽
- * 数字（金额逐位对齐，见 module-detail.css）。</p>
+ * <p>标签与值都可缺省：参考稿里「交货差异率」那组只有标签（值在右侧蓝色），
+ * 「待对账吨位」那组只有值。任一侧为空时不渲染空 span。</p>
+ */
+function renderStat(
+  stat: ModuleDetailMetricStat | undefined,
+  side: 'start' | 'end',
+) {
+  if (!stat || (stat.label == null && stat.value == null)) return null
+  return (
+    <span
+      className={`module-detail-metric__stat module-detail-metric__stat--${side}`}
+    >
+      {stat.label == null ? null : (
+        <span className="module-detail-metric__stat-label">
+          {/* 冒号与信息区字段标签同一写法（`{label}：`），不新造 i18n key */}
+          {stat.label}：
+        </span>
+      )}
+      {stat.value == null ? null : (
+        <span className="module-detail-metric__stat-value">{stat.value}</span>
+      )}
+    </span>
+  )
+}
+
+function renderStats(stats: ModuleDetailMetricStats | undefined): ReactNode {
+  if (!stats) return null
+  const left = renderStat(stats.left, 'start')
+  const right = renderStat(stats.right, 'end')
+  if (left === null && right === null) return null
+  return (
+    <div className="module-detail-metric__stats">
+      {left}
+      {right}
+    </div>
+  )
+}
+
+/**
+ * 详情指标卡：四张并排的圆角卡（参考稿「顶栏卡」下方的指标区）。
  *
- * <p>这里**不渲染进度条**：方案 B 的指标条只有两行，4px 细进度条会变成第三行，把 4 格
- * 高度撑开，并让「只有部分指标带进度」时基线错位；使用率本身已经以百分比呈现，
- * 进度条属于重复编码。`ModuleDetailMetric` 因此也不再声明 `percent` 字段。</p>
+ * <p>每张卡自上而下固定为四段：</p>
+ * <ol>
+ *   <li>**标题行**：label（次要色）+ 状态胶囊 / 右上角圆形图标，二选一或都不给；</li>
+ *   <li>**主值行**：大号数字（26px / 700）+ 同行次级说明（`subValue` / `hint`）；</li>
+ *   <li>**进度条**（只在传了 `percent` 时渲染，6px 圆角条）或 1px 分隔线（无进度条时）；</li>
+ *   <li>**底行**：左右两组「标签 + 值」（`stats`），左靠左、右靠右。</li>
+ * </ol>
+ *
+ * <p>四个 tone 的底色与文字色由 {@link resolveToneStyle} 一处产出，卡片本身只负责排版；
+ * 需要「只有部分指标带进度条」时基线依然对齐，因为分隔线那一段与进度条占同一行高
+ * （见 `styles/module-detail.css` 的 `.module-detail-metric__rule`）。</p>
+ *
+ * <p>空数组返回 `null`：指标是增强信息，没有数据时不留空容器占位。</p>
  */
 export function ModuleDetailMetricBar({ metrics }: ModuleDetailMetricBarProps) {
   const { token } = theme.useToken()
@@ -36,82 +177,107 @@ export function ModuleDetailMetricBar({ metrics }: ModuleDetailMetricBarProps) {
   return (
     <div className="module-detail-metrics">
       {metrics.map((metric) => {
-        const warning = metric.tone === 'warning'
-        const success = metric.tone === 'success'
-        // 主值色：Text 变体（对比度达标），缺省用正文色
-        const valueColor = warning
-          ? token.colorWarningText
-          : success
-            ? token.colorSuccessText
-            : token.colorText
-        const labelColor = warning
-          ? token.colorWarningText
-          : token.colorTextSecondary
-        // 图标圆底：同色系浅底（装饰），图标本身仍用可读的深色
-        const iconBackground = warning
-          ? token.colorWarningBg
-          : success
-            ? token.colorSuccessBg
-            : token.colorPrimaryBg
-        const iconColor = warning
-          ? token.colorWarningText
-          : success
-            ? token.colorSuccessText
-            : token.colorPrimary
+        const tone = resolveToneStyle(metric.tone, token)
+        const capsuleStyle = metric.capsule
+          ? resolveCapsuleStyle(metric.capsule.tone, token)
+          : null
+        const hasIcon = metric.icon !== undefined && metric.icon !== null
+        const hasHeadExtra = capsuleStyle !== null || hasIcon
 
         return (
-          <div
+          <article
             key={metric.key}
-            className={`module-detail-metric${warning ? ' module-detail-metric--warning' : ''}`}
-            /* 「整格 amber」：底色取 token，暗色主题下自动跟随，不写死 hex */
-            style={warning ? { background: token.colorWarningBg } : undefined}
+            /*
+             * 每张卡是可被读屏"按块"跳读的一段内容，给它一个可访问名（就是卡片标题），
+             * 否则四张卡在无障碍树里都是无名的 article，用户只能一行行听过去。
+             */
+            aria-label={metric.label}
+            className={`module-detail-metric${metric.tone && metric.tone !== 'default' ? ` module-detail-metric--${metric.tone}` : ''}`}
+            /* 卡片底色与描边按 tone 内联下发：暗色主题下跟着 token 一起变 */
+            style={tone.card}
           >
-            {/*
-             * 图标可选：没传就不渲染空圆底（不占位），纯文字指标照旧从格子左缘开始。
-             */}
-            {metric.icon === undefined || metric.icon === null ? null : (
-              <span
-                aria-hidden
-                className="module-detail-metric__icon"
-                style={{ color: iconColor, background: iconBackground }}
-              >
-                {metric.icon}
-              </span>
-            )}
-            <div className="module-detail-metric__body">
+            <div className="module-detail-metric__head">
               <span
                 className="module-detail-metric__label"
-                style={{ color: labelColor }}
+                style={{ color: tone.label }}
+                title={metric.label}
               >
                 {metric.label}
               </span>
-              {/* 值 + 括号次级说明同一行：分成两个 span，值本身仍是纯文本节点 */}
-              <span className="module-detail-metric__value-row">
-                <span
-                  className="module-detail-metric__value"
-                  style={{ color: valueColor }}
-                >
-                  {metric.value}
+              {hasHeadExtra ? (
+                <span className="module-detail-metric__head-extra">
+                  {capsuleStyle && metric.capsule ? (
+                    <span
+                      className="module-detail-metric__capsule"
+                      style={capsuleStyle}
+                    >
+                      {metric.capsule.text}
+                    </span>
+                  ) : null}
+                  {hasIcon ? (
+                    <span
+                      aria-hidden
+                      className="module-detail-metric__icon"
+                      style={{
+                        color: tone.label,
+                        background: token.colorBgContainer,
+                      }}
+                    >
+                      {metric.icon}
+                    </span>
+                  ) : null}
                 </span>
-                {metric.hint === undefined || metric.hint === null ? null : (
-                  <span
-                    className="module-detail-metric__hint"
-                    /* 格子只有 1/4 宽，长括号说明会被省略号裁掉；title 兜住完整文案 */
-                    title={
-                      typeof metric.hint === 'string' ? metric.hint : undefined
-                    }
-                    style={{
-                      color: warning
-                        ? token.colorWarningText
-                        : token.colorTextSecondary,
-                    }}
-                  >
-                    {metric.hint}
-                  </span>
-                )}
-              </span>
+              ) : null}
             </div>
-          </div>
+
+            {/* 值 + 次级说明同一行：分成两个 span，值本身仍是纯文本节点 */}
+            <span className="module-detail-metric__value-row">
+              <span
+                className="module-detail-metric__value"
+                style={{ color: tone.value }}
+              >
+                {metric.value}
+              </span>
+              {metric.subValue === undefined ||
+              metric.subValue === null ? null : (
+                <span
+                  className="module-detail-metric__sub"
+                  style={{ color: tone.secondary }}
+                >
+                  {metric.subValue}
+                </span>
+              )}
+              {metric.hint === undefined || metric.hint === null ? null : (
+                <span
+                  className="module-detail-metric__hint"
+                  /* 卡片只有 1/4 宽，长括号说明会被省略号裁掉；title 兜住完整文案 */
+                  title={
+                    typeof metric.hint === 'string' ? metric.hint : undefined
+                  }
+                  style={{ color: tone.secondary }}
+                >
+                  {metric.hint}
+                </span>
+              )}
+            </span>
+
+            {typeof metric.percent === 'number' ? (
+              <Progress
+                className="module-detail-metric__progress"
+                percent={metric.percent}
+                size={['100%', 6]}
+                showInfo={false}
+                strokeColor={tone.bar}
+                railColor={tone.track}
+                aria-label={metric.label}
+              />
+            ) : (
+              /* 没有进度条的卡片（参考稿的卡 3/卡 4）：同高的一条分隔线，四张卡基线因此一致 */
+              <span className="module-detail-metric__rule" aria-hidden />
+            )}
+
+            {renderStats(metric.stats)}
+          </article>
         )
       })}
     </div>

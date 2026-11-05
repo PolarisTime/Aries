@@ -1262,6 +1262,27 @@ export const enUS = {
       summaryRow: 'Total ({{rows}} rows)',
       summaryRowWithExpense: 'Total ({{rows}} rows, incl. expenses)',
     },
+    /**
+     * Card-style read-only detail surface (detailLayout: 'inline'): header card +
+     * four metric cards + business info card. Only the sales order detail uses it.
+     */
+    detailCards: {
+      businessInfoTitle: 'Business info',
+      capsuleHealthy: 'Healthy',
+      capsuleSufficient: 'Sufficient',
+      capsuleExceeded: 'Over limit',
+      deliveryVariance: 'Delivery variance',
+      varianceInTransit: '{{value}} (incl. in transit)',
+      unreconciledSummary: 'Unreconciled summary',
+      totalLabel: 'Total',
+      remainingLabel: 'Remaining',
+      contractLabel: 'Contract',
+      relatedProject: 'Related project: ',
+      notConnected: 'Not connected',
+      printDeliveryNote: 'Print delivery note',
+      exportStatement: 'Export statement',
+      changeMaintenance: 'Change & maintain',
+    },
     editorForm: {
       documentInfo: 'Document Info',
     },

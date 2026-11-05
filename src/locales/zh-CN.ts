@@ -1251,6 +1251,39 @@ export const zhCN = {
       summaryRow: '合计（{{rows}} 行）',
       summaryRowWithExpense: '合计（{{rows}} 行，含附加费用）',
     },
+    /**
+     * 只读详情面「卡片式」版式（方案 B 的下一步：顶栏卡 + 4 张指标卡 + 业务信息卡）。
+     *
+     * <p>只给销售订单详情面使用（`detailLayout: 'inline'`）；其余模块不配置，不会读到本段。</p>
+     */
+    detailCards: {
+      /** 业务信息卡的标题栏文案。 */
+      businessInfoTitle: '订单业务信息',
+      /** 使用率胶囊：未超限的「正常」态（金额 / 吨位各一个词，与参考稿一致）。 */
+      capsuleHealthy: '健康',
+      capsuleSufficient: '充足',
+      /** 使用率胶囊：已超限态。判定只看后端下发的 exceeded*，不拿使用率再判一次。 */
+      capsuleExceeded: '超支',
+      /** 指标卡 3 底行左侧标签。 */
+      deliveryVariance: '交货差异率',
+      /** 指标卡 3 底行右侧值：{{value}} 形如「+13.484 吨」。 */
+      varianceInTransit: '{{value}}（含在途）',
+      /** 指标卡 4 标题。 */
+      unreconciledSummary: '未对账汇总',
+      /** 指标卡 1/2 底行左侧标签。 */
+      totalLabel: '总额',
+      /** 指标卡 1/2 底行右侧标签。 */
+      remainingLabel: '余',
+      /** 指标卡 2 底行左侧标签（合同值）。 */
+      contractLabel: '合同',
+      /** 顶栏竖线后的关联对象标签（销售订单是关联项目）。值由顶栏拼在标签后面。 */
+      relatedProject: '关联项目：',
+      /** 顶栏占位按钮的悬停说明：接口尚未接入。 */
+      notConnected: '未接入',
+      printDeliveryNote: '打印送货单',
+      exportStatement: '导出对账单',
+      changeMaintenance: '变更维护',
+    },
     editorForm: {
       documentInfo: '单据信息',
     },

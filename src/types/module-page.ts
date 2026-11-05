@@ -267,32 +267,81 @@ export interface ModuleEditorExtrasContext {
 export interface ModuleDetailMetric {
   /** 稳定 key，用作 React 列表键。 */
   key: string
-  /** 次要色 11-12px 标签。 */
+  /** 次要色 12-14px 标签。 */
   label: string
-  /** 主值，12-13px / 700。 */
+  /** 主值（卡片式版式里是 26-28px / 700 的大号数字）。 */
   value: ReactNode
   /**
-   * 与主值**同一行**的次级说明（10-11px 次要色，调用方自带括号）。
+   * 与主值**同一行**的次级说明（如「已用 ¥28.92万」）。
    *
-   * <p>方案 B 的指标条只有两行：label 一行、值 + 次级说明一行；这里不再是「主值下方
-   * 的独立第三行」，否则 4 格高度会被撑开、第 4 格的琥珀底色也失去对齐基准。</p>
+   * <p>卡片式版式把它排在主值右侧、与主值基线对齐，字号比主值小一档：三个数字并列时
+   * 读者先看主值，再看「这个百分比对应的绝对值」。缺省不渲染。</p>
+   */
+  subValue?: ReactNode
+  /**
+   * 与主值**同一行**的次级说明（10-12px 次要色，调用方自带括号）。
+   *
+   * <p>保留自上一版紧凑指标条（两行结构）；卡片式版式优先用 {@link subValue}，
+   * 两者都给时按 subValue → hint 的顺序排在同一行。</p>
    */
   hint?: ReactNode
   /**
    * 可选图标：渲染在 32px **圆形**浅色底里，底色与图标色都由 `tone` 决定。
    *
-   * <p>缺省时不渲染空圆底（不占位），纯文字指标与带图标指标的左缘仍然对齐，
-   * 因为对齐靠的是每一格自己的 flex 布局，不靠外层补位。</p>
+   * <p>卡片式版式把它放在**卡片标题行右侧**（参考稿的未对账卡就是右上角一个圆形小图标）。</p>
    */
   icon?: ReactNode
   /**
    * 主值语义色：warning / success 分别取 colorWarningText / colorSuccessText
    * （Text 变体在浅色底上才够 WCAG AA 对比度），缺省用 colorText。
    *
-   * <p>`warning` 还会给整格加一层 `colorWarningBg` 底色（「未对账」是待办性质，
-   * 需要在 4 格里被第一时间看到）。</p>
+   * <p>`warning` 还会给整卡加 `colorWarningBg` 底色 + `colorWarningBorder` 描边；
+   * `primary` / `success` 分别给 `colorPrimaryBg` / `colorSuccessBg` 淡色底与同色系描边
+   * （参考稿的四张卡就是「浅蓝 / 浅绿 / 白 / 琥珀」四种底色）。</p>
    */
-  tone?: 'default' | 'warning' | 'success'
+  tone?: 'default' | 'primary' | 'success' | 'warning'
+  /**
+   * 卡片标题行右侧的状态胶囊（如「健康」「充足」）。
+   *
+   * <p>文案由调用方按业务口径给出（本层不判断阈值）；`tone` 只决定颜色：
+   * `processing` → 主色、`success` → 成功色、`warning` → 警告色。</p>
+   */
+  capsule?: ModuleDetailMetricCapsule
+  /**
+   * 卡片底行的左右两组「标签 + 值」。
+   *
+   * <p>左组靠左、右组靠右；任一侧没给就不渲染那一侧。参考稿里：
+   * 卡1「总额 / 余」、卡2「合同 / 余」、卡3「交货差异率」（只有标签，值在右组）、
+   * 卡4「未对账吨位 / 值」。</p>
+   */
+  stats?: ModuleDetailMetricStats
+  /**
+   * 进度条百分比（0~100）。**只在显式传入时渲染** 6px 圆角进度条。
+   *
+   * <p>缺省不渲染进度条，此时卡片底行上方改用一条 1px 分隔线（参考稿的卡 3/卡 4 就是
+   * 没有进度条、只有分隔线的形态）。刻度口径由调用方算好（`toBarPercent`），本层不二次判定。</p>
+   */
+  percent?: number
+}
+
+/** 指标卡右上角的状态胶囊。 */
+export interface ModuleDetailMetricCapsule {
+  /** 胶囊文案（「健康」「充足」「超支」等），由调用方按业务口径给出。 */
+  text: string
+  /** 颜色语义：processing → 主色 / success → 成功色 / warning → 警告色。 */
+  tone: 'success' | 'processing' | 'warning'
+}
+
+/** 指标卡底行的一组「标签 + 值」；标签与值都可缺省（只有其一时照样渲染）。 */
+export interface ModuleDetailMetricStat {
+  label?: ReactNode
+  value?: ReactNode
+}
+
+/** 指标卡底行的左右两组。 */
+export interface ModuleDetailMetricStats {
+  left?: ModuleDetailMetricStat
+  right?: ModuleDetailMetricStat
 }
 
 /**
@@ -434,8 +483,61 @@ export interface ModulePageConfig {
   /**
    * 只读详情面顶栏右侧的动作区插槽（打印、导出、变更维护等）。
    *
-   * <p>本轮不配置任何按钮：插槽存在只是为了让页面以后能挂按钮，**未配置时不渲染
-   * 右侧容器**，不留空 div。顶栏本身只在 `detailLayout === 'inline'` 时渲染。</p>
+   * <p>**未配置时不渲染右侧容器**，不留空 div。顶栏本身只在
+   * `detailLayout === 'inline'` 时渲染。需要"几个按钮 + 可选禁用说明"的简单场景优先用
+   * {@link ModulePageConfig.detailHeaderButtons}（声明式、无需新组件）；只有需要完全自定义
+   * 交互（下拉、二次确认弹层等）时才用本插槽。</p>
    */
   detailHeaderActions?: ComponentType<{ record: ModuleRecord }>
+  /**
+   * 只读详情面顶栏右侧的动作按钮（声明式，按顺序渲染在顶栏右端、关闭按钮之前）。
+   *
+   * <p>未配置时顶栏右侧只有关闭按钮；行展开（`compact`）**不渲染**这些按钮 ——
+   * 行展开是列表内嵌视图，不能打断列表上下文去执行单据动作。</p>
+   */
+  detailHeaderButtons?: readonly ModuleDetailHeaderButton[]
+  /**
+   * 顶栏左端、「标题 + 单号 + 状态」之后的**关联对象**（如销售订单的「关联项目：…」）。
+   *
+   * <p>渲染成「竖线 + label：值」，值取 `record[key]` 的字符串形式；值为空时整段不渲染。
+   * 未配置时不渲染，不留竖线。</p>
+   */
+  detailHeaderMeta?: {
+    /** 关联对象的文案（含冒号，如「关联项目：」）。 */
+    label: string
+    /** 从记录上取值的字段 key。 */
+    key: string
+  }
+  /**
+   * 业务信息卡的标题栏文案（方案 B：白卡内「蓝色竖条 + 标题」）。
+   *
+   * <p>只有配置了才渲染标题栏；未配置时信息卡与改造前一致（没有标题行）。</p>
+   */
+  detailInfoTitle?: string
+  /**
+   * 方案 B 信息区里**不再重复展示**的字段 key。
+   *
+   * <p>顶栏已经呈现的内容（主单号、关联项目等）在信息区重复出现会让同一张单的同一串数字
+   * 在上下两处打架。状态标签已由 `hasDetailHeaderStatus` 统一处理，其余字段由页面在这里
+   * 显式声明 —— 不在这里做任何字段名猜测。</p>
+   */
+  detailInfoHiddenKeys?: readonly string[]
+}
+
+/** 顶栏右侧的一个动作按钮（声明式配置，见 `ModulePageConfig.detailHeaderButtons`）。 */
+export interface ModuleDetailHeaderButton {
+  /** 稳定 key，用作 React 列表键。 */
+  key: string
+  /** 按钮文案。 */
+  label: string
+  /** 前置图标（可选）。 */
+  icon?: ReactNode
+  /** `primary` 是主色实心按钮，缺省为白底描边按钮。 */
+  variant?: 'default' | 'primary'
+  /** 禁用（例如接口尚未接入时先做视觉占位）。 */
+  disabled?: boolean
+  /** 禁用时的悬停说明（`title`）；未给时不带悬停说明。 */
+  disabledHint?: string
+  /** 点击回调；禁用或未提供时点击无副作用。 */
+  onClick?: (ctx: { record: ModuleRecord }) => void
 }

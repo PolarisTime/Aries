@@ -172,13 +172,20 @@ export function ModuleRecordDetailInline({
    */
   const isPlanB = config.detailLayout === 'inline'
   /*
-   * 与详情弹层同一口径：方案 B 的顶栏已经在标签里显示 `status`，信息区不再重复。
+   * 与详情弹层同一口径：方案 B 的信息区去掉顶栏已经呈现过的内容（状态标签、主单号等），
    * 顶栏没渲染标签（记录没有 status）时保留字段，状态不会凭空消失。
+   * 未配置 `detailLayout: 'inline'` 的模块一个字段都不动。
    */
-  const infoFields =
-    isPlanB && hasDetailHeaderStatus(record)
-      ? config.detailFields.filter((field) => field.key !== 'status')
-      : config.detailFields
+  const hiddenInfoKeys = isPlanB
+    ? new Set(config.detailInfoHiddenKeys ?? [])
+    : null
+  const infoFields = config.detailFields.filter((field) => {
+    if (hiddenInfoKeys?.has(field.key)) return false
+    if (isPlanB && hasDetailHeaderStatus(record) && field.key === 'status') {
+      return false
+    }
+    return true
+  })
   const showItemsCard = hasItemColumns
   const showInfoCard =
     hasHeaderFields ||
@@ -332,48 +339,78 @@ export function ModuleRecordDetailInline({
    * `module-detail-surface--compact` 是方案 B 在窄容器里的退化开关：行展开的可用宽度由
    * 列表列数决定、与视口无关，所以指标条与信息区固定 2 列，不能靠 `@media` 断点判断。
    */
+  /*
+   * 明细卡：与详情弹层共用同一段 JSX（`renderItems` 已按模块分组），
+   * plan B 与缺省布局都把它作为最后一张白卡。
+   */
+  const itemsCard = showItemsCard ? (
+    <div className="module-detail-card module-detail-card--items">
+      {renderItems()}
+    </div>
+  ) : null
+
+  /*
+   * 行展开的方案 B 形态（`detailLayout: 'inline'`，当前仅销售订单）：
+   *
+   * 1. 顶栏卡：顶栏（标题 / 单号 / 状态 / 关联项目）+ 四张指标卡；
+   * 2. 业务信息卡：标题栏 + 「标签：值」网格（容器窄，固定 2 列）；
+   * 3. 明细卡。
+   *
+   * 行展开是列表内嵌视图：**不渲染返回箭头、关闭按钮与单据动作按钮**（顶栏在 compact 下
+   * 自动略过），否则点一下就会把列表挤走或弹出一个覆盖层。
+   */
+  if (isPlanB) {
+    return (
+      <div className="module-detail-surface module-detail-surface--plan-b module-detail-surface--compact module-record-detail-inline">
+        <div className="module-detail-card module-detail-card--summary">
+          {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
+          {config.renderDetailExtras?.({ record })}
+          <ModuleDetailHeader config={config} record={record} compact />
+          {detailMetricsSlot
+            ? createElement(detailMetricsSlot, { record })
+            : null}
+        </div>
+        {infoFields.length ? (
+          <div className="module-detail-card module-detail-card--info">
+            <ModuleDetailFieldGrid
+              config={config}
+              fields={infoFields}
+              formatCellValue={formatCellValue}
+              record={record}
+              compact
+              title={config.detailInfoTitle}
+            />
+          </div>
+        ) : null}
+        {itemsCard}
+      </div>
+    )
+  }
+
+  /*
+   * 缺省布局（未配置 `detailLayout: 'inline'` 的 18 个模块）：DOM 与改造前逐字一致。
+   *
+   * `module-record-detail-inline` 留在外层（它携带行展开条带的底色与上边框，并让
+   * `.module-record-detail-inline .module-items-table-shell { border: 0 }` 等既有选择器
+   * 继续命中），与 `module-detail-surface` 放在**同一个元素**上 —— 两者的留白不会叠加两次。
+   */
   return (
     <div className="module-detail-surface module-record-detail-inline module-detail-surface--compact">
       {showInfoCard ? (
         <div className="module-detail-card module-detail-card--info">
           {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
           {config.renderDetailExtras?.({ record })}
-          {/* 顶栏只在方案 B（detailLayout: 'inline'）的模块上渲染，与详情弹层同构。 */}
-          {isPlanB ? (
-            <ModuleDetailHeader config={config} record={record} compact />
-          ) : null}
           {/*
-            指标条：由页面通过 detailMetricsSlot 提供（销售订单是项目销售汇总四项指标）。
+            指标条：由页面通过 detailMetricsSlot 提供（销售订单是项目销售汇总的四项指标）。
             插槽未配置时整块不渲染，不留空 div。
           */}
           {detailMetricsSlot
             ? createElement(detailMetricsSlot, { record })
             : null}
-          {infoFields.length ? (
-            isPlanB ? (
-              /* 方案 B 的流式「标签：值」网格（compact：固定 2 列） */
-              <ModuleDetailFieldGrid
-                config={config}
-                fields={infoFields}
-                formatCellValue={formatCellValue}
-                record={record}
-                compact
-              />
-            ) : (
-              renderHeaderFields()
-            )
-          ) : null}
+          {infoFields.length ? renderHeaderFields() : null}
         </div>
       ) : null}
-      {/*
-        明细独立成第二张白卡（与详情弹层同构）。没有明细列时不挂载，
-        因此不会出现只有一张空表头的卡。
-      */}
-      {showItemsCard ? (
-        <div className="module-detail-card module-detail-card--items">
-          {renderItems()}
-        </div>
-      ) : null}
+      {itemsCard}
       {!showInfoCard && !showItemsCard ? (
         <AppResult
           status="info"

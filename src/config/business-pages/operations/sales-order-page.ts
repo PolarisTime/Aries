@@ -1,3 +1,8 @@
+import {
+  EditOutlined,
+  ExportOutlined,
+  PrinterOutlined,
+} from '@ant-design/icons'
 import i18next from 'i18next'
 import { createElement } from 'react'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
@@ -340,25 +345,30 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       key: 'orderNo',
       row: 1,
     },
-    {
-      label: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
-      key: 'purchaseOrderNo',
-      row: 1,
-    },
+    /*
+     * 信息区的排布顺序按参考稿（顶栏已显示单号，方案 B 里 `orderNo` 通过
+     * `detailInfoHiddenKeys` 从信息区隐藏，因此它排在最前不影响新版的四列流式网格）：
+     * 客户 → 采购订单号 → 结算主体 → 销售员 / 接单日期 → 交货日期 → 总金额 → 总重量。
+     */
     {
       label: i18next.t('modules.pages.salesOrder.colCustomerName'),
       key: 'customerName',
       row: 1,
     },
     {
-      label: i18next.t('modules.pages.salesOrder.colProjectName'),
-      key: 'projectName',
+      label: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
+      key: 'purchaseOrderNo',
       row: 1,
     },
     {
       label: SETTLEMENT_COMPANY_LABEL,
       key: 'settlementCompanyName',
-      row: 2,
+      row: 1,
+    },
+    {
+      label: i18next.t('modules.pages.salesOrder.colSalesName'),
+      key: 'salesName',
+      row: 1,
     },
     {
       label: i18next.t('modules.pages.salesOrder.colOrderDate'),
@@ -373,21 +383,18 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 2,
     },
     {
-      label: i18next.t('modules.pages.salesOrder.colSalesName'),
-      key: 'salesName',
+      /* 总金额是信息区里唯一需要被第一眼看到的关键数值：强调色 + 粗体（纯展示标记）。 */
+      label: i18next.t('modules.columns.totalAmount'),
+      key: 'totalAmount',
+      type: 'amount',
       row: 2,
+      emphasis: true,
     },
     {
       label: i18next.t('modules.columns.totalWeight'),
       key: 'totalWeight',
       type: 'weight',
-      row: 3,
-    },
-    {
-      label: i18next.t('modules.columns.totalAmount'),
-      key: 'totalAmount',
-      type: 'amount',
-      row: 3,
+      row: 2,
     },
     {
       label: i18next.t('modules.pages.salesOrder.colDeliveredQuantity'),
@@ -402,18 +409,32 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.salesOrder.colDeliveredNetQuantity'),
       key: 'deliveredNetQuantity',
-      row: 4,
+      row: 3,
     },
     {
       label: i18next.t('modules.columns.status'),
       key: 'status',
       type: 'status',
-      row: 4,
+      row: 3,
+    },
+    /*
+     * 项目名称与订单备注放在最后并**整行展示**（`fullRow`）：两者都是长文本，
+     * 夹在四列短字段中间会把后面的行挤得参差不齐。
+     *
+     * 只有项目名称额外声明 `boxed`（浅灰圆角底框 + 定位图标）—— 它是"地址/地点"性质的值，
+     * 需要从一串字段里跳出来；备注是普通说明文本，整行即可，加框反而像又一张小卡片。
+     */
+    {
+      label: i18next.t('modules.pages.salesOrder.colProjectName'),
+      key: 'projectName',
+      row: 5,
+      fullRow: true,
+      boxed: true,
     },
     {
       label: i18next.t('modules.columns.remark'),
       key: 'remark',
-      row: 5,
+      row: 6,
       fullRow: true,
     },
   ],
@@ -543,6 +564,53 @@ export const salesOrdersPageConfig: ModulePageConfig = {
    * 同样只在 `'inline'` 下渲染 —— 换句话说，这一行就是「销售订单详情面走方案 B」的总开关。
    */
   detailLayout: 'inline',
+  /*
+   * 业务信息卡的标题栏文案（白卡内「蓝色竖条 + 标题」）。
+   * 未配置的模块不渲染标题栏，信息卡与改造前一致。
+   */
+  detailInfoTitle: i18next.t('modules.detailCards.businessInfoTitle'),
+  /*
+   * 顶栏左侧「竖线 + 关联项目」。值取记录上的 projectName；为空时顶栏连带竖线一起不渲染。
+   */
+  detailHeaderMeta: {
+    label: i18next.t('modules.detailCards.relatedProject'),
+    key: 'projectName',
+  },
+  /*
+   * 顶栏右侧的三个动作按钮（参考稿的视觉占位）。
+   *
+   * 三个都**没有对接接口**，因此一律 `disabled` + 悬停说明「未接入」：
+   * - 打印送货单 / 导出对账单：前端还没有这两个动作的实现（不走「点了没反应」的假按钮）；
+   * - 变更维护：详情覆盖层**拿不到**编辑器的打开能力（`BusinessGridOverlays` 只把
+   *   `onCloseDetail / onRetryDetail` 传给详情面，没有 openEditor），因此这里接不上，
+   *   同样禁用。等详情面拿到编辑回调后，只需给这几项补 `onClick` 并去掉 `disabled`。
+   */
+  detailHeaderButtons: [
+    {
+      key: 'print-delivery-note',
+      label: i18next.t('modules.detailCards.printDeliveryNote'),
+      icon: createElement(PrinterOutlined),
+      disabled: true,
+    },
+    {
+      key: 'export-statement',
+      label: i18next.t('modules.detailCards.exportStatement'),
+      icon: createElement(ExportOutlined),
+      disabled: true,
+    },
+    {
+      key: 'change-maintenance',
+      label: i18next.t('modules.detailCards.changeMaintenance'),
+      icon: createElement(EditOutlined),
+      variant: 'primary',
+      disabled: true,
+    },
+  ],
+  /*
+   * 方案 B 的信息区不再重复顶栏已经显示的主单号（18 位数字在一屏里出现两次，
+   * 读者会怀疑是不是两张单）。状态字段由 `hasDetailHeaderStatus` 统一处理，不在这里列。
+   */
+  detailInfoHiddenKeys: ['orderNo'],
   /*
    * 明细表底部的合计行。
    *

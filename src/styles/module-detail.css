@@ -1,6 +1,6 @@
 /*
- * 详情面视觉基座（设计稿「方案 B：一体化极简流式」）：
- * 底板 / 白卡 / 顶栏 / 指标条 / 流式信息区 / 等宽数字。
+ * 详情面视觉基座（设计稿「方案 B」+ 参考稿的卡片式版式）：
+ * 底板 / 白卡 / 顶栏 / 指标卡 / 业务信息卡 / 等宽数字。
  *
  * 约定：
  * - 颜色一律走 antd cssVar（`var(--ant-*, 回退值)`），不在 CSS 里写死颜色值，
@@ -8,12 +8,19 @@
  *   这里的 var() 是给「只挂 class、没有 React 样式」的容器兜底。
  * - 间距只用 `--space-*` 阶梯值（4 / 8 / 12 / 16 / 20 / 24 / 32 / 48）。
  * - 数字等宽只用系统字体栈，不引入 webfont（首屏不能被字体下载阻塞）。
+ * - **只有 `detailLayout: 'inline'` 的模块（当前仅销售订单）会用到顶栏 / 指标卡 /
+ *   信息卡标题栏**；其余 18 个模块的详情面 DOM 与改造前逐字一致。
  */
 
 /* 等宽数字字体栈：指标值、单号、合计行共用这一份，不重复声明 */
 :root {
   --module-detail-mono:
     ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  /*
+   * 信息区「标签」轨道的固定宽度：四列字段的值因此起点一致。
+   * 按中文 5 字标签 + 全角冒号（14px 字号约 84px）留出余量。
+   */
+  --module-detail-field-label-width: 104px;
 }
 
 /* 详情面底板：比白卡略深一档，让白卡浮起来；两张卡之间由 gap 统一分隔 */
@@ -27,9 +34,17 @@
 }
 
 /*
- * 详情面白卡：信息卡与明细卡共用。
+ * 卡片式版式（`detailLayout: 'inline'`）：底板用 `colorBgLayout`（参考稿的浅灰页面底色），
+ * 卡片之间 16px。与缺省布局的区别只在底色深浅，结构相同 —— 所以不另起一套容器。
+ */
+.module-detail-surface--plan-b {
+  background: var(--ant-color-bg-layout, #f5f7fa);
+}
+
+/*
+ * 详情面白卡：信息卡、顶栏卡与明细卡共用。
  *
- * 纵向 gap 是**唯一**的行间留白出口：顶栏、指标条、字段区、明细面板本身都没有
+ * 纵向 gap 是**唯一**的行间留白出口：顶栏、指标卡、信息区、明细面板本身都没有
  * margin-top，靠这里统一给 16px；反过来也不要再给子元素加 margin，否则会出现
  * 24px/32px 这种「父级 gap + 子级 margin 各加一次」的间距。
  *
@@ -48,14 +63,19 @@
 }
 
 /*
- * 顶栏（方案 B 第一段）：标题 + 单号 + 状态标签，右侧是页面可选的动作区。
+ * 顶栏（参考稿第一张卡的上半部分）：返回箭头 + 标题 + 单号 + 状态标签 + 竖线 + 关联对象，
+ * 右侧是动作按钮与关闭。
  *
- * 下分隔线由顶栏自己提供；紧跟其后的指标条会把「顶部线」关掉、并把上方 gap 抵消，
- * 所以两者之间只有**一条**横线（两条平行线看起来像多画了一条边框）。
+ * 下分隔线由顶栏自己提供；紧跟其后的指标卡区不再画线，两者之间只有**一条**横线。
+ */
+/*
+ * 顶栏**不换行**：参考稿里关联项目再长也是省略号，动作按钮不会被挤到第二行。
+ * 靠 `__main` 的 `min-width: 0` + `overflow: hidden` 与 `__meta` 的省略号收缩，
+ * 而不是靠换行（一换行按钮就掉下去，顶栏高度变成两倍）。
  */
 .module-detail-header {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm, 12px);
@@ -65,18 +85,59 @@
 
 .module-detail-header__main {
   display: flex;
-  flex-wrap: wrap;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-sm, 12px);
   min-width: 0;
+  overflow: hidden;
 }
 
+/* 行展开的窄容器里允许换行：那里可用宽度只有几列，硬撑会把单号压成省略号 */
+.module-detail-header--compact {
+  flex-wrap: wrap;
+}
+
+.module-detail-header--compact .module-detail-header__main {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+/*
+ * 返回箭头：与右上角 × 走同一个关闭回调（覆盖层的"关闭"就是"回到列表"）。
+ * 命中区 32×32 满足 WCAG 2.5.8（≥24×24）；hover 用 `colorFillTertiary` 底。
+ */
+.module-detail-header__back {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+  font-size: 16px;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background var(--motion-duration-base) var(--motion-ease-out);
+}
+
+.module-detail-header__back:hover {
+  color: var(--ant-color-text, rgb(0 0 0 / 88%));
+  background: var(--ant-color-fill-tertiary, rgb(0 0 0 / 6%));
+}
+
+/* 标题与状态标签不参与收缩：被压缩的只能是单号与关联项目（它们带省略号） */
 .module-detail-header__title {
+  flex: none;
   margin: 0;
   color: var(--ant-color-text, rgb(0 0 0 / 88%));
   font-weight: 600;
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 20px;
+  line-height: 28px;
+  white-space: nowrap;
 }
 
 /* 行展开的窄容器里标题降一级，避免和列表行的字号打架 */
@@ -87,20 +148,32 @@
 
 /* 单号：等宽、次要色。18 位数字用等宽字体才不会被读成「两个数」 */
 .module-detail-header__no {
+  /* 单号不收缩：18 位数字被截成 "36144404145741…" 就失去了辨识作用 */
+  flex: none;
   min-width: 0;
   overflow: hidden;
   color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
-  font-size: 12px;
-  line-height: 18px;
+  font-size: 14px;
+  line-height: 22px;
   font-family: var(--module-detail-mono);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 行展开里单号与状态都降一档（可用宽度只有几列） */
+.module-detail-header--compact .module-detail-header__no {
+  font-size: 12px;
+  line-height: 18px;
 }
 
 /*
  * 状态标签：小圆点由 ::before 用 `currentColor` 画 —— 颜色跟随 Tag 的语义色
  * （「完成销售」在状态注册表里就是 cyan），这里不判断第二次、也不写死任何色值。
  */
+.module-detail-header__status {
+  flex: none;
+}
+
 .module-detail-header__status .ant-tag {
   display: inline-flex;
   align-items: center;
@@ -116,43 +189,84 @@
   content: "";
 }
 
+/* 顶栏内的竖线：分隔「标题区」与「关联对象」，以及「动作按钮」与「关闭」 */
+.module-detail-header__divider {
+  flex: none;
+  align-self: stretch;
+  width: 1px;
+  min-height: 20px;
+  margin-block: 2px;
+  background: var(--ant-color-split, rgb(0 0 0 / 6%));
+}
+
+/* 关联项目：次要色、单行、过长省略（完整文案在 title 上） */
+.module-detail-header__meta {
+  /* 关联项目吃掉剩余宽度、过长自行省略（单号与状态不参与收缩） */
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+  font-size: 14px;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 动作区不收缩：按钮被压扁比文字省略更难用 */
 .module-detail-header__actions {
   display: flex;
+  flex: none;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-xs, 8px);
 }
 
+/* 禁用按钮的外层：只有它接得到指针事件，`title` 才不会因为按钮禁用而失效 */
+.module-detail-header__button-tip {
+  display: inline-flex;
+}
+
+.module-detail-header__close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+  font-size: 14px;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background var(--motion-duration-base) var(--motion-ease-out);
+}
+
+.module-detail-header__close:hover {
+  color: var(--ant-color-text, rgb(0 0 0 / 88%));
+  background: var(--ant-color-fill-tertiary, rgb(0 0 0 / 6%));
+}
+
 /*
- * 指标条：浅灰底 + 上下 1px 分隔线，**出血到卡片左右边缘**（负边距抵消卡片 padding，
- * 再用同值 padding 把内容推回来）。4 列等宽，窄屏逐级降列，不横向滚动。
+ * 指标卡区：四张并排的圆角卡（参考稿第二段）。
+ *
+ * 卡片自身带底色与 1px 描边（由组件按 tone 内联下发），容器只负责栅格：
+ * 4 列等宽、间距 12px，窄屏逐级降列，不横向滚动。
  */
 .module-detail-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-sm, 12px);
-  margin-inline: calc(-1 * var(--space-md, 16px));
-  padding: var(--space-sm, 12px) var(--space-xs, 8px);
-  background: var(--ant-color-fill-quaternary, #f5f7fa);
-  border-block: 1px solid var(--ant-color-border-secondary, #f0f0f0);
 }
 
-/*
- * 紧跟顶栏时：抵消卡片 gap、关掉顶部线 —— 顶栏的下分隔线就是这条带的顶线，
- * 两条平行线会看起来像多画了一条边框。浅灰底保留（设计稿里这条带本身是 background
- * 略深的，body 才是白底）。
- */
-.module-detail-header + .module-detail-metrics {
-  margin-block-start: calc(-1 * var(--space-md, 16px));
-  border-top: 0;
-}
-
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .module-detail-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 560px) {
   .module-detail-metrics {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -164,56 +278,72 @@
 }
 
 /*
- * 单格指标：左侧 32px 圆形图标底（可选）+ 右侧两行（label / 值 + 括号说明）。
+ * 单张指标卡：标题行 / 主值行 / 进度条（或分隔线）/ 底行，四段纵向排列。
  *
- * 内边距给琥珀色那格留出底色边距；因为所有格子都吃同一份内边距，其余格子虽然底色
- * 透明，左缘仍然对齐，不会出现「只有一格缩进」。
+ * 底色与描边由组件按 tone 内联（`colorPrimaryBg` / `colorSuccessBg` / `colorWarningBg`），
+ * 这里只给缺省白底卡留一条 `colorBorderSecondary` 描边。
  */
 .module-detail-metric {
   display: flex;
-  align-items: center;
-  gap: var(--space-sm, 12px);
+  flex-direction: column;
+  gap: var(--space-xs, 8px);
   min-width: 0;
-  padding: var(--space-xxs, 4px) var(--space-xs, 8px);
-  border-radius: var(--ant-border-radius, 6px);
+  padding: var(--space-md, 16px);
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: 8px;
+}
+
+.module-detail-metric__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs, 8px);
+  min-width: 0;
+}
+
+.module-detail-metric__label {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.module-detail-metric__head-extra {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-xxs, 4px);
 }
 
 /*
- * 「未对账」整格 amber：底色由组件按 `token.colorWarningBg` 内联下发（暗色主题跟随），
- * 这里只补一圈同色系描边，让浅色底在白卡与浅灰底上都立得住。
+ * 状态胶囊（参考稿的「健康」「充足」）：12px、圆角、1px 同色系描边。
+ * 文字色由组件按 tone 取 `<X>Text`（对同色系浅底 ≥4.5:1），这里不写颜色。
  */
-.module-detail-metric--warning {
-  box-shadow: inset 0 0 0 1px var(--ant-color-warning-border, #ffe58f);
+.module-detail-metric__capsule {
+  padding: 1px var(--space-xs, 8px);
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  border-radius: var(--ant-border-radius, 6px);
 }
 
+/* 右上角圆形小图标（参考稿未对账卡）：装饰，`aria-hidden` 在组件里 */
 .module-detail-metric__icon {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  font-size: 15px;
+  font-size: 14px;
 }
 
-.module-detail-metric__body {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.module-detail-metric__label {
-  overflow: hidden;
-  font-size: 12px;
-  line-height: 16px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 值 + 括号说明同一行：值在前、说明紧随，两者都允许省略号裁切 */
+/* 值 + 次级说明同一行：值在前、说明紧随，两者都允许省略号裁切 */
 .module-detail-metric__value-row {
   display: flex;
   align-items: baseline;
@@ -225,39 +355,148 @@
   flex: none;
   overflow: hidden;
   font-weight: 700;
-  font-size: 13px;
-  line-height: 18px;
+  font-size: 28px;
+  line-height: 36px;
+  letter-spacing: -0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.module-detail-metric__sub,
 .module-detail-metric__hint {
   flex: 1 1 auto;
   overflow: hidden;
-  font-size: 11px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 20px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* 金额类指标用等宽数字，逐位对齐；「整格 amber」那格是金额，必须等宽 */
+/*
+ * 进度条与「没有进度条时的分隔线」占同一段高度（6px），四张卡的底行因此始终对齐。
+ * 数字列不参与：进度条与分隔线都是纯装饰元素。
+ */
+.module-detail-metric__progress,
+.module-detail-metric__rule {
+  display: block;
+  flex: none;
+  height: 6px;
+  margin-block: 2px;
+}
+
+/*
+ * 没有进度条的卡片：这里是一条 1px 细线，不放一条灰色"空进度条"——
+ * 空轨道会被读成"进度为 0"，与"这张卡没有进度概念"是两件事。
+ * 高度仍占 6px（与进度条同高），四张卡的底行因此对齐。
+ */
+.module-detail-metric__rule {
+  border-top: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+}
+
+/* antd Progress 的行内进度条：高度由组件 `size` 给定，这里只保证圆角与外边距 */
+.module-detail-metric__progress.ant-progress {
+  margin: 0;
+  line-height: 1;
+}
+
+/* 底行：左组靠左、右组靠右，永远贴着卡片底部（卡片等高时四张卡的底行对齐） */
+.module-detail-metric__stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xxs, 4px) var(--space-xs, 8px);
+  margin-top: auto;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.module-detail-metric__stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-xxs, 4px);
+  min-width: 0;
+}
+
+.module-detail-metric__stat--end {
+  margin-inline-start: auto;
+}
+
+.module-detail-metric__stat-value {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 「交货差异率」的差值：深一档主色（对白底 6.16:1，达 AA），不写死色值 */
+.module-detail-metric__stat-emphasis {
+  color: var(--theme-primary-text, var(--ant-color-primary-active, #0958d9));
+}
+
+/* 金额类指标用等宽数字，逐位对齐；「整卡 amber」那格是金额，必须等宽 */
 .module-detail-metric--warning .module-detail-metric__value {
   font-family: var(--module-detail-mono);
   font-variant-numeric: tabular-nums;
 }
 
 /*
+ * 业务信息卡：标题栏（蓝色竖条 + 标题 + 右侧补充说明）+「标签：值」网格。
+ *
+ * 标题栏下方一条 1px 分隔线，与参考稿一致；网格自带行间距，容器不再叠 gap。
+ */
+.module-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 16px);
+}
+
+.module-detail-info__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm, 12px);
+  padding-bottom: var(--space-sm, 12px);
+  border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+}
+
+.module-detail-info__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs, 8px);
+  margin: 0;
+  color: var(--ant-color-text, rgb(0 0 0 / 88%));
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+/* 蓝色竖条：纯装饰，用主色，不参与文本语义 */
+.module-detail-info__title::before {
+  width: 3px;
+  height: 16px;
+  background: var(--theme-primary, var(--ant-color-primary, #1677ff));
+  border-radius: 2px;
+  content: "";
+}
+
+/* 标题栏右侧（如「最后更新于 …」）：12px 次要色，单行 */
+.module-detail-info__meta {
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+  font-size: 12px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+/*
  * 方案 B 的信息区：紧凑「标签：值」流式网格。
  *
- * 2 列起步，md（768px）起 4 列；行间距 8px、列间距 16px。没有表头、没有单元格边框，
+ * 2 列起步，md（768px）起 4 列；行间距 16px、列间距 16px。没有表头、没有单元格边框，
  * 一屏能读完的字段密度比 antd Descriptions 高，也不会出现「八九个等重方块」的表单观感。
  */
 .module-detail-field-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-xs, 8px) var(--space-md, 16px);
-  font-size: 12px;
-  line-height: 18px;
+  gap: var(--space-md, 16px);
+  font-size: 14px;
+  line-height: 22px;
 }
 
 @media (min-width: 768px) {
@@ -269,23 +508,26 @@
 /* 行展开的窄容器（放在媒体查询之后，同特异性下后者生效）：固定 2 列 */
 .module-detail-field-grid--compact {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  --module-detail-field-label-width: 88px;
 }
 
 .module-detail-field {
   display: flex;
   align-items: baseline;
-  gap: var(--space-xxs, 4px);
+  gap: var(--space-xs, 8px);
   min-width: 0;
 }
 
 /*
- * 标签用次要色（不是 tertiary：tertiary 在浅底上约 3:1，12px 正文达不到 AA）。
- * `flex: 0 1 auto` + 50% 上限：标签可以按需收缩换行（中文按字断行），
- * 但绝不占掉半行以上，值永远有地方放 —— `flex: none` 会让长标签把值挤出行外。
+ * 标签用次要色（不是 tertiary：tertiary 在浅底上约 3:1，14px 正文达不到 AA）。
+ *
+ * `flex: 0 0 auto` + 固定 `min-width`：标签左对齐、占一条固定宽度的轨道，
+ * 同一列里的值因此起点一致（参考稿的四列就是这样对齐的）。标签比轨道更宽时按内容撑开，
+ * 值让位换行 —— 不会把值挤出行外。
  */
 .module-detail-field__label {
-  flex: 0 1 auto;
-  max-width: 50%;
+  flex: 0 0 auto;
+  min-width: var(--module-detail-field-label-width);
   color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
 }
 
@@ -296,8 +538,18 @@
 }
 
 /*
- * 长文本字段：整行铺满，值放进浅灰圆角底框并前置一个小图标，
- * 从「一串短字段」里跳出来，读起来是「这一段是地址/说明」。
+ * 强调值（如总金额）：错误色 + 粗体，只用于信息区里需要被第一眼看到的关键数值。
+ * 用 `colorErrorText`（本仓库已按"对浅底 ≥4.5:1"覆写）而不是 `colorError`。
+ */
+.module-detail-field__value--emphasis {
+  color: var(--ant-color-error-text, #b32430);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * 长文本字段：整行铺满，从「一串短字段」里跳出来。
+ * 只有显式声明 `boxed` 的字段才再套浅灰圆角底框 + 小图标（见组件注释）。
  */
 .module-detail-field--wide {
   grid-column: 1 / -1;
@@ -317,8 +569,8 @@
 
 .module-detail-field__icon {
   flex: none;
-  margin-top: 3px;
-  color: var(--ant-color-primary, #1677ff);
+  margin-top: 5px;
+  color: var(--theme-primary, var(--ant-color-primary, #1677ff));
   font-size: 12px;
 }
 
@@ -366,6 +618,36 @@
   .module-detail-field-grid--compact {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/*
+ * 方案 B 的详情**覆盖层**：与参考稿的"整页"观感对齐。
+ *
+ * - 覆盖层自带的白底标题栏（含 Esc 提示与 ×）在这个形态下是重复的：标题、状态、关闭
+ *   都已经在卡片顶栏里，两处并存会出现上下两个标题、两个关闭。因此这里隐藏外壳标题栏。
+ *   `aria-labelledby` 指向的标题文本仍参与可访问名计算（accname: 被 aria-labelledby
+ *   直接引用的隐藏节点照样使用），读屏读到的仍是「销售订单详情」。
+ * - 内容区改为 0 内边距 + 灰底：留白与底色由 `.module-detail-surface` 自己给，
+ *   否则 24px 白边会把灰底包成一条"卡片里的卡片"。
+ *
+ * 用 `:has()` 限定在方案 B 的详情面上（仓库既有样式里已在用 `:has`），
+ * 其余模块的详情覆盖层外观一个字都不变。
+ */
+.workspace-overlay-panel:has(.module-detail-surface--plan-b)
+> .workspace-overlay-header {
+  display: none;
+}
+
+.workspace-overlay-body:has(.module-detail-surface--plan-b) {
+  padding: 0;
+  background: var(--ant-color-bg-layout, #f5f7fa);
+}
+
+/* 灰底铺满时不再需要外层圆角（白卡自己带圆角） */
+.workspace-overlay-body:has(.module-detail-surface--plan-b)
+.module-detail-surface--plan-b {
+  min-height: 100%;
+  border-radius: 0;
 }
 
 /*
