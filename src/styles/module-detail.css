@@ -367,3 +367,38 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/*
+ * 编辑器与只读详情面共用同一套「灰底 + 白卡」语言。
+ *
+ * - 覆盖层内容区：只有当里面装着单据编辑器时才铺灰底（`:has` 在仓库既有样式里
+ *   已在用）；其它覆盖层（选择器、纯表单弹层）底色保持原样。
+ * - 单据信息（`.editor-form-shell`）与明细（`.module-items-panel`）各自成一张
+ *   白卡：8px 圆角、1px 边框、轻阴影，卡片之间 16px —— 与 `.module-detail-card` 一致。
+ * - 财务版编辑器 `.editor-form-shell--finance` 自带透明底与内部分隔线，属于另一套
+ *   版式，用 `:not()` 排除，避免把它的既有外观改掉。
+ */
+.workspace-overlay-body:has(
+  .editor-form-shell:not(.editor-form-shell--finance)
+) {
+  padding: var(--space-md, 16px);
+  background: var(--ant-color-bg-layout, #f5f7fa);
+}
+
+.editor-form-shell:not(.editor-form-shell--finance) {
+  padding: var(--space-md, 16px);
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
+}
+
+.workspace-overlay-body:has(.editor-form-shell:not(.editor-form-shell--finance))
+  .module-items-panel {
+  padding: var(--space-md, 16px);
+  margin-top: var(--space-md, 16px);
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
+}
