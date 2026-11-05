@@ -536,6 +536,14 @@ export const salesOrdersPageConfig: ModulePageConfig = {
   /** 详情顶部的四项指标条：合同金额/吨位使用率、送货对比、未对账。 */
   detailMetricsSlot: SalesOrderDetailMetrics,
   /*
+   * 信息区改用方案 B 的紧凑「标签：值」流式网格（2 列 / md 4 列，长文本整行）。
+   *
+   * 缺省值是 `'descriptions'`：其余 18 个模块共用同一套详情组件，它们不配置本字段，
+   * 信息区继续用 antd Descriptions，外观与改造前一致。顶栏（标题 + 单号 + 状态）
+   * 同样只在 `'inline'` 下渲染 —— 换句话说，这一行就是「销售订单详情面走方案 B」的总开关。
+   */
+  detailLayout: 'inline',
+  /*
    * 明细表底部的合计行。
    *
    * 求和口径的唯一出口是 sumLineItemsBy（编辑器联动、保存载荷用的是同一个函数），

@@ -267,17 +267,30 @@ export interface ModuleEditorExtrasContext {
 export interface ModuleDetailMetric {
   /** 稳定 key，用作 React 列表键。 */
   key: string
-  /** 次要色 12px 标签。 */
+  /** 次要色 11-12px 标签。 */
   label: string
-  /** 主值，18px / 600。 */
+  /** 主值，12-13px / 700。 */
   value: ReactNode
-  /** 主值下方的 12px 补充说明。 */
+  /**
+   * 与主值**同一行**的次级说明（10-11px 次要色，调用方自带括号）。
+   *
+   * <p>方案 B 的指标条只有两行：label 一行、值 + 次级说明一行；这里不再是「主值下方
+   * 的独立第三行」，否则 4 格高度会被撑开、第 4 格的琥珀底色也失去对齐基准。</p>
+   */
   hint?: ReactNode
-  /** 0~100 的进度；**提供才渲染** 4px 细进度条，缺省表示该指标没有进度语义。 */
-  percent?: number
+  /**
+   * 可选图标：渲染在 32px **圆形**浅色底里，底色与图标色都由 `tone` 决定。
+   *
+   * <p>缺省时不渲染空圆底（不占位），纯文字指标与带图标指标的左缘仍然对齐，
+   * 因为对齐靠的是每一格自己的 flex 布局，不靠外层补位。</p>
+   */
+  icon?: ReactNode
   /**
    * 主值语义色：warning / success 分别取 colorWarningText / colorSuccessText
    * （Text 变体在浅色底上才够 WCAG AA 对比度），缺省用 colorText。
+   *
+   * <p>`warning` 还会给整格加一层 `colorWarningBg` 底色（「未对账」是待办性质，
+   * 需要在 4 格里被第一时间看到）。</p>
    */
   tone?: 'default' | 'warning' | 'success'
 }
@@ -409,4 +422,20 @@ export interface ModulePageConfig {
   detailSummary?: (ctx: {
     items: ModuleLineItem[]
   }) => ModuleDetailSummaryCell[] | null
+  /**
+   * 只读详情面「信息区」的布局形态。
+   *
+   * <p>**缺省 `'descriptions'`，行为与改造前逐字一致**：全仓 19 个模块共用同一套详情
+   * 组件，只有显式声明 `'inline'` 的模块才换成方案 B 的紧凑「标签：值」流式网格
+   * （2 列 / md 4 列，长文本整行）。新增形态必须走这个开关，不得直接改默认分支 ——
+   * 否则其余模块的详情外观会被一起改掉。</p>
+   */
+  detailLayout?: 'descriptions' | 'inline'
+  /**
+   * 只读详情面顶栏右侧的动作区插槽（打印、导出、变更维护等）。
+   *
+   * <p>本轮不配置任何按钮：插槽存在只是为了让页面以后能挂按钮，**未配置时不渲染
+   * 右侧容器**，不留空 div。顶栏本身只在 `detailLayout === 'inline'` 时渲染。</p>
+   */
+  detailHeaderActions?: ComponentType<{ record: ModuleRecord }>
 }

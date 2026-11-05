@@ -4,19 +4,19 @@ import { Button, Descriptions, Empty, Flex, Spin } from 'antd'
 import { createElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AppResult } from '@/components/AppResult'
-import {
-  formatDocumentReferenceText,
-  isDocumentReferenceField,
-} from '@/components/document-reference/document-reference-utils'
-import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import { resolveModuleActionIcon } from '@/module-system/presentation/module-action-icons'
-import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
 import type {
   ModuleDetailField,
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
+import {
+  DETAIL_FIELD_WIDE_TEXT_LENGTH,
+  ModuleDetailFieldGrid,
+  ModuleRecordDetailFieldValue,
+} from './ModuleDetailFieldGrid'
+import { hasDetailHeaderStatus, ModuleDetailHeader } from './ModuleDetailHeader'
 import { ModuleDetailSummaryRow } from './ModuleDetailSummaryRow'
 import { ModuleItemGroupsView } from './ModuleItemGroupsView'
 import { ModuleItemsPanel } from './ModuleItemsPanel'
@@ -30,7 +30,13 @@ import { buildDetailItemColumns } from './module-record-detail-columns'
  * 与内容加载态是两件独立的事；二是原来「三态嵌套三元 + 字段网格的
  * 五层嵌套三元」让这个函数的嵌套深度达到 5，超出 react-doctor 阈值
  * (no-high-complexity-react-function)。这里改成早返回 + 每个字段一个取值组件，
- * 嵌套深度回到 1~2，DOM 结构与类名逐字保持原样。</p>
+ * 嵌套深度回到 1~2。</p>
+ *
+ * <p>本轮（设计稿「方案 B」）把内容区拆成**两张白卡**：信息卡（顶栏 + 指标条 + 字段区）
+ * 与明细卡（只读明细 + 表尾合计行）。三态分支仍然在进卡之前早返回，因此加载中 / 加载失败 /
+ * 无数据时不会出现任何空卡。字段取值与「长文本」口径统一在
+ * {@link ModuleRecordDetailFieldValue} / {@link DETAIL_FIELD_WIDE_TEXT_LENGTH}，
+ * 两种信息区布局共用同一份。</p>
  */
 
 interface Props {
@@ -53,46 +59,6 @@ function getDetailErrorMessage(error: unknown, fallback: string) {
   return fallback
 }
 
-interface FieldValueProps {
-  config: ModulePageConfig
-  field: ModuleDetailField
-  formatCellValue: (value: unknown, columnType?: string) => string
-  record: ModuleRecord
-}
-
-/** 单个详情字段的取值：单重占位 / 单据引用 / 状态 / 列自定义渲染 / 通用格式化。 */
-function ModuleRecordDetailFieldValue({
-  config,
-  field,
-  formatCellValue,
-  record,
-}: FieldValueProps) {
-  if (
-    field.key === 'pieceWeightTon' &&
-    shouldDisplayPieceWeightAsDash(record)
-  ) {
-    return <>-</>
-  }
-  const colDef = config.columns.find((c) => c.dataIndex === field.key)
-  const fieldType = colDef?.type || field.type
-  if (isDocumentReferenceField(field.key)) {
-    // 单据引用字段只展示单号纯文本（文本口径见 formatDocumentReferenceText）
-    return formatDocumentReferenceText(record[field.key]) || '-'
-  }
-  if (fieldType === 'status') {
-    return renderModuleRecordStatus({
-      record,
-      statusKey: field.key,
-      statusMap: config.statusMap,
-      renderFallback: (status) => formatCellValue(status, fieldType),
-    })
-  }
-  if (colDef?.render) {
-    return colDef.render(record[field.key], record)
-  }
-  return formatCellValue(record[field.key], fieldType)
-}
-
 interface FieldGridProps {
   config: ModulePageConfig
   fields: ModuleDetailField[]
@@ -102,8 +68,6 @@ interface FieldGridProps {
 
 /** 详情字段网格最多几列（与改造前的 24 栅格上限一致）。 */
 const DETAIL_FIELD_MAX_COLUMNS = 4
-/** 值超过这个字符数就让出两列（纯展示口径，按值字面长度，不参与业务计算）。 */
-const DETAIL_FIELD_WIDE_TEXT_LENGTH = 24
 
 /**
  * 单个字段占几列：`fullRow` 占满整行，长文本占两列，其余一列。
@@ -128,7 +92,7 @@ export function resolveDetailFieldSpan({
 }
 
 /**
- * 详情字段网格：用 antd `Descriptions`（`bordered` + `size="small"`）呈现。
+ * 详情字段网格（**缺省布局**）：用 antd `Descriptions`（`bordered` + `size="small"`）呈现。
  *
  * <p>此前是「每个字段一个带边框的小卡片」：一屏八九个等重的方块，标签还用全角空格右补白，
  * 左缘参差、长文本（项目名称）在窄卡片里折成三行，整块读起来像表单而不是"单据详情"。
@@ -137,8 +101,10 @@ export function resolveDetailFieldSpan({
  *
  * <p>列数按字段数收敛（1~4），并对长文本让出双列：长文本按字面长度判断，纯展示口径，
  * 不涉及任何业务计算。</p>
+ *
+ * <p>**未配置 `detailLayout: 'inline'` 的模块永远走这里**，DOM 与类名保持与改造前逐字一致。</p>
  */
-function ModuleRecordDetailFieldGrid({
+function ModuleRecordDetailDescriptions({
   config,
   fields,
   formatCellValue,
@@ -251,33 +217,107 @@ export function ModuleRecordDetailContent({
    */
   const hasDetailSummary =
     detailItems.length > 0 && (detailSummaryCells?.length ?? 0) > 0
+
   /*
-   * 合计行直接吃明细表的列定义（不再 `as` 收窄）：`ModuleDetailSummaryColumn.align`
-   * 现在与 antd 的 `AlignType` 同宽，列对象天然满足它的结构化约束。
+   * 方案 B 的两个开关，都必须**显式配置**才生效：
+   *
+   * - `isPlanB`（`detailLayout === 'inline'`）决定顶栏与信息区布局。当前只有销售订单声明，
+   *   其余 18 个模块继续走 antd Descriptions，外观逐字不变。
+   * - `showItemsCard` 决定明细是否独立成第二张白卡。这一条**全局生效**（视觉统一、风险低），
+   *   但只在真有明细列时成立 —— 没配明细列的模块不会多出一张只有表头的空卡。
    */
+  const isPlanB = config.detailLayout === 'inline'
+  /*
+   * 方案 B 的顶栏已经用状态标签呈现了 `status`，信息区不再重复同一个值（同一张卡里
+   * 上下两处「完成销售」）。判定与顶栏共用 `hasDetailHeaderStatus`：顶栏没渲染标签时
+   * （记录本身没有 status）保留该字段，状态不会凭空消失。
+   */
+  const infoFields =
+    isPlanB && hasDetailHeaderStatus(record)
+      ? detailFields.filter((field) => field.key !== 'status')
+      : detailFields
+  const showItemsCard = detailItemColumns.length > 0
+  /*
+   * 信息卡是否有内容：顶栏 / 指标条 / 字段区 / 模块附加节点任一存在即可。
+   * 明细不独立成卡时，信息卡同时承担「关闭 / 打印」按钮的落点，所以仍然渲染
+   * （与改造前「按钮在卡片里」的 DOM 位置一致）。
+   */
+  const showInfoCard =
+    !showItemsCard ||
+    isPlanB ||
+    infoFields.length > 0 ||
+    detailMetricsSlot !== undefined ||
+    config.renderDetailExtras !== undefined
+
+  const detailActions = (
+    <div className="module-detail-actions">
+      <Button
+        className="overlay-action-button"
+        icon={resolveModuleActionIcon('关闭')}
+        onClick={onClose}
+      >
+        {t('modules.detail.close')}
+      </Button>
+      {canPrint ? (
+        <Button
+          className="overlay-action-button"
+          icon={resolveModuleActionIcon('打印')}
+        >
+          {t('modules.detail.print')}
+        </Button>
+      ) : null}
+    </div>
+  )
 
   return (
     <div className="module-detail-surface">
-      <div className="module-detail-card">
-        {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
-        {config.renderDetailExtras?.({ record })}
-        {/*
-          指标条：由页面通过 detailMetricsSlot 提供（销售订单是项目销售汇总的四项指标）。
-          插槽未配置时整块不渲染，不留空 div。
-        */}
-        {detailMetricsSlot
-          ? createElement(detailMetricsSlot, { record })
-          : null}
-        {detailFields.length ? (
-          <ModuleRecordDetailFieldGrid
-            config={config}
-            fields={detailFields}
-            formatCellValue={formatCellValue}
-            record={record}
-          />
-        ) : null}
+      {showInfoCard ? (
+        <div className="module-detail-card module-detail-card--info">
+          {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
+          {config.renderDetailExtras?.({ record })}
+          {/*
+            顶栏（方案 B 第一段）：标题 + 单号 + 状态标签，右侧是可选动作插槽。
+            未配置 `detailLayout: 'inline'` 的模块不渲染 —— 它们的标题在弹层外壳上即可。
+          */}
+          {isPlanB ? (
+            <ModuleDetailHeader config={config} record={record} />
+          ) : null}
+          {/*
+            指标条：由页面通过 detailMetricsSlot 提供（销售订单是项目销售汇总的四项指标）。
+            插槽未配置时整块不渲染，不留空 div。
+          */}
+          {detailMetricsSlot
+            ? createElement(detailMetricsSlot, { record })
+            : null}
+          {infoFields.length ? (
+            isPlanB ? (
+              /* 方案 B 的流式「标签：值」网格 */
+              <ModuleDetailFieldGrid
+                config={config}
+                fields={infoFields}
+                formatCellValue={formatCellValue}
+                record={record}
+              />
+            ) : (
+              <ModuleRecordDetailDescriptions
+                config={config}
+                fields={infoFields}
+                formatCellValue={formatCellValue}
+                record={record}
+              />
+            )
+          ) : null}
+          {showItemsCard ? null : detailActions}
+        </div>
+      ) : null}
 
-        {detailItemColumns.length ? (
+      {/*
+        明细卡（方案 B 第四段）：与信息卡同宽、8px 圆角、1px 边框的第二张白卡，
+        表尾合计行沿用原实现。空明细由表格自己的 emptyText 呈现，不会出现「空卡」——
+        整张卡只在真有明细列时挂载。
+      */}
+      {showItemsCard ? (
+        <div className="module-detail-card module-detail-card--items">
           <ModuleItemsPanel
             title={config.detailItemTitle}
             className="module-detail-items-panel"
@@ -285,25 +325,7 @@ export function ModuleRecordDetailContent({
             itemColumns={detailItemColumns}
             // 表尾已有 Table.Summary 合计行时，标题行的内联合计必须关掉（同一个口径不能两个出口）。
             showSummary={!hasDetailSummary}
-            actions={
-              <>
-                <Button
-                  className="overlay-action-button"
-                  icon={resolveModuleActionIcon('关闭')}
-                  onClick={onClose}
-                >
-                  {t('modules.detail.close')}
-                </Button>
-                {canPrint ? (
-                  <Button
-                    className="overlay-action-button"
-                    icon={resolveModuleActionIcon('打印')}
-                  >
-                    {t('modules.detail.print')}
-                  </Button>
-                ) : null}
-              </>
-            }
+            actions={detailActions}
           >
             <ModuleItemGroupsView
               groups={detailItemGroups}
@@ -327,26 +349,8 @@ export function ModuleRecordDetailContent({
               }
             />
           </ModuleItemsPanel>
-        ) : (
-          <div className="mt-20">
-            <Button
-              className="overlay-action-button"
-              icon={resolveModuleActionIcon('关闭')}
-              onClick={onClose}
-            >
-              {t('modules.detail.close')}
-            </Button>
-            {canPrint && (
-              <Button
-                className="overlay-action-button ml-8"
-                icon={resolveModuleActionIcon('打印')}
-              >
-                {t('modules.detail.print')}
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
+        </div>
+      ) : null}
     </div>
   )
 }

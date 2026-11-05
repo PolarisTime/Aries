@@ -43,16 +43,23 @@ export function ModuleRecordDetailOverlay({
     config,
   })
 
+  /*
+   * 方案 B 的详情面在**卡片内自带顶栏**（标题 + 单号 + 状态），弹层外壳再带上单号就会
+   * 在上下两行里重复同一个 18 位数字。因此 `detailLayout: 'inline'` 的模块只保留模块名；
+   * 其余模块（未配置该字段）继续沿用「模块名详情 - 单号」，外观与改造前一致。
+   *
+   * 弹层标题同时是 `aria-labelledby` 的可见文本，删掉单号不影响对话框的可访问名
+   * （读屏读到的仍是「销售订单详情」，具体单据由卡片顶栏与正文交代）。
+   */
+  const isPlanB = config.detailLayout === 'inline'
+  const overlayTitle = record
+    ? `${config.title}${t('modules.detail.titleSuffix')}${
+        isPlanB ? '' : ` - ${getPrimaryNo(record)}`
+      }`
+    : t('modules.detail.recordDetail')
+
   return (
-    <WorkspaceOverlay
-      open={open}
-      title={
-        record
-          ? `${config.title}${t('modules.detail.titleSuffix')} - ${getPrimaryNo(record)}`
-          : t('modules.detail.recordDetail')
-      }
-      onClose={onClose}
-    >
+    <WorkspaceOverlay open={open} title={overlayTitle} onClose={onClose}>
       <ModuleRecordDetailContent
         config={config}
         error={error}

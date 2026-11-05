@@ -1,24 +1,35 @@
 /*
- * 详情面视觉基座：底板 / 白卡 / 指标条 / 等宽数字。
+ * 详情面视觉基座（设计稿「方案 B：一体化极简流式」）：
+ * 底板 / 白卡 / 顶栏 / 指标条 / 流式信息区 / 等宽数字。
  *
  * 约定：
  * - 颜色一律走 antd cssVar（`var(--ant-*, 回退值)`），不在 CSS 里写死颜色值，
  *   暗色主题切换时跟着 token 一起变；组件内能用 `theme.useToken()` 的地方优先用 token，
  *   这里的 var() 是给「只挂 class、没有 React 样式」的容器兜底。
+ * - 间距只用 `--space-*` 阶梯值（4 / 8 / 12 / 16 / 20 / 24 / 32 / 48）。
  * - 数字等宽只用系统字体栈，不引入 webfont（首屏不能被字体下载阻塞）。
  */
 
-/* 详情面底板：比白卡略深一档，让白卡浮起来 */
+/* 等宽数字字体栈：指标值、单号、合计行共用这一份，不重复声明 */
+:root {
+  --module-detail-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* 详情面底板：比白卡略深一档，让白卡浮起来；两张卡之间由 gap 统一分隔 */
 .module-detail-surface {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 16px);
   padding: var(--space-md, 16px);
   background: var(--ant-color-fill-quaternary, #f5f7fa);
   border-radius: var(--ant-border-radius-lg, 8px);
 }
 
 /*
- * 详情面白卡：指标区 / 描述区 / 明细区的分组容器。
+ * 详情面白卡：信息卡与明细卡共用。
  *
- * 纵向 gap 是**唯一**的行间留白出口：指标条、Descriptions、明细面板本身都没有
+ * 纵向 gap 是**唯一**的行间留白出口：顶栏、指标条、字段区、明细面板本身都没有
  * margin-top，靠这里统一给 16px；反过来也不要再给子元素加 margin，否则会出现
  * 24px/32px 这种「父级 gap + 子级 margin 各加一次」的间距。
  *
@@ -37,17 +48,102 @@
 }
 
 /*
- * 指标条：4 列等宽。宽度不够时列数递减，不横向滚动 ——
- * 指标值多为「金额 + 单位」，挤成两行会盖掉 hint。
+ * 顶栏（方案 B 第一段）：标题 + 单号 + 状态标签，右侧是页面可选的动作区。
+ *
+ * 下分隔线由顶栏自己提供；紧跟其后的指标条会把「顶部线」关掉、并把上方 gap 抵消，
+ * 所以两者之间只有**一条**横线（两条平行线看起来像多画了一条边框）。
+ */
+.module-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm, 12px);
+  padding-bottom: var(--space-sm, 12px);
+  border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+}
+
+.module-detail-header__main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm, 12px);
+  min-width: 0;
+}
+
+.module-detail-header__title {
+  margin: 0;
+  color: var(--ant-color-text, rgb(0 0 0 / 88%));
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+/* 行展开的窄容器里标题降一级，避免和列表行的字号打架 */
+.module-detail-header--compact .module-detail-header__title {
+  font-size: 15px;
+  line-height: 22px;
+}
+
+/* 单号：等宽、次要色。18 位数字用等宽字体才不会被读成「两个数」 */
+.module-detail-header__no {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+  font-size: 12px;
+  line-height: 18px;
+  font-family: var(--module-detail-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * 状态标签：小圆点由 ::before 用 `currentColor` 画 —— 颜色跟随 Tag 的语义色
+ * （「完成销售」在状态注册表里就是 cyan），这里不判断第二次、也不写死任何色值。
+ */
+.module-detail-header__status .ant-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs, 4px);
+  margin-inline-end: 0;
+}
+
+.module-detail-header__status .ant-tag::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentcolor;
+  content: "";
+}
+
+.module-detail-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs, 8px);
+}
+
+/*
+ * 指标条：浅灰底 + 上下 1px 分隔线，**出血到卡片左右边缘**（负边距抵消卡片 padding，
+ * 再用同值 padding 把内容推回来）。4 列等宽，窄屏逐级降列，不横向滚动。
  */
 .module-detail-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-md, 16px);
-  padding: var(--space-sm, 12px) var(--space-md, 16px);
+  gap: var(--space-sm, 12px);
+  margin-inline: calc(-1 * var(--space-md, 16px));
+  padding: var(--space-sm, 12px) var(--space-xs, 8px);
   background: var(--ant-color-fill-quaternary, #f5f7fa);
-  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
-  border-radius: var(--ant-border-radius-lg, 8px);
+  border-block: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+}
+
+/*
+ * 紧跟顶栏时：抵消卡片 gap、关掉顶部线 —— 顶栏的下分隔线就是这条带的顶线，
+ * 两条平行线会看起来像多画了一条边框。浅灰底保留（设计稿里这条带本身是 background
+ * 略深的，body 才是白底）。
+ */
+.module-detail-header + .module-detail-metrics {
+  margin-block-start: calc(-1 * var(--space-md, 16px));
+  border-top: 0;
 }
 
 @media (max-width: 720px) {
@@ -62,38 +158,175 @@
   }
 }
 
-/* 单格指标：label → value → 进度条 → hint 自上而下 */
+/* 行展开的窄容器：可用宽度与视口无关，固定 2 列 */
+.module-detail-surface--compact .module-detail-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/*
+ * 单格指标：左侧 32px 圆形图标底（可选）+ 右侧两行（label / 值 + 括号说明）。
+ *
+ * 内边距给琥珀色那格留出底色边距；因为所有格子都吃同一份内边距，其余格子虽然底色
+ * 透明，左缘仍然对齐，不会出现「只有一格缩进」。
+ */
 .module-detail-metric {
   display: flex;
+  align-items: center;
+  gap: var(--space-sm, 12px);
+  min-width: 0;
+  padding: var(--space-xxs, 4px) var(--space-xs, 8px);
+  border-radius: var(--ant-border-radius, 6px);
+}
+
+/*
+ * 「未对账」整格 amber：底色由组件按 `token.colorWarningBg` 内联下发（暗色主题跟随），
+ * 这里只补一圈同色系描边，让浅色底在白卡与浅灰底上都立得住。
+ */
+.module-detail-metric--warning {
+  box-shadow: inset 0 0 0 1px var(--ant-color-warning-border, #ffe58f);
+}
+
+.module-detail-metric__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 15px;
+}
+
+.module-detail-metric__body {
+  display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  gap: var(--space-xxs, 4px);
+  gap: 2px;
   min-width: 0;
 }
 
 .module-detail-metric__label {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
-}
-
-.module-detail-metric__value {
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 24px;
   overflow: hidden;
+  font-size: 12px;
+  line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* antd Progress 自带上下外边距, 4px 细条不需要额外留白 */
-.module-detail-metric__progress {
-  margin: 0;
+/* 值 + 括号说明同一行：值在前、说明紧随，两者都允许省略号裁切 */
+.module-detail-metric__value-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xxs, 4px);
+  min-width: 0;
+}
+
+.module-detail-metric__value {
+  flex: none;
+  overflow: hidden;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .module-detail-metric__hint {
+  flex: 1 1 auto;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 金额类指标用等宽数字，逐位对齐；「整格 amber」那格是金额，必须等宽 */
+.module-detail-metric--warning .module-detail-metric__value {
+  font-family: var(--module-detail-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * 方案 B 的信息区：紧凑「标签：值」流式网格。
+ *
+ * 2 列起步，md（768px）起 4 列；行间距 8px、列间距 16px。没有表头、没有单元格边框，
+ * 一屏能读完的字段密度比 antd Descriptions 高，也不会出现「八九个等重方块」的表单观感。
+ */
+.module-detail-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs, 8px) var(--space-md, 16px);
   font-size: 12px;
   line-height: 18px;
+}
+
+@media (min-width: 768px) {
+  .module-detail-field-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* 行展开的窄容器（放在媒体查询之后，同特异性下后者生效）：固定 2 列 */
+.module-detail-field-grid--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.module-detail-field {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xxs, 4px);
+  min-width: 0;
+}
+
+/*
+ * 标签用次要色（不是 tertiary：tertiary 在浅底上约 3:1，12px 正文达不到 AA）。
+ * `flex: 0 1 auto` + 50% 上限：标签可以按需收缩换行（中文按字断行），
+ * 但绝不占掉半行以上，值永远有地方放 —— `flex: none` 会让长标签把值挤出行外。
+ */
+.module-detail-field__label {
+  flex: 0 1 auto;
+  max-width: 50%;
   color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+}
+
+.module-detail-field__value {
+  min-width: 0;
+  color: var(--ant-color-text, rgb(0 0 0 / 88%));
+  overflow-wrap: anywhere;
+}
+
+/*
+ * 长文本字段：整行铺满，值放进浅灰圆角底框并前置一个小图标，
+ * 从「一串短字段」里跳出来，读起来是「这一段是地址/说明」。
+ */
+.module-detail-field--wide {
+  grid-column: 1 / -1;
+  align-items: flex-start;
+}
+
+.module-detail-field__box {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: flex-start;
+  gap: var(--space-xxs, 4px);
+  min-width: 0;
+  padding: var(--space-xxs, 4px) var(--space-xs, 8px);
+  background: var(--ant-color-fill-quaternary, #f5f7fa);
+  border-radius: var(--ant-border-radius, 6px);
+}
+
+.module-detail-field__icon {
+  flex: none;
+  margin-top: 3px;
+  color: var(--ant-color-primary, #1677ff);
+  font-size: 12px;
+}
+
+/* 无明细时的「关闭 / 打印」按钮行（卡片 gap 已给间距，不再叠 margin） */
+.module-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs, 8px);
 }
 
 /*
@@ -104,8 +337,7 @@
  * 小数点对齐靠等宽数字，右对齐单独做不到。
  */
 .module-detail-table .module-detail-table-cell--numeric {
-  font-family:
-    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--module-detail-mono);
   font-variant-numeric: tabular-nums;
 }
 
@@ -126,4 +358,12 @@
   tr.module-detail-summary-row
   > td.module-detail-table-cell--numeric {
   white-space: nowrap;
+}
+
+/* 窄屏：行展开的信息区降到 1 列，长值不再被挤成三行 */
+@media (max-width: 560px) {
+  .module-detail-field-grid,
+  .module-detail-field-grid--compact {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -21,6 +21,8 @@ import {
   FreightStatementItemGroupHeader,
   FreightStatementProjectGroupHeader,
 } from './FreightStatementItemGroupHeader'
+import { ModuleDetailFieldGrid } from './ModuleDetailFieldGrid'
+import { hasDetailHeaderStatus, ModuleDetailHeader } from './ModuleDetailHeader'
 import { ModuleDetailSummaryRow } from './ModuleDetailSummaryRow'
 import { ModuleItemsTable } from './ModuleItemsTable'
 import { buildDetailItemColumns } from './module-record-detail-columns'
@@ -163,6 +165,26 @@ export function ModuleRecordDetailInline({
 
   const hasHeaderFields = config.detailFields.length > 0
   const hasItemColumns = tableColumns.length > 0
+  /*
+   * 与详情弹层（ModuleRecordDetailContent）**同一份判定口径**：
+   * - `isPlanB` 只认显式配置的 `detailLayout: 'inline'`（当前只有销售订单）；
+   * - 信息卡与明细卡各自独立挂载，任一侧没有内容就不出现，避免行展开里多出空卡。
+   */
+  const isPlanB = config.detailLayout === 'inline'
+  /*
+   * 与详情弹层同一口径：方案 B 的顶栏已经在标签里显示 `status`，信息区不再重复。
+   * 顶栏没渲染标签（记录没有 status）时保留字段，状态不会凭空消失。
+   */
+  const infoFields =
+    isPlanB && hasDetailHeaderStatus(record)
+      ? config.detailFields.filter((field) => field.key !== 'status')
+      : config.detailFields
+  const showItemsCard = hasItemColumns
+  const showInfoCard =
+    hasHeaderFields ||
+    isPlanB ||
+    detailMetricsSlot !== undefined ||
+    config.renderDetailExtras !== undefined
 
   const items = record.items || []
   /*
@@ -306,29 +328,59 @@ export function ModuleRecordDetailInline({
    * 并让 `.module-record-detail-inline .module-items-table-shell { border: 0 }` 等既有
    * 选择器继续命中），与 `module-detail-surface` 放在**同一个元素**上 —— 两者的留白不会
    * 叠加两次；内层 `module-detail-card` 才是白卡，结构与详情弹层保持一致。
+   *
+   * `module-detail-surface--compact` 是方案 B 在窄容器里的退化开关：行展开的可用宽度由
+   * 列表列数决定、与视口无关，所以指标条与信息区固定 2 列，不能靠 `@media` 断点判断。
    */
   return (
-    <div className="module-detail-surface module-record-detail-inline">
-      <div className="module-detail-card">
-        {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
-        {config.renderDetailExtras?.({ record })}
-        {/*
-          指标条：由页面通过 detailMetricsSlot 提供（销售订单是项目销售汇总四项指标）。
-          插槽未配置时整块不渲染，不留空 div。
-        */}
-        {detailMetricsSlot
-          ? createElement(detailMetricsSlot, { record })
-          : null}
-        {hasHeaderFields ? renderHeaderFields() : null}
-        {hasItemColumns ? renderItems() : null}
-        {!hasHeaderFields && !hasItemColumns ? (
-          <AppResult
-            status="info"
-            title={t('modules.detail.noDetailItems')}
-            className="module-record-detail-inline-empty"
-          />
-        ) : null}
-      </div>
+    <div className="module-detail-surface module-record-detail-inline module-detail-surface--compact">
+      {showInfoCard ? (
+        <div className="module-detail-card module-detail-card--info">
+          {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
+          {config.renderDetailExtras?.({ record })}
+          {/* 顶栏只在方案 B（detailLayout: 'inline'）的模块上渲染，与详情弹层同构。 */}
+          {isPlanB ? (
+            <ModuleDetailHeader config={config} record={record} compact />
+          ) : null}
+          {/*
+            指标条：由页面通过 detailMetricsSlot 提供（销售订单是项目销售汇总四项指标）。
+            插槽未配置时整块不渲染，不留空 div。
+          */}
+          {detailMetricsSlot
+            ? createElement(detailMetricsSlot, { record })
+            : null}
+          {infoFields.length ? (
+            isPlanB ? (
+              /* 方案 B 的流式「标签：值」网格（compact：固定 2 列） */
+              <ModuleDetailFieldGrid
+                config={config}
+                fields={infoFields}
+                formatCellValue={formatCellValue}
+                record={record}
+                compact
+              />
+            ) : (
+              renderHeaderFields()
+            )
+          ) : null}
+        </div>
+      ) : null}
+      {/*
+        明细独立成第二张白卡（与详情弹层同构）。没有明细列时不挂载，
+        因此不会出现只有一张空表头的卡。
+      */}
+      {showItemsCard ? (
+        <div className="module-detail-card module-detail-card--items">
+          {renderItems()}
+        </div>
+      ) : null}
+      {!showInfoCard && !showItemsCard ? (
+        <AppResult
+          status="info"
+          title={t('modules.detail.noDetailItems')}
+          className="module-record-detail-inline-empty"
+        />
+      ) : null}
     </div>
   )
 }

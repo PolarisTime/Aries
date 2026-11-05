@@ -182,7 +182,7 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
     })
   })
 
-  it('详情弹窗显示指标条与合计行', async () => {
+  it('详情弹窗显示指标条、合计行，以及方案 B 的顶栏与流式信息区', async () => {
     act(() => {
       root.render(
         createElement(ModuleRecordDetailContent, {
@@ -198,9 +198,26 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
     await flushRequest()
 
     expectMetricsAndSummaryRow()
-    // 描述区仍在（指标条没有把既有字段挤掉）。
+    /*
+     * 销售订单配置了 `detailLayout: 'inline'`（方案 B）：信息区不再是 antd Descriptions
+     * 表格，改为紧凑「标签：值」流式网格；标题/单号/状态挪进卡片内的顶栏。
+     * 字段本身没少（指标条没有把既有字段挤掉），只是换了排版形态。
+     */
     expect(
       container.querySelector('.module-record-detail-descriptions'),
-    ).not.toBeNull()
+    ).toBeNull()
+    expect(container.querySelector('.module-detail-field-grid')).not.toBeNull()
+    expect(
+      container.querySelector('.module-detail-header__title')?.textContent,
+    ).toBe('销售订单详情')
+    expect(
+      container.querySelector('.module-detail-header__no')?.textContent,
+    ).toBe('SO-1')
+    /*
+     * 明细独立成第二张白卡：信息卡 + 明细卡各一张，两张卡同宽、同圆角、同边框。
+     * 这张单配了明细列，所以明细卡必须存在；信息卡承担顶栏与字段区。
+     */
+    expect(container.querySelectorAll('.module-detail-card')).toHaveLength(2)
+    expect(container.querySelector('.module-detail-card--items')).not.toBeNull()
   })
 })

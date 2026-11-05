@@ -1,3 +1,9 @@
+import {
+  AccountBookOutlined,
+  CarOutlined,
+  ContainerOutlined,
+  ExclamationCircleOutlined,
+} from '@ant-design/icons'
 import { Skeleton } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ModuleDetailMetric, ModuleRecord } from '@/types/module-page'
@@ -5,10 +11,7 @@ import { formatAmount, formatWeight } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 import { useProjectSalesSummary } from '@/views/modules/use-project-sales-summary'
 import { ModuleDetailMetricBar } from './ModuleDetailMetricBar'
-import {
-  formatUsagePercent,
-  toBarPercent,
-} from './project-sales-summary-display'
+import { formatUsagePercent } from './project-sales-summary-display'
 
 /**
  * 销售订单只读详情面（详情弹层 / 列表行「+」展开）顶部的四项指标条。
@@ -23,6 +26,10 @@ import {
  *   <li>重量 → {@link formatWeight}（3 位小数、无千分位）；</li>
  *   <li>使用率百分比 → {@link formatUsagePercent}（0.8532 → `85.32%`，无合同时 `—`）。</li>
  * </ul>
+ *
+ * <p>排版按设计稿「方案 B」：每格 32px 圆形图标底 + 两行（label / 值 + 括号次级说明），
+ * 4 格横排。绝对数值一律进括号与主值同行，指标条因此不会被长说明撑成三行；超出格宽的
+ * 部分由 CSS 省略号裁切，完整文案挂在 `title` 上（见 ModuleDetailMetricBar）。</p>
  *
  * <p>失效兜底：未选项目不渲染；加载失败整条不渲染（指标是增强信息，不能打断详情里的
  * 字段与明细）；只有「首次加载且尚无数据」才出骨架，避免每次重算都闪一下。</p>
@@ -56,56 +63,58 @@ export function SalesOrderDetailMetrics({ record }: { record: ModuleRecord }) {
   const usedTonnage = summary.contractTonnage - summary.remainingTonnage
   // 本单总重量来自单据本身（后端聚合的 totalWeight），不是明细行前端再求和。
   const orderTotalWeight = Number(record.totalWeight) || 0
-  // 差额 = 项目已送货吨位 − 本单总重量（负值表示本单还没送完）。
-  const deliveredGap = summary.deliveredTonnage - orderTotalWeight
-
+  /*
+   * 四项指标（方案 B 的紧凑两行结构：label 一行、值 + 括号次级说明一行）。
+   * 图标只承担「这是金额 / 吨位 / 送货 / 待办」的扫读线索，颜色由 tone 决定，
+   * 不在数据层写死色值。
+   */
   const metrics: ModuleDetailMetric[] = [
     {
       key: 'contractAmountUsage',
       label: t('modules.projectSalesSummary.amountUsage'),
       value: formatUsagePercent(summary.amountUsageRate),
-      // 「已用金额：¥x / 合同金额：¥y」：两个数都带单位与名称，避免只看到一个比值。
-      hint: `${t('modules.salesContractCheck.usedAmount', {
+      /*
+       * 括号里放「已用 / 合同」两个绝对值：使用率单独看没有量级感，
+       * 分母与已用额度必须挨着它。文案仍取自既有 i18n key，不另造句。
+       */
+      hint: `（${t('modules.salesContractCheck.usedAmount', {
         value: `¥${formatAmount(usedAmount)}`,
       })} / ${t('modules.salesContractCheck.contractAmount', {
         value: `¥${formatAmount(summary.contractAmount)}`,
-      })}`,
-      // 无有效合同时使用率为 null，进度条没有分母，画出来是假的 0%，因此不给 percent。
-      ...(summary.amountUsageRate === null
-        ? {}
-        : { percent: toBarPercent(summary.amountUsageRate) }),
+      })}）`,
+      icon: <AccountBookOutlined />,
     },
     {
       key: 'contractTonnageUsage',
       label: t('modules.projectSalesSummary.tonnageUsage'),
       value: formatUsagePercent(summary.tonnageUsageRate),
-      hint: `${t('modules.salesContractCheck.usedTonnage', {
+      hint: `（${t('modules.salesContractCheck.usedTonnage', {
         value: `${formatWeight(usedTonnage)}${ton}`,
       })} / ${t('modules.salesContractCheck.contractTonnage', {
         value: `${formatWeight(summary.contractTonnage)}${ton}`,
-      })}`,
-      ...(summary.tonnageUsageRate === null
-        ? {}
-        : { percent: toBarPercent(summary.tonnageUsageRate) }),
+      })}）`,
+      icon: <ContainerOutlined />,
     },
     {
       key: 'deliveredVsOrderWeight',
       /*
        * 两个数不同源，必须让读者一眼分清：前者是**项目汇总**的送货吨位（含其它单据），
        * 后者是**本单**的 totalWeight。label 用「合计送货吨位」点明聚合口径，
-       * hint 再补一次括号说明，避免被读成「本单送货 / 本单总重量」。
+       * 两个数并列写在一个值里（`1000.250 / 0.000 吨`），与参考稿一致；
+       * 差额就是这两个数相减，不再单独占一格 hint。
        */
       label: `${t('modules.projectSalesSummary.deliveredTonnage')} / ${t('modules.columns.totalWeight')}`,
       value: `${formatWeight(summary.deliveredTonnage)} / ${formatWeight(orderTotalWeight)} ${ton}`,
-      hint: `${t('modules.projectSalesSummary.deliveredTonnage')}（${t('modules.salesContract.project')}） − ${t('modules.columns.totalWeight')}（${t('modules.pages.salesOrder.title')}）：${formatWeight(deliveredGap)} ${ton}`,
+      icon: <CarOutlined />,
     },
     {
       key: 'unreconciled',
       label: `${t('modules.projectSalesSummary.unreconciledAmount')} / ${t('modules.projectSalesSummary.unreconciledTonnage')}`,
       value: `¥${formatAmount(summary.unreconciledAmount)}`,
-      hint: `${formatWeight(summary.unreconciledTonnage)} ${ton}`,
-      // 未对账是「待办」性质：用 warning 语义色，不靠颜色单独传达（前面还有金额文本）。
+      hint: `（${formatWeight(summary.unreconciledTonnage)} ${ton}）`,
+      // 未对账是「待办」性质：用 warning 语义色 + 整格琥珀底，不靠颜色单独传达（前面还有金额文本）。
       tone: 'warning',
+      icon: <ExclamationCircleOutlined />,
     },
   ]
 
