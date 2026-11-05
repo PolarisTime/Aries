@@ -1122,6 +1122,8 @@ export const zhCN = {
     },
     itemsPanel: {
       defaultTitle: '明细列表',
+      /** 方案 B 明细卡标题后的计数胶囊，如「2 项」。 */
+      count: '{{count}} 项',
     },
     workspace: {
       closeAria: '关闭工作区',

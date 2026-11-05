@@ -684,3 +684,116 @@
   border-radius: 8px;
   box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
 }
+
+/*
+ * 明细卡（方案 B）内的表格：Modern ERP Clean UI 版式。
+ *
+ * 老版式在 `pages.css` 里是「`border: 1px dashed` 网格 + 全单元格居中」，
+ * 放进白卡后像一张旧式台账。这里只覆盖明细卡作用域：
+ * - 去掉竖线与外框，只保留横向 1px 分隔线；
+ * - 表头浅灰底 + 12px 次要色 + 文本列左对齐（数值列仍右对齐，见既有 numeric 规则）；
+ * - 行高收紧到 10px 内边距，hover 用最浅一档填充；
+ * - 合计行浅灰底 + 顶部线 + 600 字重，与明细行分层。
+ */
+.module-detail-card--items .module-items-table-shell,
+.module-detail-card--items .module-detail-table .ant-table-container,
+.module-detail-card--items .module-detail-table .ant-table-content {
+  border: none !important;
+}
+
+.module-detail-card--items .module-detail-table .ant-table-thead > tr > th {
+  padding: var(--space-xs) var(--space-sm) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0) !important;
+  background: var(--ant-color-fill-quaternary, #fafafa) !important;
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%)) !important;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 表头/单元格的默认居中来自 pages.css 的 !important，这里按列类型放开 */
+.module-detail-card--items
+  .module-detail-table
+  .ant-table-thead
+  > tr
+  > th:not(.module-detail-table-cell--numeric) {
+  text-align: left !important;
+}
+
+.module-detail-card--items
+  .module-detail-table
+  .ant-table-thead
+  > tr
+  > th::before {
+  display: none !important;
+}
+
+.module-detail-card--items .module-detail-table .ant-table-tbody > tr > td {
+  padding: var(--space-xs) var(--space-sm) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0) !important;
+  background: transparent !important;
+}
+
+.module-detail-card--items
+  .module-detail-table
+  .ant-table-tbody
+  > tr
+  > td:not(.module-detail-table-cell--numeric) {
+  text-align: left !important;
+}
+
+/* 最后一行不画底线：下方还有合计行时由合计行的顶部线负责分隔 */
+.module-detail-card--items
+  .module-detail-table
+  .ant-table-tbody
+  > tr:last-child
+  > td {
+  border-bottom: none !important;
+}
+
+.module-detail-card--items
+  .module-detail-table
+  .ant-table-tbody
+  > tr.ant-table-row:hover
+  > td {
+  background: var(--ant-color-fill-quaternary, #fafafa) !important;
+}
+
+.module-detail-card--items
+  .module-detail-table
+  tfoot
+  tr.module-detail-summary-row
+  > td {
+  padding: var(--space-xs) var(--space-sm) !important;
+  border: none !important;
+  border-top: 1px solid var(--ant-color-border-secondary, #f0f0f0) !important;
+  border-bottom: none !important;
+  background: var(--ant-color-fill-quaternary, #fafafa) !important;
+  font-weight: 600;
+}
+
+/* 明细卡标题：蓝色竖条 + 计数胶囊，与业务信息卡标题栏同一套视觉 */
+.module-detail-card--items .module-detail-items-title {
+  display: inline-flex;
+  gap: var(--space-xs, 8px);
+  align-items: center;
+}
+
+.module-detail-card--items .module-detail-items-title::before {
+  content: "";
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--ant-color-primary, #1677ff);
+}
+
+.module-detail-card--items .module-detail-items-count {
+  padding: 0 var(--space-xs, 8px);
+  border-radius: 999px;
+  background: var(--ant-color-fill-secondary, rgb(0 0 0 / 6%));
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+}

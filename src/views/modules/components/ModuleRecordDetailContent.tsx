@@ -285,7 +285,23 @@ export function ModuleRecordDetailContent({
   const itemsCard = showItemsCard ? (
     <div className="module-detail-card module-detail-card--items">
       <ModuleItemsPanel
-        title={config.detailItemTitle}
+        title={
+          /*
+           * 方案 B 的明细卡标题带「N 项」计数胶囊（与参考稿一致）；
+           * 缺省布局保持原有纯标题，避免 18 个模块的 DOM 变化。
+           */
+          isPlanB ? (
+            <span className="module-detail-items-title">
+              {config.detailItemTitle ??
+                t('modules.itemsPanel.defaultTitle')}
+              <span className="module-detail-items-count">
+                {t('modules.itemsPanel.count', { count: detailItems.length })}
+              </span>
+            </span>
+          ) : (
+            config.detailItemTitle
+          )
+        }
         className="module-detail-items-panel"
         items={detailItems}
         itemColumns={detailItemColumns}

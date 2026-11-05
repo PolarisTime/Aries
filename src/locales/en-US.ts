@@ -1141,6 +1141,7 @@ export const enUS = {
     },
     itemsPanel: {
       defaultTitle: 'Line Items',
+      count: '{{count}} items',
     },
     workspace: {
       closeAria: 'Close workspace',
