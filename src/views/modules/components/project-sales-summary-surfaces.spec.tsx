@@ -236,11 +236,22 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
     const headerButtons = container.querySelectorAll(
       '.module-detail-header__actions button',
     )
-    expect(headerButtons.length).toBeGreaterThanOrEqual(4)
+    expect(headerButtons).toHaveLength(3)
     expect(
       Array.from(headerButtons).filter(
         (button) => (button as HTMLButtonElement).disabled,
       ),
     ).toHaveLength(3)
+    /*
+     * 关闭入口只有一个：明细列表标题行的「关闭」按钮。
+     * 顶栏不再放返回箭头与 ×（同一动作三个入口会让读屏与键盘用户重复听到关闭）。
+     */
+    expect(container.querySelector('.module-detail-header__back')).toBeNull()
+    expect(container.querySelector('.module-detail-header__close')).toBeNull()
+    expect(
+      Array.from(container.querySelectorAll('.module-items-panel button')).some(
+        (button) => button.textContent?.includes('关闭'),
+      ),
+    ).toBe(true)
   })
 })

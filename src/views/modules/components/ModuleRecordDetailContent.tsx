@@ -312,7 +312,8 @@ export function ModuleRecordDetailContent({
          * 明细面板再放一个就是同一动作的第二个入口。缺省布局仍保留在这里
          * （它的 DOM 位置与改造前一致）。
          */
-        actions={isPlanB ? undefined : detailActions}
+        // 关闭 / 打印按钮固定在明细列表标题行（与改造前一致，也是整个详情面唯一的关闭入口）
+        actions={detailActions}
       >
         <ModuleItemGroupsView
           groups={detailItemGroups}
@@ -359,12 +360,12 @@ export function ModuleRecordDetailContent({
             顶栏：返回箭头与右上角 × 走**同一个** `onClose`（覆盖层的关闭本来就是
             "退出当前详情、回到列表"），不新造第二套退场路径。
           */}
-          <ModuleDetailHeader
-            config={config}
-            record={record}
-            onBack={onClose}
-            onClose={onClose}
-          />
+          {/*
+            顶栏只承载「这是哪张单」：标题 / 单号 / 状态 / 关联项目 + 业务按钮组。
+            关闭入口统一放在明细列表标题行（与改造前同一个位置），顶栏不再放返回与 ×，
+            避免同一动作出现三个入口。
+          */}
+          <ModuleDetailHeader config={config} record={record} />
           {/*
             指标卡：由页面通过 detailMetricsSlot 提供（销售订单是项目销售汇总的四张卡）。
             插槽未配置时整块不渲染，不留空 div。
