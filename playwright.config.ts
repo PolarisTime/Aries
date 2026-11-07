@@ -50,6 +50,11 @@ const hasLocalChromium =
 const e2eBackendMode = process.env.E2E_BACKEND_MODE === 'mock' ? 'mock' : 'real'
 const isRealBackendMode = e2eBackendMode === 'real'
 const includeDebugProject = process.env.E2E_INCLUDE_DEBUG === '1'
+/**
+ * 业务流 demo 脚本（`tests/e2e/demo/*.demo.spec.ts`）会向真实开发库写入演示单据，
+ * 默认不参与全量 e2e；显式 `DEMO_E2E=1` 时才纳入，避免 CI 与本地全量跑把演示数据当用例。
+ */
+const includeDemoSpecs = process.env.DEMO_E2E === '1'
 
 // outputDir 必须按 run 派生：Playwright 每次 run 启动即清空 outputDir（默认
 // test-results），共用同一目录会让并发 run 互删产物（夹具被删后报 ENOENT）。
@@ -97,7 +102,11 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: [/debug-.*\.spec\.ts/, /.*-debug\.spec\.ts/],
+      testIgnore: [
+        /debug-.*\.spec\.ts/,
+        /.*-debug\.spec\.ts/,
+        ...(includeDemoSpecs ? [] : [/demo\/.*\.demo\.spec\.ts/]),
+      ],
       use: { ...devices['Desktop Chrome'] },
     },
     ...(includeDebugProject
