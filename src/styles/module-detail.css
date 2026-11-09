@@ -588,7 +588,16 @@
  * `pages.css` 提供右对齐），这里只补字体族：金额/重量/件数在详情表里上下扫读时，
  * 小数点对齐靠等宽数字，右对齐单独做不到。
  */
-.module-detail-table .module-detail-table-cell--numeric {
+/*
+ * 只作用于**数据单元格**：表头里的「数量」「重量(吨)」是中文标签，套等宽字体栈会让
+ * 它们回退到另一套西文字体，和相邻的「数量单位」看起来不是同一个字号/字形。
+ * 表头对齐仍走 pages.css 的 numeric 规则，这里只收窄字体族的作用域。
+ */
+.module-detail-table
+  .ant-table-tbody
+  > tr
+  > td.module-detail-table-cell--numeric,
+.module-detail-table tfoot tr > td.module-detail-table-cell--numeric {
   font-family: var(--module-detail-mono);
   font-variant-numeric: tabular-nums;
 }
