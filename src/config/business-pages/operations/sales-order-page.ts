@@ -439,13 +439,18 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     },
   ],
   formFields: [
+    /*
+     * 抬头不分区标题（2026-11）：原先用「基本信息 / 日期与经手」两个 Divider 分段，
+     * 用户反馈占一行高度、信息量为零。改为单段平铺——视觉分组仍由 row 保持
+     * （第 1 行客户/项目/单号，第 2 行报单/交货日期与销售员，备注整行收尾），
+     * 不再声明 section 时 ModuleEditorFormSection 不渲染区块标题。
+     */
     {
       key: 'orderNo',
       label: i18next.t('modules.pages.salesOrder.colOrderNo'),
       type: 'input',
       required: true,
       row: 1,
-      section: i18next.t('modules.formSections.basic'),
     },
     {
       /* 来源单号与主单号相邻：两者同属「这是哪张单/从哪来」，放一起便于追溯。 */
@@ -457,7 +462,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
         'modules.pages.salesOrder.placeholderPurchaseOrderNo',
       ),
       row: 1,
-      section: i18next.t('modules.formSections.basic'),
     },
     {
       key: 'customerId',
@@ -467,7 +471,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       options: getCustomerOptions,
       masterOptionRequirements: { customers: true },
       row: 1,
-      section: i18next.t('modules.formSections.basic'),
     },
     {
       key: 'projectId',
@@ -479,7 +482,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       // 项目按客户过滤: 未选客户时下拉必然为空, 空态要说明这个前置条件, 不能只说"暂无数据"
       emptyHint: i18next.t('modules.pages.salesOrder.projectEmptyHint'),
       row: 1,
-      section: i18next.t('modules.formSections.basic'),
     },
     {
       key: 'orderDate',
@@ -488,11 +490,10 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       required: true,
       /*
        * row 2：row 1 由「客户 / 项目 / 订单编号 / 采购订单号」4 个 span=6 字段占满
-       * （渲染时把单号排到同一 section 段末尾，见 moveDocumentNoFieldsToSectionEnd），
+       * （单号由 moveDocumentNoFieldsToSectionEnd 移到段末，渲染仍按 row 归组），
        * 第 5 个会被 antd 静默挤到下一行最左（30 栅格 > 24），日期与经手统一放第 2 行。
        */
       row: 2,
-      section: i18next.t('modules.formSections.schedule'),
     },
     {
       key: 'deliveryDate',
@@ -504,7 +505,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
        * 行宽由 module-field-layout 的行宽守卫测试锁定（每行 span 之和 ≤ 24）。
        */
       row: 2,
-      section: i18next.t('modules.formSections.schedule'),
     },
     {
       key: 'salesName',
@@ -513,7 +513,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       required: true,
       disabled: true,
       row: 2,
-      section: i18next.t('modules.formSections.schedule'),
     },
     {
       key: 'remark',

@@ -15,7 +15,7 @@ describe('销售订单报单日期配置', () => {
     ))
   })
 
-  it('表单提供必填的报单日期，且与交货日期、销售员同处「日期与经手」区', () => {
+  it('表单提供必填的报单日期，且与交货日期、销售员同处第 2 行', () => {
     const formFields = salesOrdersPageConfig.formFields ?? []
     const keys = formFields.map((field) => field.key)
 
@@ -25,10 +25,22 @@ describe('销售订单报单日期配置', () => {
         type: 'date',
         required: true,
         row: 2,
-        section: '日期与经手',
       },
     )
     expect(keys.indexOf('orderDate')).toBeLessThan(keys.indexOf('deliveryDate'))
+  })
+
+  /**
+   * 抬头不再分区（2026-11）：原先「基本信息 / 日期与经手」两个 Divider 各占一行、
+   * 信息量为零，用户要求移除。配置侧一条 section 都不能留 —— 留下任意一条，
+   * `ModuleEditorFormSection` 就会把该段重新渲染成带标题的区块。
+   */
+  it('抬头不声明任何分区，因此不渲染「基本信息 / 日期与经手」标题', () => {
+    const formFields = salesOrdersPageConfig.formFields ?? []
+    expect(formFields.length).toBeGreaterThan(0)
+    for (const field of formFields) {
+      expect(field.section, `${field.key} 不应声明 section`).toBeUndefined()
+    }
   })
 
   /**
@@ -36,9 +48,9 @@ describe('销售订单报单日期配置', () => {
    * 第 2 行「报单日期 → 交货日期 → 销售员」，备注整行收尾。
    *
    * <p>单号类字段（主单号 + 来源单号）由 `moveDocumentNoFieldsToSectionEnd` 在渲染时
-   * 移到同一 section 段末尾，所以 `formFields` 里它们仍排在最前；本断言必须走同一口径，
-   * 否则锁的是配置顺序、不是用户看到的顺序。新建时主单号隐藏，第 1 行只剩
-   * 「客户 → 项目 → 采购订单号」。</p>
+   * 移到段末（抬头已不分区，整张表就是一段），`groupFieldsByRow` 仍按 `row` 归组，
+   * 所以单号不会跑到整张表单最后。本断言必须走同一口径，否则锁的是配置顺序、
+   * 不是用户看到的顺序。新建时主单号隐藏，第 1 行只剩「客户 → 项目 → 采购订单号」。</p>
    */
   it('表头行内顺序符合统一口径', () => {
     const formFields = salesOrdersPageConfig.formFields ?? []
