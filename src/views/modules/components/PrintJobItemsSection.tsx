@@ -447,42 +447,42 @@ export function PrintJobItemsSection({
 
   const columns: TableProps<PrintRecordItem>['columns'] = [
     {
-      key: 'drag',
-      width: 36,
-      align: 'center',
-      render: (_, item, index) => (
-        <DragHandle
-          label={t('modules.print.dragRowAriaLabel', {
-            index: printItemRowNumber(item.id, index),
-          })}
-        />
-      ),
-    },
-    {
       /*
-       * 顺序列: 可点击的上移/下移 —— WCAG 2.2 SC 2.5.7 要求的"单指针、非拖动"替代。
-       * 右键行菜单里也有同一组动作, 但菜单要求按次要键, 不能单独作为替代。
+       * 顺序列: 拖动抓手与可点击的上移/下移同处一格。
+       *
+       * <p>二者是同一能力的两条通道, 不再各占一列(原来的拖动列还空着表头, 看起来像重复控件):
+       * 拖动负责长距离快速重排; 上移/下移是 WCAG 2.2 SC 2.5.7 要求的"单指针、非拖动"替代 ——
+       * 触屏、运动障碍或没有鼠标的用户只能走这条, 因此不能删。右键行菜单里也有同一组动作,
+       * 但菜单要求按次要键, 不能单独作为替代。</p>
        */
       key: 'rowReorder',
-      width: 76,
+      width: 96,
       align: 'center',
       title: t('common.rowDragSort.moveColumnTitle'),
       render: (_, item, index) => {
         const itemIndex = orderedPrintItems.findIndex(
           (entry) => entry.id === item.id,
         )
-        // 不在有序集合里(上游刚换数据)时不渲染按钮, 而不是给两个永远禁用的按钮
-        if (itemIndex < 0) return null
         return (
-          <RowReorderButtons
-            canMoveDown={itemIndex < orderedPrintItems.length - 1}
-            canMoveUp={itemIndex > 0}
-            label={t('common.rowDragSort.rowWithName', {
-              index: printItemRowNumber(item.id, index),
-              name: printItemRowName(item, t),
-            })}
-            onMove={(delta) => movePrintItem(item.id, delta)}
-          />
+          <span className="inline-flex items-center gap-1">
+            <DragHandle
+              label={t('modules.print.dragRowAriaLabel', {
+                index: printItemRowNumber(item.id, index),
+              })}
+            />
+            {/* 不在有序集合里(上游刚换数据)时不渲染按钮, 而不是给两个永远禁用的按钮 */}
+            {itemIndex < 0 ? null : (
+              <RowReorderButtons
+                canMoveDown={itemIndex < orderedPrintItems.length - 1}
+                canMoveUp={itemIndex > 0}
+                label={t('common.rowDragSort.rowWithName', {
+                  index: printItemRowNumber(item.id, index),
+                  name: printItemRowName(item, t),
+                })}
+                onMove={(delta) => movePrintItem(item.id, delta)}
+              />
+            )}
+          </span>
         )
       },
     },

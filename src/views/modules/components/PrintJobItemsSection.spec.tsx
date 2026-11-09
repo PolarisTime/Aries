@@ -300,6 +300,28 @@ describe('打印明细行的非拖动重排替代', () => {
       (button.getAttribute('aria-label') ?? '').startsWith(label),
     )
 
+  it('拖动抓手与上移/下移同处「顺序」一格, 不再有第二个空白表头的拖动列', () => {
+    render({ items: [ITEM_A, ITEM_B] })
+
+    const row = container.querySelector<HTMLTableRowElement>(
+      `tr[data-row-key="${SNOWFLAKE_A}"]`,
+    )
+    const cells = Array.from(
+      row?.querySelectorAll<HTMLTableCellElement>('td') ?? [],
+    )
+    // 抓手指令与上移/下移按钮在同一格: 一列承载同一能力的两条通道
+    const handleCells = cells.filter(
+      (cell) => cell.querySelector('button[aria-label^="拖动第"]') !== null,
+    )
+    expect(handleCells).toHaveLength(1)
+    const labels = Array.from(
+      handleCells[0]?.querySelectorAll('button') ?? [],
+    ).map((button) => button.getAttribute('aria-label') ?? '')
+    expect(labels.some((label) => label.startsWith('拖动第'))).toBe(true)
+    expect(labels.some((label) => label.startsWith('上移'))).toBe(true)
+    expect(labels.some((label) => label.startsWith('下移'))).toBe(true)
+  })
+
   it('仅单指针: 点击行内「下移」按钮完成一次重排, 全程不发起拖拽', () => {
     const onDragStart = vi.fn()
     const onDragEnd = vi.fn()
