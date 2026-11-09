@@ -1,3 +1,21 @@
+# [15.5.0](https://github.com/PolarisTime/Aries/compare/v15.4.1...v15.5.0) (2026-11-09)
+
+
+### Bug Fixes
+
+* **detail:** 等宽数字只作用于数据单元格，不再误伤表头中文 ([967a77c](https://github.com/PolarisTime/Aries/commit/967a77ca33585920e4dfeed4746c4d8d3995fa68))
+* **modules:** 附加费用金额输入去掉步进器 ([802aac7](https://github.com/PolarisTime/Aries/commit/802aac7992a2819765909eb85f6cd0ec04fc2b25))
+* **sales-order:** 关闭入口收回明细列表，顶栏去掉返回箭头与 × ([a1366ac](https://github.com/PolarisTime/Aries/commit/a1366ace203f3f3b04703927673ad500d8f05717))
+
+
+### Features
+
+* **detail:** 采购入库/销售出库/销售退货/收款/付款/物流对账单详情迁到新风格 ([89138c6](https://github.com/PolarisTime/Aries/commit/89138c64f57b67300f96f22b8224ed2b8b3785e0))
+* **detail:** 采购订单 / 物流单 / 客户对账单详情一并迁到新风格 ([c68775f](https://github.com/PolarisTime/Aries/commit/c68775fcae36a297a3b76b93d1f3b3b8f51156a7))
+* **sales-order:** 详情面改为设计稿「方案 B」一体化流式布局 ([c462e0f](https://github.com/PolarisTime/Aries/commit/c462e0fc624ed45a3e3ef2fc6b0b6e2c4efb74d9))
+* **sales-order:** 详情页按新参考稿重做为「顶栏卡 + 四张指标卡 + 业务信息卡」 ([ef9e8a9](https://github.com/PolarisTime/Aries/commit/ef9e8a989b2fc3c17bd8e4273b951c7dd625399e))
+* **sales-order:** 详情页改用指标条与卡片容器，明细表补合计行与等宽数字 ([1e1706a](https://github.com/PolarisTime/Aries/commit/1e1706ac0cefb264186f077612dcf746ef752c5d))
+
 ## [15.4.1](https://github.com/PolarisTime/Aries/compare/v15.4.0...v15.4.1) (2026-11-04)
 
 
