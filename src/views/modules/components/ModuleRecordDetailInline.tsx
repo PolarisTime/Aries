@@ -362,16 +362,18 @@ export function ModuleRecordDetailInline({
   if (isPlanB) {
     return (
       <div className="module-detail-surface module-detail-surface--plan-b module-detail-surface--compact module-record-detail-inline">
-        <div className="module-detail-card module-detail-card--summary">
+        {/*
+          与覆盖层详情一致：顶栏当卡头，指标卡与信息网格接在同一张卡里，
+          行展开与详情弹层看到的是同一套层级，不会一个两张卡、一个三张卡。
+        */}
+        <div className="module-detail-card module-detail-card--info">
           {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
           {config.renderDetailExtras?.({ record })}
           <ModuleDetailHeader config={config} record={record} compact />
           {detailMetricsSlot
             ? createElement(detailMetricsSlot, { record })
             : null}
-        </div>
-        {infoFields.length ? (
-          <div className="module-detail-card module-detail-card--info">
+          {infoFields.length ? (
             <ModuleDetailFieldGrid
               config={config}
               fields={infoFields}
@@ -380,8 +382,8 @@ export function ModuleRecordDetailInline({
               compact
               title={config.detailInfoTitle}
             />
-          </div>
-        ) : null}
+          ) : null}
+        </div>
         {itemsCard}
       </div>
     )

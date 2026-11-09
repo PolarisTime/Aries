@@ -353,13 +353,16 @@ export function ModuleRecordDetailContent({
   if (isPlanB) {
     return (
       <div className="module-detail-surface module-detail-surface--plan-b">
-        <div className="module-detail-card module-detail-card--summary">
+        {/*
+          顶栏与业务信息合并成同一张卡：顶栏当卡头（自带底部 1px 分隔线），
+          信息网格紧接其下。
+          两张卡之间只隔着标题行时，卡片间隙会变成一块无意义的留白；合并后
+          整页从「标题卡 + 信息卡 + 明细卡」变成「信息卡 + 明细卡」，层级更清楚。
+          指标卡（仅销售订单配置）仍作为独立区域留在信息卡之上。
+        */}
+        <div className="module-detail-card module-detail-card--info">
           {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
           {config.renderDetailExtras?.({ record })}
-          {/*
-            顶栏：返回箭头与右上角 × 走**同一个** `onClose`（覆盖层的关闭本来就是
-            "退出当前详情、回到列表"），不新造第二套退场路径。
-          */}
           {/*
             顶栏只承载「这是哪张单」：标题 / 单号 / 状态 / 关联项目 + 业务按钮组。
             关闭入口统一放在明细列表标题行（与改造前同一个位置），顶栏不再放返回与 ×，
@@ -373,15 +376,11 @@ export function ModuleRecordDetailContent({
           {detailMetricsSlot
             ? createElement(detailMetricsSlot, { record })
             : null}
-        </div>
-
-        {/*
-          业务信息卡的标题栏右侧本可以放「最后更新于 …」，但销售订单接口没有更新时间字段
-          （`SalesOrderResponse` 只有 `version` 乐观锁版本，没有 updatedAt/createdAt），
-          所以这里**不传** `meta` —— 记录上取不到就不显示，不用当前时间冒充。
-        */}
-        {infoFields.length ? (
-          <div className="module-detail-card module-detail-card--info">
+          {/*
+            业务信息网格：标题栏右侧本可以放「最后更新于 …」，但销售订单接口没有更新时间
+            字段（`SalesOrderResponse` 只有 `version` 乐观锁），取不到就不显示，不造假。
+          */}
+          {infoFields.length ? (
             <ModuleDetailFieldGrid
               config={config}
               fields={infoFields}
@@ -389,8 +388,8 @@ export function ModuleRecordDetailContent({
               record={record}
               title={config.detailInfoTitle}
             />
-          </div>
-        ) : null}
+          ) : null}
+        </div>
 
         {itemsCard}
       </div>

@@ -220,13 +220,14 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
       container.querySelector('.module-detail-header__no')?.textContent,
     ).toBe('SO-1')
     /*
-     * 三张白卡：① 顶栏卡（顶栏 + 四张指标卡）、② 业务信息卡（标题栏 + 字段网格）、
-     * ③ 明细卡。参考稿把「顶栏 + 指标」与「业务信息」拆成两张卡，因此卡片数从 2 变 3。
+     * 两张白卡：① 信息卡（顶栏当卡头 + 四张指标卡 + 字段网格）、② 明细卡。
+     * 顶栏与业务信息原先是两张卡，中间只隔一行标题、留白没有信息量，已合并为一张。
      */
-    expect(container.querySelectorAll('.module-detail-card')).toHaveLength(3)
-    expect(
-      container.querySelector('.module-detail-card--summary'),
-    ).not.toBeNull()
+    expect(container.querySelectorAll('.module-detail-card')).toHaveLength(2)
+    const infoCard = container.querySelector('.module-detail-card--info')
+    expect(infoCard).not.toBeNull()
+    // 顶栏是信息卡的卡头，不是另一张卡
+    expect(infoCard?.querySelector('.module-detail-header')).not.toBeNull()
     expect(container.querySelector('.module-detail-card--items')).not.toBeNull()
     // 业务信息卡有标题栏（蓝色竖条 + 文案）
     expect(
