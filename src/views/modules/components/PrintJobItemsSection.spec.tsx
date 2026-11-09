@@ -225,7 +225,7 @@ describe('打印明细行的非拖动重排替代', () => {
     })
   }
 
-  it('行右键开出「上移 / 下移」菜单, 首行的上移按边界软禁用', async () => {
+  it('行右键开出顺序菜单(上移/下移/移到最前/最后), 首行的上移类项按边界软禁用', async () => {
     render({ items: [ITEM_A, ITEM_B] })
     await openContextMenu(rowCell(0))
 
@@ -234,9 +234,11 @@ describe('打印明细行的非拖动重排替代', () => {
     expect(menuRoot()?.getAttribute('aria-label')).toBe(
       '「螺纹钢 HRB400E 12」明细行操作菜单',
     )
-    expect(menuLabels()).toEqual(['上移', '下移'])
+    expect(menuLabels()).toEqual(['移到最前', '上移', '下移', '移到最后'])
+    // 首行: 移到最前与上移都不可用, 下移可用
     expect(menuItems()[0].getAttribute('aria-disabled')).toBe('true')
-    expect(menuItems()[1].getAttribute('aria-disabled')).not.toBe('true')
+    expect(menuItems()[1].getAttribute('aria-disabled')).toBe('true')
+    expect(menuItems()[2].getAttribute('aria-disabled')).not.toBe('true')
   })
 
   it('仅单指针(右键 + 点「下移」)即可完成一次重排, 全程不发起拖拽', async () => {
@@ -277,17 +279,50 @@ describe('打印明细行的非拖动重排替代', () => {
       )
     })
     await flush()
-    expect(menuLabels()).toEqual(['上移', '下移'])
+    expect(menuLabels()).toEqual(['移到最前', '上移', '下移', '移到最后'])
   })
 
   it('末行的下移按边界软禁用, 点击不写回顺序', async () => {
     const { onDispatch } = render({ items: [ITEM_A, ITEM_B] })
     await openContextMenu(rowCell(1))
 
-    expect(menuItems()[1].getAttribute('aria-disabled')).toBe('true')
+    // 末行: 下移与移到最后都不可用
+    expect(menuItems()[2].getAttribute('aria-disabled')).toBe('true')
+    expect(menuItems()[3].getAttribute('aria-disabled')).toBe('true')
     clickMenuItem('下移')
     await flush()
     expect(onDispatch).not.toHaveBeenCalled()
+  })
+
+  it('右键「移到最前 / 最后」一步到目标位次, 长距离不用逐格点', async () => {
+    const ITEM_C = buildItem({
+      id: '1834671234567890789',
+      category: '高线',
+      material: 'HRB500',
+      spec: '10',
+    })
+    const { onDispatch } = render({ items: [ITEM_A, ITEM_B, ITEM_C] })
+    expect(rowKeys()).toEqual([SNOWFLAKE_A, SNOWFLAKE_B, ITEM_C.id])
+
+    // 末行 → 移到最前
+    await openContextMenu(rowCell(2))
+    clickMenuItem('移到最前')
+    await flush()
+    expect(onDispatch).toHaveBeenLastCalledWith({
+      type: 'setOrderedPrintItemIds',
+      itemIds: [ITEM_C.id, SNOWFLAKE_A, SNOWFLAKE_B],
+    })
+    expect(rowKeys()).toEqual([ITEM_C.id, SNOWFLAKE_A, SNOWFLAKE_B])
+
+    // 首行 → 移到最后
+    await openContextMenu(rowCell(0))
+    clickMenuItem('移到最后')
+    await flush()
+    expect(onDispatch).toHaveBeenLastCalledWith({
+      type: 'setOrderedPrintItemIds',
+      itemIds: [SNOWFLAKE_A, SNOWFLAKE_B, ITEM_C.id],
+    })
+    expect(rowKeys()).toEqual([SNOWFLAKE_A, SNOWFLAKE_B, ITEM_C.id])
   })
 
   /** 行内「上移/下移」按钮: 不需要右键、不需要拖动, 单指针直接点。 */

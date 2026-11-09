@@ -297,6 +297,9 @@ export const zhCN = {
       dragCancel: '已取消移动，{{row}}顺序未变',
       moveUp: '上移',
       moveDown: '下移',
+      /** 按钮 tooltip：点完不必把鼠标移回去，回车即可继续移动（焦点留在按钮上）。 */
+      moveUpTip: '上移（点一下后可按回车连续调整）',
+      moveDownTip: '下移（点一下后可按回车连续调整）',
       moveUpAria: '上移 {{row}}',
       moveDownAria: '下移 {{row}}',
       moveColumnTitle: '顺序',
@@ -1084,6 +1087,9 @@ export const zhCN = {
       rowContextMenuLabel: '「{{name}}」明细行操作菜单',
       moveItemUp: '上移',
       moveItemDown: '下移',
+      /** 右键菜单里给长距离调序用的一步到位项。 */
+      moveItemFirst: '移到最前',
+      moveItemLast: '移到最后',
       deliveryDate: '交货日期',
       statementPeriod: '对账期间',
       itemSourceNo: '来源单号',

@@ -302,6 +302,9 @@ export const enUS = {
       dragCancel: 'Move cancelled, {{row}} order unchanged',
       moveUp: 'Move up',
       moveDown: 'Move down',
+      /** Button tooltip: after one click, press Enter to keep moving without re-aiming. */
+      moveUpTip: 'Move up (click once, then press Enter to keep moving)',
+      moveDownTip: 'Move down (click once, then press Enter to keep moving)',
       moveUpAria: 'Move up {{row}}',
       moveDownAria: 'Move down {{row}}',
       moveColumnTitle: 'Order',
@@ -1101,6 +1104,9 @@ export const enUS = {
       rowContextMenuLabel: 'Actions menu for "{{name}}"',
       moveItemUp: 'Move up',
       moveItemDown: 'Move down',
+      /** One-step reorder entries for long distances. */
+      moveItemFirst: 'Move to first',
+      moveItemLast: 'Move to last',
       deliveryDate: 'Delivery Date',
       statementPeriod: 'Statement Period',
       itemSourceNo: 'Source No.',

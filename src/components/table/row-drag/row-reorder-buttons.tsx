@@ -56,7 +56,7 @@ export function RowReorderButtons({
         }}
         size="small"
         style={sizeStyle}
-        title={t('common.rowDragSort.moveUp')}
+        title={t('common.rowDragSort.moveUpTip')}
         type="text"
       />
       <Button
@@ -68,7 +68,7 @@ export function RowReorderButtons({
         }}
         size="small"
         style={sizeStyle}
-        title={t('common.rowDragSort.moveDown')}
+        title={t('common.rowDragSort.moveDownTip')}
         type="text"
       />
     </span>

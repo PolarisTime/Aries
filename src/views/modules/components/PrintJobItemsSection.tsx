@@ -3,6 +3,8 @@ import {
   ArrowUpOutlined,
   CheckCircleFilled,
   HolderOutlined,
+  VerticalAlignBottomOutlined,
+  VerticalAlignTopOutlined,
 } from '@ant-design/icons'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -159,6 +161,8 @@ function SortableRow({ children, ...props }: SortableRowProps) {
 /** 明细行菜单的「上移 / 下移」键: 与拖动共用同一份顺序写回口径。 */
 const PRINT_ITEM_MOVE_UP = 'moveUp'
 const PRINT_ITEM_MOVE_DOWN = 'moveDown'
+const PRINT_ITEM_MOVE_FIRST = 'moveFirst'
+const PRINT_ITEM_MOVE_LAST = 'moveLast'
 
 interface Props {
   moduleKey: string
@@ -408,11 +412,33 @@ export function PrintJobItemsSection({
   )
 
   /**
+   * 菜单里的「移到最前 / 最后」: 与上移/下移共用 {@link reorderPrintItemIds},
+   * 一步到目标位次; 已经在该位次时不动(避免无意义 dispatch)。
+   */
+  const movePrintItemToEdge = useCallback(
+    (itemId: string, edge: 'first' | 'last') => {
+      const targetId =
+        edge === 'first'
+          ? orderedPrintItemIds[0]
+          : orderedPrintItemIds[orderedPrintItemIds.length - 1]
+      if (!targetId || targetId === itemId) return
+      dispatch({
+        type: 'setOrderedPrintItemIds',
+        itemIds: reorderPrintItemIds(orderedPrintItemIds, itemId, targetId),
+      })
+    },
+    [dispatch, orderedPrintItemIds],
+  )
+
+  /**
    * 明细行右键菜单(与提货单明细行同一套口径): 顺序调整的**非拖动替代**。
    *
    * <p>WCAG 2.2 SC 2.5.7 要求拖动功能能用单指针在不拖动的情况下完成 —— 右键点开菜单
    * 选「上移 / 下移」即满足; 边界项按位次禁用, 元素上的键位说明由
    * `RowContextMenuRow` 补 Shift+F10。</p>
+   *
+   * <p>「移到最前 / 最后」是给长距离调整用的: 一屏十几行时不用一行行点箭头,
+   * 也不必精确拖拽 —— 直接落到首/末位。</p>
    */
   const rowMenus = useMemo<RowContextMenuMap>(() => {
     const menus: RowContextMenuMap = new Map()
@@ -423,6 +449,12 @@ export function PrintJobItemsSection({
           name: printItemRowName(item, t),
         }),
         items: [
+          {
+            key: PRINT_ITEM_MOVE_FIRST,
+            label: t('modules.print.moveItemFirst'),
+            icon: <VerticalAlignTopOutlined />,
+            disabled: index <= 0,
+          },
           {
             key: PRINT_ITEM_MOVE_UP,
             label: t('modules.print.moveItemUp'),
@@ -435,15 +467,27 @@ export function PrintJobItemsSection({
             icon: <ArrowDownOutlined />,
             disabled: index >= orderedPrintItems.length - 1,
           },
+          {
+            key: PRINT_ITEM_MOVE_LAST,
+            label: t('modules.print.moveItemLast'),
+            icon: <VerticalAlignBottomOutlined />,
+            disabled: index >= orderedPrintItems.length - 1,
+          },
         ],
         onClick: ({ key }) => {
+          if (key === PRINT_ITEM_MOVE_FIRST) {
+            movePrintItemToEdge(item.id, 'first')
+          }
           if (key === PRINT_ITEM_MOVE_UP) movePrintItem(item.id, -1)
           if (key === PRINT_ITEM_MOVE_DOWN) movePrintItem(item.id, 1)
+          if (key === PRINT_ITEM_MOVE_LAST) {
+            movePrintItemToEdge(item.id, 'last')
+          }
         },
       })
     })
     return menus
-  }, [movePrintItem, orderedPrintItems, t])
+  }, [movePrintItem, movePrintItemToEdge, orderedPrintItems, t])
 
   const columns: TableProps<PrintRecordItem>['columns'] = [
     {
