@@ -9,6 +9,7 @@ import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
+import { buildDefaultLineItemSummary } from '@/views/modules/components/module-detail-summary'
 import {
   BILL_STATUS_LABEL,
   INBOUND_NO_FILTER_LABEL,
@@ -202,6 +203,16 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     'totalWeightAdjustmentTon',
     'remark',
   ],
+  /*
+   * 只读详情面走方案 B（顶栏卡 + 业务信息卡 + 明细卡 + 极简表格）。
+   *
+   * 本模块没有指标插槽，因此不渲染指标卡；其余结构与销售订单共用同一套组件，
+   * 明细表的合计行按默认口径（行数/数量/重量/金额）由 `detailSummary` 提供。
+   */
+  detailLayout: 'inline',
+  detailInfoTitle: i18next.t('modules.detailCards.docInfoTitle'),
+  // 明细表尾合计：与销售订单共用同一口径（行数/数量/重量/金额）
+  detailSummary: ({ items }) => buildDefaultLineItemSummary(items),
   detailFields: [
     {
       label: i18next.t('modules.pages.purchaseInbound.colInboundNo'),

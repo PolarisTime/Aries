@@ -16,9 +16,9 @@ import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
-import { formatAmount, formatInteger, formatWeight } from '@/utils/formatters'
 import { renderProjectNameCell } from '@/utils/project-display'
 import { asString } from '@/utils/type-narrowing'
+import { buildDefaultLineItemSummary } from '@/views/modules/components/module-detail-summary'
 import { NetPriceMatchChip } from '@/views/modules/components/NetPriceMatchChip'
 import { ProjectSalesSummaryPanel } from '@/views/modules/components/ProjectSalesSummaryPanel'
 import { SalesOrderDetailMetrics } from '@/views/modules/components/SalesOrderDetailMetrics'
@@ -617,35 +617,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
    * 求和口径的唯一出口是 sumLineItemsBy（编辑器联动、保存载荷用的是同一个函数），
    * 这里只把四项合计投影成按列对齐的单元格，不再写第二份 reduce 或 toLocaleString。
    */
-  detailSummary: ({ items }) => {
-    if (!items.length) return null
-    return [
-      {
-        key: 'rowCount',
-        dataIndex: '#',
-        // 明细表没有「序号」列，合计行首格自带标签，避免只显示一个孤零零的数字。
-        value: `${i18next.t('modules.itemsSummary.rowCount')} ${items.length}`,
-      },
-      {
-        key: 'quantity',
-        dataIndex: 'quantity',
-        value: formatInteger(sumLineItemsBy(items, 'quantity')),
-        align: 'right',
-      },
-      {
-        key: 'weightTon',
-        dataIndex: 'weightTon',
-        value: formatWeight(sumLineItemsBy(items, 'weightTon')),
-        align: 'right',
-      },
-      {
-        key: 'amount',
-        dataIndex: 'amount',
-        value: formatAmount(sumLineItemsBy(items, 'amount')),
-        align: 'right',
-      },
-    ]
-  },
+  detailSummary: ({ items }) => buildDefaultLineItemSummary(items),
   /*
    * 编辑器(新建/编辑弹层)的「项目数据」: 需要「含本单」口径, 所以把草稿合计作为 pending 下发,
    * 并排除本单已保存的金额/吨位。合计口径复用 computeDraftTotals —— 与保存载荷同一出口,

@@ -165,6 +165,12 @@ export const receiptsPageConfig: ModulePageConfig = {
     'operatorName',
     'remark',
   ],
+  /*
+   * 只读详情面走方案 B（顶栏卡 + 业务信息卡 + 明细卡 + 极简表格）。
+   * 收款单没有明细行，明细卡不会渲染；信息区与顶栏与其它模块一致。
+   */
+  detailLayout: 'inline',
+  detailInfoTitle: i18next.t('modules.detailCards.docInfoTitle'),
   detailFields: [
     {
       label: i18next.t('modules.pages.receipt.receiptNo'),

@@ -1269,6 +1269,7 @@ export const enUS = {
      */
     detailCards: {
       businessInfoTitle: 'Business info',
+      docInfoTitle: 'Document info',
       capsuleHealthy: 'Healthy',
       capsuleSufficient: 'Sufficient',
       capsuleExceeded: 'Over limit',

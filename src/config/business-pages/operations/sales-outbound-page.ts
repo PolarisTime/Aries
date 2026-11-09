@@ -11,6 +11,7 @@ import type {
   ModulePageConfig,
 } from '@/types/module-page'
 import { renderProjectNameCell } from '@/utils/project-display'
+import { buildDefaultLineItemSummary } from '@/views/modules/components/module-detail-summary'
 import {
   BILL_STATUS_LABEL,
   CUSTOMER_NAME_LABEL,
@@ -201,6 +202,14 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
     },
   ],
   defaultHiddenColumnKeys: ['remark'],
+  /*
+   * 只读详情面走方案 B（顶栏卡 + 业务信息卡 + 明细卡 + 极简表格）。
+   * 本模块没有指标插槽，因此不渲染指标卡。
+   */
+  detailLayout: 'inline',
+  detailInfoTitle: i18next.t('modules.detailCards.docInfoTitle'),
+  // 明细表尾合计：与销售订单共用同一口径（行数/数量/重量/金额）
+  detailSummary: ({ items }) => buildDefaultLineItemSummary(items),
   detailFields: [
     {
       label: i18next.t('modules.pages.salesOutbound.colOutboundNo'),

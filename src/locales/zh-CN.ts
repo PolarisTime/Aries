@@ -1261,6 +1261,8 @@ export const zhCN = {
     detailCards: {
       /** 业务信息卡的标题栏文案。 */
       businessInfoTitle: '订单业务信息',
+      /** 采购入库 / 销售出库 / 收付款 / 物流对账单等单据信息卡的通用标题。 */
+      docInfoTitle: '单据信息',
       /** 使用率胶囊：未超限的「正常」态（金额 / 吨位各一个词，与参考稿一致）。 */
       capsuleHealthy: '健康',
       capsuleSufficient: '充足',
