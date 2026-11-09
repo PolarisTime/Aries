@@ -90,7 +90,6 @@ function BodyHarness({
       form={form}
       itemSelectionEnabled={false}
       itemState={buildItemState()}
-      mergeEquivalentItems={false}
       moduleKey={moduleKey}
       onDragEnd={() => undefined}
       onRetryPrintItems={() => undefined}
@@ -163,6 +162,26 @@ describe('打印明细区 DndContext 的读屏接线', () => {
     // 非拖动替代: 行内「上移/下移」按钮
     expect(text).toContain('上移/下移')
     expect(text).not.toContain('To pick up a draggable item')
+  })
+
+  it('同款合并已归位到打印选项区: 明细区不再有「合并同款/拆分明细」按钮对', () => {
+    act(() => {
+      root.render(createElement(BodyHarness))
+    })
+
+    const text = container.textContent ?? ''
+    // 旧的二选一按钮对已删除: 「拆分明细」文案只保留在历史版本里
+    expect(text).not.toContain('拆分明细')
+    // 合并开关现在是打印选项区里的一个复选框, 不再是明细区的按钮
+    const mergeLabel = Array.from(container.querySelectorAll('label')).find(
+      (label) => (label.textContent ?? '').includes('同款合并'),
+    )
+    expect(mergeLabel).toBeTruthy()
+    expect(mergeLabel?.querySelector('input[type="checkbox"]')).toBeTruthy()
+    const mergeButtons = Array.from(
+      container.querySelectorAll('button'),
+    ).filter((button) => (button.textContent ?? '').includes('同款'))
+    expect(mergeButtons).toHaveLength(0)
   })
 
   it('每行渲染可点击的上移/下移按钮(单指针非拖动替代, SC 2.5.7)', () => {

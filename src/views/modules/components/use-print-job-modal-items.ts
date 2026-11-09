@@ -48,7 +48,8 @@ interface Options {
   excludedPrintItemIds: string[]
   itemSelectionEnabled: boolean
   mergeEquivalentItems: boolean
-  mergeEquivalentItemsAvailable: boolean
+  /** 模块布局 options.merge：只有声明该选项的模块才显示/启用同款合并。 */
+  mergeOptionEnabled: boolean
   orderedPrintItemIds: string[]
   outputPrintItemIds: string[]
   printItems: PrintRecordItem[]
@@ -64,7 +65,7 @@ export function usePrintJobModalItems({
   excludedPrintItemIds,
   itemSelectionEnabled,
   mergeEquivalentItems,
-  mergeEquivalentItemsAvailable,
+  mergeOptionEnabled,
   orderedPrintItemIds,
   outputPrintItemIds,
   printItems,
@@ -72,7 +73,7 @@ export function usePrintJobModalItems({
   splitPieceCount,
   splitPrintEnabled,
 }: Options) {
-  const showMergeGroup = mergeEquivalentItemsAvailable && mergeEquivalentItems
+  const showMergeGroup = mergeOptionEnabled && mergeEquivalentItems
   const {
     effectiveOrderedPrintItemIds,
     mergeMarkersByItemId,

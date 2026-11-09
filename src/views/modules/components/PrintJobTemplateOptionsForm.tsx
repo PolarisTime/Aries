@@ -6,6 +6,7 @@ import {
   Form,
   InputNumber,
   Select,
+  Tooltip,
   Typography,
 } from 'antd'
 import type { ReactNode } from 'react'
@@ -41,7 +42,7 @@ export function PrintJobTemplateOptionsForm({
       component={false}
       form={form}
       initialValues={{
-        mergeMode: 'merge',
+        mergeEquivalentItems: true,
         printOptions: [],
       }}
     >
@@ -95,6 +96,23 @@ export function PrintJobTemplateOptionsForm({
             ) : null}
           </Checkbox.Group>
         </Form.Item>
+        {/*
+         * 同款合并从明细区右侧的按钮组归位到打印选项区：
+         * 与其它打印参数同处一行，勾选即合并、不勾选按明细逐行打印。
+         */}
+        {options.merge ? (
+          <Form.Item
+            name="mergeEquivalentItems"
+            valuePropName="checked"
+            noStyle
+          >
+            <Checkbox>
+              <Tooltip title={t('modules.print.mergeEquivalentItemsHint')}>
+                <span>{t('modules.print.mergeEquivalentItems')}</span>
+              </Tooltip>
+            </Checkbox>
+          </Form.Item>
+        ) : null}
         {splitPrintEnabled ? (
           <Flex align="center" gap="small">
             <Typography.Text className="whitespace-nowrap">

@@ -1059,8 +1059,10 @@ export const zhCN = {
       itemSplit: '拆分',
       splitPartIndex: '份次',
       splitNotNeeded: '件数未超过每份件数，无需拆分',
-      mergeEquivalentItems: '合并同款',
-      splitEquivalentItems: '拆分明细',
+      /** 打印选项里的复选框：勾选同款合并成一行，不勾选按明细逐行打印。 */
+      mergeEquivalentItems: '同款合并',
+      mergeEquivalentItemsHint:
+        '勾选后，品牌、类别、材质、规格、定尺相同的明细合并成一行打印（数量、重量、金额求和）；不勾选则按明细逐行打印。',
       brandOverrideTo: '替换为',
       brandOverridePlaceholder: '留空保持原品牌',
       noBrands: '选中单据未找到品牌',

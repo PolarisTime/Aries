@@ -11,7 +11,11 @@ export type PrintOptionKey =
   | 'enableSplitPrint'
 
 export interface PrintJobFormValues {
-  mergeMode: 'merge' | 'split'
+  /**
+   * 同款合并打印：勾选后「品牌+类别+材质+规格+定尺」相同的明细合并成一行（数量/重量/金额求和）。
+   * 仅布局声明 `options.merge` 的模块（当前为销售订单）显示该开关。
+   */
+  mergeEquivalentItems: boolean
   printOptions: PrintOptionKey[]
   templateId?: string
   splitPieceCount?: number

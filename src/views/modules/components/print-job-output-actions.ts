@@ -21,7 +21,8 @@ export interface PrintJobOutputActionsInput {
   hideUnitPrice: boolean
   itemSelectionEnabled: boolean
   mergeEquivalentItems: boolean
-  mergeEquivalentItemsAvailable: boolean
+  /** 模块布局的 options.merge：决定是否把合并开关随渲染选项下传。 */
+  mergeOptionEnabled: boolean
   onExportPrintXlsx?: (
     printOptions?: SalesOrderPrintXlsxOptions,
   ) => Promise<boolean>
@@ -47,7 +48,7 @@ export function createPrintJobOutputActions({
   hideUnitPrice,
   itemSelectionEnabled,
   mergeEquivalentItems,
-  mergeEquivalentItemsAvailable,
+  mergeOptionEnabled,
   onExportPrintXlsx,
   onPrint,
   onTemplateUsed,
@@ -78,7 +79,7 @@ export function createPrintJobOutputActions({
     return {
       hideUnitPrice,
       hideRemark,
-      ...(mergeEquivalentItemsAvailable ? { mergeEquivalentItems } : {}),
+      ...(mergeOptionEnabled ? { mergeEquivalentItems } : {}),
       ...(itemSelectionEnabled ? { selectedItemIds } : {}),
       ...(orderedPrintItemIds.length ? { itemOrder: orderedPrintItemIds } : {}),
       ...(currentBrandOverridesByItemId()

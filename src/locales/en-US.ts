@@ -1075,8 +1075,10 @@ export const enUS = {
       itemSplit: 'Split',
       splitPartIndex: 'Copy',
       splitNotNeeded: 'Quantity does not exceed pieces per copy; no split',
-      mergeEquivalentItems: 'Merge matching',
-      splitEquivalentItems: 'Split items',
+      /** Print option: merge lines with identical product attributes into one. */
+      mergeEquivalentItems: 'Merge same items',
+      mergeEquivalentItemsHint:
+        'When checked, lines with the same brand, category, material, spec and length are merged into one printed line (quantity, weight and amount are summed); when unchecked, each line is printed separately.',
       brandOverrideTo: 'Replace with',
       brandOverridePlaceholder: 'Leave blank to keep original',
       noBrands: 'No brands found in selected documents',

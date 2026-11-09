@@ -40,7 +40,7 @@ function setup(
     hideUnitPrice: false,
     itemSelectionEnabled: false,
     mergeEquivalentItems: true,
-    mergeEquivalentItemsAvailable: true,
+    mergeOptionEnabled: true,
     onPrint,
     orderedPrintItemIds: [],
     selectedItemIds: [],

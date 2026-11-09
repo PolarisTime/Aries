@@ -21,7 +21,7 @@ import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
 import { confirmDanger } from '@/utils/confirm-danger'
-import { supportsSalesOrderPrintOption } from '@/utils/print-module-config'
+import { getPrintJobLayout } from '@/utils/print-job-layout'
 import { PrintJobModalBody } from '@/views/modules/components/PrintJobModalBody'
 import { PrintJobModalFooter } from '@/views/modules/components/PrintJobModalFooter'
 import { recordProjectId } from '@/views/modules/components/print-job-modal-format'
@@ -108,7 +108,10 @@ export function PrintJobModal({
   const printOptionsFromForm =
     Form.useWatch('printOptions', form) ?? EMPTY_PRINT_OPTIONS
   const splitPieceCountFromForm = Form.useWatch('splitPieceCount', form)
-  const mergeModeFromForm = Form.useWatch('mergeMode', form)
+  const mergeEquivalentItemsFromForm = Form.useWatch(
+    'mergeEquivalentItems',
+    form,
+  )
   const printOptionSet = useMemo(
     () => new Set(printOptionsFromForm),
     [printOptionsFromForm],
@@ -124,8 +127,9 @@ export function PrintJobModal({
   )
   const splitPieceCountInvalid =
     splitPrintEnabled && splitPieceCount === undefined
-  const mergeEquivalentItems = (mergeModeFromForm ?? 'merge') === 'merge'
-  const mergeEquivalentItemsAvailable = supportsSalesOrderPrintOption(moduleKey)
+  // 唯一口径：是否提供「同款合并」由模块布局的 options.merge 决定（当前仅销售订单）。
+  const mergeOptionEnabled = getPrintJobLayout(moduleKey).options.merge
+  const mergeEquivalentItems = mergeEquivalentItemsFromForm ?? true
 
   const primaryRecord = selectedRows[0]
   const projectId = recordProjectId(primaryRecord)
@@ -146,7 +150,7 @@ export function PrintJobModal({
     excludedPrintItemIds: state.excludedPrintItemIds,
     itemSelectionEnabled,
     mergeEquivalentItems,
-    mergeEquivalentItemsAvailable,
+    mergeOptionEnabled,
     orderedPrintItemIds: state.orderedPrintItemIds,
     outputPrintItemIds: state.outputPrintItemIds,
     printItems,
@@ -163,7 +167,7 @@ export function PrintJobModal({
     hideUnitPrice,
     itemSelectionEnabled,
     mergeEquivalentItems,
-    mergeEquivalentItemsAvailable,
+    mergeOptionEnabled,
     onExportPrintXlsx,
     onPrint,
     onTemplateUsed: rememberTemplateUsed,
@@ -194,8 +198,8 @@ export function PrintJobModal({
     return false
   }
 
-  const canExportPrintXlsx =
-    mergeEquivalentItemsAvailable && Boolean(onExportPrintXlsx)
+  // 套打 Excel 入口只看调用方是否提供了导出能力；它与「同款合并」开关无关。
+  const canExportPrintXlsx = Boolean(onExportPrintXlsx)
   const pendingOutputAction = state.pendingOutputAction
   const hasSelectedPrintItems =
     !itemSelectionEnabled ||
@@ -241,7 +245,6 @@ export function PrintJobModal({
         form={form}
         itemSelectionEnabled={itemSelectionEnabled}
         itemState={itemState}
-        mergeEquivalentItems={mergeEquivalentItems}
         moduleKey={moduleKey}
         moduleTitle={moduleTitle}
         onDragEnd={itemState.handleDragEnd}

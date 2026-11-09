@@ -1,7 +1,7 @@
 import { closestCenter, DndContext, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { FormInstance } from 'antd'
-import { Button, Flex, Space, Tag, Typography } from 'antd'
+import { Flex, Space, Tag, Typography } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PrintRecordItem } from '@/api/system/print-template'
@@ -56,7 +56,6 @@ interface Props {
   form: FormInstance<PrintJobFormValues>
   itemSelectionEnabled: boolean
   itemState: PrintJobItemsState
-  mergeEquivalentItems: boolean
   moduleKey: string
   moduleTitle?: string
   onRetryPrintItems: () => void
@@ -78,7 +77,6 @@ export function PrintJobModalBody({
   form,
   itemSelectionEnabled,
   itemState,
-  mergeEquivalentItems,
   moduleKey,
   moduleTitle,
   onRetryPrintItems,
@@ -93,7 +91,6 @@ export function PrintJobModalBody({
   const { t } = useTranslation()
   // 模块布局是打印作业所有区域（Header/汇总/选项/明细列）的唯一差异来源。
   const layout = getPrintJobLayout(moduleKey)
-  const mergeEquivalentItemsAvailable = layout.options.merge
   const printItemFields = useMemo(
     () => getPrintItemFields(moduleKey),
     [moduleKey],
@@ -238,24 +235,6 @@ export function PrintJobModalBody({
                 count: printItems.length,
               })}
         </Typography.Text>
-        {mergeEquivalentItemsAvailable ? (
-          <Flex gap="small">
-            <Button
-              size="small"
-              type={mergeEquivalentItems ? 'primary' : 'default'}
-              onClick={() => form.setFieldValue('mergeMode', 'merge')}
-            >
-              {t('modules.print.mergeEquivalentItems')}
-            </Button>
-            <Button
-              size="small"
-              type={mergeEquivalentItems ? 'default' : 'primary'}
-              onClick={() => form.setFieldValue('mergeMode', 'split')}
-            >
-              {t('modules.print.splitEquivalentItems')}
-            </Button>
-          </Flex>
-        ) : null}
       </Flex>
       <DndContext
         accessibility={dragAccessibility}
