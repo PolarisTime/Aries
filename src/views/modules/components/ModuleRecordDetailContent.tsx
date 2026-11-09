@@ -292,8 +292,7 @@ export function ModuleRecordDetailContent({
            */
           isPlanB ? (
             <span className="module-detail-items-title">
-              {config.detailItemTitle ??
-                t('modules.itemsPanel.defaultTitle')}
+              {config.detailItemTitle ?? t('modules.itemsPanel.defaultTitle')}
               <span className="module-detail-items-count">
                 {t('modules.itemsPanel.count', { count: detailItems.length })}
               </span>
