@@ -1833,7 +1833,7 @@ export const zhCN = {
         title: '销售订单',
         description:
           '销售订单围绕客户、项目、交货日期和商品明细管理，支持从采购订单导入并自动汇总重量和金额。',
-        placeholderOrderNo: '输入销售订单号',
+        placeholderOrderNo: '输入销售订单号 / 采购订单号',
         placeholderProductKeyword: '商品编码 / 品牌 / 规格',
         placeholderPurchaseOrderNo: '系统自动生成',
         filterProductKeyword: '商品关键字',
@@ -1983,7 +1983,7 @@ export const zhCN = {
         title: '采购入库',
         description:
           '采购入库管理采购到货和入库确认，支持从采购订单导入并自动汇总重量和金额。',
-        placeholderInboundNo: '输入入库单号',
+        placeholderInboundNo: '输入入库单号 / 采购订单号',
         placeholderParentImport: '输入采购订单号',
         filterInboundDate: '入库日期',
         colInboundNo: '入库单号',
@@ -2010,7 +2010,7 @@ export const zhCN = {
         title: '销售出库',
         description:
           '销售出库管理发货和出库确认，支持从销售订单导入并自动汇总重量和金额。',
-        placeholderOutboundNo: '输入出库单号',
+        placeholderOutboundNo: '输入出库单号 / 销售订单号',
         placeholderParentImport: '输入销售订单号',
         placeholderProductKeyword: '商品编码 / 品牌 / 规格',
         filterOutboundDate: '出库日期',
@@ -2028,7 +2028,7 @@ export const zhCN = {
         title: '销售退货单',
         description:
           '销售退货单是销售出库的反向单据，按原销售出库明细办理部分或整单退货，不修改原销售订单、销售出库与物流单。',
-        placeholderReturnNo: '输入退货单号',
+        placeholderReturnNo: '输入退货单号 / 销售订单号',
         placeholderSalesOrderNo: '从销售出库带入',
         filterReturnNo: '退货单号',
         filterReturnDate: '退货日期',

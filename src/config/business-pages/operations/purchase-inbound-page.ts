@@ -202,6 +202,7 @@ export const purchaseInboundsPageConfig: ModulePageConfig = {
     'settlementCompanyName',
     'totalWeightAdjustmentTon',
     'remark',
+    'purchaseOrderNo',
   ],
   /*
    * 只读详情面走方案 B（顶栏卡 + 业务信息卡 + 明细卡 + 极简表格）。

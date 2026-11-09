@@ -201,7 +201,7 @@ export const salesOutboundsPageConfig: ModulePageConfig = {
       width: 180,
     },
   ],
-  defaultHiddenColumnKeys: ['remark'],
+  defaultHiddenColumnKeys: ['remark', 'salesOrderNo'],
   /*
    * 只读详情面走方案 B（顶栏卡 + 业务信息卡 + 明细卡 + 极简表格）。
    * 本模块没有指标插槽，因此不渲染指标卡。

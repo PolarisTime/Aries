@@ -244,7 +244,7 @@ export const customerStatementPageConfig: ModulePageConfig = {
       width: 180,
     },
   ],
-  defaultHiddenColumnKeys: ['customerCode', 'remark'],
+  defaultHiddenColumnKeys: ['customerCode', 'remark', 'sourceOrderNos'],
   /*
    * 只读详情面走方案 B（顶栏卡 + 业务信息卡 + 明细卡 + 极简表格）。
    * 客户对账单与物流对账单一样按分组渲染明细，组头已有本组合计，不接整单表尾合计。

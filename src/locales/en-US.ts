@@ -1850,7 +1850,7 @@ export const enUS = {
         title: 'Sales Orders',
         description:
           'Manage sales orders by customer, project, delivery date, and item details.',
-        placeholderOrderNo: 'Enter order number',
+        placeholderOrderNo: 'Enter sales / purchase order number',
         placeholderProductKeyword: 'Material code / brand / spec',
         placeholderPurchaseOrderNo: 'Auto-generated',
         filterProductKeyword: 'Product Keyword',
@@ -1994,7 +1994,7 @@ export const enUS = {
       purchaseInbound: {
         title: 'Purchase Inbounds',
         description: 'Manage purchase inbound and receiving confirmation.',
-        placeholderInboundNo: 'Enter inbound number',
+        placeholderInboundNo: 'Enter inbound / purchase order number',
         placeholderParentImport: 'Enter PO number',
         filterInboundDate: 'Inbound Date',
         colInboundNo: 'Inbound No',
@@ -2020,7 +2020,7 @@ export const enUS = {
       salesOutbound: {
         title: 'Sales Outbounds',
         description: 'Manage sales outbound and shipment confirmation.',
-        placeholderOutboundNo: 'Enter outbound number',
+        placeholderOutboundNo: 'Enter outbound / sales order number',
         placeholderParentImport: 'Enter SO number',
         placeholderProductKeyword: 'Material code / brand / spec',
         filterOutboundDate: 'Outbound Date',
@@ -2038,7 +2038,7 @@ export const enUS = {
         title: 'Sales Returns',
         description:
           'Sales returns are reverse sales outbound documents. They return part or all of the original outbound items without modifying the sales order, sales outbound, or freight bill.',
-        placeholderReturnNo: 'Enter return number',
+        placeholderReturnNo: 'Enter return / sales order number',
         placeholderSalesOrderNo: 'Filled from sales outbound',
         filterReturnNo: 'Return No',
         filterReturnDate: 'Return Date',

@@ -329,7 +329,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       width: 180,
     },
   ],
-  defaultHiddenColumnKeys: ['salesName', 'remark'],
+  defaultHiddenColumnKeys: ['purchaseOrderNo', 'salesName', 'remark'],
   /*
    * 详情页表头顺序（全单据统一口径）：
    * 单号 → 来源单号 → 往来对象 → 项目 → 结算主体 → 业务日期 → 交货/截止日期 →
