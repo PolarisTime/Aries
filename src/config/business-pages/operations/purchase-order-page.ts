@@ -9,6 +9,7 @@ import type {
   ModuleItemColumnConfig,
   ModulePageConfig,
 } from '@/types/module-page'
+import { buildDefaultLineItemSummary } from '@/views/modules/components/module-detail-summary'
 import {
   BILL_STATUS_LABEL,
   ORDER_NO_FILTER_LABEL,
@@ -267,6 +268,13 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
     },
   ],
   defaultHiddenColumnKeys: ['buyerName', 'remark'],
+  /*
+   * 只读详情面走方案 B（顶栏卡 + 业务信息卡 + 明细卡 + 极简表格）。
+   * 明细合计与销售订单同一口径（行数/数量/重量/金额）。
+   */
+  detailLayout: 'inline',
+  detailInfoTitle: i18next.t('modules.detailCards.docInfoTitle'),
+  detailSummary: ({ items }) => buildDefaultLineItemSummary(items),
   detailFields: [
     {
       label: i18next.t('modules.pages.purchaseOrder.colSupplier'),

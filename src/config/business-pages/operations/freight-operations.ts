@@ -19,6 +19,7 @@ import type {
   ModulePageConfig,
 } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
+import { buildDefaultLineItemSummary } from '@/views/modules/components/module-detail-summary'
 import {
   AUDIT_STATUS_LABEL,
   CARRIER_NAME_LABEL,
@@ -244,6 +245,13 @@ export const freightOperationsPageConfigs: Record<string, ModulePageConfig> = {
       SETTLEMENT_MODE_FIELD,
       'remark',
     ],
+    /*
+     * 只读详情面走方案 B（顶栏卡 + 业务信息卡 + 明细卡 + 极简表格）。
+     * 物流单明细同样按数量/重量/金额出表尾合计。
+     */
+    detailLayout: 'inline',
+    detailInfoTitle: i18next.t('modules.detailCards.docInfoTitle'),
+    detailSummary: ({ items }) => buildDefaultLineItemSummary(items),
     detailFields: [
       {
         label: i18next.t('modules.pages.freightOperations.freightBillNo'),

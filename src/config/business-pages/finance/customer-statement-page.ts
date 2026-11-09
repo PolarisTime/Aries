@@ -245,6 +245,12 @@ export const customerStatementPageConfig: ModulePageConfig = {
     },
   ],
   defaultHiddenColumnKeys: ['customerCode', 'remark'],
+  /*
+   * 只读详情面走方案 B（顶栏卡 + 业务信息卡 + 明细卡 + 极简表格）。
+   * 客户对账单与物流对账单一样按分组渲染明细，组头已有本组合计，不接整单表尾合计。
+   */
+  detailLayout: 'inline',
+  detailInfoTitle: i18next.t('modules.detailCards.docInfoTitle'),
   detailFields: [
     {
       label: i18next.t('modules.pages.customerStatement.statementNo'),
