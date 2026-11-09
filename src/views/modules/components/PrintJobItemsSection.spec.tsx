@@ -371,6 +371,43 @@ describe('打印明细行的非拖动重排替代', () => {
     expect(rowKeys()).toEqual([SNOWFLAKE_B, SNOWFLAKE_A])
   })
 
+  it('点击后焦点留在这行的按钮上, 再按回车就能继续移动(不用把鼠标移回去)', () => {
+    const ITEM_C = buildItem({
+      id: '1834671234567890789',
+      category: '高线',
+      material: 'HRB500',
+      spec: '10',
+    })
+    const { onDispatch } = render({ items: [ITEM_A, ITEM_B, ITEM_C] })
+
+    const down = moveButton(SNOWFLAKE_A, '下移')
+    expect(down).toBeDefined()
+    act(() => down?.focus())
+    act(() => {
+      down?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(onDispatch).toHaveBeenCalledTimes(1)
+
+    /*
+     * 行移动后按钮随行移动到新位置; 只要 React 复用同一个按钮节点, 焦点就还在它身上,
+     * 浏览器里直接按回车(= 触发 click)即可继续移动 —— 这是"手不离键盘"的连续调整路径。
+     */
+    const focusedLabel =
+      document.activeElement?.getAttribute('aria-label') ?? ''
+    expect(focusedLabel.startsWith('下移')).toBe(true)
+
+    act(() => {
+      document.activeElement?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+    })
+    expect(onDispatch).toHaveBeenCalledTimes(2)
+    expect(onDispatch).toHaveBeenLastCalledWith({
+      type: 'setOrderedPrintItemIds',
+      itemIds: [SNOWFLAKE_B, ITEM_C.id, SNOWFLAKE_A],
+    })
+  })
+
   it('替代按钮首/末项 aria-disabled、目标 ≥24×24、可访问名带行名', () => {
     render({ items: [ITEM_A, ITEM_B] })
 
