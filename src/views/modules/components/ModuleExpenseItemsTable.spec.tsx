@@ -96,6 +96,18 @@ describe('附加费用明细行序', () => {
     expect(rows()).toHaveLength(2)
   })
 
+  it('金额列去掉步进器, 只留可直接输入的数值框', () => {
+    render()
+    // 上下步进器不再渲染: 窄列里它只占宽度, 录入靠直接打字
+    expect(container.querySelector('.ant-input-number-handler-wrap')).toBeNull()
+    const amountInputs = container.querySelectorAll<HTMLInputElement>(
+      '.ant-input-number-input',
+    )
+    expect(amountInputs).toHaveLength(2)
+    // 数字输入语义保留(值照常回显), 不是退化成纯文本框
+    expect(amountInputs[0]?.value).toMatch(/^100(\.00)?$/)
+  })
+
   it('Alt+↓ 把首行下移一位: 回调新的行 key 顺序并播报', () => {
     const onReorder = vi.fn()
     render({ onReorder })

@@ -293,6 +293,11 @@ export function ModuleExpenseItemsTable({
               value={item.amount}
               min={0}
               precision={2}
+              /*
+               * 金额改为直接填写：去掉上下步进器（窄列里它只占宽度、几乎没人点），
+               * 保留数字输入语义 —— min/precision 仍在，键盘 ↑/↓ 仍可微调。
+               */
+              controls={false}
               className="w-full"
               onChange={(value) =>
                 onChange(index, {
