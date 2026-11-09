@@ -12,10 +12,12 @@
  *   信息卡标题栏**；其余 18 个模块的详情面 DOM 与改造前逐字一致。
  */
 
-/* 等宽数字字体栈：指标值、单号、合计行共用这一份，不重复声明 */
+/*
+ * 字体：详情面与全站统一走 `--app-font-family`（PingFang SC 栈）。
+ * 数值只保留 `font-variant-numeric: tabular-nums`，不再单独套 ui-monospace ——
+ * 中文混排时两套字体栈会让同一屏出现两种字形。
+ */
 :root {
-  --module-detail-mono:
-    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   /*
    * 信息区「标签」轨道的固定宽度：四列字段的值因此起点一致。
    * 按中文 5 字标签 + 全角冒号（14px 字号约 84px）留出余量。
@@ -155,7 +157,7 @@
   color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
   font-size: 14px;
   line-height: 22px;
-  font-family: var(--module-detail-mono);
+  font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -431,9 +433,8 @@
   color: var(--theme-primary-text, var(--ant-color-primary-active, #0958d9));
 }
 
-/* 金额类指标用等宽数字，逐位对齐；「整卡 amber」那格是金额，必须等宽 */
+/* 金额类指标：等宽数字（tabular-nums），字体族与全站一致 */
 .module-detail-metric--warning .module-detail-metric__value {
-  font-family: var(--module-detail-mono);
   font-variant-numeric: tabular-nums;
 }
 
@@ -598,7 +599,6 @@
   > tr
   > td.module-detail-table-cell--numeric,
 .module-detail-table tfoot tr > td.module-detail-table-cell--numeric {
-  font-family: var(--module-detail-mono);
   font-variant-numeric: tabular-nums;
 }
 

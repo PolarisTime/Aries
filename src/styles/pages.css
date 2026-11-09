@@ -101,8 +101,7 @@
    编辑器里可编辑的数值单元格保持居中（居中便于定位输入框，是全站既有约定），
    所以合计行不靠列上的 `module-detail-table-cell--numeric` 标记，而是自己的 scope。 */
 .module-detail-summary-row .module-editor-summary-number {
-  font-family:
-    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  /* 字体族与全站一致（PingFang SC）；只保留等宽数字特性 */
   font-variant-numeric: tabular-nums;
 }
 
