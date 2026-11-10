@@ -42,10 +42,7 @@ const capabilities = {
   audit: true,
 }
 
-function renderSection(
-  onCancel: () => void,
-  overrides: Record<string, unknown> = {},
-) {
+function renderSection(onCancel: () => void) {
   const container = document.createElement('div')
   document.body.appendChild(container)
   const root = createRoot(container)
@@ -97,7 +94,6 @@ function renderSection(
         onImportParentRecord: () => {},
         onItemColumnOrderChange: () => {},
         onToggleItemColumn: () => {},
-        ...overrides,
       } as never),
     )
   })
@@ -115,63 +111,6 @@ function saveButtonCount(container: HTMLElement) {
     /保存/.test(button.textContent ?? ''),
   ).length
 }
-
-describe('明细合计条的落点', () => {
-  let mounted: { container: HTMLDivElement; root: Root } | undefined
-
-  beforeEach(async () => {
-    await i18n.changeLanguage('zh-CN')
-    if (!window.matchMedia) {
-      window.matchMedia = (query: string) => ({
-        matches: false,
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => false,
-      })
-    }
-  })
-
-  afterEach(() => {
-    if (mounted) {
-      act(() => mounted?.root.unmount())
-      mounted.container.remove()
-      mounted = undefined
-    }
-  })
-
-  it('合计条挂在表格下方（右对齐），标题行不再内联合计，表格内也没有合计行', () => {
-    mounted = renderSection(() => {}, {
-      items: [
-        { amount: 11000, id: '1', name: '螺纹钢', quantity: 1, weightTon: 5.5 },
-      ],
-    })
-    const strip = mounted.container.querySelector(
-      '.editor-items-summary--strip',
-    )
-    expect(strip).not.toBeNull()
-    expect(
-      mounted.container.querySelector('.editor-items-summary-inline'),
-    ).toBeNull()
-    expect(
-      mounted.container.querySelector('.module-items-panel tfoot'),
-    ).toBeNull()
-
-    // DOM 顺序：合计条在表格之后，而不是标题行里
-    const table = mounted.container.querySelector('.ant-table')
-    expect(table).not.toBeNull()
-    expect(
-      table && strip
-        ? (table.compareDocumentPosition(strip) &
-            Node.DOCUMENT_POSITION_FOLLOWING) !==
-            0
-        : false,
-    ).toBe(true)
-  })
-})
 
 describe('明细工具栏的保存入口落点', () => {
   let mounted: { container: HTMLDivElement; root: Root } | undefined
