@@ -78,6 +78,30 @@ describe('EditorItemsSummary 金额口径与格式', () => {
     expect(text).not.toContain('modules.itemsSummary.totalAmountWithExpense')
   })
 
+  it('strip 形态：紧凑标签 + 数值，不用大号 Statistic，含费用总额进强调色', () => {
+    act(() => {
+      root.render(
+        createElement(EditorItemsSummary, {
+          expenseTotalAmount: 1000,
+          items,
+          variant: 'strip',
+        }),
+      )
+    })
+    expect(
+      container.querySelector('.editor-items-summary--strip'),
+    ).not.toBeNull()
+    expect(
+      container.querySelectorAll('.editor-items-strip-metric').length,
+    ).toBeGreaterThan(0)
+    // 合计条是收尾读数，不再用 Statistic 的大号数字抢表格视觉重量
+    expect(container.querySelector('.ant-statistic')).toBeNull()
+    expect(
+      container.querySelector('.editor-items-strip-value--emphasis')
+        ?.textContent,
+    ).toContain('115868.08')
+  })
+
   it('重量沿用统一的 formatWeight（千分位 + 3 位小数）', () => {
     const heavy = [
       { id: '1', amount: 1, weightTon: 1234.5, quantity: 1 },

@@ -254,6 +254,8 @@ export function ModuleEditorItemsSection({
           <ModuleItemsPanel
             items={items}
             itemColumns={config.itemColumns}
+            /* 合计条挂在表格下方：右对齐、与数据行分离（不把金额塞进标题行）。 */
+            summaryVariant="strip"
             expenseTotalAmount={
               supportsExpenseTab ? expenseTotalAmount : undefined
             }

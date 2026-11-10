@@ -205,7 +205,28 @@ export function EditorItemsSummary({
               <SummaryMetric {...metric} />
             </Card>
           ) : (
-            <SummaryMetric key={key} {...metric} />
+            /*
+             * 合计条：右对齐的紧凑「标签 + 数值」，不用 Statistic 的大号数字——
+             * 表格底部只做收尾读数，不抢表格本身的视觉重量（对齐 Odoo / Dynamics
+             * Business Central 的单据合计区）。
+             */
+            <span key={key} className="editor-items-strip-metric">
+              <span className="editor-items-strip-label">{metric.label}</span>
+              <span
+                className={
+                  metric.emphasis
+                    ? 'editor-items-strip-value editor-items-strip-value--emphasis'
+                    : 'editor-items-strip-value'
+                }
+              >
+                {metric.value}
+                {metric.suffix ? (
+                  <span className="editor-items-strip-suffix">
+                    {metric.suffix}
+                  </span>
+                ) : null}
+              </span>
+            </span>
           ),
         )}
       </div>
