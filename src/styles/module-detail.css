@@ -214,6 +214,92 @@
   white-space: nowrap;
 }
 
+/*
+ * 来源单据 chip：类型 + 等宽单号 + 复制。
+ *
+ * 与「关联项目」的取舍：meta 是可被信息区覆盖的业务上下文，来源单号是单据身份/导航信息，
+ * 只在顶栏出现。chip 用 `flex: none`：宁可让 meta 省略，也不能把单号截成无法辨认的前缀。
+ */
+.module-detail-header__source {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-xs, 8px);
+  min-width: 0;
+}
+
+.module-detail-header__source-chip {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--space-6, 6px);
+  min-width: 0;
+  max-width: 240px;
+  height: 26px;
+  padding: 0 var(--space-xs, 8px);
+  color: var(--ant-color-text, rgb(0 0 0 / 88%));
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border, #d9d9d9);
+  border-radius: var(--ant-border-radius, 6px);
+  line-height: 1;
+}
+
+.module-detail-header__source-type {
+  flex: none;
+  color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
+  font-size: 11px;
+}
+
+.module-detail-header__source-no {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(
+    --font-family-code,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace
+  );
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * 复制按钮：与 chip 同高、命中区 26×26（≥24×24 满足 WCAG 2.5.8）。
+ * 描边只在 hover/focus 出现，避免和 chip 的边框叠成"双框"。
+ */
+.module-detail-header__source-copy {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ant-border-radius, 6px);
+  cursor: pointer;
+}
+
+.module-detail-header__source-copy:hover {
+  color: var(--theme-primary, #1677ff);
+  background: var(--ant-color-fill-tertiary, rgb(0 0 0 / 6%));
+}
+
+.module-detail-header__source-copy:focus-visible {
+  outline: 2px solid var(--theme-primary, #1677ff);
+  outline-offset: 2px;
+}
+
+/* 行展开只有几列宽：来源 chip 与单据链按钮都让位给"这是哪张单" */
+.module-detail-header--compact .module-detail-header__source {
+  display: none;
+}
+
 /* 动作区不收缩：按钮被压扁比文字省略更难用 */
 .module-detail-header__actions {
   display: flex;

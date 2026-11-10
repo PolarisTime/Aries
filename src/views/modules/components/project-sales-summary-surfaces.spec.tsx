@@ -233,16 +233,17 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
     expect(
       container.querySelector('.module-detail-info__title')?.textContent,
     ).toBe('订单业务信息')
-    // 顶栏右侧三个动作按钮接不到接口，一律禁用并带「未接入」说明
-    const headerButtons = container.querySelectorAll(
-      '.module-detail-header__actions button',
+    /*
+     * 顶栏右侧：本次新增的「单据链」入口（可用）+ 三个接不到接口的禁用占位按钮。
+     * 单据链按钮不在本断言里校验弹层内容——弹层按需挂载，打开后才渲染。
+     */
+    const headerButtons = Array.from(
+      container.querySelectorAll('.module-detail-header__actions button'),
     )
-    expect(headerButtons).toHaveLength(3)
-    expect(
-      Array.from(headerButtons).filter(
-        (button) => (button as HTMLButtonElement).disabled,
-      ),
-    ).toHaveLength(3)
+    expect(headerButtons).toHaveLength(4)
+    expect(headerButtons[0].disabled).toBe(false)
+    expect(headerButtons[0].textContent).toContain('单据链')
+    expect(headerButtons.filter((button) => button.disabled)).toHaveLength(3)
     /*
      * 关闭入口只有一个：明细列表标题行的「关闭」按钮。
      * 顶栏不再放返回箭头与 ×（同一动作三个入口会让读屏与键盘用户重复听到关闭）。

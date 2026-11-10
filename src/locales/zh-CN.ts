@@ -1271,6 +1271,12 @@ export const zhCN = {
       businessInfoTitle: '订单业务信息',
       /** 采购入库 / 销售出库 / 收付款 / 物流对账单等单据信息卡的通用标题。 */
       docInfoTitle: '单据信息',
+      /** 详情顶栏「单据链」按钮：打开单据流向弹层（图 / 列表 / 时间线）。 */
+      documentChain: '单据链',
+      /** 顶栏来源单据 chip 的复制按钮可访问名。 */
+      copySourceNo: '复制来源单号',
+      /** 复制成功后的即时反馈。 */
+      sourceNoCopied: '已复制',
       /** 使用率胶囊：未超限的「正常」态（金额 / 吨位各一个词，与参考稿一致）。 */
       capsuleHealthy: '健康',
       capsuleSufficient: '充足',
@@ -2946,6 +2952,7 @@ export const zhCN = {
     viewSwitchLabel: '单据流向视图',
     viewGraph: '图',
     viewList: '列表',
+    viewTimeline: '时间线',
     listGroupsTitle: '单据（按类型）',
     listRelationsTitle: '单据关系',
     listRelationsEmpty: '暂无单据关系',

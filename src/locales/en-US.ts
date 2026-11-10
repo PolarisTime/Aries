@@ -1278,6 +1278,9 @@ export const enUS = {
     detailCards: {
       businessInfoTitle: 'Business info',
       docInfoTitle: 'Document info',
+      documentChain: 'Document chain',
+      copySourceNo: 'Copy source document number',
+      sourceNoCopied: 'Copied',
       capsuleHealthy: 'Healthy',
       capsuleSufficient: 'Sufficient',
       capsuleExceeded: 'Over limit',
@@ -2985,6 +2988,7 @@ export const enUS = {
     viewSwitchLabel: 'Document flow view',
     viewGraph: 'Graph',
     viewList: 'List',
+    viewTimeline: 'Timeline',
     listGroupsTitle: 'Documents by type',
     listRelationsTitle: 'Document relations',
     listRelationsEmpty: 'No document relations',

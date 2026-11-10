@@ -7,6 +7,7 @@ import { DocumentFlowColumnHeaders } from '@/components/document-flow/DocumentFl
 import { DocumentFlowEdges } from '@/components/document-flow/DocumentFlowEdges'
 import { DocumentFlowListView } from '@/components/document-flow/DocumentFlowListView'
 import { DocumentFlowNodes } from '@/components/document-flow/DocumentFlowNodeCard'
+import { DocumentFlowTimeline } from '@/components/document-flow/DocumentFlowTimeline'
 import {
   DocumentFlowToolbar,
   type DocumentFlowView,
@@ -24,25 +25,31 @@ interface Props {
   open: boolean
   documentNo: string
   onClose: () => void
+  /**
+   * 打开时默认展示的视图；缺省 `'graph'`，保持列表页入口的既有行为。
+   * 详情页「单据链」入口可传 `'timeline'`。
+   */
+  initialView?: DocumentFlowView
   /** 点击节点打开对应单据详情；未提供时节点不可点击。 */
   onOpenNode?: (node: DocumentFlowNode) => void
 }
 
 /**
- * 单据流向弹层：查询 + 布局 + 「图 / 列表」切换。
+ * 单据流向弹层：查询 + 布局 + 「图 / 列表 / 时间线」切换。
  *
- * <p>渲染拆到 `document-flow/` 下的四个子组件（列头 / 连线层 / 节点卡 / 列表视图），
- * 本组件只保留「取数 → 布局 → 组合」：既压掉 giant component，也让列表视图与图视图
- * 共享同一份 layout/data。DOM class 名是既有契约（见 DocumentFlowModal.spec.tsx）。</p>
+ * <p>渲染拆到 `document-flow/` 下的子组件（列头 / 连线层 / 节点卡 / 列表视图 / 时间线视图），
+ * 本组件只保留「取数 → 布局 → 组合」：既压掉 giant component，也让三个视图共享同一份
+ * layout/data。DOM class 名是既有契约（见 DocumentFlowModal.spec.tsx）。</p>
  */
 export function DocumentFlowModal({
   open,
   documentNo,
   onClose,
+  initialView = 'graph',
   onOpenNode,
 }: Props) {
   const { t } = useTranslation()
-  const [view, setView] = useState<DocumentFlowView>('graph')
+  const [view, setView] = useState<DocumentFlowView>(initialView)
   const { data, error, isError, isFetching, isPending, refetch } = useQuery({
     queryKey: QUERY_KEYS.documentFlow(documentNo),
     queryFn: ({ signal }) => getDocumentFlow(documentNo, signal),
@@ -55,7 +62,7 @@ export function DocumentFlowModal({
     () => layoutDocumentFlow(data?.nodes ?? [], data?.links ?? []),
     [data],
   )
-  // 列表视图与图视图共享同一份数据，切换不额外请求。
+  // 图 / 列表 / 时间线三个视图共享同一份数据，切换不额外请求。
   const listModel = useMemo(
     () => buildDocumentFlowListModel(data?.nodes ?? [], data?.links ?? []),
     [data],
@@ -82,6 +89,15 @@ export function DocumentFlowModal({
       })
     }
   }, [open, currentNodeKey, view])
+  /*
+   * 弹层实例会被复用（关闭后再次打开），view 是组件内状态、不会随关闭清空：
+   * 不重置的话，列表页入口上次停在「时间线」、下次打开仍是时间线，与入口语义不符。
+   * 每次打开都回到调用方指定的初始视图；`initialView` 变化（换入口）时同样生效。
+   */
+  useEffect(() => {
+    if (!open) return
+    setView(initialView)
+  }, [open, initialView])
 
   return (
     <Modal
@@ -131,6 +147,12 @@ export function DocumentFlowModal({
               currentNodeKey={currentNodeKey}
               groups={listModel.groups}
               relations={listModel.relations}
+              t={t}
+            />
+          ) : view === 'timeline' ? (
+            <DocumentFlowTimeline
+              currentNodeKey={currentNodeKey}
+              nodes={layout.nodes}
               t={t}
             />
           ) : (

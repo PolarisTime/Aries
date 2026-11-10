@@ -1,7 +1,7 @@
 import { Alert, Segmented } from 'antd'
 import type { DocumentFlowTranslator } from './document-flow-meta'
 
-export type DocumentFlowView = 'graph' | 'list'
+export type DocumentFlowView = 'graph' | 'list' | 'timeline'
 
 interface Props {
   isFetching: boolean
@@ -13,9 +13,10 @@ interface Props {
 }
 
 /**
- * 单据流弹层工具栏：单据数 + 方向图例 + 「图 / 列表」视图切换 + 截断提示。
+ * 单据流弹层工具栏：单据数 + 方向图例 + 「图 / 列表 / 时间线」视图切换 + 截断提示。
  *
- * <p>列表视图是图视图的读屏替代与大图备用，切换只改渲染，不触发额外请求。</p>
+ * <p>列表视图是图视图的读屏替代与大图备用，时间线按日期升序看链路先后；三个视图共用
+ * 同一份数据，切换只改渲染，不触发额外请求。</p>
  */
 export function DocumentFlowToolbar({
   isFetching,
@@ -59,6 +60,7 @@ export function DocumentFlowToolbar({
           options={[
             { label: t('documentFlow.viewGraph'), value: 'graph' },
             { label: t('documentFlow.viewList'), value: 'list' },
+            { label: t('documentFlow.viewTimeline'), value: 'timeline' },
           ]}
           size="small"
         />

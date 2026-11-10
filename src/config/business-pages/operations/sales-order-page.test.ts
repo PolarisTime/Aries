@@ -81,6 +81,24 @@ describe('销售订单报单日期配置', () => {
     expect(keysOfRow(3)).toEqual(['remark'])
   })
 
+  /**
+   * 顶栏去重契约（2026-11）：来源单据只放顶栏（chip），关联项目只放信息区。
+   *
+   * 两条都不允许回退：`detailHeaderMeta` 一旦重新配置，关联项目就会在顶栏与信息区各出现一次；
+   * `detailInfoHiddenKeys` 少了 `purchaseOrderNo`，顶栏 chip 与信息区字段又会重复。
+   */
+  it('顶栏只放来源单据 chip 与单据链入口，关联项目只在信息区', () => {
+    expect(salesOrdersPageConfig.detailHeaderSource).toEqual({
+      typeLabel: '采购订单号',
+      key: 'purchaseOrderNo',
+    })
+    expect(salesOrdersPageConfig.detailHeaderDocumentFlow).toBe(true)
+    expect(salesOrdersPageConfig.detailHeaderMeta).toBeUndefined()
+    expect(salesOrdersPageConfig.detailInfoHiddenKeys).toContain(
+      'purchaseOrderNo',
+    )
+  })
+
   it('列表在交货日期之前展示报单日期列', () => {
     const keys = salesOrdersPageConfig.columns.map((column) => column.dataIndex)
 

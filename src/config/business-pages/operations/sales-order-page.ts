@@ -569,12 +569,21 @@ export const salesOrdersPageConfig: ModulePageConfig = {
    */
   detailInfoTitle: i18next.t('modules.detailCards.businessInfoTitle'),
   /*
-   * 顶栏左侧「竖线 + 关联项目」。值取记录上的 projectName；为空时顶栏连带竖线一起不渲染。
+   * 顶栏「来源单据」chip：本单由哪张采购订单转入。
+   *
+   * 只放单号身份（+ 复制），不放「关联项目」——项目属于业务字段，信息区已有，
+   * 顶栏再放一次就是同一串字在上下两处打架（销售订单此前正是这种重复）。
+   * 空值（手工新建的销售订单没有来源单）时组件整段不渲染，不留孤立竖线。
    */
-  detailHeaderMeta: {
-    label: i18next.t('modules.detailCards.relatedProject'),
-    key: 'projectName',
+  detailHeaderSource: {
+    typeLabel: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
+    key: 'purchaseOrderNo',
   },
+  /*
+   * 顶栏「单据链」按钮：打开单据流向弹层（图 / 列表 / 时间线）。
+   * 弹层复用的是列表页同一个 DocumentFlowModal，数据接口与节点口径完全一致。
+   */
+  detailHeaderDocumentFlow: true,
   /*
    * 顶栏右侧的三个动作按钮（参考稿的视觉占位）。
    *
@@ -609,7 +618,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
    * 方案 B 的信息区不再重复顶栏已经显示的主单号（18 位数字在一屏里出现两次，
    * 读者会怀疑是不是两张单）。状态字段由 `hasDetailHeaderStatus` 统一处理，不在这里列。
    */
-  detailInfoHiddenKeys: ['orderNo'],
+  detailInfoHiddenKeys: ['orderNo', 'purchaseOrderNo'],
   /*
    * 明细表底部的合计行。
    *

@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import { getDocumentFlow } from '@/api/system/document-flow'
 import { DocumentFlowModal } from '@/components/DocumentFlowModal'
+import type { DocumentFlowView } from '@/components/document-flow/DocumentFlowToolbar'
 
 vi.mock('@/api/system/document-flow', () => ({
   getDocumentFlow: vi.fn(),
@@ -78,7 +79,10 @@ describe('DocumentFlowModal', () => {
     document.body.innerHTML = ''
   })
 
-  async function renderModal(onOpenNode?: (node: unknown) => void) {
+  async function renderModal(
+    onOpenNode?: (node: unknown) => void,
+    initialView?: DocumentFlowView,
+  ) {
     act(() => {
       root.render(
         createElement(
@@ -88,6 +92,7 @@ describe('DocumentFlowModal', () => {
             open: true,
             documentNo: 'PO-1',
             onClose: () => {},
+            initialView,
             onOpenNode: onOpenNode as never,
           }),
         ),
@@ -448,5 +453,110 @@ describe('DocumentFlowModal', () => {
       document.body.querySelector('.document-flow-list-relations'),
     ).toBeNull()
     expect(document.body.textContent).toContain('暂无单据关系')
+  })
+
+  /** 时间线容器是带可访问名的有序列表（不依赖实现 class）。 */
+  function queryTimeline() {
+    return document.body.querySelector<HTMLOListElement>(
+      'ol[aria-label="时间线"]',
+    )
+  }
+
+  it('initialView="timeline" 时默认渲染时间线：日期升序、无日期排最后、当前单据 aria-current', async () => {
+    // 故意乱序给出，并把当前单据放在中间，验证按日期升序而不是按接口顺序
+    mockedGetDocumentFlow.mockResolvedValue({
+      ...flow,
+      nodes: [
+        {
+          type: 'purchase-inbound',
+          id: '2',
+          no: 'IN-1',
+          status: '已审核',
+          amount: null,
+          weight: null,
+          date: '2026-11-09',
+        },
+        {
+          type: 'purchase-order',
+          id: '1',
+          no: 'PO-1',
+          status: '已审核',
+          amount: '1000.00',
+          weight: '10.00000000',
+          date: '2026-11-08',
+        },
+        {
+          type: 'freight-bill',
+          id: '3',
+          no: 'FB-1',
+          status: '草稿',
+          amount: null,
+          weight: null,
+          date: null,
+        },
+      ],
+      links: [...flow.links],
+    })
+    await renderModal(undefined, 'timeline')
+
+    const timeline = queryTimeline()
+    expect(timeline).not.toBeNull()
+    // 默认不再渲染图 / 列表
+    expect(document.body.querySelector('.document-flow-viewport')).toBeNull()
+    expect(document.body.querySelector('.document-flow-list')).toBeNull()
+
+    const rows = Array.from(timeline?.querySelectorAll('li') ?? [])
+    expect(rows).toHaveLength(3)
+    // 日期升序：2026-11-08 → 2026-11-09 → 无日期（—）排最后
+    expect(rows[0]?.textContent).toContain('2026-11-08')
+    expect(rows[1]?.textContent).toContain('2026-11-09')
+    expect(rows[2]?.textContent).toContain('—')
+
+    // 行内信息：类型 + 单号 + 金额 / 重量（走全站格式化出口，缺失不渲染）
+    expect(rows[0]?.textContent).toContain('采购单')
+    expect(rows[0]?.textContent).toContain('PO-1')
+    expect(rows[0]?.textContent).toContain('1000.00')
+    expect(rows[0]?.textContent).toContain('10.000')
+    expect(rows[1]?.textContent).not.toContain('金额')
+
+    // 当前单据（documentNo=PO-1）有 aria-current，且只有一行
+    const currentRows = rows.filter(
+      (row) => row.getAttribute('aria-current') === 'true',
+    )
+    expect(currentRows).toHaveLength(1)
+    expect(currentRows[0]?.textContent).toContain('PO-1')
+  })
+
+  it('时间线 → 图 → 时间线：切换后 DOM 互换且可恢复', async () => {
+    mockedGetDocumentFlow.mockResolvedValue(flow)
+    await renderModal(undefined, 'timeline')
+
+    expect(queryTimeline()).not.toBeNull()
+
+    clickViewSwitch('图')
+
+    expect(queryTimeline()).toBeNull()
+    expect(document.body.querySelector('.document-flow-canvas')).not.toBeNull()
+    expect(
+      document.body.querySelector('.document-flow-viewport'),
+    ).not.toBeNull()
+
+    clickViewSwitch('时间线')
+
+    expect(queryTimeline()).not.toBeNull()
+    expect(document.body.querySelector('.document-flow-canvas')).toBeNull()
+  })
+
+  it('时间线视图下工具栏仍有可访问名（radiogroup）且三项齐全', async () => {
+    mockedGetDocumentFlow.mockResolvedValue(flow)
+    await renderModal(undefined, 'timeline')
+
+    const group = document.body.querySelector('[role="radiogroup"]')
+    expect(group).not.toBeNull()
+    expect(group?.getAttribute('aria-label')).toBe('单据流向视图')
+    expect(group?.querySelectorAll('input[type="radio"]')).toHaveLength(3)
+    expect(group?.textContent).toContain('图')
+    expect(group?.textContent).toContain('列表')
+    expect(group?.textContent).toContain('时间线')
   })
 })

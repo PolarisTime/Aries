@@ -509,6 +509,26 @@ export interface ModulePageConfig {
     key: string
   }
   /**
+   * 顶栏「来源单据」chip：展示本单由哪张上游单据转入。
+   *
+   * <p>与 {@link ModulePageConfig.detailHeaderMeta} 的分工：meta 是业务上下文（会与信息区
+   * 重复，销售订单已改用信息区展示），本字段是**单据身份**——单号 + 复制，属于导航信息，
+   * 因此只出现在顶栏。未配置、或记录上该字段为空时不渲染，不留孤立竖线。</p>
+   */
+  detailHeaderSource?: {
+    /** chip 内的类型文案（如「采购订单号」）；由页面配置提供，组件不猜类型。 */
+    typeLabel: string
+    /** 从记录上取来源单号的字段 key。 */
+    key: string
+  }
+  /**
+   * 顶栏是否渲染「单据链」按钮：打开单据流向弹层（图 / 列表 / 时间线）。
+   *
+   * <p>缺省不渲染；行展开（`compact`）不渲染——那是列表内嵌视图，不承载单据动作。
+   * 弹层单号取 `getPrimaryNo` 口径（含记录 id 回退），与详情顶栏展示的是同一个值。</p>
+   */
+  detailHeaderDocumentFlow?: boolean
+  /**
    * 业务信息卡的标题栏文案（方案 B：白卡内「蓝色竖条 + 标题」）。
    *
    * <p>只有配置了才渲染标题栏；未配置时信息卡与改造前一致（没有标题行）。</p>
