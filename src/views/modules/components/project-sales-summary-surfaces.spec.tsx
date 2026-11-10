@@ -238,7 +238,9 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
      * 单据链按钮不在本断言里校验弹层内容——弹层按需挂载，打开后才渲染。
      */
     const headerButtons = Array.from(
-      container.querySelectorAll('.module-detail-header__actions button'),
+      container.querySelectorAll<HTMLButtonElement>(
+        '.module-detail-header__actions button',
+      ),
     )
     expect(headerButtons).toHaveLength(4)
     expect(headerButtons[0].disabled).toBe(false)
