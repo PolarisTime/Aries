@@ -305,40 +305,20 @@ describe('SalesOrderNetPriceFiller', () => {
   }
 
   /**
-   * 打开「取价」下拉，返回当前渲染出的菜单项。
+   * 点工具栏「重新核查网价」图标按钮并等异步核查落地。
    *
-   * <p>次要去向（重新核查网价 / 网价匹配明细）已从工具栏按钮收进下拉，测试必须先展开再点，
-   * 不能再按文本直接在容器里找按钮。</p>
+   * <p>它不再藏在「… 取价」下拉里：下拉只剩这一项，属于单项溢出菜单，
+   * 已改为平铺的图标按钮，因此测试直接按可访问名定位。</p>
    */
-  const openPriceMenu = async () => {
+  const clickRecheck = async () => {
     await act(async () => {
-      buttonByText('取价')?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true }),
-      )
-      await new Promise((resolve) => setTimeout(resolve, 0))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    return Array.from(
-      document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-    )
-  }
-
-  /** 点「取价」下拉里的某一项并等异步动作落地。 */
-  const clickPriceMenuItem = async (text: string) => {
-    const items = await openPriceMenu()
-    await act(async () => {
-      items
-        .find((node) => node.textContent?.includes(text))
+      container
+        .querySelector<HTMLButtonElement>('button[aria-label="重新核查网价"]')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 0))
       await new Promise((resolve) => setTimeout(resolve, 0))
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
-  }
-
-  /** 点工具栏「取价 → 重新核查网价」并等异步核查落地。 */
-  const clickRecheck = async () => {
-    await clickPriceMenuItem('重新核查网价')
   }
 
   /**
@@ -1261,12 +1241,12 @@ describe('SalesOrderNetPriceFiller', () => {
       row({ id: 'r1', materialId: 'm1', unitPrice: 3430 }),
       row({ id: 'r2', materialId: 'm2', unitPrice: 999 }),
     ])
-    expect(container.textContent).toContain('网价匹配：2 行未核查')
+    // 「N 行未核查」是默认态，不再常驻一行文案
+    expect(container.textContent).not.toContain('未核查')
 
     await clickRecheck()
-    expect(container.textContent).toContain(
-      '本单 2 行单价均与网价一致（1 行无网价，请手工填写）',
-    )
+    // 结论行只留需要处理的那一类：无网价
+    expect(container.textContent).toContain('1 行无网价，请手工填写')
     expect(useNetPriceMatchStore.getState().entries.r1?.state).toBe('MATCHED')
     expect(useNetPriceMatchStore.getState().entries.r2?.state).toBe('NO_PRICE')
 
@@ -1278,13 +1258,11 @@ describe('SalesOrderNetPriceFiller', () => {
       ])
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
-    expect(container.textContent).toContain(
-      '本单 2 行单价均与网价一致（1 行无网价，请手工填写）',
-    )
+    expect(container.textContent).toContain('1 行无网价，请手工填写')
 
     // 重查后数字才变化: 1 行与网价不一致
     await clickRecheck()
-    expect(container.textContent).toContain('本单 2 行，1 行单价与网价不一致')
+    expect(container.textContent).toContain('1 行单价与网价不一致')
     expect(useNetPriceMatchStore.getState().entries.r1?.state).toBe('MISMATCH')
   })
 
@@ -1299,14 +1277,20 @@ describe('SalesOrderNetPriceFiller', () => {
     await mountObserved(observed, [
       row({ id: 'r1', materialId: 'm1', unitPrice: 1 }),
     ])
-    expect(container.textContent).toContain('网价匹配：1 行未核查')
+    // 默认态（未核查）不占状态行
+    expect(container.textContent).not.toContain('未核查')
 
     await openNetPriceDialog()
     await clickOk()
 
     // 取价后自动重查: 写入的单价就是网价口径 ⇒ 立即变成"一致"
     expect(useNetPriceMatchStore.getState().entries.r1?.state).toBe('MATCHED')
-    expect(container.textContent).toContain('本单 1 行单价均与网价一致')
+    /*
+     * 全部一致属于行内标识已给出的结论，不再占一行文案：
+     * 状态区此时只剩「取价结果摘要」（成功 1 行），没有结论行。
+     */
+    expect(container.querySelector('.net-price-summary-line')).toBeNull()
+    expect(container.textContent).not.toContain('均与网价一致')
   })
 
   it('核查失败(该日无行情)时给出原因, 不改动已有匹配结果', async () => {
@@ -1333,15 +1317,21 @@ describe('SalesOrderNetPriceFiller', () => {
    */
   it('工具栏动作组按钮同高同形态, 结论区 status 内不含按钮', async () => {
     fetchPricingQuoteResolutionMock.mockResolvedValue(resolution())
+    fetchMaterialPriceMatchesMock.mockResolvedValue([
+      match({ materialId: 'm1', price: 3400 }),
+    ])
     const observed = createObserved()
-    await mountObserved(observed, [row({ id: 'r1', materialId: 'm1' })])
+    // 单价与网价刻意不同：核查后结论行才会出现
+    await mountObserved(observed, [
+      row({ id: 'r1', materialId: 'm1', unitPrice: 1 }),
+    ])
 
     const toolbar = container.querySelector('.net-price-toolbar')
     expect(toolbar).toBeTruthy()
     const actionButtons = Array.from(
       toolbar?.querySelectorAll<HTMLButtonElement>('.ant-space button') ?? [],
     )
-    // 次要去向已收进「取价」下拉，动作组只剩「整单取网价」+「取价」
+    // 次要去向「重新核查网价」是平铺的图标按钮，动作组共两个
     expect(actionButtons).toHaveLength(2)
 
     // 1) 不再混用 small 档: small 是 24px, 与 32px 主按钮并排会一高一低
@@ -1357,10 +1347,14 @@ describe('SalesOrderNetPriceFiller', () => {
     expect(emphasized).toHaveLength(1)
     expect(emphasized[0].textContent).toContain('整单取网价')
 
-    // 3) role="status" 只播报文本: 里面不能有可聚焦控件(否则变更时会重播按钮文案)
+    // 3) 默认态(未核查)不占结论行：状态区整块不存在
+    expect(container.querySelector('.net-price-summary')).toBeNull()
+
+    // 4) 有需要处理的行时结论行出现; role="status" 只播报文本, 里面不能有可聚焦控件
+    await clickRecheck()
     const status = container.querySelector('[role="status"]')
     expect(status).toBeTruthy()
     expect(status?.querySelector('button')).toBeNull()
-    expect(status?.textContent).toContain('网价匹配：1 行未核查')
+    expect(status?.textContent).toContain('1 行单价与网价不一致')
   })
 })

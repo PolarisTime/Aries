@@ -1948,20 +1948,19 @@ export const zhCN = {
         /** 只读详情面自动核查进行中（避免与"没核查过"混为一谈）。 */
         netPriceMatchCheckingDetail: '正在核查网价…',
         netPriceMatchRecheck: '重新核查网价',
-        netPriceMenu: '取价',
         /**
          * 零待处理行的入口文案: 不带计数。
          *
          * <p>「0 行待处理」既不是信息(零值), 又把强调色指向"没事"; 与左侧「N 行未核查」
          * 并排时两个数字容易被读成自相矛盾。此时按钮只承担"打开清单"的导航语义。</p>
          */
-        netPriceMatchEmpty: '本单暂无明细行',
-        netPriceMatchSummaryUnchecked: '网价匹配：{{total}} 行未核查',
-        netPriceMatchAllMatched: '本单 {{total}} 行单价均与网价一致',
-        netPriceMatchNoMismatchNoPrice:
-          '本单 {{total}} 行单价均与网价一致（{{noPrice}} 行无网价，请手工填写）',
-        netPriceMatchSummary:
-          '本单 {{total}} 行，{{mismatch}} 行单价与网价不一致',
+        /*
+         * 结论行只在「需要处理」时出现（见 describeSummary）：不一致 / 无网价。
+         * 「未核查」是默认态、「均一致」是行内标识已给出的结论，都不再占一行。
+         * 文案不带「网价匹配：」「本单 N 行，」前缀 —— 结论区就在动作旁边，上下文已明确。
+         */
+        netPriceMatchNoPriceSummary: '{{noPrice}} 行无网价，请手工填写',
+        netPriceMatchSummary: '{{mismatch}} 行单价与网价不一致',
         netPriceMatchCheckFailed: '网价核查失败，请稍后重试',
         netPriceMatchNeedProject: '请先选择项目后再核查网价',
         allowedSpecImportWarning:

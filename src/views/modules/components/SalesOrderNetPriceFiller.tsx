@@ -1,15 +1,11 @@
 import {
-  CheckCircleFilled,
-  EllipsisOutlined,
   ExclamationCircleFilled,
-  MinusCircleFilled,
+  ReloadOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons'
-import type { MenuProps } from 'antd'
 import {
   Button,
   Divider,
-  Dropdown,
   Modal,
   Select,
   Space,
@@ -442,25 +438,6 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
    * 取价结果按"只报非零项"拆开: 原文案把"无网价 0 行 · 跳过 0 行"也写出来, 正常取价(全部成功)
    * 时尾部挂着一串 0, 用户要读完才知道没事 —— 零值不是信息, 不显示。
    */
-  /**
-   * 「取价」下拉的菜单项。
-   *
-   * <p>原先是「重新核查网价」「网价匹配明细」两个平铺按钮。后者列的是全表清单，
-   * 与表格里紧邻单价/金额的「网价匹配」列完全重复（同一个 NetPriceMatchChip），
-   * 已整块移除；差额改由该列的标识以读屏可达文本提供。</p>
-   */
-  const priceMenuItems: MenuProps['items'] = [
-    {
-      key: 'recheck',
-      label: t('modules.pages.salesOrder.netPriceMatchRecheck'),
-      disabled: checking,
-    },
-  ]
-
-  const handlePriceMenuClick: MenuProps['onClick'] = ({ key }) => {
-    if (key === 'recheck') void runMatchCheck()
-  }
-
   const applyResultParts = applySummary
     ? [
         {
@@ -499,37 +476,12 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
       ].filter((part) => part.count > 0)
     : []
   /*
-   * 核查结论三态: 全一致(成功) / 有差异(需处理) / 未核查(中性)。
-   * 图标 + 文案双通道, 不以颜色为唯一区分(WCAG 1.4.1); 结论在前, 明细数字在后。
+   * 结论行只有在「需要处理」时才有内容（见 describeSummary）：不一致 / 无网价。
+   * 因此不再有成功/中性两种图标，也不再按 tone 分支 —— 一个 warning 图标即可。
    */
-  const summaryTone: 'success' | 'warning' | 'muted' = checkError
-    ? 'warning'
-    : summary.total === 0 || summary.unchecked === summary.total
-      ? 'muted'
-      : summary.mismatch > 0
-        ? 'warning'
-        : 'success'
-  /*
-   * 结论图标是装饰(真值由后面的文案表达), 统一 aria-hidden —— 否则 antd 图标默认
-   * role="img" + aria-label, 读屏会把结论念成"check-circle 本单 4 行…"。
-   */
-  const summaryIcon =
-    summaryTone === 'success' ? (
-      <CheckCircleFilled
-        aria-hidden="true"
-        className="net-price-summary-icon net-price-summary-icon--success"
-      />
-    ) : summaryTone === 'warning' ? (
-      <ExclamationCircleFilled
-        aria-hidden="true"
-        className="net-price-summary-icon net-price-summary-icon--warning"
-      />
-    ) : (
-      <MinusCircleFilled
-        aria-hidden="true"
-        className="net-price-summary-icon net-price-summary-icon--muted"
-      />
-    )
+  const summaryText = checkError ? null : describeSummary(t, summary)
+  const showStatusArea =
+    Boolean(checkError) || summaryText !== null || applyResultParts.length > 0
 
   return (
     <>
@@ -553,67 +505,71 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
             </Tooltip>
           )}
           {/*
-           * 次要去向收进「取价」下拉。
+           * 「重新核查网价」直接是图标按钮，不再收进「… 取价」下拉。
            *
-           * <p>原先这里是三个平铺按钮，加上明细工具栏自己的「新增明细 / 导入 / 列设置」与行末
-           * 的「取消 / 保存 / 保存并审核」，一行挤了 12 个控件，且把「明细操作」「取价操作」
-           * 「表单保存」三类语义混在一起。现在只留主行动「整单取网价」+ 这个下拉。</p>
+           * <p>下拉里原本只有这一项 —— 单项溢出菜单是最差的一档：多一次点击、
+           * 图标本身没有信息量、把唯一动作藏起来（NN/g：溢出菜单只放次要动作的长尾）。
+           * 「网价匹配明细」那份全表清单与表格里紧邻单价/金额的「网价匹配」列内容重复
+           * （同一个 NetPriceMatchChip），已整块移除，因此这里只剩一个动作，平铺即可。</p>
            *
-           * <p>「网价匹配明细」原先无论有没有问题都显示，点开就是一份全表清单 ——
-           * 与表格里紧邻单价/金额的「网价匹配」列内容重复（同一个 NetPriceMatchChip）。
-           * 现在只在**确实有待处理行**时作为菜单项出现，并直接把行数写在文案里。</p>
+           * <p>`aria-label` 给读屏一个可访问名（图标按钮没有可见文字）；`title` 兼作
+           * 鼠标悬停提示。命中区沿用工具栏 32px 控件，满足 WCAG 2.5.8 的 24×24。</p>
            */}
-          <Dropdown
-            menu={{ items: priceMenuItems, onClick: handlePriceMenuClick }}
-            trigger={['click']}
-            disabled={saving}
-          >
+          <Tooltip title={t('modules.pages.salesOrder.netPriceMatchRecheck')}>
             <Button
-              aria-label={t('modules.pages.salesOrder.netPriceMenu')}
-              icon={<EllipsisOutlined />}
+              aria-label={t('modules.pages.salesOrder.netPriceMatchRecheck')}
+              disabled={saving}
+              icon={<ReloadOutlined />}
               loading={checking}
-            >
-              {t('modules.pages.salesOrder.netPriceMenu')}
-            </Button>
-          </Dropdown>
+              onClick={() => void runMatchCheck()}
+            />
+          </Tooltip>
         </Space>
         {/*
           结论区只放文本: `role="status"` 已隐含 aria-live=polite, 不必重复声明;
           内部不再有按钮, 读屏播报的就是结论本身。行内标识另有「网价匹配」列。
+
+          <p>**整块按需渲染**：没有需要处理的行、也没有取价结果时，这里什么都不留 ——
+          工具栏只保留动作，不再常驻一行「N 行未核查」。</p>
         */}
-        <div className="net-price-summary" role="status">
-          {checkError ? (
-            <span className="net-price-summary-line">
-              <ExclamationCircleFilled
-                aria-hidden="true"
-                className="net-price-summary-icon net-price-summary-icon--warning"
-              />
-              <Text type="danger">{checkError}</Text>
-            </span>
-          ) : (
-            <span className="net-price-summary-line">
-              {summaryIcon}
-              <Text>{describeSummary(t, summary)}</Text>
-            </span>
-          )}
-          {applyResultParts.length > 0 ? (
-            <span className="net-price-apply-result">
-              {/* antd 6: Divider 用 orientation 取代已废弃的 type(见 antd changelog) */}
-              <Divider orientation="vertical" />
-              <Text type="secondary" className="net-price-apply-result-title">
-                {t('modules.pages.salesOrder.netPriceApplyResultTitle')}
-              </Text>
-              {applyResultParts.map((part) => (
-                <Text
-                  className={`net-price-apply-result-part net-price-apply-result-part--${part.tone}`}
-                  key={part.key}
-                >
-                  {part.text}
+        {showStatusArea ? (
+          <div className="net-price-summary" role="status">
+            {checkError ? (
+              <span className="net-price-summary-line">
+                <ExclamationCircleFilled
+                  aria-hidden="true"
+                  className="net-price-summary-icon net-price-summary-icon--warning"
+                />
+                <Text type="danger">{checkError}</Text>
+              </span>
+            ) : summaryText ? (
+              <span className="net-price-summary-line">
+                <ExclamationCircleFilled
+                  aria-hidden="true"
+                  className="net-price-summary-icon net-price-summary-icon--warning"
+                />
+                <Text>{summaryText}</Text>
+              </span>
+            ) : null}
+            {applyResultParts.length > 0 ? (
+              <span className="net-price-apply-result">
+                {/* antd 6: Divider 用 orientation 取代已废弃的 type(见 antd changelog) */}
+                <Divider orientation="vertical" />
+                <Text type="secondary" className="net-price-apply-result-title">
+                  {t('modules.pages.salesOrder.netPriceApplyResultTitle')}
                 </Text>
-              ))}
-            </span>
-          ) : null}
-        </div>
+                {applyResultParts.map((part) => (
+                  <Text
+                    className={`net-price-apply-result-part net-price-apply-result-part--${part.tone}`}
+                    key={part.key}
+                  >
+                    {part.text}
+                  </Text>
+                ))}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       <Modal
         open={open}
@@ -702,7 +658,20 @@ async function fetchRulesSafely(
   }
 }
 
-/** 汇总提示文案：未核查 / 全匹配 / 有差异三种说法，避免只报数字不说结论。 */
+/**
+ * 结论行文案：**只在需要处理时返回文本**，否则返回 null（整行不渲染）。
+ *
+ * <p>为什么不再常驻：</p>
+ * <ul>
+ *   <li>「N 行未核查」是每张单打开时的**默认态**，默认态不是信息；表格的「网价匹配」列
+ *       已经逐行标注，再在工具栏复述一遍是同一份信息的第二个出口。</li>
+ *   <li>「均与网价一致」同理 —— 行内标识已经给出结论，成功不需要占一行常驻文案。</li>
+ *   <li>留下的是**需要动手**的两类：与网价不一致、无网价需手工填写。</li>
+ * </ul>
+ *
+ * <p>文案也不再带「网价匹配：」「本单 N 行，」这类前缀：结论区就在「整单取网价」旁边，
+ * 上下文已经说明它是什么；前缀只会让一行变长却不增加信息。</p>
+ */
 function describeSummary(
   t: (key: string, options?: Record<string, unknown>) => string,
   summary: {
@@ -712,31 +681,18 @@ function describeSummary(
     noPrice: number
     unchecked: number
   },
-): string {
-  if (summary.total === 0) {
-    return t('modules.pages.salesOrder.netPriceMatchEmpty')
-  }
-  if (summary.unchecked === summary.total) {
-    return t('modules.pages.salesOrder.netPriceMatchSummaryUnchecked', {
-      total: summary.total,
+): string | null {
+  if (summary.mismatch > 0) {
+    return t('modules.pages.salesOrder.netPriceMatchSummary', {
+      mismatch: summary.mismatch,
     })
   }
-  if (summary.mismatch === 0) {
-    // 一致但仍有"无网价"行时要说清: 不能只说"均一致", 否则手工填写的行被当成已核对。
-    if (summary.noPrice > 0) {
-      return t('modules.pages.salesOrder.netPriceMatchNoMismatchNoPrice', {
-        total: summary.total,
-        noPrice: summary.noPrice,
-      })
-    }
-    return t('modules.pages.salesOrder.netPriceMatchAllMatched', {
-      total: summary.total,
+  if (summary.noPrice > 0) {
+    return t('modules.pages.salesOrder.netPriceMatchNoPriceSummary', {
+      noPrice: summary.noPrice,
     })
   }
-  return t('modules.pages.salesOrder.netPriceMatchSummary', {
-    total: summary.total,
-    mismatch: summary.mismatch,
-  })
+  return null
 }
 
 /** 二次确认：说清会改写多少行（其中多少行原本没有网价），取消即不改写。 */

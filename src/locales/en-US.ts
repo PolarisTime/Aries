@@ -1959,17 +1959,14 @@ export const enUS = {
         /** Automatic check on read-only detail surfaces is in flight. */
         netPriceMatchCheckingDetail: 'Checking net prices…',
         netPriceMatchRecheck: 'Re-check net prices',
-        netPriceMenu: 'Pricing',
         /** Zero-attention entry: no count (zero is not information). */
-        netPriceMatchEmpty: 'This order has no line items',
-        netPriceMatchSummaryUnchecked:
-          'Net price match: {{total}} row(s) not checked',
-        netPriceMatchAllMatched:
-          'All {{total}} unit prices match the net price',
-        netPriceMatchNoMismatchNoPrice:
-          'All {{total}} unit prices match the net price ({{noPrice}} row(s) have no net price — fill them in manually)',
-        netPriceMatchSummary:
-          '{{mismatch}} of {{total}} unit prices differ from the net price',
+        /*
+         * Conclusion line only appears when something needs attention
+         * (see describeSummary): mismatch or missing price.
+         */
+        netPriceMatchNoPriceSummary:
+          '{{noPrice}} rows without market price, fill in manually',
+        netPriceMatchSummary: '{{mismatch}} rows differ from market price',
         netPriceMatchCheckFailed: 'Net price check failed, please retry',
         netPriceMatchNeedProject: 'Select a project before checking net prices',
         allowedSpecImportWarning:
