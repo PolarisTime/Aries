@@ -1269,7 +1269,6 @@ export const enUS = {
       totalAmountWithExpense: 'Total incl. Expenses',
       /* Draft totals row under the editor item table; {{rows}} is the draft row count. */
       summaryRow: 'Total ({{rows}} rows)',
-      summaryRowWithExpense: 'Total ({{rows}} rows, incl. expenses)',
     },
     /**
      * Card-style read-only detail surface (detailLayout: 'inline'): header card +

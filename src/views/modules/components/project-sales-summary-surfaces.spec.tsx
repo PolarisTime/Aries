@@ -153,10 +153,11 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
     expect(summaryRow).not.toBeNull()
     expect(summaryRow?.textContent).toContain('136180.02')
     /*
-     * 合计行第一格必须是「行数 1」：该单元格没有可对应的列（`dataIndex: '#'`），
+     * 合计行第一格必须是「合计（1 行）」：该单元格没有可对应的列（`dataIndex: '#'`），
      * 必须落到最左侧空槽（仓库名称列）而不是追加到行末 —— 追加到行末会被横向滚动裁掉。
+     * 文案与编辑器草稿合计行同源（`modules.itemsSummary.summaryRow`）。
      */
-    expect(summaryRow?.querySelector('td')?.textContent).toBe('行数 1')
+    expect(summaryRow?.querySelector('td')?.textContent).toBe('合计（1 行）')
     // 数值列沿用同一个「数值列」class（等宽 + 合计行 nowrap 都按它命中）。
     expect(
       summaryRow?.querySelectorAll('td.module-detail-table-cell--numeric')
@@ -238,7 +239,9 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
      * 单据链按钮不在本断言里校验弹层内容——弹层按需挂载，打开后才渲染。
      */
     const headerButtons = Array.from(
-      container.querySelectorAll('.module-detail-header__actions button'),
+      container.querySelectorAll<HTMLButtonElement>(
+        '.module-detail-header__actions button',
+      ),
     )
     expect(headerButtons).toHaveLength(4)
     expect(headerButtons[0].disabled).toBe(false)

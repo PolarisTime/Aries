@@ -300,16 +300,22 @@ describe('编辑器明细表底部的草稿合计行', () => {
     mounted = renderSection(twoRows)
 
     expect(footerTexts(mounted.container)).toEqual([
-      '合计（2 行，含附加费用）',
+      '合计（2 行）',
       '5',
       '3.750',
       '303.83',
     ])
+    // 费用口径挂在金额单元格的悬停说明里（标签与详情页统一成「合计（N 行）」）
+    expect(
+      mounted.container
+        .querySelector('.module-editor-summary-number[title]')
+        ?.getAttribute('title'),
+    ).toContain('含附加费用合计')
   })
 
   it('草稿行变化后合计实时更新（同一条 React 状态链路，不另建 store）', () => {
     mounted = renderSection(twoRows)
-    expect(footerTexts(mounted.container)[0]).toBe('合计（2 行，含附加费用）')
+    expect(footerTexts(mounted.container)[0]).toBe('合计（2 行）')
 
     mounted.render([
       ...twoRows,
@@ -318,7 +324,7 @@ describe('编辑器明细表底部的草稿合计行', () => {
 
     // 行数 +1、件数 +1、重量 +0.5、金额 +50（含附加费用口径不变）
     expect(footerTexts(mounted.container)).toEqual([
-      '合计（3 行，含附加费用）',
+      '合计（3 行）',
       '6',
       '4.250',
       '353.83',
@@ -330,5 +336,9 @@ describe('编辑器明细表底部的草稿合计行', () => {
 
     expect(footerTexts(mounted.container)[0]).toBe('合计（2 行）')
     expect(footerTexts(mounted.container)[3]).toBe('300.50')
+    // 没有附加费用时金额格不挂口径说明
+    expect(
+      mounted.container.querySelector('.module-editor-summary-number[title]'),
+    ).toBeNull()
   })
 })

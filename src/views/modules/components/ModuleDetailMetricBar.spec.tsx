@@ -142,13 +142,15 @@ describe('ModuleDetailMetricBar', () => {
       container.querySelectorAll('.module-detail-metric__icon'),
     ).toHaveLength(4)
     /*
-     * 图标圆底取 `colorBgContainer`（白）：卡片本身已经按 tone 上了浅色底
-     * （浅蓝/浅绿/琥珀），再铺一层同色系圆底会糊在一起看不出边界。
+     * 四张卡统一白底后，图标圆底改用最浅灰（`colorFillQuaternary`）才看得见边界；
+     * 不再依赖"卡片本身有 tone 浅色底"的白圆底方案。
      */
     const icon = container.querySelector<HTMLElement>(
       '.module-detail-metric__icon',
     )
-    expect(icon?.style.background).toBe(cssColor(tokenSet().colorBgContainer))
+    expect(icon?.style.background).toBe(
+      cssColor(tokenSet().colorFillQuaternary),
+    )
     expect(icon?.getAttribute('aria-hidden')).toBe('true')
 
     render([{ key: 'plain', label: '没有图标', value: '1' }])
@@ -161,7 +163,7 @@ describe('ModuleDetailMetricBar', () => {
     ).toBe('没有图标')
   })
 
-  it('warning tone：整格 amber（底色 + label/值都用 warningText），值走等宽字体', () => {
+  it('warning tone：卡片仍白底，只有主值用 warningText 强调（四卡样式统一）', () => {
     render(fourMetrics)
 
     const tokens = tokenSet()
@@ -173,8 +175,8 @@ describe('ModuleDetailMetricBar', () => {
 
     expect(normalCell?.className).not.toContain('module-detail-metric--warning')
     expect(warningCell?.className).toContain('module-detail-metric--warning')
-    // 整格底色：token 的 colorWarningBg（暗色主题跟随，不写死 hex）
-    expect(warningCell?.style.background).toBe(cssColor(tokens.colorWarningBg))
+    // 四张卡统一白底：warning 不再整格铺琥珀色
+    expect(warningCell?.style.background).toBe('')
 
     const normalValue = normalCell?.querySelector<HTMLElement>(
       '.module-detail-metric__value',
@@ -188,7 +190,8 @@ describe('ModuleDetailMetricBar', () => {
     expect(normalValue?.style.color).toBe(cssColor(tokens.colorText))
     // 12-13px 的主值必须用 warningText（colorWarning 在浅底上对比度约 1.9:1，不达 AA）
     expect(warningValue?.style.color).toBe(cssColor(tokens.colorWarningText))
-    expect(warningLabel?.style.color).toBe(cssColor(tokens.colorWarningText))
+    // 标题行与其他卡一致用次要色，不再整卡变色
+    expect(warningLabel?.style.color).toBe(cssColor(tokens.colorTextSecondary))
     // 等宽字体由 CSS 按 `--warning` 类命中（jsdom 不加载样式表，只锁定类名契约）
     expect(warningCell?.className).toContain('module-detail-metric--warning')
   })

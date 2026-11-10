@@ -24,8 +24,14 @@ export function buildDefaultLineItemSummary(
     {
       key: 'rowCount',
       dataIndex: '#',
-      // 明细表没有「序号」列，合计行首格自带标签，避免只显示一个孤零零的数字。
-      value: `${i18next.t('modules.itemsSummary.rowCount')} ${items.length}`,
+      /*
+       * 明细表没有「序号」列，合计行首格自带标签。
+       * 文案与编辑器草稿合计共用 `modules.itemsSummary.summaryRow`（合计（N 行）），
+       * 同一张单在编辑器与详情页看到的合计行标签不再一个叫「行数」一个叫「合计」。
+       */
+      value: i18next.t('modules.itemsSummary.summaryRow', {
+        rows: items.length,
+      }),
     },
     {
       key: 'quantity',

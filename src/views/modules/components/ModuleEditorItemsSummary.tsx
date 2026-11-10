@@ -187,6 +187,9 @@ export function buildEditorDraftSummaryCells(
   columns: readonly ModuleDetailSummaryColumn[],
   values: EditorDraftSummaryValues,
   label: string,
+  /** 金额单元格的悬停说明（含附加费用时才有）：标签统一成「合计（N 行）」后，
+   * 费用口径靠这里补齐，不把两种口径塞进同一句行首标签。 */
+  amountHint?: string,
 ): ModuleDetailSummaryCell[] {
   const presentKeys = new Set(
     columns
@@ -235,7 +238,7 @@ export function buildEditorDraftSummaryCells(
       key: 'editor-summary-amount',
       dataIndex: AMOUNT_KEY,
       value: (
-        <span className={SUMMARY_NUMBER_CLASS}>
+        <span className={SUMMARY_NUMBER_CLASS} title={amountHint}>
           {formatAmount(values.totalAmount)}
         </span>
       ),
@@ -286,12 +289,25 @@ export function ModuleEditorItemsSummary({
       chargeTotal,
     )
     const hasExpense = Number(chargeTotal) > 0
-    const label = hasExpense
-      ? t('modules.itemsSummary.summaryRowWithExpense', {
-          rows: values.rowCount,
-        })
-      : t('modules.itemsSummary.summaryRow', { rows: values.rowCount })
-    return buildEditorDraftSummaryCells(summaryColumns, values, label)
+    /*
+     * 行首标签与详情页合计行完全一致（`合计（N 行）`）：带附加费用时再用长标签
+     * 「合计（N 行，含附加费用）」会在仓库名称这种窄列里折成两行，同一张单的合计行
+     * 在编辑器与详情页长得不一样。费用口径改挂金额单元格的 `title`。
+     */
+    const label = t('modules.itemsSummary.summaryRow', {
+      rows: values.rowCount,
+    })
+    const amountHint = hasExpense
+      ? `${t('modules.itemsSummary.totalAmountWithExpense')} ${formatAmount(
+          values.totalAmount,
+        )}`
+      : undefined
+    return buildEditorDraftSummaryCells(
+      summaryColumns,
+      values,
+      label,
+      amountHint,
+    )
   }, [chargeTotal, items, moduleKey, summaryColumns, t])
 
   return (

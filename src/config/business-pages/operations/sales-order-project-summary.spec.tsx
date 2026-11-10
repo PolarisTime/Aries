@@ -58,7 +58,7 @@ describe('销售订单「项目数据」接线', () => {
       SalesOrderDetailMetrics,
     )
 
-    // 合计行：按列对齐的四项，行数标签落在没有对应列的 '#' 槽上。
+    // 合计行：按列对齐的四项，合计标签落在没有对应列的 '#' 槽上。
     const cells = salesOrdersPageConfig.detailSummary?.({ items }) ?? []
     expect(cells.map((cell) => cell.dataIndex)).toEqual([
       '#',
@@ -68,7 +68,8 @@ describe('销售订单「项目数据」接线', () => {
     ])
     // 金额 100 + 200 = 300：只有货物、不含附加费用（那是编辑器 pending 的口径）。
     expect(cells[3]?.value).toBe('300.00')
-    expect(String(cells[0]?.value)).toContain('行数')
+    // 标签与编辑器草稿合计行统一成「合计（N 行）」，行数取真实明细条数
+    expect(String(cells[0]?.value)).toBe(`合计（${items.length} 行）`)
     // 空明细不展示合计（footer 里一条只有边框的空行比不显示更糟）。
     expect(salesOrdersPageConfig.detailSummary?.({ items: [] })).toBeNull()
   })

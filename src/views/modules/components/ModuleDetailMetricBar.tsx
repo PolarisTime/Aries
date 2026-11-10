@@ -42,36 +42,26 @@ function resolveToneStyle(
     bar: tokens.colorPrimary,
     track: tokens.colorFillSecondary,
   }
+  /*
+   * 四张卡统一白底（`card: {}`），不再按 tone 铺浅色底。
+   *
+   * <p>历史实现给前两张卡上浅蓝/浅绿、第四张上琥珀，同一排里三种底色 + 一张白卡，
+   * 用户反馈"四张卡片样式不统一"。现在语义色只保留在三处：状态胶囊、进度条、
+   * 以及 warning 卡的主值文字（金额告警需要一眼看到），卡片表面与排版完全一致。</p>
+   */
   if (tone === 'warning') {
     return {
-      card: {
-        background: tokens.colorWarningBg,
-        borderColor: tokens.colorWarningBorder,
-      },
+      card: {},
       ...base,
-      label: tokens.colorWarningText,
       value: tokens.colorWarningText,
       bar: tokens.colorWarning,
     }
   }
   if (tone === 'primary') {
-    return {
-      card: {
-        background: tokens.colorPrimaryBg,
-        borderColor: tokens.colorPrimaryBgHover,
-      },
-      ...base,
-    }
+    return { card: {}, ...base }
   }
   if (tone === 'success') {
-    return {
-      card: {
-        background: tokens.colorSuccessBg,
-        borderColor: tokens.colorSuccessBgHover,
-      },
-      ...base,
-      bar: tokens.colorSuccess,
-    }
+    return { card: {}, ...base, bar: tokens.colorSuccess }
   }
   return { card: {}, ...base }
 }
@@ -220,7 +210,7 @@ export function ModuleDetailMetricBar({ metrics }: ModuleDetailMetricBarProps) {
                       className="module-detail-metric__icon"
                       style={{
                         color: tone.label,
-                        background: token.colorBgContainer,
+                        background: token.colorFillQuaternary,
                       }}
                     >
                       {metric.icon}
