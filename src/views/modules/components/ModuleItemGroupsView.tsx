@@ -1,9 +1,5 @@
-import {
-  ArrowDownOutlined,
-  ArrowUpOutlined,
-  HolderOutlined,
-} from '@ant-design/icons'
-import type { TableColumnsType, TableColumnType, TableProps } from 'antd'
+import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons'
+import type { TableColumnsType, TableProps } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
@@ -128,36 +124,11 @@ export function ModuleItemGroupsView({
   )
 
   /**
-   * 顺序列：**拖动柄**（视觉提示），排在数据列之前 —— antd 的 `rowSelection` 身份列会被插在
-   * 所有列之前，所以这里是视觉上的**第二列**。
-   *
-   * <p>为什么只放一个图标：真正的拖动激活点在整行（长按 {@link ROW_DRAG_LONG_PRESS_MS}
-   * 毫秒起拖，见 `RowDragSortScope` 的设计口径），手柄是"这里能拖"的可见线索。它**不是按钮**：
-   * 按钮会被 `isRowDragBlockedTarget` 判为"可交互元素"而放行按下事件，从手柄上就拖不动了。</p>
-   *
-   * <p>单指针的非拖动替代（WCAG 2.2 SC 2.5.7）由行右键菜单里的「上移 / 下移」承担，
-   * 见 {@link rowMenusWithMove}。</p>
-   */
-  const reorderColumn = useMemo<TableColumnType<ModuleLineItem>>(
-    () => ({
-      key: 'rowReorder',
-      width: 44,
-      align: 'center',
-      title: t('common.rowDragSort.moveColumnTitle'),
-      render: () => (
-        <span className="module-row-drag-handle" aria-hidden="true">
-          <HolderOutlined />
-        </span>
-      ),
-    }),
-    [t],
-  )
-  /**
    * 行右键菜单补「上移 / 下移」。
    *
-   * <p>顺序列从可点击的 ↑↓ 按钮换成拖动柄之后，这是**单指针的非拖动替代**
-   * （WCAG 2.2 SC 2.5.7）：不按住拖动也能调整顺序，且与拖动着陆共用同一份
-   * `onItemsReorder`，不会出现两套顺序口径。边界项置灰（首行不能上移、末行不能下移）。</p>
+   * <p>顺序调整改成**拖动柄**之后，这是单指针的非拖动替代（WCAG 2.2 SC 2.5.7）：
+   * 不按住拖动也能改顺序，且与拖动落位共用同一份 `onItemsReorder`。
+   * 边界项置灰（首行不能上移、末行不能下移）。</p>
    */
   const rowMenusWithMove = useMemo<RowContextMenuMap | undefined>(() => {
     if (!dragEnabled) return itemRowMenus
@@ -212,10 +183,7 @@ export function ModuleItemGroupsView({
     return menuMap
   }, [describeRow, dragEnabled, itemRowMenus, onItemsReorder, rowIds, t])
 
-  const tableColumns = useMemo(
-    () => (dragEnabled ? [reorderColumn, ...columns] : columns),
-    [columns, dragEnabled, reorderColumn],
-  )
+  const tableColumns = useMemo(() => columns, [columns])
 
   const body = (
     <div className="module-items-groups">

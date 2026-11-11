@@ -1,4 +1,4 @@
-import { CopyOutlined } from '@ant-design/icons'
+import { CopyOutlined, HolderOutlined } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { TableColumnsType, TableProps } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -54,6 +54,8 @@ interface Props {
   setItems: React.Dispatch<React.SetStateAction<ModuleLineItem[]>>
   canManageItems: boolean
   lineItemsLocked: boolean
+  /** 是否在身份列右侧渲染行序拖动柄（行序可调时）。 */
+  showDragHandle: boolean
   canEditItemColumns: boolean
   parentImportedItemEditLocked: boolean
   selectedItemIds: string[]
@@ -71,6 +73,7 @@ export function useModuleEditorItemColumns({
   setItems,
   canManageItems,
   lineItemsLocked,
+  showDragHandle,
   canEditItemColumns,
   parentImportedItemEditLocked,
   selectedItemIds,
@@ -345,6 +348,10 @@ export function useModuleEditorItemColumns({
    *
    * <p>全选/半选、Shift 连选与「选择此行：…」的可访问名都由 antd 提供（`renderCell` 的
    * `originNode`），自己画复选框就得把这套语义整抄一遍。</p>
+   *
+   * <p>**行序拖动柄也在这一列**（动作槽，列表页那一格放的是"明细加号"）：拖动柄只是一个
+   * 视觉线索，真正的激活点是整行长按（见 `RowDragSortScope`），所以它不需要自己的列位 ——
+   * 单开一列 44px 只为一个图标，横向浪费且多一条竖线。</p>
    */
   const itemRowSelection = useMemo<
     TableProps<ModuleLineItem>['rowSelection']
@@ -367,12 +374,29 @@ export function useModuleEditorItemColumns({
         <RowIdentityCell
           sequenceNumber={index + 1}
           checkbox={originNode}
-          detailToggle={null}
+          detailToggle={
+            showDragHandle ? (
+              <span
+                className="module-row-drag-handle"
+                aria-hidden="true"
+                title={t('common.rowDragSort.moveColumnTitle')}
+              >
+                <HolderOutlined />
+              </span>
+            ) : null
+          }
           selected={selectedSet.has(record.id)}
         />
       ),
     }
-  }, [canManageItems, onSelectAll, onSelectItem, selectedItemIds, t])
+  }, [
+    canManageItems,
+    onSelectAll,
+    onSelectItem,
+    selectedItemIds,
+    showDragHandle,
+    t,
+  ])
 
   const itemColumns: TableColumnsType<ModuleLineItem> = (() => {
     if (!config.itemColumns?.length) return []

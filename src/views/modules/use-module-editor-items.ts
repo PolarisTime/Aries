@@ -102,6 +102,7 @@ export function useModuleEditorItems({
     setItems,
     canManageItems,
     lineItemsLocked,
+    showDragHandle: itemReorderEnabled,
     canEditItemColumns,
     parentImportedItemEditLocked,
     selectedItemIds,
