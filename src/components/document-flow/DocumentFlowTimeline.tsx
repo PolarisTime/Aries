@@ -1,10 +1,14 @@
+import { Card, Tag, Typography } from 'antd'
 import {
+  DOCUMENT_FLOW_TYPE_META,
   type DocumentFlowTranslator,
   documentFlowTypeLabel,
   formatDocumentFlowAmount,
   formatDocumentFlowWeight,
 } from './document-flow-meta'
 import type { FlowLayoutNode } from './flow-layout'
+
+const { Text } = Typography
 
 interface Props {
   /** 与图 / 列表视图共享的同一份布局节点（`data.nodes` 经 layout 投影）。 */
@@ -33,8 +37,12 @@ function compareByDate(left: FlowLayoutNode, right: FlowLayoutNode): number {
 function TimelineMetric({ label, value }: { label: string; value: string }) {
   return (
     <span className="document-flow-timeline-metric">
-      <span className="document-flow-timeline-metric-label">{label}</span>
-      <span className="document-flow-timeline-metric-value">{value}</span>
+      <Text className="document-flow-timeline-metric-label" type="secondary">
+        {label}
+      </Text>
+      <Text className="document-flow-timeline-metric-value" strong>
+        {value}
+      </Text>
     </span>
   )
 }
@@ -47,6 +55,11 @@ function TimelineMetric({ label, value }: { label: string; value: string }) {
  * 全部复用 {@link formatDocumentFlowAmount} / {@link formatDocumentFlowWeight}，与图视图、
  * 列表视图保持同一处出口。节点在时间线里不可点击（与图视图「无 onOpenNode 时不可点」一致），
  * 因此行内不放按钮。</p>
+ *
+ * <p>为什么不用 antd `Timeline`：v6 的 `Timeline` 内部渲染的是 `Steps`（`div` 结构），
+ * 而这条链路在语义上是一份**按时间排序的单据清单**，读屏必须能拿到「列表 / N 项」与
+ * 每项的位置。因此保留 `ol > li` 语义，每行的内容用 antd `Card` + `Tag` + `Typography`
+ * 组装，时间轴的竖线与圆点由 CSS 按 antd 边框色令牌绘制。</p>
  */
 export function DocumentFlowTimeline({ nodes, currentNodeKey, t }: Props) {
   // 空数据不渲染容器：外层已有 Empty 兜底，这里再画一个空 `<ol>` 只会多出一块边框。
@@ -63,41 +76,62 @@ export function DocumentFlowTimeline({ nodes, currentNodeKey, t }: Props) {
         const isCurrent = key === currentNodeKey
         const amountText = formatDocumentFlowAmount(node.amount)
         const weightText = formatDocumentFlowWeight(node.weight)
+        const meta = DOCUMENT_FLOW_TYPE_META[node.type]
         return (
           <li
             key={key}
+            aria-current={isCurrent ? 'true' : undefined}
             className={`document-flow-timeline-item${
               isCurrent ? ' document-flow-timeline-item-current' : ''
             }`}
-            aria-current={isCurrent ? 'true' : undefined}
           >
-            <span className="document-flow-timeline-date">
+            <Text className="document-flow-timeline-date" type="secondary">
               {node.date ? node.date : '—'}
-            </span>
-            <span className="document-flow-timeline-type">
-              {documentFlowTypeLabel(t, node.type)}
-            </span>
-            <span className="document-flow-timeline-no">
-              {node.no ?? node.id}
-            </span>
-            {/* 金额 / 重量缺失时整段不渲染，与图视图、列表视图同一口径 */}
-            {amountText ? (
-              <TimelineMetric
-                label={t('documentFlow.amount')}
-                value={amountText}
-              />
-            ) : null}
-            {weightText ? (
-              <TimelineMetric
-                label={t('documentFlow.weight')}
-                value={weightText}
-              />
-            ) : null}
-            {isCurrent ? (
-              <span className="document-flow-timeline-badge">
-                {t('documentFlow.currentBadge')}
-              </span>
-            ) : null}
+            </Text>
+            <Card
+              className="document-flow-timeline-card"
+              size="small"
+              styles={{ body: { padding: '8px 12px' } }}
+            >
+              <div className="document-flow-timeline-card-head">
+                <Tag
+                  className="document-flow-timeline-type"
+                  color={meta?.color}
+                  variant="filled"
+                >
+                  {documentFlowTypeLabel(t, node.type)}
+                </Tag>
+                <Text className="document-flow-timeline-no" strong>
+                  {node.no ?? node.id}
+                </Text>
+                {isCurrent ? (
+                  <Tag
+                    className="document-flow-timeline-badge"
+                    color="processing"
+                    variant="filled"
+                  >
+                    {t('documentFlow.currentBadge')}
+                  </Tag>
+                ) : null}
+              </div>
+              {/* 金额 / 重量缺失时整段不渲染，与图视图、列表视图同一口径 */}
+              {amountText || weightText ? (
+                <div className="document-flow-timeline-metrics">
+                  {amountText ? (
+                    <TimelineMetric
+                      label={t('documentFlow.amount')}
+                      value={amountText}
+                    />
+                  ) : null}
+                  {weightText ? (
+                    <TimelineMetric
+                      label={t('documentFlow.weight')}
+                      value={weightText}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+            </Card>
           </li>
         )
       })}

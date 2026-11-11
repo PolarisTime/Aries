@@ -4,13 +4,13 @@ import type {
 } from '@/shared/schemas/document-flow'
 
 /** 流程图节点尺寸与间距（像素）。 */
-export const FLOW_NODE_WIDTH = 180
-export const FLOW_NODE_HEIGHT = 96
+export const FLOW_NODE_WIDTH = 184
+export const FLOW_NODE_HEIGHT = 108
 /**
  * 泳道间距。必须容得下连线上的「N 件 · N 吨」标签：实测 56px 时 11px 字号会把
  * 数量文字压到卡片边缘、被节点遮住（SVG 在节点下层），故放到 104px。
  */
-export const FLOW_COLUMN_GAP = 104
+export const FLOW_COLUMN_GAP = 116
 export const FLOW_ROW_GAP = 20
 export const FLOW_CANVAS_PADDING = 16
 /**
@@ -19,7 +19,7 @@ export const FLOW_CANVAS_PADDING = 16
  * <p>列头是每条泳道的类型摘要，必须与节点同列对齐、随画布一起横向滚动，因此画布顶部
  * 预留一条固定高度的带；节点的 y 从这里开始，连线几何仍按节点真实坐标计算。</p>
  */
-export const FLOW_HEADER_HEIGHT = 28
+export const FLOW_HEADER_HEIGHT = 32
 
 /**
  * 泳道（列）的固定类型顺序，左 → 右与业务链路一致：

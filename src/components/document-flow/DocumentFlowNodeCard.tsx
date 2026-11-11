@@ -1,4 +1,4 @@
-import { Tag, Tooltip } from 'antd'
+import { Tag, Tooltip, Typography } from 'antd'
 import type { RefObject } from 'react'
 import type { DocumentFlowNode } from '@/shared/schemas/document-flow'
 import { formatDate } from '@/utils/formatters'
@@ -16,6 +16,8 @@ import {
   type FlowLayoutNode,
 } from './flow-layout'
 
+const { Text } = Typography
+
 /** 金额/重量文案：缺失即空串，调用方据此整段不渲染。 */
 function resolveNodeMetrics(node: DocumentFlowNode) {
   return {
@@ -27,8 +29,12 @@ function resolveNodeMetrics(node: DocumentFlowNode) {
 function NodeMetric({ label, value }: { label: string; value: string }) {
   return (
     <span className="document-flow-node-metric">
-      <span className="document-flow-node-metric-label">{label}</span>
-      <span className="document-flow-node-metric-value">{value}</span>
+      <Text className="document-flow-node-metric-label" type="secondary">
+        {label}
+      </Text>
+      <Text className="document-flow-node-metric-value" strong>
+        {value}
+      </Text>
     </span>
   )
 }
@@ -66,9 +72,15 @@ function NodeMeta({ node }: { node: DocumentFlowNode }) {
   return (
     <span className="document-flow-node-meta">
       {node.status ? (
-        <Tag className="document-flow-node-status">{node.status}</Tag>
+        <Tag className="document-flow-node-status" variant="filled">
+          {node.status}
+        </Tag>
       ) : null}
-      {node.date ? <span>{formatDate(node.date)}</span> : null}
+      {node.date ? (
+        <Text className="document-flow-node-date" type="secondary">
+          {formatDate(node.date)}
+        </Text>
+      ) : null}
     </span>
   )
 }
@@ -84,8 +96,10 @@ interface NodeCardProps {
 /**
  * 单个单据卡片（绝对定位在画布上）。
  *
- * <p>DOM 结构与 class 名是既有契约（`DocumentFlowModal.spec.tsx` 逐个断言），
- * 从 Modal 里原样搬出，只把「类型/金额格式化」这类纯函数换成 meta 模块的出口。</p>
+ * <p>DOM 结构与 class 名是既有契约（`DocumentFlowModal.spec.tsx` 逐个断言）：外层必须是
+ * `<button>`（键盘可聚焦、`aria-label` 说明点了会打开哪张单），因此这里不能用 antd `Card`
+ * 直接当容器 —— 卡片外观由 CSS 按 antd 的圆角 / 阴影 / 边框令牌还原；内部文字、状态标签
+ * 全部换成 antd `Typography` 与 `Tag`，字号与行高由 antd 排版体系决定，不再手写 11px/13px。</p>
  */
 export function DocumentFlowNodeCard({
   currentNodeRef,
@@ -126,21 +140,26 @@ export function DocumentFlowNodeCard({
           （top:-9px 会盖住节点描边、也容易被相邻节点遮住）。
         */}
         <span className="document-flow-node-head">
-          <span
+          <Text
             className="document-flow-node-type"
+            strong
             style={meta ? { color: meta.color } : undefined}
           >
             {documentFlowTypeLabel(t, item.node.type)}
-          </span>
+          </Text>
           {isCurrent ? (
-            <span className="document-flow-node-badge">
+            <Tag
+              className="document-flow-node-badge"
+              color="processing"
+              variant="filled"
+            >
               {t('documentFlow.currentBadge')}
-            </span>
+            </Tag>
           ) : null}
         </span>
-        <span className="document-flow-node-no">
+        <Text className="document-flow-node-no" strong>
           {item.node.no ?? item.node.id}
-        </span>
+        </Text>
         <NodeMeta node={item.node} />
         <NodeMetrics amountText={amountText} t={t} weightText={weightText} />
       </button>

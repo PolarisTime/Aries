@@ -104,13 +104,21 @@ export function DocumentFlowModal({
       open={open}
       title={t('documentFlow.titleWithNo', { no: documentNo || '--' })}
       /*
-       * 5 列以上（采购单→入库→销售单→出库→退货）时画布宽度约 1350px，
-       * 1280 会横向裁掉最后一列只能靠滚动；放宽到 1560 让常见链路一屏看完。
+       * 尺寸按「常见链路一屏看完 + 不铺满整屏」定：
+       *
+       * <p>节点 200×108、列距 88，5 列（采购单→入库→销售单→出库→退货）的画布宽约 1384px，
+       * 因此取 1440 让 5 列链路无需横向滚动；再大只会让内容两侧空出来。</p>
+       *
+       * <p>`centered` 让弹层在视口垂直居中：原先内容是底部对齐的，只有两三行时贴在屏幕
+       * 下三分之一，看起来像"弹层坏了"。视图区固定最小高度（见 CSS 的
+       * `.document-flow-body`），切换「图 / 列表 / 时间线」时弹层高度不跳。</p>
        */
-      width="min(1560px, 96vw)"
+      centered
+      className="document-flow-modal"
       footer={null}
       onCancel={onClose}
-      className="document-flow-modal"
+      styles={{ body: { paddingTop: 8 } }}
+      width="min(1440px, 94vw)"
     >
       {isPending && nodes.length === 0 ? <Skeleton active /> : null}
       {isError ? (
@@ -142,42 +150,44 @@ export function DocumentFlowModal({
             truncated={data?.truncated}
             view={view}
           />
-          {view === 'list' ? (
-            <DocumentFlowListView
-              currentNodeKey={currentNodeKey}
-              groups={listModel.groups}
-              relations={listModel.relations}
-              t={t}
-            />
-          ) : view === 'timeline' ? (
-            <DocumentFlowTimeline
-              currentNodeKey={currentNodeKey}
-              nodes={layout.nodes}
-              t={t}
-            />
-          ) : (
-            <div className="document-flow-viewport">
-              <div
-                className="document-flow-canvas"
-                style={{ width: layout.width, height: layout.height }}
-              >
-                <DocumentFlowColumnHeaders headers={layout.headers} t={t} />
-                <DocumentFlowEdges
-                  edges={layout.edges}
-                  height={layout.height}
-                  t={t}
-                  width={layout.width}
-                />
-                <DocumentFlowNodes
-                  currentNodeKey={currentNodeKey}
-                  currentNodeRef={currentNodeRef}
-                  nodes={layout.nodes}
-                  onOpenNode={onOpenNode}
-                  t={t}
-                />
+          <div className="document-flow-body">
+            {view === 'list' ? (
+              <DocumentFlowListView
+                currentNodeKey={currentNodeKey}
+                groups={listModel.groups}
+                relations={listModel.relations}
+                t={t}
+              />
+            ) : view === 'timeline' ? (
+              <DocumentFlowTimeline
+                currentNodeKey={currentNodeKey}
+                nodes={layout.nodes}
+                t={t}
+              />
+            ) : (
+              <div className="document-flow-viewport">
+                <div
+                  className="document-flow-canvas"
+                  style={{ width: layout.width, height: layout.height }}
+                >
+                  <DocumentFlowColumnHeaders headers={layout.headers} t={t} />
+                  <DocumentFlowEdges
+                    edges={layout.edges}
+                    height={layout.height}
+                    t={t}
+                    width={layout.width}
+                  />
+                  <DocumentFlowNodes
+                    currentNodeKey={currentNodeKey}
+                    currentNodeRef={currentNodeRef}
+                    nodes={layout.nodes}
+                    onOpenNode={onOpenNode}
+                    t={t}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </>
       ) : null}
     </Modal>
