@@ -133,55 +133,67 @@ describe('模块编辑器明细表拖动接线', () => {
     expect(onItemsReorder).toHaveBeenCalledWith(['b', 'a', 'c'])
   })
 
-  /** 每行的替代按钮: 去掉顺序列后本组用例立即变红。 */
-  const moveButton = (rowKey: string, label: string) =>
-    Array.from(
-      container
-        .querySelector<HTMLTableRowElement>(`tr[data-row-key="${rowKey}"]`)
-        ?.querySelectorAll<HTMLButtonElement>('button') ?? [],
-    ).find((button) =>
-      (button.getAttribute('aria-label') ?? '').startsWith(label),
+  /**
+   * 行右键菜单里的「上移 / 下移」是**单指针的非拖动替代**（WCAG 2.2 SC 2.5.7）。
+   *
+   * <p>顺序列从"可点击的 ↑↓ 按钮"改成拖动柄之后，非拖动路径换到了行菜单；这里直接驱动
+   * 真实链路：`contextmenu` → antd 菜单渲染到 portal → 点菜单项 → `onItemsReorder`。</p>
+   */
+  const openRowMenu = async (rowKey: string) => {
+    const row = container.querySelector<HTMLTableRowElement>(
+      `tr[data-row-key="${rowKey}"]`,
     )
+    await act(async () => {
+      row?.dispatchEvent(
+        new MouseEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 40,
+          clientY: 40,
+        }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
 
-  it('每行都有可点击的上移/下移按钮(单指针非拖动替代)', () => {
+  const menuItem = (label: string) =>
+    Array.from(
+      document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    ).find((node) => (node.textContent ?? '').trim().startsWith(label))
+
+  it('行菜单按边界提供「上移 / 下移」', async () => {
     render(vi.fn())
-    for (const [index, key] of ['a', 'b', 'c'].entries()) {
-      const up = moveButton(key, '上移')
-      const down = moveButton(key, '下移')
-      expect(up, `第 ${index + 1} 行上移`).toBeDefined()
-      expect(down, `第 ${index + 1} 行下移`).toBeDefined()
-      // 首/末项按边界 aria-disabled, 其余可点
-      expect(up?.getAttribute('aria-disabled')).toBe(
-        index === 0 ? 'true' : 'false',
-      )
-      expect(down?.getAttribute('aria-disabled')).toBe(
-        index === 2 ? 'true' : 'false',
-      )
-      expect(up?.style.minWidth).toBe('24px')
-      expect(up?.style.minHeight).toBe('24px')
-    }
+
+    // 首行：上移置灰、下移可用
+    await openRowMenu('a')
+    expect(menuItem('上移')?.getAttribute('aria-disabled')).toBe('true')
+    expect(menuItem('下移')?.getAttribute('aria-disabled')).toBe('false')
   })
 
-  it('仅单指针: 点击「下移」按钮完成一次重排', () => {
+  it('仅单指针: 点行菜单「下移」完成一次重排', async () => {
     const onItemsReorder = vi.fn()
     render(onItemsReorder)
 
-    act(() => {
-      moveButton('a', '下移')?.dispatchEvent(
+    await openRowMenu('a')
+    await act(async () => {
+      menuItem('下移')?.dispatchEvent(
         new MouseEvent('click', { bubbles: true }),
       )
+      await new Promise((resolve) => setTimeout(resolve, 0))
     })
 
     expect(onItemsReorder).toHaveBeenCalledWith(['b', 'a', 'c'])
   })
 
-  it('仅键盘: 聚焦「上移」按钮按回车完成一次重排', () => {
+  it('仅键盘: 「上移」菜单项可聚焦并回车触发重排', async () => {
     const onItemsReorder = vi.fn()
     render(onItemsReorder)
-    const up = moveButton('c', '上移')
-    act(() => up?.focus())
 
-    act(() => {
+    await openRowMenu('c')
+    const up = menuItem('上移')
+    expect(up).toBeDefined()
+    await act(async () => {
+      up?.focus()
       up?.dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'Enter',
@@ -191,13 +203,20 @@ describe('模块编辑器明细表拖动接线', () => {
         }),
       )
       up?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
     })
 
     expect(onItemsReorder).toHaveBeenCalledWith(['a', 'c', 'b'])
   })
 
-  it('只读(不传 onItemsReorder)时不渲染替代按钮: 行序本来就不允许改', () => {
+  it('只读(不传 onItemsReorder)时不渲染拖动柄, 菜单也不给上移/下移', async () => {
     render()
-    expect(moveButton('a', '上移')).toBeUndefined()
+    expect(container.querySelectorAll('.module-row-drag-handle')).toHaveLength(
+      0,
+    )
+
+    await openRowMenu('a')
+    expect(menuItem('上移')).toBeUndefined()
+    expect(menuItem('下移')).toBeUndefined()
   })
 })

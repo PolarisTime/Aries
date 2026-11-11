@@ -87,7 +87,9 @@ describe('showBatchFailureNotification', () => {
 
     const { lines } = readLastNotice()
     expect(lines.some((text) => text.includes('SO-1：被出库单引用'))).toBe(true)
-    expect(lines.some((text) => text.includes('SO-2：已审核，不可删除'))).toBe(true)
+    expect(lines.some((text) => text.includes('SO-2：已审核，不可删除'))).toBe(
+      true,
+    )
   })
 
   it('失败行超过上限时只列前 N 条，其余用「另有」收口', () => {
@@ -99,9 +101,9 @@ describe('showBatchFailureNotification', () => {
 
     const { lines } = readLastNotice()
     for (let index = 1; index <= BATCH_FAILURE_LINES; index += 1) {
-      expect(lines.some((text) => text.includes(`SO-${index}：原因${index}`))).toBe(
-        true,
-      )
+      expect(
+        lines.some((text) => text.includes(`SO-${index}：原因${index}`)),
+      ).toBe(true)
     }
     // 超出的失败不逐条列（否则卡片被撑爆），只给一句合计
     expect(lines.some((text) => text.includes(`SO-${total}`))).toBe(false)
