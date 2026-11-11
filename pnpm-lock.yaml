@@ -254,8 +254,8 @@ importers:
         version: 5.0.15(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
     devDependencies:
       '@ant-design/cli':
-        specifier: 6.6.5
-        version: 6.6.5
+        specifier: 6.7.0
+        version: 6.7.0
       '@aries/typescript-toolchain':
         specifier: workspace:*
         version: link:tools/typescript-toolchain
@@ -403,8 +403,8 @@ packages:
   '@actions/io@3.0.2':
     resolution: {integrity: sha512-nRBchcMM+QK1pdjO7/idu86rbJI5YHUKCvKs0KxnSYbVe3F51UfGxuZX4Qy/fWlp6l7gWFwIkrOzN+oUK03kfw==}
 
-  '@ant-design/cli@6.6.5':
-    resolution: {integrity: sha512-s4VJ4co/vMwe+vRwSYWiwrhT8roiUtLTlaetQDRT+p89LLGYsY3STe3o9A+fy+NB3z6X6WQprJempBjU8IjOfQ==}
+  '@ant-design/cli@6.7.0':
+    resolution: {integrity: sha512-lqcfGQ/YoPu5zI5QrGXc0uEONWkglow3QBmejWMH/7/vxzue/F4DRgXq5e9oT5PDsUE3V6h/7Wx7QnalWxW1+Q==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
@@ -5415,7 +5415,7 @@ snapshots:
 
   '@actions/io@3.0.2': {}
 
-  '@ant-design/cli@6.6.5':
+  '@ant-design/cli@6.7.0':
     dependencies:
       cfonts: 3.3.1
       fast-glob: 3.3.3
