@@ -396,6 +396,39 @@ export function buildModuleEditorManagementColumns({
   ]
 }
 
+/**
+ * 丢弃"整列都没有信息"的明细列（见 {@link ModuleColumnDefinition.hideWhenAllEmpty}）。
+ *
+ * <p>销售订单的 4 个派生数量列（已交付 / 已退货 / 净交付 / 剩余可出库）由后端按**已保存**
+ * 单据聚合，新建与草稿单据必然全是空值或 0。此前它们各渲染一个「-」，白占表格右侧约
+ * 三分之一宽度，还与「金额」等真实数字混排，像是漏填了。</p>
+ *
+ * <p>判据只看数据、不看单据状态：有交付数据时列自动出现，空值 / 0 都算"没有信息"。
+ * 未声明 `hideWhenAllEmpty` 的列一律照常渲染 —— 这是保守默认，避免影响其它模块的列。</p>
+ */
+export function dropEmptyItemColumns(
+  itemColumns: ModuleColumnDefinition[],
+  items: readonly ModuleLineItem[],
+): ModuleColumnDefinition[] {
+  if (!itemColumns.some((column) => column.hideWhenAllEmpty)) {
+    return itemColumns
+  }
+  return itemColumns.filter(
+    (column) =>
+      !column.hideWhenAllEmpty ||
+      items.some((item) => hasLineItemCellValue(item, column.dataIndex)),
+  )
+}
+
+/** 单元格是否有信息：undefined / null / 空串 / 0 都等价于"没有"。 */
+function hasLineItemCellValue(item: ModuleLineItem, key: string): boolean {
+  const value = (item as unknown as Record<string, unknown>)[key]
+  if (value === undefined || value === null) return false
+  if (typeof value === 'string') return value.trim().length > 0
+  if (typeof value === 'number') return value !== 0
+  return true
+}
+
 export function buildModuleEditorDataColumns({
   config,
   itemColumns,

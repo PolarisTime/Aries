@@ -75,6 +75,39 @@ describe('NetPriceMatchChip', () => {
     expect(srOnly.some((text) => text.length > 0)).toBe(true)
   })
 
+  it('匹配（正常态）不再用绿色 Tag：整列安静，不抢单价/金额的注意力', () => {
+    act(() => {
+      useNetPriceMatchStore.setState({
+        entries: {
+          r1: { state: 'MATCHED', expectedPrice: 3360, currentPrice: 3360 },
+        },
+      })
+    })
+    renderChip('r1')
+
+    // 正常态是安静的行内标识，不是带底色的 Tag
+    expect(container.querySelector('.net-price-match-quiet')).toBeTruthy()
+    expect(container.querySelector('.ant-tag')).toBeNull()
+    expect(container.textContent).toContain('匹配')
+    // 图标 + 文字双通道仍在，差额照旧写进 sr-only 文本（WCAG 1.4.1 / 键盘可读）
+    expect(container.querySelector('.anticon')).toBeTruthy()
+    const detail = container.querySelector('.aries-sr-only')?.textContent ?? ''
+    expect(detail.trim().length).toBeGreaterThan(0)
+  })
+
+  it('异常态仍用 Tag（语义色 + 图标），与正常态形成对比', () => {
+    act(() => {
+      useNetPriceMatchStore.setState({
+        entries: {
+          r1: { state: 'MISMATCH', expectedPrice: 3430, currentPrice: 3200 },
+        },
+      })
+    })
+    renderChip('r1')
+    expect(container.querySelector('.ant-tag')).toBeTruthy()
+    expect(container.querySelector('.net-price-match-quiet')).toBeNull()
+  })
+
   it('未核查（无 store 条目）也有可读说明，不留空', () => {
     renderChip('r1')
     expect(container.textContent).toContain('未核查')

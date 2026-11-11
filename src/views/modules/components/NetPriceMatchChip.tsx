@@ -69,6 +69,25 @@ export function NetPriceMatchChip({ itemId }: { itemId: string }) {
   const detail = entry
     ? describeEntry(t, entry, state)
     : describeUnchecked(t, documentState)
+  /*
+   * 匹配（正常态）用**安静**的行内标识：图标 + 文字、次要色、无底色。
+   *
+   * <p>此前每一行都是同一个绿色 Tag：一整列排下来拉出一条竖向绿带，把注意力从真正要看的
+   * 单价/金额上引走，而它表达的信息量是 0（"没有异常"）。正常态不该抢眼 ——
+   * 不匹配 / 无网价才用 Tag 的语义色。图标 + 文字双通道仍在，不以颜色为唯一区分
+   * （WCAG 1.4.1）；差额仍写进 sr-only 文本，键盘与读屏用户照旧能拿到。</p>
+   */
+  if (state === 'MATCHED') {
+    return (
+      <Tooltip title={detail}>
+        <span className="net-price-match-quiet">
+          <CheckCircleOutlined aria-hidden="true" />
+          {label}
+          <span className="aries-sr-only">{detail}</span>
+        </span>
+      </Tooltip>
+    )
+  }
   return (
     <Tooltip title={detail}>
       <Tag color={meta.color} icon={meta.icon} style={{ marginInlineEnd: 0 }}>

@@ -69,6 +69,24 @@
   color: var(--ant-color-text-quaternary);
 }
 
+/*
+ * 「网价匹配」= 与网价一致的安静标识（见 NetPriceMatchChip 的注释）。
+ *
+ * <p>不加底色、不占 24px 高的 Tag 盒子，只用图标 + 次要色文字：一整列下来是安静的灰字，
+ * 异常行（不匹配 / 无网价）用 Tag 的语义色跳出来 —— 视线自然落到"要处理的那几行"。</p>
+ */
+.net-price-match-quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xxs);
+  color: var(--ant-color-text-tertiary, var(--ant-color-text-secondary));
+  white-space: nowrap;
+}
+
+.net-price-match-quiet .anticon {
+  font-size: 13px;
+}
+
 /* 取价结果: 比核查结论低一级(次要色 + 前置分隔), 只在有结果时出现 */
 .net-price-apply-result {
   display: inline-flex;
@@ -92,8 +110,13 @@
 }
 
 .net-price-apply-result-part--success {
-  color: var(--ant-color-success-text, var(--ant-color-success));
-  background: var(--ant-color-success-bg);
+  /*
+   * 「成功 N 行」是**正常态**，不该是这一行里最抢眼的东西：此前是成功色文字 + 成功色底，
+   * 比左边的灰字标题更重，而它只是一次性结果。降为中性底 + 次要色，异常项（无网价 /
+   * 代取）才保留语义色 —— "有没有要处理的"仍一眼可见，正常时整块是安静的。
+   */
+  color: var(--ant-color-text-secondary);
+  background: var(--ant-color-fill-quaternary);
 }
 
 .net-price-apply-result-part--warning {

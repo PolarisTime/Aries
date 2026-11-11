@@ -106,6 +106,12 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemCo
         editor: { control: 'material' },
       },
     },
+    /*
+     * 4 个派生数量列：值由后端按**已保存**单据聚合，新建 / 草稿单据必然全是空值或 0。
+     * `hideWhenAllEmpty` 让整列没信息时**不进表**（否则新建页右侧并排 4 个「-」，
+     * 白占约三分之一宽度，还容易让人以为漏填）；一旦有交付数据，列自动出现。
+     * 只读详情面不受影响 —— 详情要能看到"这一列是 0"本身。
+     */
     privateColumns: [
       {
         title: i18next.t('modules.pages.salesOrder.colDeliveredQuantity'),
@@ -113,6 +119,7 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemCo
         width: 100,
         align: 'right',
         type: 'count',
+        hideWhenAllEmpty: true,
         render: renderDerivedQuantity,
       },
       {
@@ -121,6 +128,7 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemCo
         width: 100,
         align: 'right',
         type: 'count',
+        hideWhenAllEmpty: true,
         render: renderDerivedQuantity,
       },
       {
@@ -129,6 +137,7 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemCo
         width: 110,
         align: 'right',
         type: 'count',
+        hideWhenAllEmpty: true,
         render: renderDerivedQuantity,
       },
       {
@@ -137,6 +146,7 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemCo
         width: 116,
         align: 'right',
         type: 'count',
+        hideWhenAllEmpty: true,
         render: renderDerivedQuantity,
       },
       {

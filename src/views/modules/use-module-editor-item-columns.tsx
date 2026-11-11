@@ -18,6 +18,7 @@ import { hasSourceParentItemId } from '@/module-system/adapter/module-adapter-pa
 import {
   buildModuleEditorDataColumns,
   buildModuleEditorManagementColumns,
+  dropEmptyItemColumns,
 } from '@/module-system/editor/module-editor-item-column-builders'
 import { useModuleEditorItemColumnHandlers } from '@/module-system/editor/module-editor-item-column-handlers'
 import { duplicateEditorLineItem } from '@/module-system/editor/module-editor-line-item-duplicate'
@@ -363,7 +364,11 @@ export function useModuleEditorItemColumns({
     cols.push(
       ...buildModuleEditorDataColumns({
         config,
-        itemColumns: orderedVisibleItemColumns,
+        /*
+         * 整列无信息的列不进表：销售订单的派生数量列在新建 / 草稿下必然是空值，
+         * 4 列各渲染一个「-」只会占宽并让人以为漏填（口径见 dropEmptyItemColumns）。
+         */
+        itemColumns: dropEmptyItemColumns(orderedVisibleItemColumns, items),
         materialOptions,
         materialSearch,
         warehouses,

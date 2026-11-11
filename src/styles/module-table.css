@@ -675,6 +675,23 @@
 }
 
 /*
+ * 明细表头的行末槽：单据动作（取消 / 保存 / 保存并审核）贴右边界。
+ *
+ * 标题行是满宽的 flex 行（.editor-items-title-block），`margin-left: auto` 把这一组推到行尾，
+ * 中间的空白成为"表格工具 ⇄ 单据动作"的分组留白；工具按钮再多也只会在左侧折行。
+ * 顶部操作栏接管工具栏时（showItemsToolbar=false）这一槽不渲染，两处不会同时出现保存组。
+ */
+.editor-items-footer-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-left: auto;
+  padding-left: var(--space-md);
+  min-width: 0;
+}
+
+/*
  * 行序「上移 / 下移」按钮组 —— 拖动排序的非拖动替代（WCAG 2.2 SC 2.5.7）。
  *
  * 两个 24×24 的 text 按钮原来是裸露的，视觉上像两个游离的箭头字符，用户认不出这是

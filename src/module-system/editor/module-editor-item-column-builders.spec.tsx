@@ -3,7 +3,10 @@
 import type { ColumnsType } from 'antd/es/table'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { buildModuleEditorDataColumns } from '@/module-system/editor/module-editor-item-column-builders'
+import {
+  buildModuleEditorDataColumns,
+  dropEmptyItemColumns,
+} from '@/module-system/editor/module-editor-item-column-builders'
 import type {
   ModuleColumnDefinition,
   ModuleLineItem,
@@ -131,5 +134,64 @@ describe('编辑器明细列自定义渲染', () => {
       () => false,
     )
     expect(renderCell(columns, 'remark', '加急')).toBe('formatted:加急')
+  })
+})
+
+/**
+ * 「整列都没有信息」的明细列不进表（{@link ModuleColumnDefinition.hideWhenAllEmpty}）。
+ *
+ * <p>真实缺陷：销售订单的 4 个派生数量列（已交付 / 已退货 / 净交付 / 剩余可出库）由后端按
+ * 已保存单据聚合，新建页必然全是空值，于是右侧并排 4 个「-」，白占约三分之一宽度，
+ * 还容易让人以为漏填了。修法是"整列没信息就不渲染这一列"，而不是"靠单据状态猜"。</p>
+ */
+describe('整列无信息的明细列（hideWhenAllEmpty）', () => {
+  const column = (
+    dataIndex: string,
+    extra?: Partial<ModuleColumnDefinition>,
+  ): ModuleColumnDefinition => ({ title: dataIndex, dataIndex, ...extra })
+
+  const hideable = (dataIndex: string) =>
+    column(dataIndex, { hideWhenAllEmpty: true })
+
+  const keys = (columns: ModuleColumnDefinition[], items: ModuleLineItem[]) =>
+    dropEmptyItemColumns(columns, items).map((item) => item.dataIndex)
+
+  it('未声明 hideWhenAllEmpty 的列一律保留（保守默认，不影响其它模块）', () => {
+    expect(keys([column('quantity')], [])).toEqual(['quantity'])
+  })
+
+  it('整列都是空值 / 0 / 空串时丢弃该列', () => {
+    const items = [
+      { id: 'r1', deliveredQuantity: undefined },
+      { id: 'r2', deliveredQuantity: 0 },
+      { id: 'r3', deliveredQuantity: null },
+      { id: 'r4', deliveredQuantity: '' },
+    ] as unknown as ModuleLineItem[]
+    expect(
+      keys([column('quantity'), hideable('deliveredQuantity')], items),
+    ).toEqual(['quantity'])
+  })
+
+  it('任一行有值就保留整列：正数与负数都算有信息（0 与空值不算）', () => {
+    const items = [
+      { id: 'r1', deliveredQuantity: 0 },
+      { id: 'r2', deliveredQuantity: 12 },
+    ] as unknown as ModuleLineItem[]
+    expect(keys([hideable('deliveredQuantity')], items)).toEqual([
+      'deliveredQuantity',
+    ])
+
+    const negative = [
+      { id: 'r1', deliveredNetQuantity: -3 },
+    ] as unknown as ModuleLineItem[]
+    expect(keys([hideable('deliveredNetQuantity')], negative)).toEqual([
+      'deliveredNetQuantity',
+    ])
+  })
+
+  it('没有任何明细行时，可隐藏列同样不占表头（新建单据的首帧）', () => {
+    expect(
+      keys([column('quantity'), hideable('outboundRemainingQuantity')], []),
+    ).toEqual(['quantity'])
   })
 })
