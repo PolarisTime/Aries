@@ -372,6 +372,37 @@
   justify-content: flex-start;
 }
 
+/*
+ * 编辑器顶部操作栏：工具动作靠左、单据级动作靠右。
+ *
+ * 单独一层而不是塞进表单头：表单头随表单滚动、明细表头只覆盖明细区，
+ * 只有「标题之下、第一个卡片之上」这一条才同时满足「全局可见」与「不进卡片」。
+ */
+.editor-top-actions {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.editor-top-actions-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+/* 工具按钮变多时只在左侧折行，保存组永远贴右边界 */
+.editor-top-actions-global {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-inline-start: auto;
+}
+
 .editor-form-title-block,
 .editor-items-title-block {
   display: flex;
@@ -553,18 +584,77 @@
  * 编辑器明细 Tab 压缩: antd 默认 .ant-tabs-nav 下边距 16px、.ant-tabs-tab 纵向 padding 12px,
  * 会把第一行明细整体压下 ~20px。命中区高度保持 ≥24px(tab 高 34px)。
  */
-.editor-items-tabs .ant-tabs-nav {
-  margin-bottom: var(--space-xs);
+/*
+ * 书签式（文件夹式）页签。
+ *
+ * 视觉契约：选中页签像文件夹的舌头，与下方明细卡连成一片 ——
+ * 页签底色 = 卡片底色、上/左/右有描边、底部无描边并压住卡片上边框 1px；
+ * 未选中页签退到背景里（浅填充、无描边），像被收起来的文件夹。
+ * 语义仍是 antd `Tabs`（tablist / tab / 方向键切换不变），只改外观。
+ */
+/*
+ * antd 的 `> .ant-tabs-nav` 自带 16px 下边距（CSS-in-JS 优先级高于这里的普通选择器），
+ * 必须用 !important 才能压成 0 并再上移 1px 盖住卡片上边框 —— 否则页签与明细卡之间
+ * 会留一条 15px 的缝，"文件夹"立刻变成"两个不相干的块"。
+ */
+.editor-items-tabs > .ant-tabs-nav {
+  margin-bottom: -1px !important;
+}
+
+/* 页签条自身不要底线：底线由明细卡提供 */
+.editor-items-tabs .ant-tabs-nav::before {
+  border-bottom: none;
 }
 
 .editor-items-tabs .ant-tabs-tab {
-  padding-top: var(--space-6);
-  padding-bottom: var(--space-6);
+  margin: 0 var(--space-xxs) 0 0;
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: var(--ant-color-fill-quaternary);
+  transition: background-color 0.2s var(--ease-out, ease);
+}
+
+.editor-items-tabs .ant-tabs-tab:hover {
+  background: var(--ant-color-fill-tertiary);
+}
+
+.editor-items-tabs .ant-tabs-tab-active {
+  background: var(--ant-color-bg-container);
+  /* 比卡片的次要边框深一档：页签要"浮"在卡片上，浅到看不清就失去文件夹的层次 */
+  border-color: var(--ant-color-border);
+  /* 用卡片底色盖掉卡片上边框，选中页签才与卡片连成一片 */
+  border-bottom-color: var(--ant-color-bg-container);
+  box-shadow: 0 -1px 2px rgb(0 0 0 / 4%);
+}
+
+.editor-items-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 .editor-items-tabs .ant-tabs-tab-btn {
   min-height: 22px;
   align-content: center;
+}
+
+.editor-items-tabs-body {
+  min-width: 0;
+}
+
+/*
+ * 卡片与页签贴合：去掉卡片的 16px 上边距并把左上角改为直角（页签从卡片左边缘起）。
+ *
+ * <p>这里必须 `!important`：module-detail.css 的「明细卡成白卡」规则与本条同源
+ * （都是 `:has()` 前缀 + 一个类），优先级相同，谁生效只取决于样式表加载顺序。
+ * 实测普通声明会被压过 —— 页签与卡片之间留 15px 缝，"文件夹"变成两个不相干的块。</p>
+ */
+.workspace-overlay-body:has(.editor-items-tabs)
+  .editor-items-tabs-body
+  > .module-items-panel {
+  margin-top: 0 !important;
+  border-top-left-radius: 0 !important;
 }
 
 .editor-items-head .detail-section-title {
@@ -582,6 +672,28 @@
 .editor-items-title-row {
   flex: 1 1 auto;
   justify-content: flex-start;
+}
+
+/*
+ * 行序「上移 / 下移」按钮组 —— 拖动排序的非拖动替代（WCAG 2.2 SC 2.5.7）。
+ *
+ * 两个 24×24 的 text 按钮原来是裸露的，视觉上像两个游离的箭头字符，用户认不出这是
+ * 可点的控件。用一个共用的细边框把它们收成一个控件（↑┃↓）：墨迹几乎没有增加，
+ * "这里可以点上移/下移"却一眼可见。命中区仍由按钮自身的 24×24 保证（SC 2.5.8）。
+ */
+.row-reorder-buttons {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--ant-color-border-secondary);
+  border-radius: var(--ant-border-radius-sm);
+  background: var(--ant-color-fill-quaternary);
+}
+
+.row-reorder-buttons .ant-btn + .ant-btn {
+  border-inline-start: 1px solid var(--ant-color-border-secondary);
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
 }
 
 .editor-items-summary {

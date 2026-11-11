@@ -243,9 +243,15 @@ export function ModuleEditorItemsSection({
     <>
       <div className="mt-3">
         {supportsExpenseTab ? (
+          /*
+           * 书签式（文件夹式）页签：选中页签与下方明细卡连成一片。
+           * 结构上仍是 antd `Tabs`（保留 tablist/tab 语义与方向键切换），
+           * 只把视觉改成「文件夹页签」——指示线由 CSS 去掉，这里显式把 ink bar 收成 0。
+           */
           <Tabs
             className="editor-items-tabs"
             activeKey={activeItemTab}
+            indicator={{ size: 0 }}
             onChange={(key) => setActiveItemTab(key as 'goods' | 'expenses')}
             items={[
               {
@@ -259,72 +265,74 @@ export function ModuleEditorItemsSection({
             ]}
           />
         ) : null}
-        {supportsExpenseTab && activeItemTab === 'expenses' ? (
-          <ModuleEditorExpensePanel
-            expenseItems={expenseItems}
-            expenseSelectedItemIds={expenseSelectedItemIds}
-            expenseMaterialOptions={expenseMaterialOptions}
-            expenseMaterialSearch={expenseMaterialSearch}
-            expenseTotalAmount={expenseTotalAmount}
-            saving={saving}
-            /* 费用页签也渲染同一条工具栏的保存组：切页签不丢保存入口。 */
-            footerActions={footerActions}
-            onExpenseSelectedChange={onExpenseSelectedChange}
-            onExpenseSelectAll={onExpenseSelectAll}
-            onExpenseChange={onExpenseChange}
-            onCreateExpense={onCreateExpense}
-            onExpenseAddItem={onExpenseAddItem}
-            onExpenseDelete={onExpenseDelete}
-            onExpenseReorder={onExpenseReorder}
-            expenseRowKeys={expenseRowKeys}
-          />
-        ) : null}
-        {!supportsExpenseTab || activeItemTab === 'goods' ? (
-          <ModuleItemsPanel
-            items={items}
-            itemColumns={config.itemColumns}
-            // 表尾草稿合计行已挂上时，标题行的内联合计关掉，避免同一份合计出现两次。
-            showSummary={!renderItemSummary}
-            expenseTotalAmount={
-              supportsExpenseTab ? expenseTotalAmount : undefined
-            }
-            actions={
-              <ModuleItemsToolbarActions
-                capabilities={capabilities}
-                columnSettingsOpen={columnSettingsOpen}
-                config={config}
-                extraActions={extraActions}
-                footerActions={footerActions}
-                freightStatementSortDirection={freightStatementSortDirection}
-                itemColumnOrder={itemColumnOrder}
-                onAddItem={onAddItem}
-                onAutoSortItems={onAutoSortItems}
-                onColumnSettingsOpenChange={setColumnSettingsOpen}
-                onItemColumnOrderChange={onItemColumnOrderChange}
-                onOpenParentSelector={onOpenParentSelector}
-                onRemoveSelectedItems={onRemoveSelectedItems}
-                onToggleItemColumn={onToggleItemColumn}
-                parentImportVisible={parentImportVisible}
-                parentImporting={parentImporting}
-                saving={saving}
-                selectedItemCount={selectedItemIds.length}
-                visibleItemColumnKeys={visibleItemColumnKeys}
-              />
-            }
-          >
-            <ModuleItemGroupsView
-              groups={itemGroups}
-              moduleKey={config.key}
-              columns={itemColumns}
-              components={itemTableComponents}
-              emptyText={emptyText}
-              rowClassName={rowClassName}
-              itemRowMenus={itemRowMenus}
-              summary={renderItemSummary}
-              onItemsReorder={onItemsReorder}
+        <div className="editor-items-tabs-body">
+          {supportsExpenseTab && activeItemTab === 'expenses' ? (
+            <ModuleEditorExpensePanel
+              expenseItems={expenseItems}
+              expenseSelectedItemIds={expenseSelectedItemIds}
+              expenseMaterialOptions={expenseMaterialOptions}
+              expenseMaterialSearch={expenseMaterialSearch}
+              expenseTotalAmount={expenseTotalAmount}
+              saving={saving}
+              /* 费用页签也渲染同一条工具栏的保存组：切页签不丢保存入口。 */
+              footerActions={footerActions}
+              onExpenseSelectedChange={onExpenseSelectedChange}
+              onExpenseSelectAll={onExpenseSelectAll}
+              onExpenseChange={onExpenseChange}
+              onCreateExpense={onCreateExpense}
+              onExpenseAddItem={onExpenseAddItem}
+              onExpenseDelete={onExpenseDelete}
+              onExpenseReorder={onExpenseReorder}
+              expenseRowKeys={expenseRowKeys}
             />
-          </ModuleItemsPanel>
-        ) : null}
+          ) : null}
+          {!supportsExpenseTab || activeItemTab === 'goods' ? (
+            <ModuleItemsPanel
+              items={items}
+              itemColumns={config.itemColumns}
+              // 表尾草稿合计行已挂上时，标题行的内联合计关掉，避免同一份合计出现两次。
+              showSummary={!renderItemSummary}
+              expenseTotalAmount={
+                supportsExpenseTab ? expenseTotalAmount : undefined
+              }
+              actions={
+                <ModuleItemsToolbarActions
+                  capabilities={capabilities}
+                  columnSettingsOpen={columnSettingsOpen}
+                  config={config}
+                  extraActions={extraActions}
+                  footerActions={footerActions}
+                  freightStatementSortDirection={freightStatementSortDirection}
+                  itemColumnOrder={itemColumnOrder}
+                  onAddItem={onAddItem}
+                  onAutoSortItems={onAutoSortItems}
+                  onColumnSettingsOpenChange={setColumnSettingsOpen}
+                  onItemColumnOrderChange={onItemColumnOrderChange}
+                  onOpenParentSelector={onOpenParentSelector}
+                  onRemoveSelectedItems={onRemoveSelectedItems}
+                  onToggleItemColumn={onToggleItemColumn}
+                  parentImportVisible={parentImportVisible}
+                  parentImporting={parentImporting}
+                  saving={saving}
+                  selectedItemCount={selectedItemIds.length}
+                  visibleItemColumnKeys={visibleItemColumnKeys}
+                />
+              }
+            >
+              <ModuleItemGroupsView
+                groups={itemGroups}
+                moduleKey={config.key}
+                columns={itemColumns}
+                components={itemTableComponents}
+                emptyText={emptyText}
+                rowClassName={rowClassName}
+                itemRowMenus={itemRowMenus}
+                summary={renderItemSummary}
+                onItemsReorder={onItemsReorder}
+              />
+            </ModuleItemsPanel>
+          ) : null}
+        </div>
       </div>
 
       {parentSelector}
