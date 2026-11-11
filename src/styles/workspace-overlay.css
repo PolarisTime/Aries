@@ -339,13 +339,35 @@
   scrollbar-gutter: stable;
 }
 
-.parent-selector-selected-list::-webkit-scrollbar {
-  width: 6px;
+/*
+ * 细滚动条：标准属性优先（Chrome 121 / Firefox 64 / Safari 18.2 起 Baseline），
+ * 旧 WebKit 伪元素只在**不支持标准属性**的浏览器里兜底。
+ *
+ * <p>两处修正（modern-web-guidance `legacy-scan` 与 `customize-scrollbar-color-and-thickness`
+ * 指南）：① 原来只有 `::-webkit-scrollbar`，非 Blink 内核浏览器得不到任何定制；
+ * ② 滑块原来用 `--ant-color-fill-secondary`（rgba(0,0,0,0.15)），与白色轨道对比只有
+ * 约 1.2:1，低于 WCAG 1.4.11 对非文本元素要求的 3:1 —— 换成 text-quaternary（#8c8c8c，
+ * 约 3.0:1）才看得清滑块位置。</p>
+ */
+.parent-selector-selected-list {
+  --picker-scrollbar-thumb: var(--ant-color-text-quaternary, rgb(0 0 0 / 45%));
+  --picker-scrollbar-track: transparent;
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--picker-scrollbar-thumb) var(--picker-scrollbar-track);
 }
 
-.parent-selector-selected-list::-webkit-scrollbar-thumb {
-  border-radius: 3px;
-  background: var(--ant-color-fill-secondary, rgba(0, 0, 0, 0.15));
+/* 仅作兼容兜底：支持标准属性的浏览器不会命中这段，避免两套规则互相覆盖 */
+@supports not (scrollbar-color: auto) {
+  .parent-selector-selected-list::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .parent-selector-selected-list::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background: var(--picker-scrollbar-thumb);
+  }
 }
 
 .parent-selector-selected-chip {
