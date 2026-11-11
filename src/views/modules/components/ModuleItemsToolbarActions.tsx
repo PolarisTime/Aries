@@ -16,7 +16,7 @@ import type {
 import { ColumnSettingsPopover } from './ColumnSettingsPopover'
 
 /**
- * 明细工具栏的操作区（新增/导入/排序/列设置/删除/保存审核）。
+ * 明细工具栏的操作区（新增/导入/排序/列设置/删除）。
  *
  * <p>从 ModuleEditorItemsSection 抽出：这组按钮各自带状态守卫（能力、导入中、
  * 保存中、是否有勾选、运费结算的特殊排序菜单），内联在明细区会把控制流复杂度
@@ -25,6 +25,12 @@ import { ColumnSettingsPopover } from './ColumnSettingsPopover'
  * 状态下沉到工具栏会丢失，与改造前行为不一致。</p>
  *
  * <p>按钮顺序、按钮类名、图标与文案保持逐字不变，DOM 结构只多了一层组件边界。</p>
+ *
+ * <p>**「取消 / 保存 / 保存并审核」不在这里渲染**：它们由 ModuleItemsPanel 的行末槽
+ * 贴着右边界摆放（见该组件的 `footerActions`）。此前它们只作为动作序列的最后一段
+ * 跟着工具按钮排下去，1900px 宽的一行里按钮组到 1000px 就结束、右边空出近一半，
+ * 主按钮「保存并审核」悬在中间；取价结果这类瞬时文本也正好卡在动作组末尾，
+ * 容易被读成「取消取价」。</p>
  */
 
 interface Props {
@@ -52,13 +58,6 @@ interface Props {
   parentImporting: boolean
   saving: boolean
   selectedItemCount: number
-  /**
-   * 明细工具栏行末的保存组（取消 / 保存 / 保存并审核）。
-   *
-   * <p>节点由 `ModuleEditorItemsSection` **单一处构建**并同时交给两个页签，
-   * 这里只负责摆放，避免两处各建一份导致行为分叉。</p>
-   */
-  footerActions?: React.ReactNode
   visibleItemColumnKeys: string[]
 }
 
@@ -80,7 +79,6 @@ export function ModuleItemsToolbarActions({
   parentImporting,
   saving,
   selectedItemCount,
-  footerActions,
   visibleItemColumnKeys,
 }: Props) {
   const { t } = useTranslation()
@@ -179,7 +177,6 @@ export function ModuleItemsToolbarActions({
           {t('modules.itemsSection.deleteSelected')} ({selectedItemCount})
         </Button>
       )}
-      {footerActions}
     </>
   )
 }
