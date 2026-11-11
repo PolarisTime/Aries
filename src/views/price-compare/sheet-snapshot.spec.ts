@@ -102,21 +102,6 @@ describe('服务端快照纯逻辑(sheet-snapshot)', () => {
 
     expect(itemSignature({ ...row, ton: 10 }, {})).not.toBe(base)
     expect(itemSignature({ ...row, locked: true }, {})).not.toBe(base)
-    expect(
-      itemSignature(
-        {
-          ...row,
-          purchaseOrderLinks: [
-            {
-              purchaseOrderId: 'p1',
-              purchaseOrderItemId: 'i1',
-              allocatedTon: 5,
-            },
-          ],
-        },
-        {},
-      ),
-    ).not.toBe(base)
     expect(itemSignature(row, { '中天:row-1': { spot: 3201 } })).not.toBe(
       itemSignature(row, { '中天:row-1': { spot: 3200 } }),
     )
@@ -189,7 +174,7 @@ describe('服务端快照纯逻辑(sheet-snapshot)', () => {
     ])
   })
 
-  it('行载荷: 隔断行/不完整行/关联字段语义保持不变', () => {
+  it('行载荷: 隔断行/不完整行语义不变, 且不含任何采购字段', () => {
     expect(
       buildItemPayload(
         makeSheet(),
@@ -202,16 +187,26 @@ describe('服务端快照纯逻辑(sheet-snapshot)', () => {
     ).toBeNull()
     const payload = buildItemPayload(
       makeSheet(),
-      makeRow({
-        purchaseOrderLinks: [
-          { purchaseOrderId: 'p1', purchaseOrderItemId: 'i1', allocatedTon: 5 },
-        ],
-      }),
+      makeRow({ ton: 12, locked: true }),
       brands,
     )
-    expect(payload?.purchaseOrderLinks).toEqual([
-      { purchaseOrderId: 'p1', purchaseOrderItemId: 'i1', allocatedTon: 5 },
+    // 吨位与行锁仍随载荷下发(比价页自己的字段)
+    expect(payload?.ton).toBe(12)
+    expect(payload?.locked).toBe(true)
+    // 载荷字段白名单: 比价页与采购已彻底解耦, 不允许再出现采购前缀字段
+    expect(Object.keys(payload ?? {}).sort()).toEqual([
+      'category',
+      'length',
+      'locked',
+      'material',
+      'prices',
+      'rowType',
+      'spec',
+      'ton',
     ])
+    expect(
+      Object.keys(payload ?? {}).filter((key) => /^purchase/i.test(key)),
+    ).toEqual([])
   })
 
   it('表头载荷不含 brands/items', () => {

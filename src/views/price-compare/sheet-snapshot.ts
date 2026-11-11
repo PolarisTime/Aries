@@ -121,12 +121,6 @@ export function buildPayload(
           ...(row.ton !== undefined ? { ton: row.ton } : {}),
           ...(row.remark ? { remark: row.remark } : {}),
           locked: Boolean(row.locked),
-          ...(row.purchaseOrderId
-            ? { purchaseOrderId: row.purchaseOrderId }
-            : {}),
-          ...(row.purchaseOrderItemId
-            ? { purchaseOrderItemId: row.purchaseOrderItemId }
-            : {}),
           prices,
         },
       ]
@@ -192,27 +186,6 @@ export function buildItemPayload(
     ...(row.ton !== undefined ? { ton: row.ton } : {}),
     ...(row.remark ? { remark: row.remark } : {}),
     locked: Boolean(row.locked),
-    ...(row.purchaseOrderId ? { purchaseOrderId: row.purchaseOrderId } : {}),
-    ...(row.purchaseOrderItemId
-      ? { purchaseOrderItemId: row.purchaseOrderItemId }
-      : {}),
-    /*
-     * 多行关联整组下发; 服务端按第一条镜像旧三列。
-     *
-     * 判据是"字段是否存在"而不是"长度是否非空": 后端语义为「未携带 = 不改关联、
-     * 显式 [] = 清空」, 只判长度会让"清除关联"的保存载荷省略该字段 ⇒ 旧关联被原样
-     * 保留, 服务端随后还把旧关联镜像回三列(实测)。从未关联过的行保持 undefined,
-     * 载荷继续省略该字段, 不把每行都塞一个空数组。
-     */
-    ...(row.purchaseOrderLinks
-      ? {
-          purchaseOrderLinks: row.purchaseOrderLinks.map((link) => ({
-            purchaseOrderId: link.purchaseOrderId,
-            purchaseOrderItemId: link.purchaseOrderItemId,
-            allocatedTon: link.allocatedTon,
-          })),
-        }
-      : {}),
     prices,
   }
 }
@@ -242,14 +215,6 @@ export function itemSignature(row: PriceRow, inputs: SheetInputs): string {
     ton: row.ton ?? null,
     remark: row.remark ?? '',
     locked: Boolean(row.locked),
-    purchaseOrderId: row.purchaseOrderId ?? null,
-    purchaseOrderItemId: row.purchaseOrderItemId ?? null,
-    // 关联集合参与指纹: 增删关联或改分配吨位都要触发保存
-    purchaseOrderLinks: (row.purchaseOrderLinks ?? []).map((link) => ({
-      purchaseOrderId: link.purchaseOrderId,
-      purchaseOrderItemId: link.purchaseOrderItemId,
-      allocatedTon: link.allocatedTon,
-    })),
     prices,
   })
 }
@@ -352,15 +317,6 @@ export function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
     ...(item.ton !== undefined ? { ton: item.ton } : {}),
     ...(item.remark ? { remark: item.remark } : {}),
     ...(item.locked ? { locked: true } : {}),
-    ...(item.purchaseOrderId ? { purchaseOrderId: item.purchaseOrderId } : {}),
-    ...(item.purchaseOrderNo ? { purchaseOrderNo: item.purchaseOrderNo } : {}),
-    ...(item.purchaseOrderItemId
-      ? { purchaseOrderItemId: item.purchaseOrderItemId }
-      : {}),
-    // 多行关联原样带入本地模型(为空时不落字段, 保持"未关联"语义)
-    ...(item.purchaseOrderLinks?.length
-      ? { purchaseOrderLinks: item.purchaseOrderLinks }
-      : {}),
   }))
   const inputs: SheetInputs = {}
   for (const item of record.items) {

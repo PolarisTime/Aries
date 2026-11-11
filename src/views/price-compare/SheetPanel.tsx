@@ -37,15 +37,11 @@ import { message } from '@/utils/antd-app'
 import {
   EMPTY_LENGTH_PREMIUMS,
   filterVarieties,
-  isOrderTonnageCovered,
-  isPurchasedRow,
   isSeparatorRow,
-  linkedPurchaseOrderItemIds,
   PRICE_COMPARE_COLUMN_SETTINGS_KEY,
   resolveRef,
   SHEET_HIDEABLE_COLUMN,
   type SupplierSelectOption,
-  sumTonByPurchaseOrderItem,
 } from './core'
 import { LockableField } from './LockableField'
 import { SpotSyncActions } from './SpotSyncActions'
@@ -57,21 +53,6 @@ import {
 } from './sheet-columns'
 import { moveFocus, moveFocusTon } from './sheet-focus-navigation'
 import { applyLowestQuotes } from './spot-from-price-list'
-import { resolveLinkedTonnageTotals } from './TonCell'
-import {
-  EMPTY_PURCHASE_ORDER_TONNAGE,
-  type PurchaseOrderTonnageDraftInput,
-  SHEET_TON_COLUMN_ORDER,
-  type SheetTonColumnId,
-  tonColumnHeader,
-  tonColumnKey,
-  tonColumnWidth,
-} from './ton-column'
-import {
-  compactTonText,
-  remainingTonDisplay,
-  remainingTonText,
-} from './ton-progress-text'
 import type {
   Brand,
   GridRow,
@@ -83,7 +64,6 @@ import type {
 import { useSheetColumnWidths } from './use-sheet-column-widths'
 import { useSheetPanelInputActions } from './use-sheet-panel-inputs'
 import { useSheetRowOperations } from './use-sheet-row-operations'
-import { usePurchaseOrderPicker } from './usePurchaseOrderPicker'
 import './price-compare.css'
 
 const { Text } = Typography
@@ -287,16 +267,10 @@ function SheetTable(props: SheetTableProps) {
           <Table.Summary.Row>
             <Table.Summary.Cell
               index={0}
-              /* 跨列数必须等于这一行左侧的全部列: 固定列 + 吨位列 + 品牌列。
-                 原式漏了吨位三列, 于是这一格的背景只铺到「材质/规格」列就在吨位处断掉,
-                 整行像被切了一刀(有了浅底之后尤其明显)。吨位里只有「报单吨位」必显,
-                 两个可显隐吨位列逐列计数(读的是同一份 visibleTonColumnIds, 不另写门禁)。 */
-              colSpan={
-                (base.hideRemark ? 4 : 5) +
-                1 +
-                base.visibleTonColumnIds.length +
-                base.visibleBrandCount * 4
-              }
+              /* 跨列数必须等于这一行左侧的全部列: 固定列(选择/行操作/备注/类别/规格) + 报单吨位列。
+                 原式漏算吨位列, 于是这一格的背景只铺到「材质/规格」列就在吨位处断掉,
+                 整行像被切了一刀(有了浅底之后尤其明显)。 */
+              colSpan={(base.hideRemark ? 4 : 5) + base.visibleBrandCount * 4}
             >
               <Flex gap="small" align="center">
                 {/* 不用 block: 两个入口平分整行宽度会把「添加隔断」推到表格中间,
@@ -356,12 +330,6 @@ function SheetTable(props: SheetTableProps) {
       rowClassName={(row) => {
         const classes: string[] = []
         if (isSeparatorRow(row.row)) classes.push('price-compare-separator-row')
-        else if (
-          isPurchasedRow(row.row) &&
-          // 只关联一张订货量不足的明细行不遮蔽价格: 否则 130 吨的报单会失去整个比价区
-          isOrderTonnageCovered(row.row, base.purchaseOrderTonnage.options)
-        )
-          classes.push('price-compare-purchased-row')
         if (row.rowId === dragId) classes.push('price-compare-dragging')
         if (dragId && row.rowId === dropId && row.rowId !== dragId)
           classes.push(
@@ -450,11 +418,6 @@ function SheetTable(props: SheetTableProps) {
           base.widths.category +
           base.widths.spec +
           base.widths.ton +
-          /* 可显隐吨位列的宽度也来自同一份注册表(tonColumnWidth), 不手写第二个映射。 */
-          base.visibleTonColumnIds.reduce(
-            (sum, id) => sum + tonColumnWidth(id, base.widths),
-            0,
-          ) +
           base.visibleBrandCount *
             (base.widths.net +
               base.widths.spot +
@@ -468,38 +431,27 @@ function SheetTable(props: SheetTableProps) {
 /* ---------------------------------------------------------------- 顶部栏 */
 
 /**
- * 列显示设置: 备注列、两个吨位列与整组品牌列的显隐。
+ * 列显示设置: 备注列与整组品牌列的显隐。
  *
  * <p>所有开关都只调用 {@link onToggle} 并带上 {@link SHEET_HIDEABLE_COLUMN} 的 key ——
  * 显隐状态本身由 SheetPanel 持有并持久化(本地 + 云漫游), 这里只负责呈现与派发。</p>
- *
- * <p><b>吨位两列的勾选框遍历 {@link SHEET_TON_COLUMN} 生成</b>: 文案、key、勾选态三者同源,
- * 因此不可能再出现「勾『已开货』关掉的却是『剩余未开』」—— 那是两处门禁各自手写造成的。</p>
  */
 function ColumnSettingsButton({
   hideRemark,
-  visibleTonColumnIds,
   brands,
   hiddenBrands,
   onToggle,
 }: {
   hideRemark: boolean
-  /** 当前可见的吨位列(唯一来源: SHEET_TON_COLUMN 注册表)。 */
-  visibleTonColumnIds: readonly SheetTonColumnId[]
   brands: Brand[]
   hiddenBrands: string[]
   onToggle: (key: string, visible: boolean) => void
 }) {
   const { t } = useTranslation()
   const hiddenBrandSet = new Set(hiddenBrands)
-  const visibleTonSet = new Set<SheetTonColumnId>(visibleTonColumnIds)
   /* 隐藏列数: NN/g 的表格指南要求「列被隐藏」必须有可见的状态指示 —— 否则用户关掉弹层后
      完全没有线索, 只能靠"感觉少了一列"。徽标与可访问名同时给出这个数。 */
-  const hiddenTonCount = SHEET_TON_COLUMN_ORDER.filter(
-    (id) => !visibleTonSet.has(id),
-  ).length
-  const hiddenCount =
-    (hideRemark ? 1 : 0) + hiddenTonCount + hiddenBrands.length
+  const hiddenCount = (hideRemark ? 1 : 0) + hiddenBrands.length
   const settingsLabel =
     hiddenCount > 0
       ? t('priceCompare.sheet.columnSettingsHidden', { n: hiddenCount })
@@ -523,18 +475,6 @@ function ColumnSettingsButton({
             !hideRemark,
             t('priceCompare.sheet.columns.remark'),
             SHEET_HIDEABLE_COLUMN.remark,
-          )}
-          <Divider className="my-4" />
-          <Text type="secondary" className="price-compare-sub">
-            {t('priceCompare.sheet.columns.tonnage')}
-          </Text>
-          {/* 文案取 tonColumnHeader、key 取 tonColumnKey: 与列头/渲染同源, 不存在第二个映射。 */}
-          {SHEET_TON_COLUMN_ORDER.map((id) =>
-            checkbox(
-              visibleTonSet.has(id),
-              tonColumnHeader(id, t),
-              tonColumnKey(id),
-            ),
           )}
           {brands.length ? (
             <>
@@ -1238,8 +1178,6 @@ type Props = {
   suppliers?: SupplierSelectOption[]
   /** 被他人签出编辑时只读(禁用编辑类交互) */
   readOnly?: boolean
-  /** 采购订单吨位数据(选项/回显/加载中), 供吨位列关联。 */
-  purchaseOrderTonnage?: PurchaseOrderTonnageDraftInput
 }
 
 /** 单个报单: 一张扁平表格展示全部行, 现货价同品牌/规格/材质/长度自动联动。 */
@@ -1295,7 +1233,6 @@ export function SheetPanel(props: Props) {
     onRemarkChange,
     suppliers = [],
     readOnly = false,
-    purchaseOrderTonnage = EMPTY_PURCHASE_ORDER_TONNAGE,
   } = props
   const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -1303,8 +1240,8 @@ export function SheetPanel(props: Props) {
   const [spotResetNonce, setSpotResetNonce] = useState(0)
   /** 仅临时(不持久化)的列显隐: 备注列与整组品牌列。 */
   /**
-   * 列显隐(备注 / 已占用 / 剩余可开 / 整组品牌)走统一的用户偏好持久化: 本地立即写入 +
-   * 云端漫游同步, 刷新与换设备都保留。
+   * 列显隐(备注 / 整组品牌)走统一的用户偏好持久化: 本地立即写入 + 云端漫游同步,
+   * 刷新与换设备都保留。
    *
    * <p>此前是纯内存 state(注释自称"仅临时列显隐"), 用户隐藏列后一刷新就复位 ——
    * 这正是本次要修的缺陷。key 统一来自 {@link SHEET_HIDEABLE_COLUMN}, 避免列设置弹层、
@@ -1313,10 +1250,10 @@ export function SheetPanel(props: Props) {
   const columnSettings = useColumnSettingsSupport(
     PRICE_COMPARE_COLUMN_SETTINGS_KEY,
     [],
-    /* 分母是表格的**总列数**(勾选/行操作/备注/类别/规格/三个吨位列 + 每个品牌 4 列) ——
+    /* 分母是表格的**总列数**(勾选/行操作/备注/类别/规格/报单吨位 + 每个品牌 4 列) ——
        它是 hook 判定「隐藏比例异常」的基数。传「可显隐列数」会把正常操作误判成脏数据:
        例如 3 个品牌时隐藏备注与两个品牌组就是 3/6, 直接触发静默重置。 */
-    8 + brands.length * 4,
+    6 + brands.length * 4,
   )
   const columnVisibility = columnSettings.columnVisibility
   const setColumnVisible = (key: string, visible: boolean) =>
@@ -1325,15 +1262,6 @@ export function SheetPanel(props: Props) {
       [key]: visible,
     }))
   const hideRemark = columnVisibility[SHEET_HIDEABLE_COLUMN.remark] === false
-  /**
-   * 可见吨位列: 唯一的显隐判定, 由注册表的 key 逐个查偏好。
-   *
-   * <p>不拆成两个 hideXxx 布尔值 —— 列构建、summary 跨列数、scroll.x 求和、勾选框四处
-   * 都读这一份列表, 因此「勾选框控制的列」与「实际渲染的列」在结构上不可能错位。</p>
-   */
-  const visibleTonColumnIds = SHEET_TON_COLUMN_ORDER.filter(
-    (id) => columnVisibility[tonColumnKey(id)] !== false,
-  )
   const hiddenBrands = brands
     .filter(
       (brand) =>
@@ -1415,86 +1343,7 @@ export function SheetPanel(props: Props) {
     setSelectedIds,
   })
 
-  const purchaseOrderPicker = usePurchaseOrderPicker({
-    rows,
-    excludeSheetId: /^[1-9]\d*$/.test(sheet.id) ? sheet.id : undefined,
-    patchRow,
-  })
-
-  /**
-   * 未开吨位列的定宽依据: 本单据**实际会出现**的明细行(选项列表 + 已关联明细)。
-   *
-   * <p>数字与品牌固定 11px、宽度随订货/已开吨位位数与品牌名长度变化, 只按字号换算算不出
-   * 「10.19 · 中天」需要多宽; 传进来后由 useSheetColumnWidths 取最宽一条定宽, 避免数字或
-   * 品牌被省略号收尾。</p>
-   */
-  const tonnageRecordsForWidth = useMemo(
-    () => [
-      ...purchaseOrderTonnage.options,
-      ...purchaseOrderTonnage.tonnageByItemId.values(),
-    ],
-    [purchaseOrderTonnage.options, purchaseOrderTonnage.tonnageByItemId],
-  )
-  const localTonByItemId = useMemo(
-    () => sumTonByPurchaseOrderItem(rows),
-    [rows],
-  )
-  /**
-   * 多行关联行的「剩余未开吨位」候选文案。
-   *
-   * <p>这类行在列上按关联行**合计**渲染(见 remainingTonText), 合计值可能比任何单条明细行
-   * 候选更宽; 单条关联行由 maxRemainingTonTextWidth 的单条候选覆盖, 这里只补多行的。</p>
-   */
-  const multiLinkRemainingTexts = useMemo(
-    () =>
-      rows.flatMap((row) => {
-        if (linkedPurchaseOrderItemIds(row).length < 2) return []
-        const localReportedTon = row.purchaseOrderItemId
-          ? (localTonByItemId.get(row.purchaseOrderItemId) ?? 0)
-          : 0
-        const totals = resolveLinkedTonnageTotals(
-          row,
-          purchaseOrderTonnage.options,
-          row.purchaseOrderItemId
-            ? purchaseOrderTonnage.tonnageByItemId.get(row.purchaseOrderItemId)
-            : undefined,
-        )
-        // 方案 B: 剩余未开 = 本行报单吨位 − 真实已开货(入库回写), 与列上渲染同源
-        const display = remainingTonDisplay(
-          localReportedTon,
-          totals.shippedTotal,
-        )
-        // 已开超行在负值之后还有一段「已开超 X 吨」, 列宽候选必须与渲染同源
-        return [
-          display.overTon > 0
-            ? `${display.text} ${t(
-                'priceCompare.sheet.purchaseOrderOverIssuedShort',
-                { over: compactTonText(display.overTon) },
-              )}`
-            : remainingTonText(localReportedTon, totals.shippedTotal),
-        ]
-      }),
-    [
-      rows,
-      t,
-      purchaseOrderTonnage.options,
-      purchaseOrderTonnage.tonnageByItemId,
-      localTonByItemId,
-    ],
-  )
-  const columnWidths = useSheetColumnWidths(
-    tonnageRecordsForWidth,
-    localTonByItemId,
-    {
-      issued: t('priceCompare.sheet.columns.issuedTon'),
-      unopened: t('priceCompare.sheet.columns.unopenedTon'),
-    },
-    multiLinkRemainingTexts,
-    (overTon) =>
-      t('priceCompare.sheet.purchaseOrderOverIssuedShort', {
-        over: compactTonText(overTon),
-      }),
-  )
+  const columnWidths = useSheetColumnWidths()
 
   const base = {
     sheet,
@@ -1538,13 +1387,8 @@ export function SheetPanel(props: Props) {
     spotRef,
     readOnly,
     hideRemark,
-    visibleTonColumnIds,
     hiddenBrands,
     varietyOptionsFlat: filterVarieties(varieties, brands, allowedProducts),
-    // 报单吨位合计: 视图层算一次, 吨位三列与列宽计算共用同一份
-    localTonByItemId,
-    purchaseOrderTonnage,
-    openPurchaseOrderPicker: purchaseOrderPicker.open,
     visibleBrandCount: brands.reduce(
       (count, brand) => (hiddenBrandSet.has(brand.name) ? count : count + 1),
       0,
@@ -1578,7 +1422,6 @@ export function SheetPanel(props: Props) {
         columnSettingsSlot={
           <ColumnSettingsButton
             hideRemark={hideRemark}
-            visibleTonColumnIds={visibleTonColumnIds}
             brands={brands}
             hiddenBrands={hiddenBrands}
             onToggle={setColumnVisible}
@@ -1601,7 +1444,6 @@ export function SheetPanel(props: Props) {
         onAddRow={addRow}
         onAddSeparator={addSeparator}
       />
-      {purchaseOrderPicker.node}
     </>
   )
 

@@ -7,12 +7,6 @@ import {
   type ColumnContext,
   FallbackBadge,
 } from './sheet-columns'
-import {
-  EMPTY_PURCHASE_ORDER_TONNAGE,
-  SHEET_TON_COLUMN,
-  SHEET_TON_COLUMN_ORDER,
-  tonColumnKey,
-} from './ton-column'
 import type { Brand, PriceSheet } from './types'
 
 /** 只回显 key 的 t(): 列头文案不是本用例的断言对象。 */
@@ -78,8 +72,6 @@ function makeContext(overrides: Partial<ColumnContext> = {}): ColumnContext {
     patchRow: () => {},
     moveFocus: () => false,
     moveFocusTon: () => false,
-    purchaseOrderTonnage: EMPTY_PURCHASE_ORDER_TONNAGE,
-    openPurchaseOrderPicker: () => {},
     onReorderBrands: () => {},
     onToggleBrand: () => {},
     supplierFillBrand: undefined,
@@ -101,10 +93,8 @@ function makeContext(overrides: Partial<ColumnContext> = {}): ColumnContext {
     allowedProducts: [],
     varietyOptionsFlat: [],
     hideRemark: false,
-    visibleTonColumnIds: [...SHEET_TON_COLUMN_ORDER],
     hiddenBrands: [],
     visibleBrandCount: brands.length,
-    localTonByItemId: new Map(),
     ...overrides,
   }
 }
@@ -123,7 +113,7 @@ function columnsOf(overrides: Partial<ColumnContext> = {}): AnyColumn[] {
 }
 
 describe('比价表格列定义(sheet-columns)', () => {
-  it('列顺序与列宽由 ctx 驱动: 选择/拖拽/备注/品类/规格/吨位/品牌组/填充列', () => {
+  it('列顺序与列宽由 ctx 驱动: 选择/拖拽/备注/品类/规格/报单吨位/品牌组/填充列', () => {
     const ctx = makeContext()
     const columns = columnsOf()
 
@@ -143,13 +133,8 @@ describe('比价表格列定义(sheet-columns)', () => {
       dataIndex: 'base',
       width: ctx.widths.spec,
     })
-    // 报单吨位列(基础列)
+    // 报单吨位列(唯一的吨位列, 已开/未开两列随采购解耦移除)
     expect(columns[5]).toMatchObject({ width: ctx.widths.ton })
-    // 两个可显隐吨位列, 顺序与宽度都来自唯一注册表
-    expect(columns[6].width).toBe(
-      ctx.widths[SHEET_TON_COLUMN.remaining.widthKey],
-    )
-    expect(columns[7].width).toBe(ctx.widths[SHEET_TON_COLUMN.shipped.widthKey])
     // 品牌组: 每个品牌一组 4 个子列(网价/现货/差价/简称), 宽度同样取宽度表
     const brandGroups = columns.filter((column) => column.children)
     expect(brandGroups).toHaveLength(brands.length)
@@ -163,6 +148,16 @@ describe('比价表格列定义(sheet-columns)', () => {
     expect(columns.at(-1)).toMatchObject({ key: '__filler__' })
   })
 
+  it('吨位列只有一列: 不再有已开/未开两列', () => {
+    const columns = columnsOf()
+    const tonWidth = makeContext().widths.ton
+    expect(columns.filter((column) => column.width === tonWidth)).toHaveLength(
+      1,
+    )
+    // 6 个前置列 + 品牌组 + 填充列
+    expect(columns).toHaveLength(6 + brands.length + 1)
+  })
+
   it('隐藏备注列只移除备注列, 其余列顺序不变', () => {
     const shown = columnsOf({ hideRemark: false })
     const hidden = columnsOf({ hideRemark: true })
@@ -172,34 +167,6 @@ describe('比价表格列定义(sheet-columns)', () => {
     // 去掉备注列后, 品类/规格列前移一位, 相对顺序不变
     expect(hidden[2]).toMatchObject({ dataIndex: 'category' })
     expect(hidden[3]).toMatchObject({ dataIndex: 'base' })
-  })
-
-  it('吨位列显隐由 visibleTonColumnIds 驱动(唯一注册表)', () => {
-    const all = columnsOf()
-    const remainingWidth = all[6].width
-    const shippedWidth = all[7].width
-    expect(remainingWidth).toBe(
-      makeContext().widths[SHEET_TON_COLUMN.remaining.widthKey],
-    )
-    expect(shippedWidth).toBe(
-      makeContext().widths[SHEET_TON_COLUMN.shipped.widthKey],
-    )
-
-    const none = columnsOf({ visibleTonColumnIds: [] })
-    expect(none).toHaveLength(all.length - 2)
-    expect(none.some((column) => column.width === remainingWidth)).toBe(false)
-    expect(none.some((column) => column.width === shippedWidth)).toBe(false)
-    // 仍保留基础报单吨位列
-    expect(none[5]).toMatchObject({ width: makeContext().widths.ton })
-
-    const onlyShipped = columnsOf({ visibleTonColumnIds: ['shipped'] })
-    expect(onlyShipped.some((column) => column.width === remainingWidth)).toBe(
-      false,
-    )
-    expect(onlyShipped.some((column) => column.width === shippedWidth)).toBe(
-      true,
-    )
-    expect(onlyShipped[6]).toMatchObject({ width: shippedWidth })
   })
 
   it('隐藏品牌不再生成该品牌列组, 可见品牌保持原顺序', () => {
@@ -219,8 +186,9 @@ describe('比价表格列定义(sheet-columns)', () => {
     const remark = columns.find((column) => column.dataIndex === 'remark')
     expect(remark).toBeDefined()
     expect(SHEET_HIDEABLE_COLUMN.remark).toBe('remark')
-    expect(tonColumnKey('remaining')).toBe(SHEET_HIDEABLE_COLUMN.unopenedTon)
-    expect(tonColumnKey('shipped')).toBe(SHEET_HIDEABLE_COLUMN.issuedTon)
+    // 已开/未开两列的 key 随采购解耦一并移除, 偏好登记表只保留备注与品牌
+    expect(SHEET_HIDEABLE_COLUMN).not.toHaveProperty('issuedTon')
+    expect(SHEET_HIDEABLE_COLUMN).not.toHaveProperty('unopenedTon')
   })
 })
 

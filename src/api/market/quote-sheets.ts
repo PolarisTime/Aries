@@ -56,28 +56,6 @@ const itemSchema = z.looseObject({
   ton: z.union([z.number(), z.string()]).nullable().optional(),
   remark: z.string().nullable().optional(),
   locked: z.boolean().nullable().optional(),
-  purchaseOrderId: z.union([z.number(), z.string()]).nullable().optional(),
-  purchaseOrderNo: z.string().nullable().optional(),
-  purchaseOrderItemId: z.union([z.number(), z.string()]).nullable().optional(),
-  /** 多行关联: 一行可挂多张采购订单明细行, 每条带本次开出吨位。 */
-  purchaseOrderLinks: z
-    .array(
-      z.looseObject({
-        purchaseOrderId: z
-          .union([z.number(), z.string()])
-          .nullable()
-          .optional(),
-        purchaseOrderNo: z.string().nullable().optional(),
-        purchaseOrderItemId: z
-          .union([z.number(), z.string()])
-          .nullable()
-          .optional(),
-        allocatedTon: z.union([z.number(), z.string()]).nullable().optional(),
-        sortNo: z.union([z.number(), z.string()]).nullable().optional(),
-      }),
-    )
-    .nullable()
-    .optional(),
   prices: z.array(priceSchema).nullable().optional(),
 })
 
@@ -128,61 +106,6 @@ export type QuoteSheetPriceRecord = {
   spotSourceMaterial?: string | null
 }
 
-/** 行级关联的采购订单明细行: allocatedTon 是本次在该明细行开出的吨位。 */
-export type QuoteSheetItemPurchaseOrderRecord = {
-  purchaseOrderId: EntityId
-  purchaseOrderNo?: string
-  purchaseOrderItemId: EntityId
-  allocatedTon: number
-}
-
-/**
- * 归一多行关联: 服务端返回列表时以列表为准; 只返回旧单值三列时合成一条, 分配吨位取本行吨位
- * (等价于"这一行全部开在这张明细行上")。订单级关联(未选明细行)不产生关联行。
- */
-function normalizePurchaseOrderLinks(
-  links: readonly unknown[] | null | undefined,
-  purchaseOrderId: EntityId | undefined,
-  purchaseOrderNo: unknown,
-  purchaseOrderItemId: EntityId | undefined,
-  ton: number | undefined,
-  path: string,
-): QuoteSheetItemPurchaseOrderRecord[] {
-  const rows = (links ?? []).flatMap((raw, index) => {
-    if (raw === null || typeof raw !== 'object') return []
-    const link = raw as Record<string, unknown>
-    const orderId = parseOptionalEntityId(
-      link.purchaseOrderId,
-      `${path}[${index}].purchaseOrderId`,
-    )
-    const itemId = parseOptionalEntityId(
-      link.purchaseOrderItemId,
-      `${path}[${index}].purchaseOrderItemId`,
-    )
-    if (!orderId || !itemId) return []
-    const orderNo = asString(link.purchaseOrderNo).trim()
-    return [
-      {
-        purchaseOrderId: orderId,
-        ...(orderNo ? { purchaseOrderNo: orderNo } : {}),
-        purchaseOrderItemId: itemId,
-        allocatedTon: toOptionalNumber(link.allocatedTon) ?? 0,
-      },
-    ]
-  })
-  if (rows.length > 0) return rows
-  if (!purchaseOrderId || !purchaseOrderItemId) return []
-  const orderNo = asString(purchaseOrderNo).trim()
-  return [
-    {
-      purchaseOrderId,
-      ...(orderNo ? { purchaseOrderNo: orderNo } : {}),
-      purchaseOrderItemId,
-      allocatedTon: ton ?? 0,
-    },
-  ]
-}
-
 export type QuoteSheetItemRecord = {
   id: EntityId
   rowType?: 'PRODUCT' | 'SEPARATOR'
@@ -192,16 +115,8 @@ export type QuoteSheetItemRecord = {
   length: string
   ton?: number
   remark?: string
-  /** 是否锁定(未锁定不可关联采购订单; 隔断行恒为 false)。 */
+  /** 是否锁定(行锁: 只冻结该行规格与吨位; 隔断行恒为 false)。 */
   locked: boolean
-  /** 是否已采购(由 purchaseOrderId 派生; 隔断行恒为 false)。 */
-  purchased: boolean
-  purchaseOrderId?: EntityId
-  purchaseOrderNo?: string
-  /** 关联采购订单明细行标识(按规格扣减); 等于 purchaseOrderLinks[0]。 */
-  purchaseOrderItemId?: EntityId
-  /** 多行关联(以服务端为准; 单值三列是其第一条的镜像); 归一化后必定存在。 */
-  purchaseOrderLinks?: QuoteSheetItemPurchaseOrderRecord[]
   prices: QuoteSheetPriceRecord[]
 }
 
@@ -257,8 +172,6 @@ export type QuoteSheetPayload = {
     ton?: number
     remark?: string
     locked?: boolean
-    purchaseOrderId?: EntityId
-    purchaseOrderItemId?: EntityId
     prices: {
       brandName: string
       spotPrice?: number
@@ -277,14 +190,6 @@ export type QuoteSheetItemPayload = {
   ton?: number
   remark?: string
   locked?: boolean
-  purchaseOrderId?: EntityId
-  purchaseOrderItemId?: EntityId
-  /** 多行关联: 整组替换; 不带时服务端按单值三列合成一条。 */
-  purchaseOrderLinks?: {
-    purchaseOrderId: EntityId
-    purchaseOrderItemId: EntityId
-    allocatedTon?: number
-  }[]
   prices: {
     brandName: string
     spotPrice?: number
@@ -353,17 +258,6 @@ function normalizeItem(
   path: string,
 ): QuoteSheetItemRecord {
   const rowType = item.rowType === 'SEPARATOR' ? 'SEPARATOR' : 'PRODUCT'
-  const purchaseOrderId =
-    rowType === 'SEPARATOR'
-      ? undefined
-      : parseOptionalEntityId(item.purchaseOrderId, `${path}.purchaseOrderId`)
-  const purchaseOrderItemId =
-    rowType === 'SEPARATOR'
-      ? undefined
-      : parseOptionalEntityId(
-          item.purchaseOrderItemId,
-          `${path}.purchaseOrderItemId`,
-        )
   return {
     id: parseEntityId(item.id, `${path}.id`),
     rowType,
@@ -377,23 +271,8 @@ function normalizeItem(
       ? { ton: toOptionalNumber(item.ton) }
       : {}),
     ...(asString(item.remark).trim() ? { remark: asString(item.remark) } : {}),
-    // 已采购由采购订单关联派生, 不再读取独立布尔字段; 隔断行恒为未采购。
-    purchased: purchaseOrderId !== undefined,
     // 隔断行不携带锁定标记。
     locked: rowType === 'SEPARATOR' ? false : Boolean(item.locked),
-    ...(purchaseOrderId ? { purchaseOrderId } : {}),
-    ...(purchaseOrderId && item.purchaseOrderNo
-      ? { purchaseOrderNo: item.purchaseOrderNo }
-      : {}),
-    ...(purchaseOrderItemId ? { purchaseOrderItemId } : {}),
-    purchaseOrderLinks: normalizePurchaseOrderLinks(
-      item.purchaseOrderLinks,
-      purchaseOrderId,
-      item.purchaseOrderNo,
-      purchaseOrderItemId,
-      toOptionalNumber(item.ton),
-      `${path}.purchaseOrderLinks`,
-    ),
     prices: (item.prices ?? []).map((price, priceIndex) =>
       normalizePrice(price, priceIndex),
     ),
@@ -607,113 +486,4 @@ export async function deleteQuoteSheetItem(
       ? { version: readResourceVersionHeader(response.headers) }
       : {}),
   }
-}
-
-/**
- * 采购订单明细行吨位汇总。
- *
- * <p><b>两个"已开"是不同的量, 不可互相替代</b>: `issuedWeight` 是**其他报价单的报单占用**
- * (报单需求量之和), 用于选单判断"这条订单行的额度还能不能再报"; `actualWeightTon` 是
- * **真实已开货**(入库审核回写), 用于吨位列回答"这条明细行已经开出去多少货"。</p>
- */
-export type PurchaseOrderTonnageRecord = {
-  purchaseOrderId: EntityId
-  /** 采购订单明细行标识(按规格扣减的唯一标识)。 */
-  purchaseOrderItemId: EntityId
-  orderNo: string
-  supplierName: string
-  category: string
-  material: string
-  spec: string
-  length: string
-  /** 品牌(采购订单明细自带字段): 供吨位列展示"已开的品牌"与弹窗区分同规格的不同品牌。 */
-  brand: string
-  orderedWeight: number
-  /** 其他报价单在该明细行上的报单占用(选单额度口径)。 */
-  issuedWeight: number
-  /** 剩余可开 = 订货吨位 − 报单占用。 */
-  remainingWeight: number
-  /** 真实已开货吨位(入库回写); null = 还没有任何到货记录(区别于"开了 0 吨")。 */
-  actualWeightTon: number | null
-  /** 人工裁定的「已开完」标记: 与吨位无关, 不根据 actualWeightTon 自动判定。 */
-  issuedDone: boolean
-  status: string
-}
-
-const purchaseOrderTonnageSchema = z.looseObject({
-  purchaseOrderId: z.unknown(),
-  purchaseOrderItemId: z.unknown(),
-  orderNo: z.string().nullable().optional(),
-  supplierName: z.string().nullable().optional(),
-  category: z.string().nullable().optional(),
-  material: z.string().nullable().optional(),
-  spec: z.string().nullable().optional(),
-  length: z.string().nullable().optional(),
-  brand: z.string().nullable().optional(),
-  orderedWeight: z.union([z.number(), z.string()]).nullable().optional(),
-  issuedWeight: z.union([z.number(), z.string()]).nullable().optional(),
-  remainingWeight: z.union([z.number(), z.string()]).nullable().optional(),
-  actualWeightTon: z.union([z.number(), z.string()]).nullable().optional(),
-  issuedDone: z.boolean().nullable().optional(),
-  status: z.string().nullable().optional(),
-})
-
-/**
- * 列出采购订单明细行(按规格)及其订货/报单占用/剩余吨位与真实已开货, 供吨位列按规格关联并展示。
- * 传 purchaseOrderItemIds 按 id 汇总(用于回显已关联行), 否则按 keyword/status/purchaseOrderId 列出选项。
- * excludeSheetId 排除当前报价单自身已保存吨位, 便于叠加本地未保存吨位。
- */
-export async function fetchPurchaseOrderTonnages(
-  options: {
-    purchaseOrderItemIds?: EntityId[]
-    keyword?: string
-    status?: string
-    purchaseOrderId?: EntityId
-    excludeSheetId?: EntityId
-  },
-  signal?: AbortSignal,
-): Promise<PurchaseOrderTonnageRecord[]> {
-  const params: Record<string, unknown> = {}
-  if (options.purchaseOrderItemIds?.length) {
-    params.purchaseOrderItemIds = options.purchaseOrderItemIds
-  }
-  if (options.keyword) params.keyword = options.keyword
-  if (options.status) params.status = options.status
-  if (options.purchaseOrderId) params.purchaseOrderId = options.purchaseOrderId
-  if (options.excludeSheetId) params.excludeSheetId = options.excludeSheetId
-  const response = await apiGet(
-    ENDPOINTS.QUOTE_SHEET_PURCHASE_ORDER_TONNAGES,
-    z.array(purchaseOrderTonnageSchema),
-    {
-      params,
-      ...(options.purchaseOrderItemIds?.length
-        ? { paramsSerializer: { indexes: null } }
-        : {}),
-      ...(signal ? { signal } : {}),
-    },
-  )
-  return response.map((row, index) => ({
-    purchaseOrderId: parseEntityId(
-      row.purchaseOrderId,
-      `tonnages[${index}].purchaseOrderId`,
-    ),
-    purchaseOrderItemId: parseEntityId(
-      row.purchaseOrderItemId,
-      `tonnages[${index}].purchaseOrderItemId`,
-    ),
-    orderNo: asString(row.orderNo),
-    supplierName: asString(row.supplierName),
-    category: asString(row.category),
-    material: asString(row.material),
-    spec: asString(row.spec),
-    length: asString(row.length),
-    brand: asString(row.brand),
-    orderedWeight: toOptionalNumber(row.orderedWeight) ?? 0,
-    issuedWeight: toOptionalNumber(row.issuedWeight) ?? 0,
-    remainingWeight: toOptionalNumber(row.remainingWeight) ?? 0,
-    // 保持 null 语义: "还没有到货记录"与"开了 0 吨"在展示与判断上不等价
-    actualWeightTon: toOptionalNumber(row.actualWeightTon) ?? null,
-    issuedDone: Boolean(row.issuedDone),
-    status: asString(row.status),
-  }))
 }

@@ -93,7 +93,7 @@ const typeName = (value: string) => {
   )
   act(() => {
     /* React 受控输入需要走原生 setter + input 事件：直接赋值会被 React 的 value 追踪吞掉。
-       与仓库内其它 spec 同一写法（PickupSplitModal / PurchaseOrderPickerModal）。 */
+       与仓库内其它 spec 同一写法（如 PickupSplitModal）。 */
     // eslint-disable-next-line @typescript-eslint/unbound-method -- 原生 value setter 必须以输入元素为 receiver 调用
     const setter = descriptor?.set
     if (setter) {

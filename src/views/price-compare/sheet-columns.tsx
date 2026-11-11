@@ -44,8 +44,6 @@ import {
   filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
-  isOrderTonnageCovered,
-  isPurchasedRow,
   isSeparatorRow,
   isSubstitutableMaterial,
   LOCK_REASON_KEYS,
@@ -57,12 +55,7 @@ import {
   type SupplierSelectOption,
 } from './core'
 import { resolveCellSpotSource } from './spot-source-cancel'
-import {
-  buildTonColumn,
-  buildTonColumns,
-  type PurchaseOrderTonnageDraftInput,
-  type SheetTonColumnId,
-} from './ton-column'
+import { buildTonColumn } from './ton-column'
 import type {
   Brand,
   GridRow,
@@ -251,10 +244,6 @@ export type ColumnContext = {
   /** 在品牌列内纵向移动焦点; 返回 false 表示已到列首/列尾(调用方应放行默认 Tab)。 */
   moveFocus: (brandName: string, rowId: string, delta: number) => boolean
   moveFocusTon: (rowId: string, delta: number) => boolean
-  /** 采购订单吨位数据(选项/回显/加载中), 供吨位列关联。 */
-  purchaseOrderTonnage: PurchaseOrderTonnageDraftInput
-  /** 打开采购订单选择弹窗(rowId 用于回填到对应行)。 */
-  openPurchaseOrderPicker: (rowId: string) => void
   onReorderBrands: (from: number, to: number) => void
   /** 隐藏/显示整组品牌列(与「列显示」弹层共用同一份显隐状态)。 */
   onToggleBrand: (brandName: string, visible: boolean) => void
@@ -289,34 +278,16 @@ export type ColumnContext = {
   varietyOptionsFlat: Variety[]
   /** 是否隐藏备注列(列设置弹层可切换, 走用户偏好持久化)。 */
   hideRemark: boolean
-  /**
-   * 当前可见的吨位列 id 列表(由 {@link SHEET_TON_COLUMN} 注册表派生)。
-   *
-   * <p>只传"哪些可见"而不是两个 hideXxx 布尔值: 布尔值由调用方手写两遍门禁, 正是
-   * 「勾『已开货』关掉『剩余未开』」的成因。列构建遍历注册表, 不存在第二个映射。</p>
-   */
-  visibleTonColumnIds: readonly SheetTonColumnId[]
   /** 整组隐藏的品牌名。 */
   hiddenBrands: string[]
   /** 可见品牌列组数量(已排除隐藏品牌), 供 summary colSpan 与 scroll.x 复用 */
   visibleBrandCount: number
-  /**
-   * 本单据各采购订单明细行的报单吨位合计(聚合只算一次: 视图层 useMemo)。
-   *
-   * <p>吨位三列共用同一份, 单元格内不再各自重算。</p>
-   */
-  localTonByItemId: Map<string, number>
 }
 
 const cellOf = (
   title: React.ReactNode,
   width: number,
   render: (value: unknown, row: GridRow) => React.ReactNode,
-  /**
-   * 该行是否遮蔽此格(仅品牌价格列传)。默认按"已关联采购订单"遮蔽; 品牌价格列传入更严格的
-   * "已关联且订货量覆盖本行报单吨位", 避免 130 吨报单挂到订货 10 吨的明细行后比价区被遮掉。
-   */
-  isMasked: (row: GridRow) => boolean = (row) => isPurchasedRow(row.row),
 ) => ({
   title,
   width,
@@ -324,13 +295,9 @@ const cellOf = (
   // 列宽固定且字号小, 表头文案会被裁切: 补 title 让鼠标用户能看到完整列名
   onHeaderCell: () =>
     typeof title === 'string' ? { title } : ({} as { title?: string }),
-  // 隔断行不参与网价/现货/差价/供应商等任一品牌列; 已采购(已关联且被订货量覆盖)行整体遮蔽该区
+  // 隔断行不参与网价/现货/差价/供应商等任一品牌列
   render: (value: unknown, row: GridRow) =>
-    isSeparatorRow(row.row) ? null : isMasked(row) ? (
-      <span className="price-compare-purchased-mask" aria-hidden="true" />
-    ) : (
-      render(value, row)
-    ),
+    isSeparatorRow(row.row) ? null : render(value, row),
 })
 
 /** 行操作单元格需要的数据: 菜单项与开关都由外层表格控件决定, 这里只做渲染。 */
@@ -624,23 +591,9 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     readOnly,
     sheet,
     hideRemark,
-    visibleTonColumnIds,
     hiddenBrands,
-    purchaseOrderTonnage,
-    openPurchaseOrderPicker,
     widths,
-    // 报单吨位合计: 由视图层算一次传入(这里不再重复聚合)
-    localTonByItemId,
   } = ctx
-  /**
-   * 行是否"已采购"(品牌价格列整体遮蔽)。
-   * <p>必须同时满足: 已关联订单明细行, 且该明细行订货量 ≥ 本行报单吨位 —— 只看"已关联"
-   * 会让 130 吨的报单挂到一条订货 10 吨的明细行上就失去整个比价区。</p>
-   */
-  const coveredByOrder = (row: PriceRow) =>
-    isPurchasedRow(row) &&
-    isOrderTonnageCovered(row, purchaseOrderTonnage.options)
-  const purchasedRowOf = (row: GridRow) => coveredByOrder(row.row)
   /** 可见品牌(O(1) 查找)。 */
   const hiddenBrandSet = new Set(hiddenBrands)
   /**
@@ -667,26 +620,15 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     allowedProducts,
   )
   const varietyOptions = buildVarietyOptions(varietyOptionsFlat)
-  /**
-   * 吨位三列共用的构建上下文: 只构造一次, 三列(A/B/C)读同一份。
-   *
-   * <p>列宽不再拆成 `issuedWidth` / `unopenedWidth` 两个易混参数 —— 哪一列取哪个宽度由
-   * {@link SHEET_TON_COLUMN} 的 `widthKey` 决定, 这里只传整张宽度表。</p>
-   */
+  /** 报单吨位列的构建上下文(列宽取整张宽度表, 不另设参数)。 */
   const tonColumnCtx = {
     t,
     sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
     readOnly,
     widths,
     quantityLockClass,
-    purchaseOrderOptions: purchaseOrderTonnage.options,
-    tonnageByItemId: purchaseOrderTonnage.tonnageByItemId,
-    purchaseOrderTonnageLoading: purchaseOrderTonnage.loading,
-    purchaseOrderTonnageError: purchaseOrderTonnage.isError,
-    localTonByItemId,
     moveFocusTon: ctx.moveFocusTon,
     patchRow,
-    openPurchaseOrderPicker,
   }
   /*
    * 每行"差价最优"的品牌集合(并列时可能多家)。
@@ -918,14 +860,12 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           current && current.material
             ? `${current.category}|${current.material}|${current.spec}|${current.length}`
             : undefined
-        // 仅未采购(未关联, 或订货量还没覆盖本行报单吨位)且同规格存在另一长度时可切换。
-        const alternate = coveredByOrder(current)
-          ? undefined
-          : findAlternateLengthVariety(
-              varietyOptionsFlat,
-              current,
-              lengthSortOrders,
-            )
+        // 同规格存在另一长度时可切换(与采购/销售无关, 只受锁定层级约束)。
+        const alternate = findAlternateLengthVariety(
+          varietyOptionsFlat,
+          current,
+          lengthSortOrders,
+        )
         // 锁定层级 单据 > 行 > 单元格: 行级锁同样冻结本行规格(行锁 = 规格与吨位定稿)。
         const specLock = resolveLock({
           sheet: quantityLocked,
@@ -1035,11 +975,6 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       },
     },
     buildTonColumn(tonColumnCtx),
-    /*
-     * 两个可显隐吨位列: 顺序 / key / 表头 / 列宽全部来自 SHEET_TON_COLUMN 注册表 ——
-     * 这里不再按 hideXxx 布尔值各写一段门禁(那正是「勾『已开货』关掉『剩余未开』」的成因)。
-     */
-    ...buildTonColumns(tonColumnCtx, (id) => visibleTonColumnIds.includes(id)),
 
     ...brands.flatMap(
       (brand, brandIndex): ColumnsType<GridRow> =>
@@ -1171,7 +1106,6 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         </div>
                       )
                     },
-                    purchasedRowOf,
                   ),
                   cellOf(
                     t('priceCompare.sheet.columns.spot'),
@@ -1313,7 +1247,6 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         spotNode
                       )
                     },
-                    purchasedRowOf,
                   ),
                   cellOf(
                     t('priceCompare.sheet.columns.diff'),
@@ -1360,7 +1293,6 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         </Tooltip>
                       )
                     },
-                    purchasedRowOf,
                   ),
                   cellOf(
                     <SupplierFillHeader
@@ -1440,7 +1372,6 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         />
                       )
                     },
-                    purchasedRowOf,
                   ),
                 ],
               },

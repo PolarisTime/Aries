@@ -1,4 +1,3 @@
-import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { substituteMaterialOf } from '@/utils/material-grade'
 import type {
   Brand,
@@ -244,8 +243,6 @@ export const DEFAULT_LENGTH_PREMIUM = 30
  */
 export const SHEET_HIDEABLE_COLUMN = {
   remark: 'remark',
-  issuedTon: 'ton:issued',
-  unopenedTon: 'ton:unopened',
   /** 品牌列是动态列(随项目配置变化), key 带品牌名后缀。 */
   brand: (name: string) => `brand:${name}`,
 } as const
@@ -265,27 +262,10 @@ export const SHEET_COLUMN_WIDTH = {
   /**
    * 报单吨位列: 只放吨位输入框 + 单元格留白。
    *
-   * <p>4.75em 输入框在基准字号下约 66px, 加左右留白 13px 后 84px 足够; 超出这个宽度
-   * 的余量以前都花在"输入框右侧那句话"上, 现已拆成独立的已开/未开两列, 因此这里不再
-   * 需要内容驱动的加宽。</p>
+   * <p>4.75em 输入框在基准字号下约 66px, 加左右留白 13px 后 84px 足够; 该列只承载吨位
+   * 输入本身, 不再有「已开 / 未开」等派生列, 因此无需按内容加宽。</p>
    */
   ton: 84,
-  /**
-   * 已开吨位列: 服务端已保存报单占用该订单明细行的吨位。
-   *
-   * <p>该列只放固定 11px 的只读数字, 因此列宽**按内容给**(见
-   * {@link requiredIssuedTonColumnWidth}): 数字短时不白留空白, 长到 `8,884.500` 也裁不到。
-   * 这里的 92 仅作为"无数据时的下限"。对。</p>
-   */
-  issuedTon: 92,
-  /**
-   * 未开吨位列: `锁定后的报单吨位 − 已开吨位`, 并承载品牌与明细图标。
-   *
-   * <p>该列内容(数字 + 品牌)固定 11px、不随个人字号缩放, 因此列宽**按内容给**(见
-   * {@link requiredTonColumnWidth}): 内容短时不留空白, 品牌名一长(「中天钢铁」)也不会被
-   * 省略号收尾。这里的 184 仅作为"无数据时的下限"。</p>
-   */
-  unopenedTon: 184,
   /** 网价列: 4 位数字(14px 下约 34px) + 单元格左右留白(12px), 60 已足够。 */
   net: 74,
   /**
@@ -345,214 +325,22 @@ function normalizeFontSize(fontSize: number): number {
 export const TON_INPUT_WIDTH_EM = 4.75
 
 /**
- * 吨位格内**不随个人字号缩放**的固定开销(px)。
- *
- * <p>等比换算只对文字宽度成立: 单元格左右留白(13)、输入框与进度/明细图标之间的两个
- * flex gap(8)、icon-only 的明细按钮(24, 由 24×24 命中区下限决定)都是固定尺寸。</p>
- */
-export const TON_CELL_FIXED_CHROME = 13 + 8 + 24
-
-/** 单元格左右留白(px): 只放数字的两列(已开吨位)用得上。 */
-export const TON_CELL_PADDING = 13
-
-/**
- * 未开吨位数字(如「10.19」「-1.81」)的宽度下界(px)。
- *
- * <p>数字是这一列的硬契约: 列宽不足时只允许省略品牌, 数字必须完整可读。真实宽度由
- * {@link tonProgressLineWidth} 按单据实际吨位算出并传入; 这个 51px 是**无数据时的兜底**
- * (沿用真机实测的「已开 0/26」宽度口径, 对「10.19」这类更短的数字同样安全)。</p>
- */
-export const TON_PROGRESS_MIN_TEXT_WIDTH = 51
-
-/** 取整与字体渲染差异的余量(px)。 */
-const TON_WIDTH_SAFETY = 2
-
-/** 吨位进度小字的字号(px): 固定值, 不随个人字号缩放。 */
-export const TON_PROGRESS_FONT_SIZE = 11
-
-/** 进度小字里主段层与品牌层之间的 flex gap(px)。 */
-const TON_PROGRESS_GAP = 2
-
-/** 品牌层内分隔符「·」两侧的 margin(px)。 */
-const TON_BRAND_SEP_MARGIN = 4
-
-/** 分隔符字面量: 与 TonIssuedBrand 里渲染的是同一个字符。 */
-export const TON_BRAND_SEPARATOR = '·'
-
-/**
- * 单字符宽度系数(em), 用于估算表格小字宽度。
- *
- * <p>口径沿用本项目已有的真机实测值(PingFang SC + `tabular-nums`): 汉字恒为 1em,
- * 数字 0.6em, 空格约 0.25em; `/` 与 `.` 取偏保守的上界, 未列举字符按 0.7em 兜底。
- * 宁可略宽也不略窄 —— 估算偏窄会重新掉回"文字被省略号截断"的缺陷。</p>
- */
-const CHAR_WIDTH_EM: Record<
-  'cjk' | 'digit' | 'space' | 'slash' | 'dot' | 'sep' | 'other',
-  number
-> = {
-  cjk: 1,
-  digit: 0.6,
-  space: 0.25,
-  slash: 0.35,
-  dot: 0.3,
-  sep: 0.5,
-  other: 0.7,
-}
-
-/** 单个字符的宽度分类。 */
-function charWidthClass(char: string) {
-  if (/[\u2e80-\u9fff\uf900-\ufaff\uff00-\uff60\u3000-\u303f]/.test(char)) {
-    return 'cjk'
-  }
-  if (char >= '0' && char <= '9') return 'digit'
-  if (char === ' ') return 'space'
-  if (char === '/') return 'slash'
-  if (char === '.' || char === ',') return 'dot'
-  if (char === TON_BRAND_SEPARATOR || char === '、') return 'sep'
-  return 'other'
-}
-
-/**
- * 估算一段表格文字在给定字号下的宽度(px, 向上取整且留 5% 余量)。
- *
- * <p>用途是**按单据实际内容**给吨位列定宽: 进度小字「已开 0/12 · 中天」的宽度取决于
- * 真实出现的吨位位数与品牌名长度, 只靠字号换算推不出来。返回的是渲染宽度的保守上界,
- * 因此不会因为估算偏窄而重新截断。</p>
- */
-export function estimateSheetTextWidth(text: string, fontSize: number): number {
-  const size = normalizeFontSize(fontSize)
-  let em = 0
-  for (const char of text) {
-    em += CHAR_WIDTH_EM[charWidthClass(char)]
-  }
-  // 5% 余量吸收字距、字体回退与子像素取整的差异
-  return Math.ceil(em * size * 1.05)
-}
-
-/**
- * 进度小字整行(主段 + 分隔符 + 品牌)的宽度(px)。
- *
- * <p>组成与 DOM 一致: 主段(「剩余 12」/「已开超 6.5」/「已开 3」) + 进度行的 flex gap +
- * 品牌层的分隔符(含其左右 margin) + 品牌文本。品牌为空时只剩主段。</p>
- */
-export function tonProgressLineWidth(
-  primaryText: string,
-  brandText: string,
-): number {
-  const primary = estimateSheetTextWidth(primaryText, TON_PROGRESS_FONT_SIZE)
-  if (!brandText) return primary
-  return (
-    primary +
-    TON_PROGRESS_GAP +
-    TON_BRAND_SEP_MARGIN +
-    estimateSheetTextWidth(TON_BRAND_SEPARATOR, TON_PROGRESS_FONT_SIZE) +
-    estimateSheetTextWidth(brandText, TON_PROGRESS_FONT_SIZE)
-  )
-}
-
-/**
- * 进度小字宽度上限(px, ≈ 14 个汉字品牌 + 主段)。
- *
- * <p>品牌名是采购订单里的自由文本, 万一被填成公司全称, 列宽不能跟着无限膨胀 ——
- * 超出上限后该行退回省略号收尾, 完整值仍在悬浮明细与 ⓘ 弹层里。真实品牌(2~4 字)
- * 远低于这个上限, 因此不会影响"完整显示"的目标。</p>
- */
-export const TON_PROGRESS_TEXT_MAX_WIDTH = 220
-
-/**
- * 已开吨位列宽度: 单元格留白 + 数字 + 余量(该列没有明细图标)。
- *
- * <p>数字固定 11px、不随个人字号缩放, 因此不做等比换算 —— 列宽完全跟着内容走。</p>
- */
-/**
- * 「已开吨位」列宽 = 单元格留白 + max(内容宽, 表头宽, 下限) + 安全余量。
- *
- * <p>表头(「已开吨位」4 个汉字)按当前个人字号渲染、内容数字固定 11px, 因此表头往往是
- * 更宽的一方 —— 不把表头算进来, 列头就会被折成两行或被省略号收尾。</p>
- */
-export function requiredIssuedTonColumnWidth(
-  textWidth = 0,
-  headerWidth = 0,
-): number {
-  return (
-    TON_CELL_PADDING +
-    Math.max(
-      Math.min(Math.max(textWidth, headerWidth), TON_PROGRESS_TEXT_MAX_WIDTH),
-      TON_PROGRESS_MIN_TEXT_WIDTH,
-    ) +
-    TON_WIDTH_SAFETY
-  )
-}
-
-/**
- * 未开吨位列宽度: 单元格留白 + 明细图标 + 数字/品牌 + 余量。
- *
- * <p>该列没有输入框: 固定开销只有单元格左右留白(13)、数字与明细图标之间的 gap(8) 与
- * icon-only 明细按钮(24), 即 {@link TON_CELL_FIXED_CHROME}; 文字部分由
- * {@link tonProgressLineWidth} 按真实吨位与品牌估出(不传或比数字下界还窄时取
- * {@link TON_PROGRESS_MIN_TEXT_WIDTH}, 超过上限按 {@link TON_PROGRESS_TEXT_MAX_WIDTH} 取值)。</p>
- *
- * <p>只按字号等比换算会在两个方向上出错: 小字号(11/12/13px)时列宽被等比压小, 而明细图标、
- * 单元格留白与固定 11px 的数字都不一起变小; 品牌名较长时即便基准字号也放不下。因此取
- * 等比换算与该下界的较大值。</p>
- */
-export function requiredTonColumnWidth(
-  progressTextWidth = 0,
-  headerWidth = 0,
-): number {
-  return (
-    TON_CELL_FIXED_CHROME +
-    Math.max(
-      Math.min(
-        Math.max(progressTextWidth, headerWidth),
-        TON_PROGRESS_TEXT_MAX_WIDTH,
-      ),
-      TON_PROGRESS_MIN_TEXT_WIDTH,
-    ) +
-    TON_WIDTH_SAFETY
-  )
-}
-
-/**
  * 按当前字号换算整张单据表格的列宽(键与 {@link SHEET_COLUMN_WIDTH} 一致)。
  *
- * <p>`tonTextWidths`: 本单据实际会出现的已开/未开两列内容宽度(px), 由
- * {@link maxRemainingTonTextWidth} 与 {@link maxTonProgressTextWidth} 按真实吨位与品牌算出;
- * 省略时两列按数字下界定宽。</p>
+ * <p>所有列一律按字号等比换算 —— 吨位列只剩一个输入框, 不再有按内容定宽的派生列。</p>
  */
 export function sheetColumnWidths(
   fontSize: number,
-  tonTextWidths: {
-    issued?: number
-    unopened?: number
-    /** 两列表头在当前字号下的宽度: 表头比 11px 的内容更容易成为列宽下限。 */
-    issuedHeader?: number
-    unopenedHeader?: number
-  } = {},
 ): Record<keyof typeof SHEET_COLUMN_WIDTH, number> {
-  const {
-    issued = 0,
-    unopened = 0,
-    issuedHeader = 0,
-    unopenedHeader = 0,
-  } = tonTextWidths
   const entries = Object.entries(SHEET_COLUMN_WIDTH) as [
     keyof typeof SHEET_COLUMN_WIDTH,
     number,
   ][]
   return Object.fromEntries(
-    entries.map(([key, width]) => {
-      /*
-       * 已开/未开两列的内容是固定 11px 的只读文字(不随个人字号缩放), 因此列宽**按内容**给:
-       * 内容短时不留空白, 长吨位/长品牌也裁不到。其余列仍按字号等比换算。
-       */
-      if (key === 'issuedTon')
-        return [key, requiredIssuedTonColumnWidth(issued, issuedHeader)]
-      if (key === 'unopenedTon') {
-        return [key, requiredTonColumnWidth(unopened, unopenedHeader)]
-      }
-      return [key, scaleSheetColumnWidth(width, fontSize)]
-    }),
+    entries.map(([key, width]) => [
+      key,
+      scaleSheetColumnWidth(width, fontSize),
+    ]),
   ) as Record<keyof typeof SHEET_COLUMN_WIDTH, number>
 }
 
@@ -924,71 +712,6 @@ export function isSeparatorRow(row: Pick<PriceRow, 'rowType'>): boolean {
   return row.rowType === 'SEPARATOR'
 }
 
-/**
- * 商品行是否已采购: 由是否关联采购订单推导(隔断行恒为 false)。
- * 不再有独立布尔标记, 避免"反标记后刷新又变回已采购"的状态不一致。
- */
-export function isPurchasedRow(row: PriceRow): boolean {
-  return !isSeparatorRow(row) && Boolean(row.purchaseOrderId)
-}
-
-/**
- * 该行关联的采购订单明细行 id(去重)。
- *
- * <p>多行关联优先; 没有列表时回退到单值列 —— 历史数据与旧请求都只有单值三列。</p>
- */
-export function linkedPurchaseOrderItemIds(row: PriceRow): string[] {
-  const ids = (row.purchaseOrderLinks ?? [])
-    .map((link) => link.purchaseOrderItemId)
-    .filter((id) => Boolean(id))
-  if (ids.length > 0) return [...new Set(ids)]
-  return row.purchaseOrderItemId ? [row.purchaseOrderItemId] : []
-}
-
-/**
- * 该行是否已被所关联的采购订单明细行**覆盖**(订货量合计 ≥ 本行报单吨位)。
- *
- * <p>遮蔽品牌价格的前提是"这条明细行的量已经被订单锁定"。只关联一张订货量不足的明细行
- * 不构成覆盖 —— 实测 130 吨的报单挂到一条订货 10 吨的明细行上, 整个品牌价格区就被遮掉,
- * 用户没法继续比价。多行关联落地后这里改为按关联行的订货量合计判断。</p>
- */
-export function isOrderTonnageCovered(
-  row: PriceRow,
-  options: readonly PurchaseOrderTonnageRecord[],
-): boolean {
-  const itemIds = linkedPurchaseOrderItemIds(row)
-  if (itemIds.length === 0) return false
-  const reported = row.ton ?? 0
-  if (!(reported > 0)) return false
-  // 多行关联: 累计各关联明细行的订货量, 够覆盖本行报单吨位才算"已被订单锁定"
-  let ordered = 0
-  for (const itemId of itemIds) {
-    const record = options.find((item) => item.purchaseOrderItemId === itemId)
-    if (record) ordered += record.orderedWeight
-  }
-  return ordered >= reported
-}
-
-/**
- * 汇总各采购订单明细行在当前单据内的报单吨位(隔断行/未关联明细行不计)。
- * 用于在前端取"本单据该明细行报单吨位合计", 与已开吨位相减得到剩余吨位(按规格)。
- */
-export function sumTonByPurchaseOrderItem(
-  rows: PriceRow[],
-): Map<string, number> {
-  const totals = new Map<string, number>()
-  for (const row of rows) {
-    if (isSeparatorRow(row)) continue
-    const ton = row.ton ?? 0
-    if (!Number.isFinite(ton) || ton <= 0) continue
-    // 多行关联: 该行吨位对每一张已关联明细行都计入一次(与服务端汇总口径一致)
-    for (const itemId of linkedPurchaseOrderItemIds(row)) {
-      totals.set(itemId, (totals.get(itemId) ?? 0) + ton)
-    }
-  }
-  return totals
-}
-
 export const DEFAULT_STATUS = '报价'
 
 /** 新建单据默认空行数(由用户自行选择商品)。 */
@@ -1144,48 +867,13 @@ export function findAlternateLengthVariety(
 }
 
 /**
- * 解除关联的行补丁: 旧三列快照(订单 id / 订单号 / 明细行 id)与多行关联集合**必须一起清**。
+ * 切换行级锁定。
  *
- * <p>后端语义是「未携带 purchaseOrderLinks = 不改关联, 显式 `[]` = 清空」(`8c918fa4`)。
- * 只清三列而省略集合, 保存载荷会带着旧关联列表, 服务端随后又把旧关联镜像回三列 ——
- * 用户点「清除关联」再保存, 关联原样还在(实测)。</p>
- *
- * <p>因此对**曾有关联**的行显式下发 `[]`; 从未关联过的行保持 `undefined`, 载荷继续省略该
- * 字段, 不把每行都塞一个空数组。</p>
- */
-export function unlinkPurchaseOrderPatch(
-  row: Pick<
-    PriceRow,
-    'purchaseOrderId' | 'purchaseOrderItemId' | 'purchaseOrderLinks'
-  >,
-): Partial<PriceRow> {
-  const wasLinked =
-    row.purchaseOrderId !== undefined ||
-    row.purchaseOrderItemId !== undefined ||
-    row.purchaseOrderLinks !== undefined
-  return {
-    purchaseOrderId: undefined,
-    purchaseOrderNo: undefined,
-    purchaseOrderItemId: undefined,
-    ...(wasLinked ? { purchaseOrderLinks: [] } : {}),
-  }
-}
-
-/**
- * 切换行级锁定: 解锁时按流程规范强制清除该行采购订单关联与快照。
- * <p>锁定表示规格与吨位定稿; 未锁定不可关联采购订单, 已关联的解锁即解除关联。
- * 服务端在"未锁定行被保存"时同样会强制清空关联, 本地必须镜像同一结果 —— 含
- * `purchaseOrderLinks` 集合, 否则保存载荷里的旧集合会把服务端刚清掉的关联又镜像回来。</p>
+ * <p>行锁是**纯编辑保护**: 只冻结该行的规格与吨位, 防止误改。它不再与任何采购/销售
+ * 单据关联联动 —— 解锁只把 `locked` 置回 `false`, 不清除任何其它字段。</p>
  */
 export function applyRowLock(row: PriceRow, locked: boolean): PriceRow {
-  if (locked) {
-    return { ...row, locked: true }
-  }
-  return {
-    ...row,
-    locked: false,
-    ...unlinkPurchaseOrderPatch(row),
-  }
+  return { ...row, locked }
 }
 
 /* --------------------------------------------------------------- 锁定层级 */
@@ -1198,7 +886,7 @@ export function applyRowLock(row: PriceRow, locked: boolean): PriceRow {
  *   <li>`sheet`: `specQuantityLocked`(工具栏「锁定规格和数量」), 冻结整张单据的
  *       商品规格、报单吨位, 以及会间接改变规格/数量顺序的行增删与拖拽重排;</li>
  *   <li>`row`: `row.locked`(行操作菜单「锁定该行」), 表示该行规格与吨位定稿,
- *       只冻结该行的规格与吨位; 未锁定不可关联采购订单, 解锁会清除关联;</li>
+ *       只冻结该行的规格与吨位(纯编辑保护, 不与任何业务单据联动);</li>
  *   <li>`cell`: 单元格自身的锁(`LockableField`, 如项目备注信息), 只冻结该字段。</li>
  * </ol>
  *

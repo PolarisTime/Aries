@@ -439,22 +439,13 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(payload.locked).toBe(true)
   })
 
-  it('单据级锁定下关联采购订单: locked 与关联必须在同一次行级保存下发', async () => {
-    // 回归: 服务端门禁是「仅锁定行可关联采购订单, 未锁定的行保存时强制清空关联与快照」,
-    // 而单据级「锁定规格和数量」不会给行打 locked 标记。弹层选中订单时补齐 locked,
-    // 否则用户保存后关联会被服务端静默清掉。
+  it('单据级锁定下改吨位: locked 与 ton 在同一次行级保存下发, 载荷不含任何采购字段', async () => {
     const store = renderStore()
     await hydrate(store)
 
     act(() => {
       store.current.setRows((list) =>
-        list.map((row) => ({
-          ...row,
-          locked: true,
-          purchaseOrderId: '88',
-          purchaseOrderNo: 'PO-88',
-          purchaseOrderItemId: '301',
-        })),
+        list.map((row) => ({ ...row, locked: true, ton: 12.5 })),
       )
     })
     await act(async () => {
@@ -465,16 +456,14 @@ describe('useSheetsStore 服务端数据源', () => {
     const [, , payload] = api.updateQuoteSheetItem.mock.calls[0] as [
       string,
       string,
-      {
-        locked?: boolean
-        purchaseOrderId?: string
-        purchaseOrderNo?: string
-        purchaseOrderItemId?: string
-      },
+      Record<string, unknown>,
     ]
     expect(payload.locked).toBe(true)
-    expect(payload.purchaseOrderId).toBe('88')
-    expect(payload.purchaseOrderItemId).toBe('301')
+    expect(payload.ton).toBe(12.5)
+    // 比价页已与采购订单彻底解耦: 载荷不得再带任何采购前缀字段
+    expect(
+      Object.keys(payload).filter((key) => /^purchase/i.test(key)),
+    ).toEqual([])
   })
 
   it('行备注随行级保存下发', async () => {

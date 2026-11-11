@@ -116,17 +116,13 @@ describe('比价页样式无障碍契约', () => {
     expect(block).toMatch(/min-height:\s*24px/)
   })
 
-  it('表头一键填入与吨位明细图标命中区不小于 24×24', () => {
+  it('表头一键填入按钮命中区不小于 24×24(WCAG 2.5.8)', () => {
     const fill = blockOf(
       pageCss,
       '.price-compare-supplier-header .price-compare-supplier-fill-btn',
     )
     expect(fill).toMatch(/min-width:\s*24px/)
     expect(fill).toMatch(/min-height:\s*24px/)
-
-    const info = blockOf(pageCss, '.price-compare-ton-info {')
-    expect(info).toMatch(/min-width:\s*24px/)
-    expect(info).toMatch(/min-height:\s*24px/)
   })
 
   it('行操作列收窄到 icon-only 最小值, 且单元格留白不把列撑大', () => {
@@ -214,12 +210,6 @@ describe('比价页样式无障碍契约', () => {
       '.price-compare-supplier-header .price-compare-supplier-fill-btn',
     )
     expect(fill).toContain('var(--color-info-active')
-    // 超额态只靠这段文字表达(文案本身写明「超额 x」), 因此文字色必须够深
-    expect(blockOf(pageCss, '.price-compare-ton-hint--over')).toContain(
-      'var(--color-danger-active',
-    )
-    // 不再有感叹号图标: 语义由文字承担, 颜色不是唯一线索(WCAG 1.4.1)
-    expect(pageCss).not.toContain('.price-compare-ton-over-icon')
     expect(blockOf(pageCss, '.price-compare-variety-switch')).toContain(
       'var(--color-info-active',
     )

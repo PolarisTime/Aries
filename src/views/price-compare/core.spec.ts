@@ -7,12 +7,10 @@ import {
   computeSummary,
   countMissing,
   dataKeyOf,
-  estimateSheetTextWidth,
   fillSupplierInputs,
   filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
-  isPurchasedRow,
   isSeparatorRow,
   LOCK_REASON_KEYS,
   makeRow,
@@ -24,20 +22,13 @@ import {
   netPriceWithFallback,
   pickBestDiffBrands,
   reconcileSpotInputs,
-  requiredIssuedTonColumnWidth,
-  requiredTonColumnWidth,
   resolveLock,
   SHEET_COLUMN_WIDTH,
   SHEET_WIDTH_BASE_FONT_SIZE,
   scaleSheetColumnWidth,
   sheetColumnWidths,
-  sumTonByPurchaseOrderItem,
   syncSpotInputs,
-  TON_CELL_FIXED_CHROME,
   TON_INPUT_WIDTH_EM,
-  TON_PROGRESS_MIN_TEXT_WIDTH,
-  TON_PROGRESS_TEXT_MAX_WIDTH,
-  tonProgressLineWidth,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet, Variety } from './types'
 
@@ -661,65 +652,6 @@ describe('fillSupplierInputs', () => {
   })
 })
 
-describe('isPurchasedRow', () => {
-  it('关联了采购订单的商品行视为已采购', () => {
-    expect(isPurchasedRow({ ...row12, purchaseOrderId: 'po1' })).toBe(true)
-  })
-
-  it('未关联采购订单的商品行不是已采购', () => {
-    expect(isPurchasedRow({ ...row12 })).toBe(false)
-  })
-
-  it('隔断行即使带采购订单也恒为未采购', () => {
-    expect(
-      isPurchasedRow({
-        id: 'sep1',
-        rowType: 'SEPARATOR',
-        category: '',
-        material: '',
-        spec: null,
-        length: '',
-        purchaseOrderId: 'po1',
-      }),
-    ).toBe(false)
-  })
-})
-
-describe('sumTonByPurchaseOrderItem', () => {
-  it('按采购订单汇总商品行吨位, 忽略隔断行与未关联行', () => {
-    const totals = sumTonByPurchaseOrderItem([
-      { ...row12, id: 'r1', ton: 10, purchaseOrderItemId: 'po1' },
-      { ...row12, id: 'r2', ton: 5.5, purchaseOrderItemId: 'po1' },
-      { ...row12, id: 'r3', ton: 3, purchaseOrderItemId: 'po2' },
-      { ...row12, id: 'r4', ton: 99 },
-      {
-        id: 'sep1',
-        rowType: 'SEPARATOR',
-        category: '',
-        material: '',
-        spec: null,
-        length: '',
-        ton: 7,
-        purchaseOrderItemId: 'po1',
-      },
-    ])
-
-    expect(totals.get('po1')).toBe(15.5)
-    expect(totals.get('po2')).toBe(3)
-    expect(totals.has('po3')).toBe(false)
-  })
-
-  it('忽略非正数与缺失吨位, 空输入返回空 Map', () => {
-    const totals = sumTonByPurchaseOrderItem([
-      { ...row12, id: 'r1', purchaseOrderItemId: 'po1' },
-      { ...row12, id: 'r2', ton: 0, purchaseOrderItemId: 'po1' },
-      { ...row12, id: 'r3', ton: -1, purchaseOrderItemId: 'po1' },
-    ])
-    expect(totals.has('po1')).toBe(false)
-    expect(sumTonByPurchaseOrderItem([]).size).toBe(0)
-  })
-})
-
 describe('隔断行', () => {
   it('makeSeparatorRow 生成 rowType=SEPARATOR 的空行', () => {
     const row = makeSeparatorRow()
@@ -999,35 +931,28 @@ describe('findAlternateLengthVariety 长度互切', () => {
   })
 })
 
-describe('applyRowLock 行级锁定', () => {
-  it('锁定保留关联', () => {
-    const row: PriceRow = {
-      ...row12,
-      id: 'r1',
-      purchaseOrderId: '88',
-      purchaseOrderItemId: '301',
-      purchaseOrderNo: 'PO-88',
-    }
+describe('applyRowLock 行级锁定(第二级锁: 纯编辑保护)', () => {
+  it('锁定只把 locked 置为 true, 不动吨位/规格/价格', () => {
+    const row: PriceRow = { ...row12, id: 'r1', ton: 12.5, locked: false }
     const next = applyRowLock(row, true)
-    expect(next.locked).toBe(true)
-    expect(next.purchaseOrderId).toBe('88')
-    expect(next.purchaseOrderItemId).toBe('301')
+    expect(next).toEqual({ ...row, locked: true })
+    expect(next.ton).toBe(12.5)
+    expect(next.spec).toBe(row.spec)
   })
 
-  it('解锁清除采购订单关联与快照', () => {
-    const row: PriceRow = {
-      ...row12,
-      id: 'r1',
-      locked: true,
-      purchaseOrderId: '88',
-      purchaseOrderItemId: '301',
-      purchaseOrderNo: 'PO-88',
-    }
+  it('解锁只把 locked 置回 false, 不代表任何业务解绑', () => {
+    const row: PriceRow = { ...row12, id: 'r1', ton: 30, locked: true }
     const next = applyRowLock(row, false)
-    expect(next.locked).toBe(false)
-    expect(next.purchaseOrderId).toBeUndefined()
-    expect(next.purchaseOrderItemId).toBeUndefined()
-    expect(next.purchaseOrderNo).toBeUndefined()
+    expect(next).toEqual({ ...row, locked: false })
+    expect(next.ton).toBe(30)
+  })
+
+  it('锁定与解锁都是纯函数, 不修改入参', () => {
+    const row: PriceRow = { ...row12, id: 'r1', ton: 8, locked: false }
+    applyRowLock(row, true)
+    applyRowLock(row, false)
+    expect(row.locked).toBe(false)
+    expect(row.ton).toBe(8)
   })
 })
 
@@ -1085,19 +1010,16 @@ describe('LOCK_REASON_KEYS 层级原因文案', () => {
 })
 
 describe('列宽按字号自适应', () => {
-  it('基准字号(14px)下: 等比列取基准值, 吨位两列取内容下界', () => {
+  it('基准字号(14px)下列宽取基准值', () => {
     expect(scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.spec, 14)).toBe(
       SHEET_COLUMN_WIDTH.spec,
     )
     const widths = sheetColumnWidths(14)
     expect(widths.spec).toBe(SHEET_COLUMN_WIDTH.spec)
     expect(widths.ton).toBe(SHEET_COLUMN_WIDTH.ton)
-    // 已开/未开两列不随字号缩放: 无内容时取数字下界(13/45 + 51 + 2)
-    expect(widths.issuedTon).toBe(66)
-    expect(widths.unopenedTon).toBe(98)
   })
 
-  it('字号 16/18 等比放大(吨位两列按内容, 不随字号变宽)', () => {
+  it('字号 16/18 全列等比放大(吨位列同样随字号缩放)', () => {
     for (const fontSize of [16, 18]) {
       const widths = sheetColumnWidths(fontSize)
       // 「材质 / 规格 / 长度」列放不下时会截断, 必须有足够增量
@@ -1105,14 +1027,10 @@ describe('列宽按字号自适应', () => {
         Math.round((SHEET_COLUMN_WIDTH.spec * fontSize) / 14),
       )
       expect(widths.supplier).toBeGreaterThan(SHEET_COLUMN_WIDTH.supplier)
-      // 逐键校验: 吨位两列是固定 11px 内容, 其余列按同一比例放大
       for (const [key, base] of Object.entries(SHEET_COLUMN_WIDTH)) {
-        const width = widths[key as keyof typeof SHEET_COLUMN_WIDTH]
-        if (key === 'issuedTon' || key === 'unopenedTon') {
-          expect(width).toBe(sheetColumnWidths(14)[key])
-        } else {
-          expect(width).toBe(Math.round((base * fontSize) / 14))
-        }
+        expect(widths[key as keyof typeof SHEET_COLUMN_WIDTH]).toBe(
+          Math.round((base * fontSize) / 14),
+        )
       }
     }
   })
@@ -1199,141 +1117,18 @@ describe('列宽按字号自适应', () => {
   })
 
   /*
-   * 吨位三列的宽度契约。
+   * 报单吨位列的宽度契约。
    *
-   * 「报单吨位」列只放 4.75em 输入框 + 单元格留白(左右各约 6.5px): 84 足够, 且不随内容变化;
-   * 「已开吨位」列放三位小数(最长 `8,884.500`), 基准字号 92 足够;
-   * 「未开吨位」列放数字 + 品牌 + 明细图标, 数字固定 11px(不随个人字号缩放),
-   * 因此列宽取"基准字号等比换算"与 {@link requiredTonColumnWidth}(固定开销 + 数字下界/实际内容宽)
-   * 的较大值 —— 长品牌名否则会被省略号收尾。
-   *
-   * 固定开销 45px = 单元格左右留白(13) + 数字与明细图标之间的两个 flex gap(8) + 明细图标(24,
-   * 由 24×24 命中区下限决定), 三者都不随字号缩放: 小字号档(11/12/13)等比压小列宽时要靠这个
-   * 下界兜住, 线上实测 12px 档 + 面板窄于表格总宽时数字曾被截成省略号。
+   * 该列只放 4.75em 输入框 + 单元格留白(左右各约 6.5px), 84 足够, 且不随内容变化;
+   * 已开/未开两列随采购功能一并移除, 这里不再有按内容定宽的例外。
    */
-  /** 未开吨位列实际可用的内容宽(px)。 */
-  const unopenedAvailableWidth = (fontSize: number) =>
-    sheetColumnWidths(fontSize).unopenedTon - TON_CELL_FIXED_CHROME
-
-  it('六档字号下未开吨位数字都完整可读(列宽按内容, 与字号无关)', () => {
-    for (const fontSize of [11, 12, 13, 14, 16, 18]) {
-      expect(unopenedAvailableWidth(fontSize)).toBeGreaterThanOrEqual(
-        TON_PROGRESS_MIN_TEXT_WIDTH,
-      )
-    }
-    // 无内容时列宽 = 固定开销 45 + 数字下界 51 + 余量 2 ⇒ 可用宽 53px
-    expect(unopenedAvailableWidth(SHEET_WIDTH_BASE_FONT_SIZE)).toBe(
-      TON_PROGRESS_MIN_TEXT_WIDTH + 2,
-    )
-  })
-
-  it('三列宽度: 报单输入 / 已开数字 / 未开数字+品牌', () => {
+  it('报单吨位列: 84px 容得下 4.75em 输入框, 且随字号等比缩放', () => {
     expect(SHEET_COLUMN_WIDTH.ton).toBe(84)
-    expect(SHEET_COLUMN_WIDTH.issuedTon).toBe(92)
-    expect(SHEET_COLUMN_WIDTH.unopenedTon).toBe(184)
-    // 报单吨位列必须容得下 4.75em 输入框(基准字号约 66.5px)与单元格留白
-    expect(SHEET_COLUMN_WIDTH.ton).toBeGreaterThan(TON_INPUT_WIDTH_EM * 14 + 13)
-    // 已开吨位列必须容得下最长形 `8,884.500`
-    expect(SHEET_COLUMN_WIDTH.issuedTon).toBeGreaterThan(
-      estimateSheetTextWidth('8,884.500', 14) + 13,
-    )
-    expect(TON_PROGRESS_MIN_TEXT_WIDTH).toBe(51)
-    expect(TON_CELL_FIXED_CHROME).toBe(45)
     expect(TON_INPUT_WIDTH_EM).toBe(4.75)
-  })
-
-  it('吨位三列: 报单输入按字号缩放, 已开/未开按内容', () => {
-    expect(requiredTonColumnWidth()).toBe(98)
-    expect(requiredIssuedTonColumnWidth()).toBe(66)
+    expect(SHEET_COLUMN_WIDTH.ton).toBeGreaterThan(TON_INPUT_WIDTH_EM * 14 + 13)
     for (const fontSize of [11, 12, 13, 14, 16, 18]) {
-      // 报单吨位列放的是随字号缩放的输入框
       expect(sheetColumnWidths(fontSize).ton).toBe(
         scaleSheetColumnWidth(SHEET_COLUMN_WIDTH.ton, fontSize),
-      )
-      // 已开/未开两列内容固定 11px: 不随字号变化
-      expect(sheetColumnWidths(fontSize).issuedTon).toBe(
-        requiredIssuedTonColumnWidth(),
-      )
-      expect(sheetColumnWidths(fontSize).unopenedTon).toBe(
-        requiredTonColumnWidth(),
-      )
-    }
-  })
-
-  /*
-   * 未开吨位文案按**单据实际内容**定宽: 「115.5 · 中天」比「10」宽, 长品牌名更宽, 只按字号
-   * 换算推不出来。宽度来自 estimateSheetTextWidth 的分字符系数(汉字 1em / 数字 0.6em,
-   * 与真机实测同口径), 这里锁定它的量级与保守性。
-   */
-  it('文本宽度估算: 汉字 1em、数字 0.6em, 且不小于真机实测值', () => {
-    // 真机实测(PingFang SC 11px, tabular-nums): 旧口径「已开 0/26」= 50.97px
-    expect(estimateSheetTextWidth('已开 0/26', 11)).toBeGreaterThanOrEqual(51)
-    // 汉字恒为 1em: 4 个汉字在 11px 下不少于 44px
-    expect(estimateSheetTextWidth('中天钢铁', 11)).toBeGreaterThanOrEqual(44)
-    // 估算必须单调: 更长/更大的文本不会算出更窄的宽度
-    expect(estimateSheetTextWidth('115.5', 11)).toBeGreaterThan(
-      estimateSheetTextWidth('10', 11),
-    )
-    expect(estimateSheetTextWidth('10', 22)).toBeGreaterThan(
-      estimateSheetTextWidth('10', 11),
-    )
-    // 千分位分隔符也要计入, 不能算窄
-    expect(estimateSheetTextWidth('1,234.5', 11)).toBeGreaterThan(
-      estimateSheetTextWidth('1234.5', 11),
-    )
-    // 负号(已开超订货)同样要占宽
-    expect(estimateSheetTextWidth('-20', 11)).toBeGreaterThan(
-      estimateSheetTextWidth('20', 11),
-    )
-    expect(estimateSheetTextWidth('', 11)).toBe(0)
-  })
-
-  it('整行宽度 = 数字 + gap + 分隔符(含 margin) + 品牌', () => {
-    const numberOnly = tonProgressLineWidth('115.5', '')
-    expect(numberOnly).toBe(estimateSheetTextWidth('115.5', 11))
-    const withBrand = tonProgressLineWidth('115.5', '中天')
-    expect(withBrand).toBeGreaterThan(numberOnly)
-    // 品牌越长整行越宽
-    expect(tonProgressLineWidth('115.5', '中天钢铁')).toBeGreaterThan(withBrand)
-  })
-
-  it('传入实际内容宽后未开吨位列随之定宽, 且不低于数字下界', () => {
-    const numberOnly = requiredTonColumnWidth()
-    const withBrand = requiredTonColumnWidth(
-      tonProgressLineWidth('115.5', '中天钢铁'),
-    )
-    // 内容更宽 ⇒ 列更宽, 且差值等于多出来的文本宽
-    expect(withBrand - numberOnly).toBe(
-      tonProgressLineWidth('115.5', '中天钢铁') - TON_PROGRESS_MIN_TEXT_WIDTH,
-    )
-    const brandWidth = tonProgressLineWidth('115.5', '中天')
-    // 列宽完全按内容: 「115.5 · 中天」需要多宽就给多宽
-    expect(sheetColumnWidths(14, { unopened: brandWidth }).unopenedTon).toBe(
-      requiredTonColumnWidth(brandWidth),
-    )
-    // 内容很短时回落到数字下界, 不为固定基准白留空白
-    expect(sheetColumnWidths(14, { unopened: 10 }).unopenedTon).toBe(numberOnly)
-    // 其余列与内容无关
-    expect(sheetColumnWidths(14, { unopened: 200 }).spec).toBe(
-      SHEET_COLUMN_WIDTH.spec,
-    )
-  })
-
-  it('内容宽超过上限时列宽不再膨胀(品牌是自由文本, 防止把表格撑爆)', () => {
-    const capped = requiredTonColumnWidth(TON_PROGRESS_TEXT_MAX_WIDTH)
-    expect(requiredTonColumnWidth(10_000)).toBe(capped)
-    // 上限本身仍明显宽于数字下界, 否则等于把"完整显示"又退回去
-    expect(capped).toBeGreaterThan(requiredTonColumnWidth())
-    expect(TON_PROGRESS_TEXT_MAX_WIDTH).toBe(220)
-  })
-
-  it('长吨位/长品牌在任何字号下都不会被裁(列宽只跟内容走)', () => {
-    const progressWidth = tonProgressLineWidth('8,884.5', '中天钢铁')
-    for (const fontSize of [11, 12, 13, 14, 16, 18]) {
-      const widths = sheetColumnWidths(fontSize, { unopened: progressWidth })
-      expect(widths.unopenedTon).toBe(requiredTonColumnWidth(progressWidth))
-      expect(widths.unopenedTon - TON_CELL_FIXED_CHROME).toBeGreaterThanOrEqual(
-        progressWidth,
       )
     }
   })

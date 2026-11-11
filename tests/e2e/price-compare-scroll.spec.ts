@@ -205,6 +205,14 @@ test.describe('报单比价 低分辨率滚动', () => {
     await page.waitForSelector('.price-compare-table', { timeout: 30_000 })
     await page.waitForTimeout(1_000)
 
+    // 2026-11-12「报单比价与采购解耦」回归: 吨位列必须仍在(报单吨位是比价页唯一的吨位字段)。
+    // 采购订单关联列与「已开/未开」进度列已删; 若吨位列被一并删掉, 表格变矮会让下方
+    // "尾部可达"断言退化成恒真, 滚动缺陷就再无兜底 —— 这里先把"吨位列还在"这个前提锁住。
+    await expect(
+      page.locator('input[data-ton]').first(),
+      '解耦后吨位列（报单吨位输入 input[data-ton]）应仍渲染',
+    ).toBeVisible({ timeout: 30_000 })
+
     const state = await snapshot(page)
     expect(state.rootFound).toBe(true)
     // 内容未溢出时不应出现滚动条(scrollHeight 等于可视高度)

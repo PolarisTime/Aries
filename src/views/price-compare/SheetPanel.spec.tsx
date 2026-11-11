@@ -6,17 +6,7 @@ import { act, createElement, useEffect, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
-import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
-import {
-  estimateSheetTextWidth,
-  requiredIssuedTonColumnWidth,
-  requiredTonColumnWidth,
-  TON_PROGRESS_FONT_SIZE,
-  tonProgressLineWidth,
-} from './core'
 import { SheetPanel } from './SheetPanel'
-import type { PurchaseOrderTonnageDraftInput } from './ton-column'
-import { tonProgressTextParts } from './ton-progress-text'
 import type { PriceRow, PriceSheet, Variety } from './types'
 
 const variety: Variety = {
@@ -158,7 +148,6 @@ describe('SheetPanel 指定品牌展示', () => {
     ],
     readOnly = false,
     varieties: Variety[] = [variety],
-    purchaseOrderTonnage?: PurchaseOrderTonnageDraftInput,
   ) {
     const observed = {
       rows: initialRows,
@@ -195,7 +184,6 @@ describe('SheetPanel 指定品牌展示', () => {
         spotRef: { current: null },
         suppliers,
         readOnly,
-        ...(purchaseOrderTonnage ? { purchaseOrderTonnage } : {}),
       })
     }
     act(() => {
@@ -1249,108 +1237,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(headerText).not.toContain('沙钢')
   })
 
-  it('列显示可隐藏「已开货」与「剩余未开」两个吨位列', async () => {
-    renderStateful(
-      { ...makeSheet() },
-      [{ ...baseRow }],
-      [],
-      [
-        { name: '中天', freight: 30 },
-        { name: '沙钢', freight: 20 },
-        { name: '永钢', freight: 10 },
-      ],
-    )
-    const headerTextOf = () =>
-      container.querySelector('.ant-table-thead')?.textContent ?? ''
-    expect(headerTextOf()).toContain('已开货')
-    expect(headerTextOf()).toContain('剩余未开')
-
-    await openColumnSettings()
-    for (const label of ['已开货', '剩余未开']) {
-      const toggle = Array.from(
-        document.body.querySelectorAll<HTMLElement>(
-          '.price-compare-column-settings .ant-checkbox-wrapper',
-        ),
-      ).find((el) => el.textContent?.includes(label))
-      expect(toggle, `未找到「${label}」开关`).toBeTruthy()
-      await act(async () => {
-        toggle
-          ?.querySelector('input')
-          ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-        await new Promise((resolve) => setTimeout(resolve, 0))
-      })
-    }
-
-    expect(headerTextOf()).not.toContain('已开货')
-    expect(headerTextOf()).not.toContain('剩余未开')
-    // 报单吨位列是必填列, 不参与显隐
-    expect(headerTextOf()).toContain('报单吨位')
-
-    // 隐藏结果写入用户偏好(本地存储), 刷新时由同一份记录恢复 —— 这正是本次要修的缺陷
-    const stored = JSON.parse(
-      window.localStorage.getItem(COLUMN_SETTINGS_KEY) ?? '{}',
-    )
-    expect(stored.hiddenKeys).toEqual(
-      expect.arrayContaining(['ton:issued', 'ton:unopened']),
-    )
-    window.localStorage.removeItem(COLUMN_SETTINGS_KEY)
-  })
-
-  it('本地已有隐藏记录时, 重新打开页面默认就是隐藏的(刷新不再复位)', () => {
-    window.localStorage.setItem(
-      COLUMN_SETTINGS_KEY,
-      JSON.stringify({
-        orderedKeys: [],
-        hiddenKeys: ['ton:issued', 'ton:unopened'],
-      }),
-    )
-    renderStateful(
-      { ...makeSheet() },
-      [{ ...baseRow }],
-      [],
-      [
-        { name: '中天', freight: 30 },
-        { name: '沙钢', freight: 20 },
-        { name: '永钢', freight: 10 },
-      ],
-    )
-
-    const headerText =
-      container.querySelector('.ant-table-thead')?.textContent ?? ''
-    /*
-     * 断言当前真实列名。原断言写的是 '已占用' / '剩余可开' —— 那是 `d2f71b4b` 前的旧文案,
-     * 早已不存在, 于是 `not.toContain` 变成了永远成立的空断言(隐藏失效也抓不到)。
-     */
-    expect(headerText).not.toContain('已开货')
-    expect(headerText).not.toContain('剩余未开')
-    expect(headerText).toContain('报单吨位')
-
-    window.localStorage.removeItem(COLUMN_SETTINGS_KEY)
-  })
-
-  /**
-   * 交叉错位回归: 只关一个开关时, 消失的必须**正是那一列**。
-   *
-   * <p>原用例两个开关都关掉, 无论是否错位结果都一样(前后都没有这两个表头), 因此抓不到
-   * `d2f71b4b` 之后「勾『已开货』关掉『剩余未开』」的缺陷 —— 必须逐列单独验。</p>
-   */
-  it('单独关掉某一个吨位列时, 消失的正是该开关对应的那一列(不误伤另一列)', async () => {
-    const toggleOne = async (label: string) => {
-      await openColumnSettings()
-      const toggle = Array.from(
-        document.body.querySelectorAll<HTMLElement>(
-          '.price-compare-column-settings .ant-checkbox-wrapper',
-        ),
-      ).find((el) => el.textContent?.trim() === label)
-      expect(toggle, `未找到「${label}」开关`).toBeTruthy()
-      await act(async () => {
-        toggle
-          ?.querySelector('input')
-          ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-        await new Promise((resolve) => setTimeout(resolve, 0))
-      })
-    }
-    // 单个用例内先关「已开货」再关「剩余未开」, 每一步都断言另一列仍在。
+  it('列显示可隐藏备注列, 且隐藏结果写入用户偏好(本地存储)', async () => {
     renderStateful(
       { ...makeSheet() },
       [{ ...baseRow }],
@@ -1359,26 +1246,50 @@ describe('SheetPanel 指定品牌展示', () => {
     )
     const headerTextOf = () =>
       container.querySelector('.ant-table-thead')?.textContent ?? ''
-    expect(headerTextOf()).toContain('已开货')
-    expect(headerTextOf()).toContain('剩余未开')
+    expect(headerTextOf()).toContain('备注')
+    // 报单吨位列是必填列, 不参与显隐
+    expect(headerTextOf()).toContain('报单吨位')
 
-    // 关「已开货」: 只应少了「已开货」, 另一列必须还在
-    await toggleOne('已开货')
-    const afterHidingShipped = headerTextOf()
-    expect(afterHidingShipped, '关「已开货」后「已开货」应消失').not.toContain(
-      '已开货',
+    await openColumnSettings()
+    const toggle = Array.from(
+      document.body.querySelectorAll<HTMLElement>(
+        '.price-compare-column-settings .ant-checkbox-wrapper',
+      ),
+    ).find((el) => el.textContent?.trim() === '备注')
+    expect(toggle).toBeTruthy()
+    await act(async () => {
+      toggle
+        ?.querySelector('input')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(headerTextOf()).not.toContain('备注')
+    expect(headerTextOf()).toContain('报单吨位')
+
+    const stored = JSON.parse(
+      window.localStorage.getItem(COLUMN_SETTINGS_KEY) ?? '{}',
     )
-    expect(
-      afterHidingShipped,
-      '关「已开货」不该连带隐藏「剩余未开」(两处门禁交叉错位的旧缺陷)',
-    ).toContain('剩余未开')
+    expect(stored.hiddenKeys).toEqual(expect.arrayContaining(['remark']))
+    window.localStorage.removeItem(COLUMN_SETTINGS_KEY)
+  })
 
-    // 再关「剩余未开」: 两列都没了, 报单吨位仍在
-    await toggleOne('剩余未开')
-    const afterHidingBoth = headerTextOf()
-    expect(afterHidingBoth).not.toContain('已开货')
-    expect(afterHidingBoth).not.toContain('剩余未开')
-    expect(afterHidingBoth).toContain('报单吨位')
+  it('本地已有隐藏记录时, 重新打开页面默认就是隐藏的(刷新不再复位)', () => {
+    window.localStorage.setItem(
+      COLUMN_SETTINGS_KEY,
+      JSON.stringify({ orderedKeys: [], hiddenKeys: ['remark'] }),
+    )
+    renderStateful(
+      { ...makeSheet() },
+      [{ ...baseRow }],
+      [],
+      [{ name: '中天', freight: 30 }],
+    )
+
+    const headerText =
+      container.querySelector('.ant-table-thead')?.textContent ?? ''
+    expect(headerText).not.toContain('备注')
+    expect(headerText).toContain('报单吨位')
 
     window.localStorage.removeItem(COLUMN_SETTINGS_KEY)
   })
@@ -1398,8 +1309,8 @@ describe('SheetPanel 指定品牌展示', () => {
     ).map((el) => el.textContent?.trim() ?? '')
     const headerText =
       container.querySelector('.ant-table-thead')?.textContent ?? ''
-    // 两个吨位开关的文案必须都能在表头里找到同名文本: 文案与列同一来源。
-    for (const label of ['已开货', '剩余未开']) {
+    // 勾选框文案必须能在表头里找到同名文本: 文案与列同一来源。
+    for (const label of ['备注', '中天']) {
       expect(labels).toContain(label)
       expect(headerText).toContain(label)
     }
@@ -1454,101 +1365,6 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(tr?.className).not.toContain('price-compare-dragging')
   })
 
-  const tonnageInputOf = (orderedWeight: number, itemId = '301') => {
-    const record: PurchaseOrderTonnageRecord = {
-      purchaseOrderId: '88',
-      purchaseOrderItemId: itemId,
-      orderNo: 'PO-88',
-      supplierName: '沙钢',
-      category: '螺纹钢',
-      material: 'HRB400E',
-      spec: '12',
-      length: '9米',
-      brand: '中天',
-      orderedWeight,
-      issuedWeight: 0,
-      remainingWeight: orderedWeight,
-      actualWeightTon: null,
-      issuedDone: false,
-      status: '正常',
-    }
-    return {
-      options: [record],
-      tonnageByItemId: new Map([[itemId, record]]),
-      loading: false,
-      isError: false,
-    }
-  }
-
-  it('关联采购订单且订货量覆盖本行报单吨位后才视为已采购并遮蔽价格列', () => {
-    const observed = renderStateful(
-      makeSheet(),
-      [
-        {
-          ...baseRow,
-          id: 'r1',
-          ton: 12,
-          purchaseOrderId: '88',
-          purchaseOrderItemId: '301',
-        },
-      ],
-      suppliers,
-      [{ name: '中天', freight: 30 }],
-      undefined,
-      [variety],
-      tonnageInputOf(20),
-    )
-
-    // 关联采购订单: 现货价输入被遮蔽, 出现遮蔽块与已采购行样式
-    expect(container.querySelector('input[data-spot="中天:r1"]')).toBeNull()
-    expect(
-      container.querySelectorAll('.price-compare-purchased-mask').length,
-    ).toBeGreaterThan(0)
-    expect(
-      container.querySelector('tr.price-compare-purchased-row'),
-    ).not.toBeNull()
-    expect(observed.rows[0].purchaseOrderId).toBe('88')
-  })
-
-  it('解除采购订单关联后不再标记, 品牌价格列恢复(反标记刷新回归)', () => {
-    // 反标记后行上 purchaseOrderId 为空: 未采购, 现货价列可见, 不再命中已采购行
-    const observed = renderStateful(
-      makeSheet(),
-      [{ ...baseRow, id: 'r1', purchaseOrderId: undefined }],
-      suppliers,
-    )
-
-    expect(observed.rows[0].purchaseOrderId).toBeUndefined()
-    expect(container.querySelector('input[data-spot="中天:r1"]')).not.toBeNull()
-    expect(container.querySelector('tr.price-compare-purchased-row')).toBeNull()
-    expect(
-      container.querySelectorAll('.price-compare-purchased-mask').length,
-    ).toBe(0)
-  })
-
-  it('隔断行即使带采购订单也不视为已采购', () => {
-    renderStateful(
-      makeSheet(),
-      [
-        {
-          id: 'sep1',
-          rowType: 'SEPARATOR',
-          category: '',
-          material: '',
-          spec: null,
-          length: '',
-          purchaseOrderId: 'po1',
-        },
-      ],
-      suppliers,
-    )
-
-    expect(
-      container.querySelector('tr.price-compare-separator-row'),
-    ).not.toBeNull()
-    expect(container.querySelector('tr.price-compare-purchased-row')).toBeNull()
-  })
-
   it('西本模式(单虚拟品牌「基准价」)只渲染一组价格列', () => {
     renderStateful(
       makeSheet(),
@@ -1567,7 +1383,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(headerRow.match(/简称/g)?.length).toBe(1)
     expect(thead).toContain('基准价')
   })
-  it('未关联采购订单且同规格有双长度时显示长度切换按钮', () => {
+  it('同规格有双长度时显示长度切换按钮(与采购无关)', () => {
     const twoLengths: Variety[] = [
       {
         category: '螺纹钢',
@@ -1600,69 +1416,6 @@ describe('SheetPanel 指定品牌展示', () => {
 
   it('同规格仅一种长度时不显示长度切换按钮', () => {
     renderStateful(makeSheet(), [{ ...baseRow }])
-    expect(container.querySelector('.price-compare-variety-switch')).toBeNull()
-  })
-
-  it('只关联一张订货量不足的明细行时不遮蔽价格(130 吨报单挂 10 吨明细行)', () => {
-    renderStateful(
-      makeSheet(),
-      [
-        {
-          ...baseRow,
-          id: 'r1',
-          ton: 130,
-          purchaseOrderId: '88',
-          purchaseOrderItemId: '301',
-        },
-      ],
-      suppliers,
-      [{ name: '中天', freight: 30 }],
-      undefined,
-      [variety],
-      tonnageInputOf(10),
-    )
-
-    // 订货 10 < 报单 130: 还没被覆盖, 保留比价区让用户继续处理
-    expect(container.querySelector('input[data-spot="中天:r1"]')).not.toBeNull()
-    expect(container.querySelector('tr.price-compare-purchased-row')).toBeNull()
-    expect(
-      container.querySelectorAll('.price-compare-purchased-mask').length,
-    ).toBe(0)
-  })
-
-  it('已关联采购订单(已采购完)的行不显示长度切换按钮', () => {
-    const twoLengths: Variety[] = [
-      {
-        category: '螺纹钢',
-        material: 'HRB400E',
-        spec: 12,
-        length: '9米',
-        label: 'a',
-      },
-      {
-        category: '螺纹钢',
-        material: 'HRB400E',
-        spec: 12,
-        length: '12米',
-        label: 'b',
-      },
-    ]
-    renderStateful(
-      makeSheet(),
-      [
-        {
-          ...baseRow,
-          ton: 12,
-          purchaseOrderId: '88',
-          purchaseOrderItemId: '301',
-        },
-      ],
-      [],
-      undefined,
-      false,
-      twoLengths,
-      tonnageInputOf(20),
-    )
     expect(container.querySelector('.price-compare-variety-switch')).toBeNull()
   })
 
@@ -1738,180 +1491,14 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(trigger?.querySelector('.anticon-lock')).not.toBeNull()
   })
 
-  it('解锁已关联采购订单的行会清除关联与快照', async () => {
+  it('解锁行只清 locked, 吨位与规格原样保留(不与任何业务单据联动)', async () => {
     const observed = renderStateful(makeSheet(), [
-      {
-        ...baseRow,
-        locked: true,
-        purchaseOrderId: '88',
-        purchaseOrderItemId: '301',
-        purchaseOrderNo: 'PO-88',
-      },
+      { ...baseRow, ton: 12.5, locked: true },
     ])
     await clickRowAction('解锁该行')
     expect(observed.rows[0].locked).toBe(false)
-    expect(observed.rows[0].purchaseOrderId).toBeUndefined()
-    expect(observed.rows[0].purchaseOrderItemId).toBeUndefined()
-    expect(observed.rows[0].purchaseOrderNo).toBeUndefined()
-  })
-
-  it('主流程: 已开货 = 该明细行真实入库, 剩余未开 = 锁定后报单 − 已开货', async () => {
-    const poRecord: PurchaseOrderTonnageRecord = {
-      purchaseOrderId: '88',
-      purchaseOrderItemId: '301',
-      orderNo: 'PO-88',
-      supplierName: '沙钢',
-      category: '螺纹钢',
-      material: 'HRB400E',
-      spec: '12',
-      length: '9米',
-      brand: '中天',
-      orderedWeight: 32.768,
-      // issuedWeight 是别家报价单的报单占用(选单额度口径), 刻意与真实已开货取不同值:
-      // 吨位列只认 actualWeightTon, 谁把它接回 issuedWeight, 下面的 5/7 就必然变红
-      issuedWeight: 20,
-      remainingWeight: 12.768,
-      actualWeightTon: 5,
-      issuedDone: false,
-      status: '正常',
-    }
-    renderStateful(
-      makeSheet(),
-      [
-        {
-          ...baseRow,
-          // 本单据手填 12: 只影响「报单吨位」列, 不进"已开货/剩余未开"两个口径
-          ton: 12,
-          locked: true,
-          purchaseOrderId: '88',
-          purchaseOrderItemId: '301',
-          purchaseOrderNo: 'PO-88',
-        },
-      ],
-      [],
-      [{ name: '中天', freight: 30 }],
-      false,
-      [variety],
-      {
-        options: [poRecord],
-        tonnageByItemId: new Map([['301', poRecord]]),
-        loading: false,
-        isError: false,
-      },
-    )
-    // 已开货 = 该明细行真实入库 5 吨(方案 B; 不是"报单 + 别家占用")
-    const issuedCell = container.querySelector<HTMLElement>(
-      '.price-compare-ton-issued',
-    )
-    /*
-     * 已开货单元格含读屏全文 + 可见数字, 因此用"必须出现 5、绝不出现 17"来区分新旧口径:
-     * 旧口径(本单报单 12 + 别家占用 5)会得到 17, 新口径只认真实入库 5。
-     */
-    expect(issuedCell?.textContent).toContain('5')
-    expect(issuedCell?.textContent).not.toContain('17')
-    // 可见数字紧跟读屏文本, 末位即品牌前的数字
-    expect(issuedCell?.textContent?.endsWith('5')).toBe(true)
-    expect(
-      container.querySelector('.price-compare-ton-progress')?.textContent,
-    ).toContain('中天')
-    // 剩余未开单独一列: 报单 12 − 已开货 5 = 7(订货 32.768 只作参考, 不进这个减法)
-    expect(
-      container.querySelector('.price-compare-ton-figure')?.textContent,
-    ).toBe('7')
-    // 报单吨位列只放输入框
-    const tonInput = container.querySelector<HTMLInputElement>(
-      'input[data-ton="r1"]',
-    )
-    expect(tonInput?.value).toBe('12')
-
-    await act(async () => {
-      issuedCell?.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 250))
-    })
-    const tooltipText =
-      document.querySelector('.price-compare-ton-tooltip')?.textContent ?? ''
-    // 口径顺序: 本单报单 → 已开货 → 剩余未开 → 订货(参考)
-    expect(tooltipText).toContain('本单该明细行报单')
-    expect(tooltipText).toContain('12.000')
-    expect(tooltipText).toContain('已开货')
-    expect(tooltipText).toContain('5.000')
-    expect(tooltipText).toContain('剩余未开')
-    expect(tooltipText).toContain('7.000')
-    expect(tooltipText).toContain('订货吨位')
-    expect(tooltipText).toContain('32.768')
-    // 别家报价单的报单占用(20)不得出现在吨位弹层里
-    expect(tooltipText).not.toContain('20.000')
-    expect(container.querySelector('.price-compare-ton-hint--over')).toBeNull()
-  })
-
-  it('吨位列按单据实际品牌定宽: 长品牌的「已开 x · 品牌」不再被裁', () => {
-    const poRecord: PurchaseOrderTonnageRecord = {
-      purchaseOrderId: '88',
-      purchaseOrderItemId: '301',
-      orderNo: 'PO-88',
-      supplierName: '沙钢',
-      category: '螺纹钢',
-      material: 'HRB400E',
-      spec: '12',
-      length: '9米',
-      brand: '中天钢铁',
-      orderedWeight: 128,
-      issuedWeight: 12.5,
-      remainingWeight: 115.5,
-      actualWeightTon: 132.5,
-      issuedDone: false,
-      status: '正常',
-    }
-    renderStateful(
-      makeSheet(),
-      [
-        {
-          ...baseRow,
-          ton: 120,
-          locked: true,
-          purchaseOrderId: '88',
-          purchaseOrderItemId: '301',
-          purchaseOrderNo: 'PO-88',
-        },
-      ],
-      [],
-      [{ name: '中天', freight: 30 }],
-      false,
-      [variety],
-      {
-        options: [poRecord],
-        tonnageByItemId: new Map([['301', poRecord]]),
-        loading: false,
-        isError: false,
-      },
-    )
-
-    // 列宽必须覆盖整段「132.5 · 中天钢铁」(已开货 = 该明细行真实入库 132.5)
-    const parts = tonProgressTextParts(poRecord)
-    expect(parts.primary).toBe('132.5')
-    // 列宽 = max(内容宽, 表头宽): 表头「已开货」「剩余未开」按个人字号渲染,
-    // 内容数字固定 11px, 表头常常是更宽的一方(不算进来列头会折行)
-    const headerFontSize = 14
-    const needed = requiredTonColumnWidth(
-      tonProgressLineWidth(parts.primary, parts.brand),
-      estimateSheetTextWidth('已开货', headerFontSize),
-    )
-    const issuedNeeded = requiredIssuedTonColumnWidth(
-      estimateSheetTextWidth('-12.5', TON_PROGRESS_FONT_SIZE),
-      estimateSheetTextWidth('剩余未开', headerFontSize),
-    )
-    const colStyles = [...container.querySelectorAll('colgroup col')].map(
-      (col) => (col.getAttribute('style') ?? '').replace(/\s+/g, ''),
-    )
-    expect(colStyles).toContain(`width:${needed}px;`)
-    expect(colStyles).toContain(`width:${issuedNeeded}px;`)
-    // 只兜下界的口径更窄, 说明这次确实按真实内容加宽了
-    expect(needed).toBeGreaterThan(
-      requiredTonColumnWidth(
-        0,
-        estimateSheetTextWidth('已开货', headerFontSize),
-      ),
-    )
+    expect(observed.rows[0].ton).toBe(12.5)
+    expect(observed.rows[0].spec).toBe(12)
   })
 })
 

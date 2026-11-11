@@ -74,24 +74,12 @@ export type PriceRow = {
   ton?: number
   /** 行级备注 */
   remark?: string
-  /** 是否锁定: 未锁定不可关联采购订单; 解锁时清除关联。隔断行恒为 false。 */
+  /**
+   * 行级锁定: 只冻结该行的规格与吨位(纯编辑保护, 与采购/销售无关)。隔断行恒为 false。
+   *
+   * <p>两级锁的第二级 —— 第一级是单据锁 {@link PriceSheet.specQuantityLocked}。</p>
+   */
   locked?: boolean
-  /** 关联采购订单标识(可空): 非空即视为已采购(遮蔽吨位后品牌列); 隔断行恒为空。 */
-  purchaseOrderId?: string
-  /** 关联采购订单号快照(保存时写入; 供展示兜底)。 */
-  purchaseOrderNo?: string
-  /** 关联采购订单明细行标识(按规格扣减已开吨位); 等于 purchaseOrderLinks[0]。 */
-  purchaseOrderItemId?: string
-  /** 多行关联: 一行可挂多张采购订单明细行, 每条带本次开出吨位。 */
-  purchaseOrderLinks?: PriceRowPurchaseOrderLink[]
-}
-
-/** 行级关联: allocatedTon 是本次在该订单明细行开出的吨位。 */
-export type PriceRowPurchaseOrderLink = {
-  purchaseOrderId: string
-  purchaseOrderNo?: string
-  purchaseOrderItemId: string
-  allocatedTon: number
 }
 
 export type SheetInput = {

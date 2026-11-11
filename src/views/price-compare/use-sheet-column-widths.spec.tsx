@@ -5,57 +5,16 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
-import type { PurchaseOrderTonnageRecord } from '@/api/market/quote-sheets'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
-import {
-  estimateSheetTextWidth,
-  requiredIssuedTonColumnWidth,
-  requiredTonColumnWidth,
-  SHEET_COLUMN_WIDTH,
-  SHEET_WIDTH_BASE_FONT_SIZE,
-  TON_PROGRESS_FONT_SIZE,
-  tonProgressLineWidth,
-} from './core'
-import { tonProgressTextParts } from './ton-progress-text'
+import { SHEET_COLUMN_WIDTH, sheetColumnWidths } from './core'
 import { useSheetColumnWidths } from './use-sheet-column-widths'
-
-/** 明细行工厂: 只覆盖断言关心的字段。 */
-function poRecord(
-  overrides: Partial<PurchaseOrderTonnageRecord> = {},
-): PurchaseOrderTonnageRecord {
-  return {
-    purchaseOrderId: '1',
-    purchaseOrderItemId: '301',
-    orderNo: 'PO-1',
-    supplierName: '沙钢',
-    category: '螺纹钢',
-    material: 'HRB400E',
-    spec: '12',
-    length: '9米',
-    brand: '中天',
-    orderedWeight: 12,
-    issuedWeight: 0,
-    remainingWeight: 12,
-    actualWeightTon: null,
-    issuedDone: false,
-    status: '正常',
-    ...overrides,
-  }
-}
 
 /**
  * 探针组件: 把 hook 结果序列化进 DOM。
  * 不在渲染期写外部变量(组件必须保持纯函数), 断言统一从 container.textContent 读取。
  */
-function Probe({
-  records = [],
-  localTonByItemId = new Map<string, number>(),
-}: {
-  records?: readonly PurchaseOrderTonnageRecord[]
-  localTonByItemId?: ReadonlyMap<string, number>
-}) {
-  const widths = useSheetColumnWidths(records, localTonByItemId)
-  return createElement('output', null, JSON.stringify(widths))
+function Probe() {
+  return createElement('output', null, JSON.stringify(useSheetColumnWidths()))
 }
 
 describe('useSheetColumnWidths 随个人设置字号自适应', () => {
@@ -82,26 +41,21 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
   const widthsNow = () =>
     JSON.parse(container.textContent ?? '{}') as Record<string, number>
 
-  const render = (
-    records: readonly PurchaseOrderTonnageRecord[] = [],
-    localTonByItemId: ReadonlyMap<string, number> = new Map(),
-  ) => {
+  const render = () => {
     act(() => {
-      root.render(createElement(Probe, { records, localTonByItemId }))
+      root.render(createElement(Probe))
     })
     return widthsNow()
   }
 
-  it('未配置字号时使用 14px 基准列宽(吨位两列按内容)', () => {
+  it('未配置字号时使用 14px 基准列宽(含报单吨位列)', () => {
     const widths = render()
+    expect(widths).toEqual(sheetColumnWidths(14))
     expect(widths.spec).toBe(SHEET_COLUMN_WIDTH.spec)
     expect(widths.ton).toBe(SHEET_COLUMN_WIDTH.ton)
-    // 已开/未开两列无内容时取数字下界, 不为固定基准白留空白
-    expect(widths.issuedTon).toBe(requiredIssuedTonColumnWidth())
-    expect(widths.unopenedTon).toBe(requiredTonColumnWidth())
   })
 
-  it('字号 16/18 时列宽等比放大', () => {
+  it('字号 16/18 时每列列宽等比放大', () => {
     useUiSettingsStore.setState({ settings: { fontSize: 16 } })
     const at16 = render()
     expect(at16.spec).toBe(Math.round((SHEET_COLUMN_WIDTH.spec * 16) / 14))
@@ -127,57 +81,12 @@ describe('useSheetColumnWidths 随个人设置字号自适应', () => {
     }
   })
 
-  it('已开货列按单据实际内容定宽: 长品牌名不再被省略号收尾', () => {
-    // 真实已开货 40 吨 ⇒ 文案「40 · 中天钢铁」
-    const widths = render(
-      [poRecord({ actualWeightTon: 40, brand: '中天钢铁' })],
-      new Map([['301', 40]]),
+  it('列宽表只含保留的列, 不再有已开/未开两列', () => {
+    const widths = render()
+    expect(Object.keys(widths).sort()).toEqual(
+      Object.keys(SHEET_COLUMN_WIDTH).sort(),
     )
-    const numberOnly = requiredTonColumnWidth(tonProgressLineWidth('40', ''))
-    // 列宽完全按内容: 「40 · 中天钢铁」需要多宽就给多宽
-    expect(widths.unopenedTon).toBe(
-      requiredTonColumnWidth(tonProgressLineWidth('40', '中天钢铁')),
-    )
-    // 必须真的比"只兜数字"的下界宽, 否则品牌还是会被裁
-    expect(widths.unopenedTon).toBeGreaterThan(numberOnly)
-    // 其余列不受内容影响
-    expect(widths.spec).toBe(SHEET_COLUMN_WIDTH.spec)
-  })
-
-  it('取单据里最长的一条已开货文案定宽(真实入库)', () => {
-    const short = poRecord({ purchaseOrderItemId: '301', brand: '中天' })
-    const long = poRecord({
-      purchaseOrderItemId: '302',
-      brand: '中天钢铁',
-      orderedWeight: 128,
-      actualWeightTon: 132.5,
-    })
-    // 明细 302 的真实已开货 132.5; 千分位吨位(8,884.5)也要能被覆盖
-    const widths = render([short, long], new Map([['302', 120]]))
-    const parts = tonProgressTextParts(long)
-    expect(parts.primary).toBe('132.5')
-    expect(widths.unopenedTon).toBe(
-      requiredTonColumnWidth(
-        tonProgressLineWidth(parts.primary, parts.brand),
-        estimateSheetTextWidth('已开货', SHEET_WIDTH_BASE_FONT_SIZE),
-      ),
-    )
-    expect(widths.unopenedTon).toBeGreaterThan(
-      requiredTonColumnWidth(tonProgressLineWidth('132.5', '中天')),
-    )
-    // 剩余未开列按最长的一条剩余吨位定宽(报单 120 − 已开货 132.5 = −12.5)
-    expect(widths.issuedTon).toBe(
-      requiredIssuedTonColumnWidth(
-        estimateSheetTextWidth('-12.5', TON_PROGRESS_FONT_SIZE),
-      ),
-    )
-  })
-
-  it('没有吨位数据时两列都回落到数字下界', () => {
-    const widths = render([])
-    expect(widths.unopenedTon).toBe(requiredTonColumnWidth())
-    expect(widths.issuedTon).toBe(requiredIssuedTonColumnWidth())
-    // 报单吨位列按字号固定, 不受内容影响
-    expect(widths.ton).toBe(SHEET_COLUMN_WIDTH.ton)
+    expect(widths).not.toHaveProperty('issuedTon')
+    expect(widths).not.toHaveProperty('unopenedTon')
   })
 })

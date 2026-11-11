@@ -37,7 +37,6 @@ import {
   createQuoteSheet,
   deleteQuoteSheet,
   deleteQuoteSheetItem,
-  fetchPurchaseOrderTonnages,
   fetchQuoteSheets,
   reorderQuoteSheetItems,
   updateQuoteSheet,
@@ -224,65 +223,6 @@ describe('quote-sheets API', () => {
     expect(record.updatedAt).toBeUndefined()
   })
 
-  it('已采购由采购订单关联派生: 关联为 true, 未关联为 false', async () => {
-    apiGetMock.mockResolvedValue({
-      content: [
-        {
-          ...page.content[0],
-          items: [
-            { ...page.content[0].items[0], purchaseOrderId: '88' },
-            {
-              ...page.content[0].items[0],
-              id: '700500000000000141',
-              purchaseOrderId: undefined,
-              // 历史 purchased 标记被忽略, 不再影响派生结果
-              purchased: true,
-            },
-          ],
-        },
-      ],
-      totalElements: 1,
-      totalPages: 1,
-      currentPage: 0,
-      pageSize: 200,
-      hasMore: false,
-    })
-
-    const [record] = await fetchQuoteSheets()
-
-    expect(record.items[0].purchased).toBe(true)
-    expect(record.items[1].purchased).toBe(false)
-    expect(record.items[1].purchaseOrderId).toBeUndefined()
-  })
-
-  it('隔断行即使带采购订单也归一为未采购且不保留关联', async () => {
-    apiGetMock.mockResolvedValue({
-      content: [
-        {
-          ...page.content[0],
-          items: [
-            {
-              ...page.content[0].items[0],
-              rowType: 'SEPARATOR',
-              purchaseOrderId: '88',
-              purchaseOrderNo: 'PO-88',
-            },
-          ],
-        },
-      ],
-      totalElements: 1,
-      totalPages: 1,
-      currentPage: 0,
-      pageSize: 200,
-      hasMore: false,
-    })
-
-    const [record] = await fetchQuoteSheets()
-
-    expect(record.items[0].purchased).toBe(false)
-    expect(record.items[0].purchaseOrderId).toBeUndefined()
-  })
-
   it('更新按路径 ID 提交整体替换请求体', async () => {
     apiPutMock.mockResolvedValue(page.content[0])
 
@@ -453,134 +393,6 @@ describe('quote-sheets API', () => {
       headers: Record<string, string>
     }
     expect(deleteConfig.headers['X-Resource-Version']).toBe('6')
-  })
-  it('采购订单关联归一化: purchaseOrderId 转字符串并保留订单号快照', async () => {
-    apiGetMock.mockResolvedValue({
-      content: [
-        {
-          ...page.content[0],
-          items: [
-            {
-              ...page.content[0].items[0],
-              purchaseOrderId: 88,
-              purchaseOrderNo: 'PO-88',
-            },
-          ],
-        },
-      ],
-      totalElements: 1,
-      totalPages: 1,
-      currentPage: 0,
-      pageSize: 200,
-      hasMore: false,
-    })
-
-    const [record] = await fetchQuoteSheets()
-
-    expect(record.items[0].purchaseOrderId).toBe('88')
-    expect(record.items[0].purchaseOrderNo).toBe('PO-88')
-  })
-
-  it('隔断行不解析采购订单关联', async () => {
-    apiGetMock.mockResolvedValue({
-      content: [
-        {
-          ...page.content[0],
-          items: [
-            {
-              ...page.content[0].items[0],
-              rowType: 'SEPARATOR',
-              purchaseOrderId: '88',
-              purchaseOrderNo: 'PO-88',
-            },
-          ],
-        },
-      ],
-      totalElements: 1,
-      totalPages: 1,
-      currentPage: 0,
-      pageSize: 200,
-      hasMore: false,
-    })
-
-    const [record] = await fetchQuoteSheets()
-
-    expect(record.items[0].purchaseOrderId).toBeUndefined()
-    expect(record.items[0].purchaseOrderNo).toBeUndefined()
-  })
-
-  it('采购订单吨位汇总: 解析订货/已开/剩余并拼接查询参数', async () => {
-    apiGetMock.mockResolvedValue([
-      {
-        purchaseOrderId: '88',
-        purchaseOrderItemId: '301',
-        orderNo: 'PO-88',
-        supplierName: '沙钢',
-        category: '螺纹钢',
-        material: 'HRB400E',
-        spec: '12',
-        length: '9米',
-        brand: '中天',
-        orderedWeight: '40.5',
-        issuedWeight: '30.5',
-        remainingWeight: '10',
-        // 真实已开货(入库回写)与"报单占用"刻意取不同值, 解析后必须各归各位
-        actualWeightTon: '12.25',
-        issuedDone: true,
-        status: '正常',
-      },
-    ])
-
-    const result = await fetchPurchaseOrderTonnages({
-      keyword: '沙',
-      status: '正常',
-      excludeSheetId: '700500000000000130',
-    })
-
-    expect(apiGetMock.mock.calls[0][0]).toBe(
-      '/quote-sheets/purchase-order-tonnages',
-    )
-    const config = apiGetMock.mock.calls[0][2] as {
-      params: Record<string, unknown>
-    }
-    expect(config.params).toMatchObject({
-      keyword: '沙',
-      status: '正常',
-      excludeSheetId: '700500000000000130',
-    })
-    expect(result[0]).toEqual({
-      purchaseOrderId: '88',
-      purchaseOrderItemId: '301',
-      orderNo: 'PO-88',
-      supplierName: '沙钢',
-      category: '螺纹钢',
-      material: 'HRB400E',
-      spec: '12',
-      length: '9米',
-      brand: '中天',
-      orderedWeight: 40.5,
-      issuedWeight: 30.5,
-      remainingWeight: 10,
-      // 真实已开货解析为独立字段, 不覆盖也不回退到 issuedWeight
-      actualWeightTon: 12.25,
-      issuedDone: true,
-      status: '正常',
-    })
-  })
-
-  it('采购订单吨位汇总: 传 ids 时按数组去重查询', async () => {
-    apiGetMock.mockResolvedValue([])
-
-    await fetchPurchaseOrderTonnages({
-      purchaseOrderItemIds: ['301', '302'],
-    })
-
-    const config = apiGetMock.mock.calls[0][2] as {
-      params: Record<string, unknown>
-      paramsSerializer?: unknown
-    }
-    expect(config.params.purchaseOrderItemIds).toEqual(['301', '302'])
-    expect(config.paramsSerializer).toEqual({ indexes: null })
   })
 })
 

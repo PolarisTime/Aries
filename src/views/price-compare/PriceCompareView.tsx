@@ -1,4 +1,4 @@
-import { Alert, Empty, Flex, Skeleton, Watermark } from 'antd'
+import { Empty, Flex, Skeleton, Watermark } from 'antd'
 import dayjs from 'dayjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -34,7 +34,6 @@ import {
   usePriceCompareData,
 } from './usePriceCompareData'
 import { usePriceComparePricing } from './usePriceComparePricing'
-import { usePurchaseOrderTonnage } from './usePurchaseOrderTonnage'
 import { useSheetsStore } from './useSheetsStore'
 import './price-compare.css'
 
@@ -194,8 +193,6 @@ export function PriceCompareView() {
     quoteSource: activeProjectQuoteConfig?.quoteSource,
     quoteRegion: activeProjectQuoteConfig?.quoteRegion,
   })
-
-  const purchaseOrderTonnage = usePurchaseOrderTonnage(active, isAuthenticated)
 
   // 参照日期/时段回填与网价合并, 详见 use-price-compare-reference-sync.ts
   usePriceCompareReferenceSync({
@@ -368,7 +365,6 @@ export function PriceCompareView() {
         resolveSyncBrands={resolveSyncBrands}
         watermark={t('priceCompare.view.watermark')}
         noBatchLabel={t('priceCompare.view.noBatch')}
-        tonnageLoadFailedLabel={t('priceCompare.sheet.purchaseOrderLoadFailed')}
         data={data}
         varieties={varieties}
         brands={brands}
@@ -391,7 +387,6 @@ export function PriceCompareView() {
         supplierSelectOptions={supplierSelectOptions}
         onSaveConfig={(next) => setConfig(next)}
         readOnly={readOnly}
-        purchaseOrderTonnage={purchaseOrderTonnage}
       />
 
       <PriceCompareOverlays
@@ -417,7 +412,6 @@ function PriceCompareSheetArea({
   resolveSyncBrands,
   watermark,
   noBatchLabel,
-  tonnageLoadFailedLabel,
   data,
   varieties,
   brands,
@@ -438,14 +432,12 @@ function PriceCompareSheetArea({
   supplierSelectOptions,
   onSaveConfig,
   readOnly,
-  purchaseOrderTonnage,
 }: {
   active: ReturnType<typeof useSheetsStore>['active']
   sheets: ReturnType<typeof useSheetsStore>['sheets']
   resolveSyncBrands: (sheet: PriceSheet) => readonly string[]
   watermark: string
   noBatchLabel: string
-  tonnageLoadFailedLabel: string
   data: React.ComponentProps<typeof SheetPanel>['data']
   varieties: React.ComponentProps<typeof SheetPanel>['varieties']
   brands: React.ComponentProps<typeof SheetPanel>['brands']
@@ -466,9 +458,6 @@ function PriceCompareSheetArea({
   supplierSelectOptions: React.ComponentProps<typeof SheetPanel>['suppliers']
   onSaveConfig: (next: ReturnType<typeof useSheetsStore>['config']) => void
   readOnly: boolean
-  purchaseOrderTonnage: React.ComponentProps<
-    typeof SheetPanel
-  >['purchaseOrderTonnage']
 }) {
   if (!active) {
     return (
@@ -483,9 +472,6 @@ function PriceCompareSheetArea({
       gap={[140, 120]}
       font={{ fontSize: 12, color: 'rgba(0,0,0,0.035)' }}
     >
-      {purchaseOrderTonnage?.isError ? (
-        <Alert banner showIcon type="warning" title={tonnageLoadFailedLabel} />
-      ) : null}
       <SheetPanel
         key={active.id}
         sheet={active}
@@ -517,7 +503,6 @@ function PriceCompareSheetArea({
         remark={config.remark}
         onRemarkChange={(value) => onSaveConfig({ ...config, remark: value })}
         readOnly={readOnly}
-        purchaseOrderTonnage={purchaseOrderTonnage}
       />
     </Watermark>
   )

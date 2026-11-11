@@ -379,26 +379,6 @@
   opacity: 0.62;
 }
 
-/* 已采购行: 吨位之后的品牌价格列(网价/现货/差价/简称)整体遮蔽, 不可编辑 */
-.price-compare-table tbody > tr.price-compare-purchased-row > td {
-  background: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 0.02));
-}
-
-.price-compare-purchased-mask {
-  display: block;
-  width: 100%;
-  min-width: 24px;
-  height: 18px;
-  border-radius: 3px;
-  background: repeating-linear-gradient(
-    135deg,
-    var(--ant-color-fill-secondary, rgba(0, 0, 0, 0.06)) 0,
-    var(--ant-color-fill-secondary, rgba(0, 0, 0, 0.06)) 4px,
-    transparent 4px,
-    transparent 8px
-  );
-}
-
 /* 隔断行: 整条分隔带, 弱化背景并隐藏其它列的交互 */
 .price-compare-table .ant-table-tbody > tr.price-compare-separator-row > td {
   height: 14px;
@@ -741,39 +721,7 @@
 }
 
 /*
- * 报单吨位列头: 左侧列名 + 右侧次要的合计, 同一行。
- * 两行堆叠(列名 / 合计在下一行)在窄列里既占高又和数字对不齐, 改成一行后
- * 合计退居次要文本, 主列名仍完整可读。
- */
-.price-compare-ton-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-xxs);
-  width: 100%;
-  line-height: 1.2;
-}
-
-.price-compare-ton-header-title {
-  flex: 0 1 auto;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.price-compare-ton-total {
-  flex: 0 0 auto;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-/*
- * 吨位三列: 「报单吨位」(输入) / 「已开吨位」(只读数字) / 「未开吨位」(数字·品牌 + 明细入口)。
- * 三列都是单行、与同表其它单元格等高(两行堆叠会把整行撑高约 24px)。
+ * 报单吨位单元格: 输入框与锁定原因包装层单行居中, 与同表其它单元格等高。
  */
 .price-compare-ton-cell {
   display: flex;
@@ -781,54 +729,9 @@
   flex-wrap: nowrap;
   gap: var(--space-xxs);
   align-items: center;
-  /* 三列内容都居中(与表头对齐): 报单吨位输入框、已开/未开数字 */
+  /* 内容居中: 与居中的表头对齐 */
   justify-content: center;
   min-width: 0;
-}
-
-/*
- * 已开/未开两列: 只读数字, 内容与报单吨位一样居中; 未开吨位列里数字与品牌作为一个
- * 整体居中, 明细入口固定在单元格右端。
- */
-.price-compare-ton-cell--readonly {
-  flex: 1 1 auto;
-}
-
-/*
- * 没有口径可算时的短状态(「未关联」/「已删除」): 与数字同字号同色, 用一个弱化底色提示
- * 这不是"数量为 0", 而是"还没有可算的口径"。
- *
- * 它是原生 button(提示触发器, 键盘可聚焦), 因此先重置 UA 外观再按原 span 的版式画,
- * 视觉与改造前一致; 键盘聚焦时必须给出明确焦点环, 否则等于制造了一个新的"焦点不可见"。
- */
-.price-compare-ton-state {
-  border: 0;
-  margin: 0;
-  font-family: inherit;
-  font-size: 11px;
-  line-height: inherit;
-  color: var(--ant-color-text-tertiary);
-  background: var(--ant-color-fill-quaternary);
-  border-radius: var(--radius-xs, 4px);
-  padding: 0 4px;
-  white-space: nowrap;
-  cursor: help;
-}
-
-.price-compare-ton-state:focus-visible {
-  outline: 2px solid var(--ant-color-primary, #1677ff);
-  outline-offset: 1px;
-}
-
-/*
- * 只读吨位数字(已开吨位列): 固定 11px 次要小字, 不随个人字号缩放(与未开吨位列同口径),
- * 用等宽数字保证同行数字位数对齐。
- */
-.price-compare-ton-figure {
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  color: var(--ant-color-text-secondary);
-  white-space: nowrap;
 }
 
 /* 报单吨位输入: 固定宽度(em 随字号缩放), 内部数字右对齐同行扫读 */
@@ -848,7 +751,7 @@
   width: 4.75em;
   min-width: 4.75em;
   flex: 0 0 auto;
-  /* 数字居中: 与相邻的已开/未开两列同一观感(表头也居中) */
+  /* 数字居中: 与居中的表头对齐 */
   text-align: center;
 }
 
@@ -871,24 +774,6 @@
   justify-content: flex-end;
   width: 4.75em;
   min-width: 0;
-}
-
-/*
- * 进度区: 主段(剩余 x / 已开超 x / 已开 x) + 品牌层。
- *
- * flex-grow 吃掉整格余量, 让这一层的位置与宽度只由列宽决定, 不随各行文字长短变化 ——
- * 否则每行文本一长, 它左侧的报单吨位输入框就被推着左右移动, 整列的吨位数字对不齐。
- * 未关联行的占位「—」也放在这一层里, 保证同样落位。
- */
-.price-compare-ton-progress {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  /* 数字与品牌作为整体居中(明细入口固定在右端, 因此相对整格略微偏左) */
-  justify-content: center;
-  gap: 2px;
-  min-width: 0;
-  line-height: 1.2;
 }
 
 /*
@@ -953,45 +838,10 @@
 }
 
 /*
- * 次要小字「已开 26/84 · 中天」: 与输入同行, 空间不足时整段省略号收尾(精确值与品牌见 Tooltip)。
- * 数字用等宽字形(tabular-nums), 多行之间的小数点与位数能对齐, 便于自上而下扫读。
- */
-.price-compare-ton-issued {
-  flex: 0 1 auto;
-  min-width: 0;
-  font-size: 11px;
-  line-height: 1.2;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
-}
-
-/* 未关联采购订单时的占位: 与输入同行, 内容由明细图标说明 */
-.price-compare-ton-meta--empty {
-  flex: 0 0 auto;
-  color: var(--text-secondary);
-  font-size: 11px;
-  line-height: 1.2;
-}
-
-/* 进度行 Tooltip 明细: 报单 / 订货 / 已开 / 剩余 四行对齐的键值表 */
-.price-compare-ton-tooltip {
-  display: flex;
-  flex-direction: column;
-  /* 行距 4 → 8px(仍是 token): 键值成对, 行贴太近时上下两行会读成一行 */
-  gap: var(--space-xs);
-  min-width: 180px;
-  /* 字号跟随 antd 字号 token(默认 12px), 个人设置放大字号时随之放大, 不写死 */
-  font-size: var(--font-size-xs);
-}
-
-/*
- * 吨位列气泡(Tooltip 与 ⓘ popover 共用): 完全不透明底 + 浮层阴影 + 圆角。
+ * 吨位列气泡(锁定原因 Tooltip): 完全不透明底 + 浮层阴影 + 圆角。
  *
  * antd 默认 Tooltip 底色是 colorBgSpotlight(`rgba(0, 0, 0, 0.85)`), 页面里的表头、按钮与
- * 表格文字会从那 15% 透明里透出来, 与气泡内的「报单吨位 / 已开吨位(实际)」叠成重影。
+ * 表格文字会从那 15% 透明里透出来, 与气泡内的锁定原因文字叠成重影。
  *
  * 底色与文字必须走项目自己的 `--theme-overlay-*`(见 styles/variables.css), 不能走
  * `--ant-*`: 本项目 antd cssVar 只在 `.leo-antd-app` 子树内注册, 弹层 portal 到 body 之后
@@ -1015,219 +865,6 @@
 .price-compare-ton-bubble .ant-tooltip-arrow,
 .price-compare-ton-bubble .ant-popover-arrow {
   --ant-tooltip-arrow-background-color: var(--theme-overlay-surface, #ffffff);
-}
-
-/* 明细图标: 悬停/点击(键盘 Enter)打开采购订单明细 popover */
-.price-compare-ton-info {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  /* 点击目标: 图标本体仅 14px, 补足到 24×24 满足 WCAG 2.2 AA(2.5.8) */
-  min-width: 24px;
-  min-height: 24px;
-  justify-content: center;
-  /* 触发器已改为原生 button(键盘可达): 抹掉 UA 默认外观, 保持原图标外观 */
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  /* 图标为可点击控件: 需要 3:1 对比, quaternary(.25 ≈ 1.8:1)不达标 */
-  color: var(--text-secondary);
-  transition: color 0.2s ease;
-}
-
-/* 采购订单选择弹窗: 行可聚焦(键盘 Enter 选中), 需要可见焦点环 */
-.price-compare-purchase-order-picker-row:focus-visible {
-  outline: var(--focus-ring-width, 2px) solid
-    var(--focus-ring-color, var(--theme-highlight-border, #1677ff));
-  outline-offset: calc(-1 * var(--focus-ring-width, 2px));
-}
-
-.price-compare-ton-info:hover {
-  color: var(--color-info-active, #0958d9);
-}
-
-/* 选项加载中: 图标弱化提示 */
-.price-compare-ton-info--loading {
-  opacity: 0.65;
-}
-
-/* popover 内容 */
-.price-compare-ton-popover {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  min-width: 200px;
-  /* 与 Tooltip 明细同一口径: 跟随 antd 字号 token, 不写死 12px */
-  font-size: var(--font-size-xs);
-}
-
-.price-compare-ton-popover-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-md);
-}
-
-/*
- * 数值列: 右对齐 + 等宽数字。
- * 行用 space-between 后数值本来就贴着右边缘, 但数值换行(长供应商名)时行内文字会左对齐,
- * 与上一行的右边缘错开; 显式右对齐让整列数值共享同一条右基准线, tabular-nums 再让小数点
- * 上下对齐, 扫读时不必逐行找数字起点。
- */
-.price-compare-ton-popover-row > :last-child {
-  min-width: 0;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.price-compare-ton-popover-row > span:first-child {
-  /* 气泡表面已统一成 --theme-overlay-surface: 键名色必须跟着走, 否则深色底上是黑字 */
-  color: var(--theme-overlay-text-muted, rgba(0, 0, 0, 0.65));
-}
-
-.price-compare-ton-popover-over {
-  color: var(--color-danger-active, #d9363e);
-  font-weight: 600;
-}
-
-.price-compare-ton-popover-basis {
-  color: var(--text-secondary);
-  font-size: 11px;
-  line-height: 1.3;
-}
-
-/*
- * 欠额提示: 关联明细行的分配量合计小于本行报单吨位时, 差额既不在「已开」也不在「未开」里,
- * 必须在弹层里说清"还有多少没落到订单上"(欠额合法, 只提示不阻断保存)。
- */
-.price-compare-ton-popover-shortfall {
-  color: var(--color-warning-active, #d48806);
-  font-size: 11px;
-  line-height: 1.3;
-}
-
-[data-theme="dark"] .price-compare-ton-popover-shortfall {
-  color: var(--color-warning-hover, #ffc53d);
-}
-
-.price-compare-ton-popover .ant-btn {
-  margin-top: var(--space-xxs);
-}
-
-.price-compare-ton-hint--over {
-  color: var(--color-danger-active, #d9363e);
-  font-weight: 600;
-}
-
-/*
- * 深色浮层表面(#1a1f25)比 antd 默认的近黑气泡更亮: --color-danger-active 的兜底 #d9363e
- * 在它上面只有约 3.6:1, 12px 粗体正文按 WCAG 2.2 AA 需要 4.5:1。深色下把气泡内的警告文字
- * 改用更亮的红(#ff7875, 约 6.4:1); 浅色下维持原色(#d9363e 对白底约 4.6:1)。
- * 只改气泡作用域: 表格单元格里的同名类仍走页面底色, 不在本次改动范围。
- *
- * 位置必须在 `.price-compare-ton-hint--over` 基准规则**之后**: `price-compare-a11y-css.spec.ts`
- * 按选择器字面量取第一处出现来断言基准色, 规则提前会把基准块挡掉。
- */
-[data-theme="dark"] .price-compare-ton-bubble .price-compare-ton-hint--over,
-[data-theme="dark"] .price-compare-ton-popover-over {
-  color: var(--color-danger-hover, #ff7875);
-}
-
-.price-compare-purchase-order-picker-footer {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-xs);
-}
-
-/* 选择采购订单弹窗: 搜索框 + "显示已关联完"开关同一行, 窄屏允许换行不挤压输入框 */
-.price-compare-purchase-order-picker-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-sm);
-}
-
-.price-compare-purchase-order-picker-toolbar .ant-input-affix-wrapper {
-  flex: 1 1 220px;
-  min-width: 0;
-}
-
-.price-compare-purchase-order-picker-toggle {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-/*
- * 材质/规格/长度 + 品牌标签: 规格文本可省略号收尾, 品牌标签不可压缩,
- * 保证同一规格多品牌时标签始终可见(区分品牌的唯一线索)。
- */
-.price-compare-purchase-order-picker-variety {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xxs);
-  min-width: 0;
-}
-
-.price-compare-purchase-order-picker-spec {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.price-compare-purchase-order-picker-variety .ant-tag {
-  flex: 0 0 auto;
-  margin-inline-end: 0;
-}
-
-/* 剩余为 0 的行: 可见但不可选, 用弱化底色明示"只读" */
-.price-compare-purchase-order-picker-row--disabled > td {
-  background: var(--ant-color-fill-quaternary, rgba(0, 0, 0, 0.02));
-}
-
-.price-compare-purchase-order-picker-row--disabled
-  .price-compare-purchase-order-picker-spec {
-  color: var(--ant-color-text-tertiary, rgba(0, 0, 0, 0.45));
-}
-
-/*
- * 吨位次要小字里的品牌层: 与比值「已开 26/84」分成两个弹性项, 有自己的省略号层。
- *
- * 收缩额度按 flex-shrink × flex-basis 分配, 品牌取极大的 flex-shrink 让它几乎独占缺口:
- * 列宽不足时先省略品牌, 比值保持完整可读(两者同层时省略号会先吃掉比值 —— 11/12px 档
- * 实测「已开 0/12」被截成「已开 0/1…」)。品牌被压到 0 之后才轮到比值层退化为省略号。
- */
-.price-compare-ton-brand-group {
-  display: inline-flex;
-  flex: 0 9999 auto;
-  align-items: center;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  font-size: 11px;
-  line-height: 1.2;
-  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.65));
-}
-
-/* 品牌文本: 品牌层内的省略号层, 完整品牌由同一格的 Tooltip 给出 */
-.price-compare-ton-brand {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/*
- * 分隔符: 与品牌同处品牌的省略号层(不设独立弹性行为), 省略号作用于整串「· 中天」,
- * 只省略品牌、不留孤立标点。分隔符对读屏冗余, 品牌已在上面的完整描述里读出来。
- */
-.price-compare-ton-brand-sep {
-  white-space: nowrap;
-  margin-inline: 2px;
 }
 
 /* 行备注输入 */
@@ -1384,26 +1021,6 @@
 .price-compare-variety-switch {
   flex: 0 0 auto;
   color: var(--color-info-active, #0958d9);
-}
-
-/*
- * 「剩余未开吨位」= 0 + 超开短文案(WCAG 1.4.1: 不只靠颜色)。
- *
- * <p>「剩余」不显示负数: 超开时数字位显示 0, 同行再给一段明确文案(「超开 10.02 吨」),
- * 两者一起转警告色。列宽已把这段文案算进 `maxRemainingTonTextWidth`, 不会被省略号收尾。</p>
- */
-.price-compare-ton-remaining {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-xxs);
-  max-width: 100%;
-}
-
-.price-compare-ton-over-flag {
-  flex: none;
-  font-size: 11px;
-  line-height: 1.2;
-  white-space: nowrap;
 }
 
 /*
