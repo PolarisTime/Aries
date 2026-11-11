@@ -1,3 +1,16 @@
+# [15.6.0](https://github.com/PolarisTime/Aries/compare/v15.5.0...v15.6.0) (2026-11-11)
+
+
+### Bug Fixes
+
+* **modules:** 统一明细合计行与详情指标卡样式 ([721d05b](https://github.com/PolarisTime/Aries/commit/721d05b8f1c9529ff6639e32195bef14e071e12c))
+
+
+### Features
+
+* **detail:** 详情顶栏加来源单据与单据链入口，单据流新增时间线视图 ([4f0539f](https://github.com/PolarisTime/Aries/commit/4f0539f3ef13b5b51952abebdeac8d80d9004199))
+* **print:** 顺序菜单加移到最前/最后，按钮提示回车连续调整 ([9c4c4da](https://github.com/PolarisTime/Aries/commit/9c4c4da2db5248aef58fa8970a76a2482d9833d8))
+
 # [15.5.0](https://github.com/PolarisTime/Aries/compare/v15.4.1...v15.5.0) (2026-11-09)
 
 
