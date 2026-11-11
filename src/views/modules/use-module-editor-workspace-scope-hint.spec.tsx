@@ -166,7 +166,6 @@ function Probe({ moduleKey, config, initialItems, apiRef }: ProbeProps) {
     onClose: () => undefined,
     onDirty: () => undefined,
     onSaved: () => undefined,
-    autoInsertBlankItemOnCreate: false,
   })
   const { addItem, handleFormValuesChange, items, setItems } = workspace
   const changeProject = (projectId: string) => {

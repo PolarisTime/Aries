@@ -1271,6 +1271,12 @@ export const enUS = {
       totalAmountWithExpense: 'Total incl. Expenses',
       /* Draft totals row under the editor item table; {{rows}} is the draft row count. */
       summaryRow: 'Total ({{rows}} rows)',
+      /* Text form of the draft summary under the editor item table (right-aligned one-liner). */
+      summaryLine:
+        'Total {{rows}} rows · Qty {{count}} · Weight {{weight}} t · Amount {{amount}}',
+      summaryLineWithExpense:
+        'Total {{rows}} rows · Qty {{count}} · Weight {{weight}} t · Total incl. expenses {{amount}}',
+      summaryLineSimple: 'Total {{rows}} rows · Qty {{count}}',
     },
     /**
      * Card-style read-only detail surface (detailLayout: 'inline'): header card +
@@ -1933,13 +1939,8 @@ export const enUS = {
           'This will rewrite {{count}} of {{total}} unit prices using the resolved pricing basis',
         netPriceConfirmNoPrice:
           '{{count}} row(s) have no net price and will keep their current values',
-        netPriceApplyResultTitle: 'Result',
-        /** Split result parts; only non-zero ones render (a trailing "0 skipped" is noise). */
-        netPriceApplyFilled: 'Filled {{count}}',
-        netPriceApplyNoPrice: 'No net price {{count}} (kept, fill manually)',
         netPriceApplySkipped: 'Skipped {{count}}',
         /** Seismic-grade substitution: reported HRB400 but only HRB400E is traded. */
-        netPriceApplySubstituted: 'Substituted grade {{count}}',
         netPriceSubstituted:
           '{{count}} row(s) priced using the seismic grade (e.g. HRB400E): no quote for the reported material, so the same-strength seismic grade was used',
         /** "Net price match" column: icon + text, never colour alone (WCAG 1.4.1). */
@@ -1966,12 +1967,6 @@ export const enUS = {
           'Not checked yet — re-check from the order editor’s Pricing menu',
         /** Automatic check on read-only detail surfaces is in flight. */
         netPriceMatchCheckingDetail: 'Checking net prices…',
-        netPriceMatchRecheck: 'Re-check net prices',
-        /** Zero-attention entry: no count (zero is not information). */
-        /*
-         * Conclusion line only appears when something needs attention
-         * (see describeSummary): mismatch or missing price.
-         */
         netPriceMatchNoPriceSummary:
           '{{noPrice}} rows without market price, fill in manually',
         netPriceMatchSummary: '{{mismatch}} rows differ from market price',
@@ -2306,8 +2301,11 @@ export const enUS = {
       statusChangeConfirmFinal:
         '"{{no}}" will change from "{{from}}" to "{{to}}". The document then enters the downstream flow, and this module has no reverse-audit entry, so it cannot be rolled back.',
       actionFailed: '{{action}} failed',
-      actionCompletedWithFailures:
-        '{{action}} completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',
+      actionCompletedWithFailuresShort:
+        '{{action}} finished: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}',
+      failureLine: '{{no}}: {{reason}}',
+      failureMore:
+        '…and {{count}} more failed, retry or check the API response.',
       actionSuccess:
         '{{action}} succeeded for {{successCount}} record(s){{skippedPart}}',
       skippedPart:
@@ -2322,8 +2320,8 @@ export const enUS = {
       targetNumbers: '\nDeleting: {{numbers}}.\n',
       targetNumbersMore: '\nDeleting: {{numbers}} and {{rest}} more.\n',
       deleteFailed: 'Deletion failed',
-      deleteCompletedWithFailures:
-        'Deletion completed: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}{{errorPart}}',
+      deleteCompletedWithFailuresShort:
+        'Bulk delete finished: {{successCount}} succeeded, {{failedCount}} failed{{skippedPart}}',
       deleteSuccess:
         'Deletion succeeded for {{successCount}} record(s){{skippedPart}}',
     },

@@ -182,7 +182,6 @@ function Probe({ open, record, config, apiRef }: ProbeProps) {
     onClose: () => undefined,
     onDirty: () => undefined,
     onSaved: () => undefined,
-    autoInsertBlankItemOnCreate: false,
   })
 
   useEffect(() => {

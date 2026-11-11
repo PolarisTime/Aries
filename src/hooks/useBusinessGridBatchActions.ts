@@ -3,6 +3,10 @@ import {
   deleteBusinessModule,
   updateBusinessModuleStatus,
 } from '@/api/business/business-crud'
+import {
+  type BatchFailure,
+  showBatchFailureNotification,
+} from '@/components/batch-failure-notification'
 import { getStatusI18nKey } from '@/constants/document-status'
 import {
   canAuditFromStatus,
@@ -160,27 +164,28 @@ export function useBusinessGridBatchActions({
             ),
           )
           let successCount = 0
-          let failedCount = 0
-          let firstError = ''
-          for (const result of statusResults) {
+          const failures: BatchFailure[] = []
+          statusResults.forEach((result, index) => {
             if (result.status === 'fulfilled') {
               successCount += 1
-            } else {
-              failedCount += 1
-              if (!firstError) {
-                firstError =
-                  result.reason instanceof Error
-                    ? result.reason.message
-                    : t('hooks.batchActions.actionFailed', {
-                        action: actionLabel,
-                      })
-              }
+              return
             }
-          }
+            failures.push({
+              no: describeTargetRecordNo(targets[index].record),
+              reason:
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : t('hooks.batchActions.actionFailed', {
+                      action: actionLabel,
+                    }),
+            })
+          })
+          const failedCount = failures.length
 
           if (failedCount > 0) {
-            message.warning(
-              t('hooks.batchActions.actionCompletedWithFailures', {
+            /* 有失败才升成卡片：多行明细 + 每条原因，用户要照着这些单号逐条处理。 */
+            showBatchFailureNotification({
+              title: t('hooks.batchActions.actionCompletedWithFailuresShort', {
                 action: actionLabel,
                 successCount,
                 failedCount,
@@ -190,9 +195,9 @@ export function useBusinessGridBatchActions({
                         count: skippedCount,
                       })
                     : '',
-                errorPart: firstError ? `；${firstError}` : '',
               }),
-            )
+              failures,
+            })
           } else {
             message.success(
               t('hooks.batchActions.actionSuccess', {
@@ -301,25 +306,26 @@ export function useBusinessGridBatchActions({
           ),
         )
         let successCount = 0
-        let failedCount = 0
-        let firstError = ''
-        for (const result of deleteResults) {
+        const failures: BatchFailure[] = []
+        deleteResults.forEach((result, index) => {
           if (result.status === 'fulfilled') {
             successCount += 1
-          } else {
-            failedCount += 1
-            if (!firstError) {
-              firstError =
-                result.reason instanceof Error
-                  ? result.reason.message
-                  : t('hooks.batchActions.deleteFailed')
-            }
+            return
           }
-        }
+          failures.push({
+            no: describeTargetRecordNo(eligible[index]),
+            reason:
+              result.reason instanceof Error
+                ? result.reason.message
+                : t('hooks.batchActions.deleteFailed'),
+          })
+        })
+        const failedCount = failures.length
 
         if (failedCount > 0) {
-          message.warning(
-            t('hooks.batchActions.deleteCompletedWithFailures', {
+          /* 删除失败同样要列明细：用户需要知道哪几张没删掉、为什么。 */
+          showBatchFailureNotification({
+            title: t('hooks.batchActions.deleteCompletedWithFailuresShort', {
               successCount,
               failedCount,
               skippedPart:
@@ -328,9 +334,9 @@ export function useBusinessGridBatchActions({
                       count: skippedCount,
                     })
                   : '',
-              errorPart: firstError ? `；${firstError}` : '',
             }),
-          )
+            failures,
+          })
         } else {
           message.success(
             t('hooks.batchActions.deleteSuccess', {
@@ -425,7 +431,7 @@ export function useBusinessGridBatchActions({
 }
 
 /** 单据号回退顺序: no -> orderNo -> code -> id。 */
-function describeTargetRecordNo(record: ModuleRecord) {
+export function describeTargetRecordNo(record: ModuleRecord) {
   return (
     asString(record.no) ||
     asString(record.orderNo) ||

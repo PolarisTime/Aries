@@ -11,7 +11,11 @@ interface Props<RecordType extends BaseRecord> {
   columns: TableColumnsType<RecordType>
   components?: TableProps<RecordType>['components']
   dataSource: RecordType[]
-  emptyText: React.ReactNode
+  /**
+   * 空表文案。**不传**时交给 antd 默认空态（插画 + 「暂无数据」）——
+   * 编辑器的"新建单据"就是这种场景：没有明细是正常起点，不需要一句解释性文案。
+   */
+  emptyText?: React.ReactNode
   rowClassName?: TableProps<RecordType>['rowClassName']
   /** 行右键菜单：按行 key 注入，与业务列表复用同一套 RowContextMenu 原语。 */
   itemRowMenus?: RowContextMenuMap
@@ -80,7 +84,7 @@ export function ModuleItemsTable<RecordType extends BaseRecord>({
       dataSource={dataSource}
       pagination={false}
       scroll={{ x: scrollX }}
-      locale={{ emptyText }}
+      locale={emptyText === undefined ? undefined : { emptyText }}
       rowClassName={rowClassName}
       onRow={onRow}
       summary={summary}

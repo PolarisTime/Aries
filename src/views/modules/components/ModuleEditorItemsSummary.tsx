@@ -2,19 +2,12 @@ import { Table } from 'antd'
 import { type Key, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { computeDraftTotals } from '@/module-system/editor/module-editor-draft'
-import type {
-  ModuleDetailSummaryCell,
-  ModuleLineItem,
-} from '@/types/module-page'
+import type { ModuleLineItem } from '@/types/module-page'
 import { formatAmount, formatWeight } from '@/utils/formatters'
 import { sumLineItemsBy } from '@/views/modules/module-editor-workspace-support'
-import {
-  type ModuleDetailSummaryColumn,
-  ModuleDetailSummaryRow,
-} from './ModuleDetailSummaryRow'
 
 /**
- * 编辑器明细表底部的「草稿实时合计行」。
+ * 编辑器明细表底部的「草稿实时合计」。
  *
  * <p>口径**只有一个出口**：金额与重量取 {@link computeDraftTotals}（与保存载荷联动写回的
  * `totalAmount` / `totalWeight`、列表「总金额」、「项目数据」卡片是同一份结果），
@@ -25,42 +18,8 @@ import {
  * （`ModuleEditorWorkspace` 的 `items`）传进来，行一变就重渲染，合计随之更新。</p>
  */
 
-/** 金额列 `dataIndex`：与 {@link computeDraftTotals} 内部使用的口径字段一致。 */
-const AMOUNT_KEY = 'amount'
-/** 重量列 `dataIndex`（吨）：同上。 */
-const WEIGHT_KEY = 'weightTon'
 /** 件数列 `dataIndex`：`computeDraftTotals` 不返回件数，沿用同一份求和的 key。 */
 const COUNT_KEY = 'quantity'
-
-/**
- * 非数据列（选择 / 序号）的列 `key`。
- *
- * <p>合计行必须挂在**第一个真实数据列**下：选择列的 `dataIndex` 是 `id`，
- * 直接把标签挂在第一列会挤进 48px 宽的复选框列。</p>
- */
-const NON_DATA_COLUMN_KEYS: ReadonlySet<string> = new Set([
-  'selection',
-  '_index',
-])
-
-/** 合计行数值单元格的等宽数字类（样式见 `pages.css`，按合计行 scope，不动编辑单元格）。 */
-const SUMMARY_NUMBER_CLASS = 'module-editor-summary-number'
-
-export interface EditorDraftSummaryValues {
-  /** 草稿行数。 */
-  rowCount: number
-  /** 件数合计（`quantity` 求和）。 */
-  totalCount: number
-  /** 重量合计（吨）。 */
-  totalWeight: number
-  /** 单据总金额 = 货物小计 + 附加费用小计。 */
-  totalAmount: number
-  /**
-   * 该模块是否注册了金额计算口径（`computeDraftTotals` 返回非 null）。
-   * 未注册时不展示金额/重量合计 —— 显示 0 会被误读成「合计是 0」。
-   */
-  hasComputedTotals: boolean
-}
 
 /**
  * 计算草稿合计（唯一口径出口的适配层）。
@@ -89,6 +48,36 @@ export function resolveEditorDraftSummaryValues(
   }
 }
 
+export interface EditorDraftSummaryValues {
+  /** 草稿行数。 */
+  rowCount: number
+  /** 件数合计（`quantity` 求和）。 */
+  totalCount: number
+  /** 重量合计（吨）。 */
+  totalWeight: number
+  /** 单据总金额 = 货物小计 + 附加费用小计。 */
+  totalAmount: number
+  /**
+   * 该模块是否注册了金额计算口径（`computeDraftTotals` 返回非 null）。
+   * 未注册时不展示金额/重量合计 —— 显示 0 会被误读成「合计是 0」。
+   */
+  hasComputedTotals: boolean
+}
+
+/**
+ * 是否挂合计行。
+ *
+ * <p>多分组时 antd 会把同一份 `summary` 传给**每个分组表**，整单合计会在每组底部重复；
+ * 整单合计只在单分组时挂，分组小计要另做（改共享组件），不在本任务范围。
+ * 没有可见列时不挂：否则会渲染一条把表格撑高的空行。</p>
+ */
+export function shouldAttachEditorDraftSummary(
+  itemGroupCount: number,
+  columnCount: number,
+): boolean {
+  return itemGroupCount === 1 && columnCount > 0
+}
+
 /**
  * 合计行需要的列字段（antd 列类型 + 列分组的结构化子集）。
  *
@@ -99,153 +88,9 @@ export interface ModuleEditorItemsSummaryColumn {
   dataIndex?: unknown
   key?: Key
   className?: string
-  /** antd 的 `AlignType`（含 `end` / `justify`），这里按宽类型收，归一在下面做。 */
+  /** antd 的 `AlignType`（含 `end` / `justify`），这里按宽类型收。 */
   align?: string
   children?: readonly ModuleEditorItemsSummaryColumn[]
-}
-
-/**
- * `AlignType` 归一：`end` 与 `right` 同义，`justify` 这类合计行不支持的取值退回列默认。
- *
- * <p>直接收窄成 `'left' | 'center' | 'right'` 会让调用方原样传 `TableColumnsType` 时
- * 类型不通过（antd v6 的 `AlignType` 比它宽）。</p>
- */
-function toSummaryAlign(
-  align: string | undefined,
-): ModuleDetailSummaryColumn['align'] {
-  if (align === 'end' || align === 'right') return 'right'
-  if (align === 'left' || align === 'center') return align
-  return undefined
-}
-
-/** 摊平列分组，并把对齐别名归一成 {@link ModuleDetailSummaryColumn} 能接受的取值。 */
-function normalizeSummaryColumns(
-  columns: readonly ModuleEditorItemsSummaryColumn[],
-): ModuleDetailSummaryColumn[] {
-  return columns.flatMap((column) => [
-    ...(column.children?.length
-      ? normalizeSummaryColumns(column.children)
-      : []),
-    {
-      dataIndex: column.dataIndex,
-      key: column.key,
-      className: column.className,
-      align: toSummaryAlign(column.align),
-    },
-  ])
-}
-
-/**
- * 是否挂合计行。
- *
- * <p>多分组时 antd 会把同一份 `summary` 传给**每个分组表**，整单合计会在每组底部重复；
- * 整单合计只在单分组时挂，分组小计要另做（改共享组件），不在本任务范围。
- * 没有可见列时不挂：否则会渲染一条空的 `<tfoot>` 行。</p>
- */
-export function shouldAttachEditorDraftSummary(
-  itemGroupCount: number,
-  columnCount: number,
-): boolean {
-  return itemGroupCount === 1 && columnCount > 0
-}
-
-/** 第一个真实数据列的 `dataIndex`（跳过选择 / 序号 / 行操作列）。 */
-function resolveFirstDataColumnKey(
-  columns: readonly ModuleDetailSummaryColumn[],
-): string | undefined {
-  for (const column of columns) {
-    if (
-      typeof column.key === 'string' &&
-      NON_DATA_COLUMN_KEYS.has(column.key)
-    ) {
-      continue
-    }
-    // 选择列的 dataIndex 也是 'id'，即使调用方没给 key 也要跳过
-    if (typeof column.dataIndex === 'string' && column.dataIndex !== 'id') {
-      return column.dataIndex
-    }
-  }
-  return undefined
-}
-
-/** 件数不需要小数位，但同样套等宽数字，合计行扫读时位数才对得齐。 */
-function formatCount(value: number): string {
-  return Number.isFinite(value) ? String(value) : '0'
-}
-
-/**
- * 把合计值排成 `ModuleDetailSummaryRow` 的单元格。
- *
- * <p>数值单元格**显式** `align: 'right'`：合计行是只读的，右对齐才对得上上面的明细数字，
- * 而编辑器数据列本身保持居中（可编辑单元格居中便于定位输入框，是全站既有约定），
- * 所以这里不靠列上的 `module-detail-table-cell--numeric` 标记。</p>
- *
- * <p>列被用户在「列设置」里隐藏时不产出该单元格：`ModuleDetailSummaryRow` 会把多出来
- * 的单元格追加到行末，那会让金额落到错误的列下面。</p>
- */
-export function buildEditorDraftSummaryCells(
-  columns: readonly ModuleDetailSummaryColumn[],
-  values: EditorDraftSummaryValues,
-  label: string,
-  /** 金额单元格的悬停说明（含附加费用时才有）：标签统一成「合计（N 行）」后，
-   * 费用口径靠这里补齐，不把两种口径塞进同一句行首标签。 */
-  amountHint?: string,
-): ModuleDetailSummaryCell[] {
-  const presentKeys = new Set(
-    columns
-      .map((column) =>
-        typeof column.dataIndex === 'string' ? column.dataIndex : undefined,
-      )
-      .filter((key): key is string => Boolean(key)),
-  )
-  const cells: ModuleDetailSummaryCell[] = []
-  const firstDataKey = resolveFirstDataColumnKey(columns)
-  if (firstDataKey) {
-    cells.push({
-      key: 'editor-summary-label',
-      dataIndex: firstDataKey,
-      value: label,
-      // 短标签居中，其余单元格按列对齐（数值列右对齐）。
-      align: 'center',
-    })
-  }
-  if (presentKeys.has(COUNT_KEY)) {
-    cells.push({
-      key: 'editor-summary-count',
-      dataIndex: COUNT_KEY,
-      value: (
-        <span className={SUMMARY_NUMBER_CLASS}>
-          {formatCount(values.totalCount)}
-        </span>
-      ),
-      align: 'right',
-    })
-  }
-  if (values.hasComputedTotals && presentKeys.has(WEIGHT_KEY)) {
-    cells.push({
-      key: 'editor-summary-weight',
-      dataIndex: WEIGHT_KEY,
-      value: (
-        <span className={SUMMARY_NUMBER_CLASS}>
-          {formatWeight(values.totalWeight)}
-        </span>
-      ),
-      align: 'right',
-    })
-  }
-  if (values.hasComputedTotals && presentKeys.has(AMOUNT_KEY)) {
-    cells.push({
-      key: 'editor-summary-amount',
-      dataIndex: AMOUNT_KEY,
-      value: (
-        <span className={SUMMARY_NUMBER_CLASS} title={amountHint}>
-          {formatAmount(values.totalAmount)}
-        </span>
-      ),
-      align: 'right',
-    })
-  }
-  return cells
 }
 
 export interface ModuleEditorItemsSummaryProps {
@@ -253,66 +98,68 @@ export interface ModuleEditorItemsSummaryProps {
   moduleKey: string
   /** 草稿明细行（编辑器的实时状态，不传则合计为 0 行）。 */
   items: readonly ModuleLineItem[]
-  /**
-   * 明细表列定义（编辑器最终列，含选择/序号列），用于逐列对齐。
-   *
-   * <p>直接传 antd 的 `TableColumnsType` 即可：内部会摊平列分组并归一 `align`。</p>
-   */
-  columns: readonly ModuleEditorItemsSummaryColumn[]
   /** 附加费用合计（`sumChargeItemAmount`）；与「项目数据」卡片的待定金额同一口径。 */
   chargeTotal?: number
+  /**
+   * 合计文字要横跨的列数（含表格末尾的「顺序」列）。
+   *
+   * <p>必须由调用方给：`ModuleItemGroupsView` 会在数据列之后**追加**行序操作列，
+   * 组件自己数 `columns` 会少一列，文字右端就离表格右边界差一截。</p>
+   */
+  colSpan: number
 }
 
 /**
- * 草稿合计行（antd `Table.Summary`）：行数 / 件数 / 重量 / 金额。
+ * 草稿合计（antd `Table.Summary` 里**一行文字**，右对齐）。
  *
- * <p>用法：把本组件作为 `ModuleItemGroupsView` 的 `summary` prop 的返回值。
- * **只在单分组表上挂**：分组视图会把同一份 `summary` 透传给每个分组表，
- * 多分组时整单合计会在每个分组底部重复一遍。</p>
+ * <p>形态由来：逐列对齐的合计行（每个数值列各占一格）在编辑器里反而不好读 ——
+ * 数字被十几列拉得很散，和上面的明细行撞在一起像多了一行数据。改成一句
+ * 「合计 N 行 · 数量 X · 重量 Y 吨 · 金额 Z 元」并按表格右边界对齐，扫读路径变成
+ * 「右下一眼看到三个数」。</p>
+ *
+ * <p>口径不变：全部来自 {@link resolveEditorDraftSummaryValues}（`computeDraftTotals` +
+ * `sumLineItemsBy`），与保存载荷、列表总金额、项目数据卡片同一份结果，这里不另算。</p>
+ *
+ * <p>没有明细行时不渲染：空表交给 antd 的空态，避免出现「合计 0 行」这种没有信息量的行。</p>
  */
 export function ModuleEditorItemsSummary({
   moduleKey,
   items,
-  columns,
   chargeTotal,
+  colSpan,
 }: ModuleEditorItemsSummaryProps) {
   const { t } = useTranslation()
-  const summaryColumns = useMemo(
-    () => normalizeSummaryColumns(columns),
-    [columns],
+  const values = useMemo(
+    () => resolveEditorDraftSummaryValues(moduleKey, items, chargeTotal),
+    [chargeTotal, items, moduleKey],
   )
+  if (items.length === 0) return null
 
-  const cells = useMemo(() => {
-    const values = resolveEditorDraftSummaryValues(
-      moduleKey,
-      items,
-      chargeTotal,
-    )
-    const hasExpense = Number(chargeTotal) > 0
-    /*
-     * 行首标签与详情页合计行完全一致（`合计（N 行）`）：带附加费用时再用长标签
-     * 「合计（N 行，含附加费用）」会在仓库名称这种窄列里折成两行，同一张单的合计行
-     * 在编辑器与详情页长得不一样。费用口径改挂金额单元格的 `title`。
-     */
-    const label = t('modules.itemsSummary.summaryRow', {
-      rows: values.rowCount,
-    })
-    const amountHint = hasExpense
-      ? `${t('modules.itemsSummary.totalAmountWithExpense')} ${formatAmount(
-          values.totalAmount,
-        )}`
-      : undefined
-    return buildEditorDraftSummaryCells(
-      summaryColumns,
-      values,
-      label,
-      amountHint,
-    )
-  }, [chargeTotal, items, moduleKey, summaryColumns, t])
+  const hasExpense = Number(chargeTotal) > 0
+  const text = !values.hasComputedTotals
+    ? t('modules.itemsSummary.summaryLineSimple', {
+        rows: values.rowCount,
+        count: values.totalCount,
+      })
+    : t(
+        hasExpense
+          ? 'modules.itemsSummary.summaryLineWithExpense'
+          : 'modules.itemsSummary.summaryLine',
+        {
+          rows: values.rowCount,
+          count: values.totalCount,
+          weight: formatWeight(values.totalWeight),
+          amount: formatAmount(values.totalAmount),
+        },
+      )
 
   return (
     <Table.Summary>
-      <ModuleDetailSummaryRow columns={summaryColumns} cells={cells} />
+      <Table.Summary.Row className="module-editor-summary-text-row">
+        <Table.Summary.Cell index={0} colSpan={Math.max(colSpan, 1)}>
+          <div className="module-editor-summary-text">{text}</div>
+        </Table.Summary.Cell>
+      </Table.Summary.Row>
     </Table.Summary>
   )
 }

@@ -1263,6 +1263,16 @@ export const zhCN = {
        * 带附加费用时用第二句，避免同一张单据上「金额」既指货物额又指含费总额（P2-2 的老问题）。
        */
       summaryRow: '合计（{{rows}} 行）',
+      /*
+       * 明细表底部合计的**文字形态**：一行贴着表格右边界，扫读时"右下一眼看到三个数"。
+       * 行数 / 数量 / 重量 / 金额四个量用「·」分隔；带附加费用时单独说清金额口径。
+       */
+      summaryLine:
+        '合计 {{rows}} 行 · 数量 {{count}} · 重量 {{weight}} 吨 · 金额 {{amount}} 元',
+      summaryLineWithExpense:
+        '合计 {{rows}} 行 · 数量 {{count}} · 重量 {{weight}} 吨 · 含附加费用合计 {{amount}} 元',
+      /** 模块未注册金额口径（`computeDraftTotals` 返回 null）时只说行数与数量。 */
+      summaryLineSimple: '合计 {{rows}} 行 · 数量 {{count}}',
     },
     /**
      * 只读详情面「卡片式」版式（方案 B 的下一步：顶栏卡 + 4 张指标卡 + 业务信息卡）。
@@ -1921,19 +1931,11 @@ export const zhCN = {
         netPriceConfirmOverwrite:
           '将按解析口径改写 {{count}} 行单价（本单共 {{total}} 行）',
         netPriceConfirmNoPrice: '其中 {{count}} 行无网价，将保持原值',
-        netPriceApplyResultTitle: '取价结果',
-        /**
-         * 取价结果按项拆分, 只显示非零项: 原文案把"无网价 0 行 · 跳过 0 行"也写出来,
-         * 全部成功时尾部挂一串 0, 用户得读完才知道没事。零值不是信息。
-         */
-        netPriceApplyFilled: '成功 {{count}} 行',
-        netPriceApplyNoPrice: '无网价 {{count}} 行（保持原值，请手工填写）',
         netPriceApplySkipped: '跳过 {{count}} 行',
         /**
          * 抗震牌号替代取价: 报的是 HRB400, 但现货只有 HRB400E, 实际按 400E 网价结算。
          * 必须显式告知 —— 不说明就等于悄悄换了计价口径。
          */
-        netPriceApplySubstituted: '按抗震牌号代取 {{count}} 行',
         netPriceSubstituted:
           '{{count}} 行按抗震牌号（如 HRB400E）取了价：该材质现货无网价，已用同强度抗震牌号代替',
         /** 明细行「网价匹配」列: 图标 + 文字双通道, 不以颜色为唯一区分(WCAG 1.4.1)。 */
@@ -1961,18 +1963,6 @@ export const zhCN = {
           '尚未核查网价：可在单据编辑器的「取价」菜单里重新核查',
         /** 只读详情面自动核查进行中（避免与"没核查过"混为一谈）。 */
         netPriceMatchCheckingDetail: '正在核查网价…',
-        netPriceMatchRecheck: '重新核查网价',
-        /**
-         * 零待处理行的入口文案: 不带计数。
-         *
-         * <p>「0 行待处理」既不是信息(零值), 又把强调色指向"没事"; 与左侧「N 行未核查」
-         * 并排时两个数字容易被读成自相矛盾。此时按钮只承担"打开清单"的导航语义。</p>
-         */
-        /*
-         * 结论行只在「需要处理」时出现（见 describeSummary）：不一致 / 无网价。
-         * 「未核查」是默认态、「均一致」是行内标识已给出的结论，都不再占一行。
-         * 文案不带「网价匹配：」「本单 N 行，」前缀 —— 结论区就在动作旁边，上下文已明确。
-         */
         netPriceMatchNoPriceSummary: '{{noPrice}} 行无网价，请手工填写',
         netPriceMatchSummary: '{{mismatch}} 行单价与网价不一致',
         netPriceMatchCheckFailed: '网价核查失败，请稍后重试',
@@ -2303,8 +2293,16 @@ export const zhCN = {
       statusChangeConfirmFinal:
         '「{{no}}」将从「{{from}}」变为「{{to}}」。确认后单据进入后续流程，且本模块没有反审核入口，无法退回。',
       actionFailed: '{{action}}失败',
-      actionCompletedWithFailures:
-        '{{action}}完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}{{errorPart}}',
+      /*
+       * 有失败时的标题走**卡片式通知**（见 useBusinessGridBatchActions）：卡片正文列出
+       * 每一条失败的单号与原因，因此标题只放统计，不再把"首条错误"挤进同一行。
+       */
+      actionCompletedWithFailuresShort:
+        '{{action}}完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}',
+      /** 卡片正文的一行：单据号 + 失败原因。 */
+      failureLine: '{{no}}：{{reason}}',
+      /** 失败行超过上限时的收口（上限见 BATCH_FAILURE_LINES）。 */
+      failureMore: '…另有 {{count}} 条失败，请重试或查看接口返回。',
       actionSuccess: '{{action}}成功 {{successCount}} 条{{skippedPart}}',
       skippedPart: '另有 {{count}} 条因状态不支持将跳过。',
       skippedCount: '，跳过 {{count}} 条',
@@ -2316,8 +2314,8 @@ export const zhCN = {
       targetNumbers: '\n将删除：{{numbers}}。\n',
       targetNumbersMore: '\n将删除：{{numbers}} 等 {{rest}} 条。\n',
       deleteFailed: '删除失败',
-      deleteCompletedWithFailures:
-        '删除完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}{{errorPart}}',
+      deleteCompletedWithFailuresShort:
+        '批量删除完成：成功 {{successCount}} 条，失败 {{failedCount}} 条{{skippedPart}}',
       deleteSuccess: '删除成功 {{successCount}} 条{{skippedPart}}',
     },
     printActions: {

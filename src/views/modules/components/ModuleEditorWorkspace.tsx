@@ -42,7 +42,6 @@ import {
   resolveEditorCustomerId,
   resolveEditorPresentation,
   resolveEditorSessionIds,
-  shouldAutoInsertBlankItemOnCreate,
 } from './module-editor-workspace-presentation'
 import { WorkspaceOverlay } from './WorkspaceOverlay'
 
@@ -265,10 +264,6 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     onClose: finishAndCloseEditor,
     onDirty: markEditorDirty,
     onSaved,
-    autoInsertBlankItemOnCreate: shouldAutoInsertBlankItemOnCreate(
-      config,
-      canAddManualItems,
-    ),
   })
   // oxlint-enable react-doctor/no-event-handler
 

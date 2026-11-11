@@ -198,20 +198,29 @@ export function ModuleEditorItemsSection({
     ) {
       return undefined
     }
+    /*
+     * 合计文字要横跨整行：`ModuleItemGroupsView` 会在数据列之后追加「顺序」操作列，
+     * 所以列数 = 数据列 + (可拖拽排序 ? 1 : 0)。少数一列，文字右端就离表格右边界差一截。
+     */
+    const colSpan = itemColumns.length + (onItemsReorder ? 1 : 0)
     return () => (
       <ModuleEditorItemsSummary
         moduleKey={config.key}
         items={items}
-        columns={itemColumns}
         chargeTotal={expenseTotalAmount}
+        colSpan={colSpan}
       />
     )
-  }, [config.key, expenseTotalAmount, itemColumns, itemGroups.length, items])
+  }, [
+    config.key,
+    expenseTotalAmount,
+    itemColumns,
+    itemGroups.length,
+    items,
+    onItemsReorder,
+  ])
   const rowClassName = (record: ModuleLineItem) =>
     selectedItemIdSet.has(record.id) ? 'ant-table-row-selected' : ''
-  const emptyText = config.parentImport
-    ? t('modules.itemsSection.emptyTextWithImport')
-    : t('modules.itemsSection.emptyText')
 
   const parentSelector = (
     <ModuleParentSelectorHost
@@ -335,7 +344,6 @@ export function ModuleEditorItemsSection({
                 moduleKey={config.key}
                 columns={itemColumns}
                 components={itemTableComponents}
-                emptyText={emptyText}
                 rowClassName={rowClassName}
                 itemRowMenus={itemRowMenus}
                 summary={renderItemSummary}

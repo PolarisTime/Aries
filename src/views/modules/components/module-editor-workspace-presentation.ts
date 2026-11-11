@@ -25,14 +25,6 @@ export function resolveEditorCustomerId(watchedCustomerId: unknown) {
     : undefined
 }
 
-/** 新建且模块支持手输明细行时自动补一条空行, 让用户直接开始录入。 */
-export function shouldAutoInsertBlankItemOnCreate(
-  config: ModulePageConfig,
-  canAddManualItems: boolean,
-) {
-  return Boolean(config.itemColumns?.length) && canAddManualItems
-}
-
 /** 只有已落库的草稿才把 recordId 带进编辑会话, 新建会话不带。 */
 export function resolveEditorSessionIds(
   record: { id?: unknown } | null | undefined,

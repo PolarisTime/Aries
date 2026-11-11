@@ -2,7 +2,7 @@ import { Button } from 'antd'
 import { createElement, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ModuleLineItem } from '@/types/module-page'
-import { message } from '@/utils/antd-app'
+import { notification } from '@/utils/antd-app'
 import { confirmDanger } from '@/utils/confirm-danger'
 
 /** 撤销快照：被删的行 + 它们在原数组里的下标，恢复时按原位插回。 */
@@ -112,34 +112,33 @@ export function useConfirmedItemRemoval({
       onOk: () => {
         onConfirmDelete()
         /*
-         * 用 message 的 `content` 渲染「文案 + 撤销按钮」：antd 6 的 message 没有
-         * `actions` 字段（那是 notification 的能力），ReactNode content 承担同样语义，
-         * 同时把 duration 拉长到 10s —— 默认 3s 对「发现删错 → 点撤销」太短。
-         * 按钮用 antd 的 link Button，命中区沿用全局 --app-control-height，无需额外 CSS。
+         * 「已删除 + 撤销」用**卡片式通知**，不用 toast。
+         *
+         * <p>判据是信息量与操作：这条提示带着一个真正的动作（撤销），并且用户要读完、
+         * 判断"删错了没有"，10 秒内随时可能回来点。antd 给 notification 就是这类场景
+         * （`btn` 动作位、默认不自动消失），而 toast 的定位是"点完即走的回执"——
+         * 此前靠把 ReactNode 塞进 message.content + 拉长 duration 硬撑，形态上是错的：
+         * 后续多条提示会在同一位置堆叠并互相顶掉。</p>
          */
-        message.info({
+        notification.info({
           key: UNDO_MESSAGE_KEY,
           duration: 10,
-          content: createElement(
-            'span',
-            { className: 'module-item-removal-toast' },
-            t('modules.itemsSection.removedToast', { count }),
-            createElement(
-              Button,
-              {
-                type: 'link',
-                size: 'small',
-                /*
-                 * 点一次就销毁这条 toast：撤销本身是幂等的（restoreRemovedItems 按 id 去重），
-                 * 但让按钮在复原后继续可点会让人以为"还能再撤一次"。
-                 */
-                onClick: () => {
-                  onRestore(snapshot)
-                  message.destroy(UNDO_MESSAGE_KEY)
-                },
+          message: t('modules.itemsSection.removedToast', { count }),
+          btn: createElement(
+            Button,
+            {
+              type: 'primary',
+              size: 'small',
+              /*
+               * 点一次就关掉这张卡片：撤销本身是幂等的（restoreRemovedItems 按 id 去重），
+               * 但让按钮在复原后继续可点会让人以为"还能再撤一次"。
+               */
+              onClick: () => {
+                onRestore(snapshot)
+                notification.destroy(UNDO_MESSAGE_KEY)
               },
-              t('modules.itemsSection.undoRemove'),
-            ),
+            },
+            t('modules.itemsSection.undoRemove'),
           ),
         })
       },

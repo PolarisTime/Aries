@@ -1,8 +1,4 @@
-import {
-  ExclamationCircleFilled,
-  ReloadOutlined,
-  ThunderboltOutlined,
-} from '@ant-design/icons'
+import { ThunderboltOutlined } from '@ant-design/icons'
 import {
   Button,
   Divider,
@@ -97,18 +93,6 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     rules: ProjectPriceRule[]
   } | null>(null)
   const [ruleId, setRuleId] = useState<string | undefined>()
-  /** 网价核查：进行中 / 失败原因。 */
-  const [checking, setChecking] = useState(false)
-  const [checkError, setCheckError] = useState<string | null>(null)
-  /** 最近一次整单取价的结果摘要（成功 / 无网价 / 跳过）。 */
-  const [applySummary, setApplySummary] = useState<{
-    filled: number
-    noPrice: string[]
-    noPriceIds: string[]
-    skipped: number
-    /** 按抗震牌号替代取价的行: { 行id: 实际命中的牌号 }。 */
-    substitutedIds: Record<string, string>
-  } | null>(null)
   const mountedRef = useRef(true)
 
   const deliveryDate = normalizeDateValue(formValues.deliveryDate)
@@ -175,8 +159,6 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
   const [appliedDocumentKey, setAppliedDocumentKey] = useState(documentKey)
   if (appliedDocumentKey !== documentKey) {
     setAppliedDocumentKey(documentKey)
-    setApplySummary(null)
-    setCheckError(null)
   }
 
   useEffect(
@@ -211,15 +193,6 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     [rules, ruleId],
   )
 
-  /**
-   * 核查结果：条目按行 id 平铺(行 id 全局唯一), 因此整份 entries 都可用于本单汇总 ——
-   * 汇总只按本单明细行的 id 查表, 不会读到别的单据的行。
-   */
-  const entries = useNetPriceMatchStore((state) => state.entries)
-  const summary = useMemo(
-    () => summarizeNetPriceMatch(items, entries),
-    [items, entries],
-  )
   const openDialog = () => {
     // 每次打开都从项目配置重新解析, 不沿用上一次打开时的临时覆盖。
     resetControls()
@@ -247,15 +220,19 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
    */
   const projectLastPriceRuleId = project?.lastPriceRuleId
 
-  /** 核查当前整单的网价匹配状态, 并把结果写入页面级快照(行内标识据此刷新)。 */
+  /**
+   * 核查当前整单的网价匹配状态, 并把结果写入页面级快照(行内标识据此刷新)。
+   *
+   * <p>**结论走弹通知**（沿用全站 `@/utils/antd-app` 的 message 出口），工具栏不再挂一行
+   * 常驻文字：那行文字既占位置又随时间失效，用户扫一眼就走了，反倒让"成功 4 行"看起来
+   * 像一条待处理提示。需要逐行核对时看明细表右侧的「网价匹配」列。</p>
+   */
   const runMatchCheck = useCallback(
     async (checkItems?: ModuleLineItem[]) => {
       if (!projectId) {
-        setCheckError(t('modules.pages.salesOrder.netPriceMatchNeedProject'))
+        message.warning(t('modules.pages.salesOrder.netPriceMatchNeedProject'))
         return
       }
-      setChecking(true)
-      setCheckError(null)
       try {
         const resolved = await fetchPricingQuoteResolution(projectId, {
           ...(orderDate ? { orderDate } : {}),
@@ -265,7 +242,7 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
         const period = resolved.period ?? ''
         // 无行情 / 无时段时没有可核查的网价: 说清原因, 不改动已有结果。
         if (!resolved.quoteAvailable || !quoteDate || !period) {
-          setCheckError(t('modules.pages.salesOrder.netPriceNoQuote'))
+          message.warning(t('modules.pages.salesOrder.netPriceNoQuote'))
           return
         }
         const list =
@@ -280,7 +257,7 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
           projectLastPriceRuleId,
         ])
         if (list.length > 0 && !rule) {
-          setCheckError(t('modules.pages.salesOrder.netPricePickRule'))
+          message.warning(t('modules.pages.salesOrder.netPricePickRule'))
           return
         }
         const index = await loadMatchIndex({ quoteDate, period })
@@ -289,14 +266,18 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
         const next = computeNetPriceEntries(checkItems ?? items, index, rule)
         if (!mountedRef.current) return
         useNetPriceMatchStore.getState().setResult(documentKey, next)
+        // 与「网价匹配」列同一份口径：有需要处理的行才提示，全部一致时不打扰。
+        const verdict = describeSummary(
+          t,
+          summarizeNetPriceMatch(checkItems ?? items, next),
+        )
+        if (verdict) message.warning(verdict)
       } catch (cause: unknown) {
         if (!mountedRef.current) return
-        setCheckError(
+        message.error(
           summarizeErrorMessage(cause) ||
             t('modules.pages.salesOrder.netPriceMatchCheckFailed'),
         )
-      } finally {
-        if (mountedRef.current) setChecking(false)
       }
     },
     [
@@ -389,13 +370,17 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
           }),
         )
       }
-      setApplySummary({
-        filled: outcome.filled,
-        noPrice: outcome.noPrice,
-        noPriceIds: outcome.noPriceIds,
-        skipped: outcome.skipped,
-        substitutedIds: outcome.substitutedIds,
-      })
+      /*
+       * 空行（没有商品身份）被跳过的条数也要说一声：用户以为"整单都取到了"，
+       * 结果有几行根本没参与取价 —— 这是唯一能解释"为什么这行单价还是空的"的地方。
+       */
+      if (outcome.skipped > 0) {
+        message.info(
+          t('modules.pages.salesOrder.netPriceApplySkipped', {
+            count: outcome.skipped,
+          }),
+        )
+      }
       // 整单取价后自动重查一次: 行内标识与汇总提示立即反映新单价(用刚写入的明细)。
       if (mountedRef.current) void runMatchCheck(outcome.nextItems)
       setOpen(false)
@@ -434,143 +419,22 @@ export function SalesOrderNetPriceFiller(props: ModuleItemsActionsContext) {
     </Button>
   )
 
-  /*
-   * 取价结果按"只报非零项"拆开: 原文案把"无网价 0 行 · 跳过 0 行"也写出来, 正常取价(全部成功)
-   * 时尾部挂着一串 0, 用户要读完才知道没事 —— 零值不是信息, 不显示。
-   */
-  const applyResultParts = applySummary
-    ? [
-        {
-          key: 'filled',
-          count: applySummary.filled,
-          text: t('modules.pages.salesOrder.netPriceApplyFilled', {
-            count: applySummary.filled,
-          }),
-          tone: 'success' as const,
-        },
-        {
-          key: 'noPrice',
-          count: applySummary.noPrice.length,
-          text: t('modules.pages.salesOrder.netPriceApplyNoPrice', {
-            count: applySummary.noPrice.length,
-          }),
-          tone: 'warning' as const,
-        },
-        {
-          key: 'skipped',
-          count: applySummary.skipped,
-          text: t('modules.pages.salesOrder.netPriceApplySkipped', {
-            count: applySummary.skipped,
-          }),
-          tone: 'muted' as const,
-        },
-        {
-          // 替代取价单独成项: 用户必须能看到"有 N 行是按 400E 代取的"
-          key: 'substituted',
-          count: Object.keys(applySummary.substitutedIds).length,
-          text: t('modules.pages.salesOrder.netPriceApplySubstituted', {
-            count: Object.keys(applySummary.substitutedIds).length,
-          }),
-          tone: 'warning' as const,
-        },
-      ].filter((part) => part.count > 0)
-    : []
-  /*
-   * 结论行只有在「需要处理」时才有内容（见 describeSummary）：不一致 / 无网价。
-   * 因此不再有成功/中性两种图标，也不再按 tone 分支 —— 一个 warning 图标即可。
-   */
-  const summaryText = checkError ? null : describeSummary(t, summary)
-  const showStatusArea =
-    Boolean(checkError) || summaryText !== null || applyResultParts.length > 0
-
   return (
     <>
       {/*
-       * 单行工具栏: 左侧动作组(全部 32px 同高、只有「整单取网价」一个强调层),
-       * 右侧纯结论区(aria-live 只包文本, 不放可聚焦控件)。
+       * 工具栏只剩一个动作按钮：结果与核查结论都改成弹通知（见 runMatchCheck 与
+       * applyNetPrices 里的 message 调用），不再在按钮旁边挂一行常驻文字。
        *
-       * 重排前的问题: 动作组里主按钮 32px、次按钮 24px(size="small")、明细入口
-       * 又是 24px 的 link 蓝字 —— 同一行三种控件高度/三种强调档位; 明细入口还嵌在
-       * role="status" 里, 每次变更都会连按钮文案一起被播报。现在明细入口回到动作组,
-       * 与「重新核查网价」同形, 结论区只剩文本。
+       * <p>去掉「重新核查网价」图标按钮：核查本来就在每次取价后自动跑一遍，
+       * 单独留一个没有可读文案的图标按钮只会让人猜它是"刷新页面"还是"重新取价"。</p>
        */}
-      <div className="net-price-toolbar">
-        <Space align="center" size={8} wrap>
-          {/* 非草稿/交付核定: 禁用不静默, tooltip 说清可用状态 */}
-          {canApplyNetPrice ? (
-            applyButton
-          ) : (
-            <Tooltip title={statusHint} trigger={['hover', 'focus']}>
-              {applyButton}
-            </Tooltip>
-          )}
-          {/*
-           * 「重新核查网价」直接是图标按钮，不再收进「… 取价」下拉。
-           *
-           * <p>下拉里原本只有这一项 —— 单项溢出菜单是最差的一档：多一次点击、
-           * 图标本身没有信息量、把唯一动作藏起来（NN/g：溢出菜单只放次要动作的长尾）。
-           * 「网价匹配明细」那份全表清单与表格里紧邻单价/金额的「网价匹配」列内容重复
-           * （同一个 NetPriceMatchChip），已整块移除，因此这里只剩一个动作，平铺即可。</p>
-           *
-           * <p>`aria-label` 给读屏一个可访问名（图标按钮没有可见文字）；`title` 兼作
-           * 鼠标悬停提示。命中区沿用工具栏 32px 控件，满足 WCAG 2.5.8 的 24×24。</p>
-           */}
-          <Tooltip title={t('modules.pages.salesOrder.netPriceMatchRecheck')}>
-            <Button
-              aria-label={t('modules.pages.salesOrder.netPriceMatchRecheck')}
-              disabled={saving}
-              icon={<ReloadOutlined />}
-              loading={checking}
-              onClick={() => void runMatchCheck()}
-            />
-          </Tooltip>
-        </Space>
-        {/*
-          结论区只放文本: `role="status"` 已隐含 aria-live=polite, 不必重复声明;
-          内部不再有按钮, 读屏播报的就是结论本身。行内标识另有「网价匹配」列。
-
-          <p>**整块按需渲染**：没有需要处理的行、也没有取价结果时，这里什么都不留 ——
-          工具栏只保留动作，不再常驻一行「N 行未核查」。</p>
-        */}
-        {showStatusArea ? (
-          <div className="net-price-summary" role="status">
-            {checkError ? (
-              <span className="net-price-summary-line">
-                <ExclamationCircleFilled
-                  aria-hidden="true"
-                  className="net-price-summary-icon net-price-summary-icon--warning"
-                />
-                <Text type="danger">{checkError}</Text>
-              </span>
-            ) : summaryText ? (
-              <span className="net-price-summary-line">
-                <ExclamationCircleFilled
-                  aria-hidden="true"
-                  className="net-price-summary-icon net-price-summary-icon--warning"
-                />
-                <Text>{summaryText}</Text>
-              </span>
-            ) : null}
-            {applyResultParts.length > 0 ? (
-              <span className="net-price-apply-result">
-                {/* antd 6: Divider 用 orientation 取代已废弃的 type(见 antd changelog) */}
-                <Divider orientation="vertical" />
-                <Text type="secondary" className="net-price-apply-result-title">
-                  {t('modules.pages.salesOrder.netPriceApplyResultTitle')}
-                </Text>
-                {applyResultParts.map((part) => (
-                  <Text
-                    className={`net-price-apply-result-part net-price-apply-result-part--${part.tone}`}
-                    key={part.key}
-                  >
-                    {part.text}
-                  </Text>
-                ))}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+      {canApplyNetPrice ? (
+        applyButton
+      ) : (
+        <Tooltip title={statusHint} trigger={['hover', 'focus']}>
+          {applyButton}
+        </Tooltip>
+      )}
       <Modal
         open={open}
         title={t('modules.pages.salesOrder.netPriceTitle')}

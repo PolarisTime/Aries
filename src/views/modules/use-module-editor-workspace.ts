@@ -73,7 +73,6 @@ interface Props<Key extends ModuleKey> {
   onClose: () => void
   onDirty: () => void
   onSaved: () => void
-  autoInsertBlankItemOnCreate: boolean
 }
 
 async function resolveDefaultSettlementCompany() {
@@ -142,7 +141,6 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
   onClose,
   onDirty,
   onSaved,
-  autoInsertBlankItemOnCreate,
 }: Props<Key>) {
   const submissionRef = useRef<SubmissionState>({
     action: null,
@@ -285,11 +283,12 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
         )
         form.setFieldsValue({ ...defaultDraft, ...(initialEditorValues || {}) })
         applyDefaultSettlementCompany(moduleKey, form, () => active)
-        const draftItems = autoInsertBlankItemOnCreate
-          ? [buildDefaultEditorLineItem(undefined, moduleKey)]
-          : []
+        /*
+         * 新建单据不再自动补一条空明细行：空行看上去像"已有一行但没填"，而它其实只是一条
+         * 待填提示。现在表格直接展示 antd 的空态，要录入就点「新增明细」。
+         */
         dispatchWorkspaceState({
-          items: draftItems,
+          items: [],
           expenseItems: [],
           authoritativePrimaryNo: '',
         })
@@ -300,7 +299,6 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
       active = false
     }
   }, [
-    autoInsertBlankItemOnCreate,
     config,
     editorSessionKey,
     form,

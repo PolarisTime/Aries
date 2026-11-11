@@ -6,10 +6,9 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { ModulePageConfig } from '@/types/module-page'
-import type { ModuleDetailSummaryColumn } from './ModuleDetailSummaryRow'
 import { ModuleEditorItemsSection } from './ModuleEditorItemsSection'
 import {
-  buildEditorDraftSummaryCells,
+  type ModuleEditorItemsSummaryColumn,
   resolveEditorDraftSummaryValues,
   shouldAttachEditorDraftSummary,
 } from './ModuleEditorItemsSummary'
@@ -62,7 +61,7 @@ const itemColumns = [
     width: 120,
     align: 'center',
   },
-] as unknown as ModuleDetailSummaryColumn[]
+] as unknown as ModuleEditorItemsSummaryColumn[]
 
 const config = {
   key: 'sales-order',
@@ -105,73 +104,6 @@ describe('resolveEditorDraftSummaryValues 复用 computeDraftTotals 口径', () 
       totalAmount: 0,
       hasComputedTotals: true,
     })
-  })
-})
-
-describe('buildEditorDraftSummaryCells 逐列对齐', () => {
-  const values = resolveEditorDraftSummaryValues('sales-order', twoRows, 3.33)
-
-  it('标签挂在第一个真实数据列，数值列各自带上自己的 dataIndex', () => {
-    const cells = buildEditorDraftSummaryCells(
-      itemColumns,
-      values,
-      '合计（2 行）',
-    )
-
-    expect(cells.map((cell) => cell.dataIndex)).toEqual([
-      'name',
-      'quantity',
-      'weightTon',
-      'amount',
-    ])
-    // 短标签居中；数值单元格显式右对齐（编辑器列本身保持居中，不靠列上的数值标记类）
-    expect(cells[0].align).toBe('center')
-    expect(cells.slice(1).every((cell) => cell.align === 'right')).toBe(true)
-  })
-
-  it('选择列（dataIndex 为 id）不会被标签占用', () => {
-    const withSelection = [
-      { dataIndex: 'id', key: 'selection', width: 48 },
-      { dataIndex: 'name', title: '商品', key: 'name' },
-      ...itemColumns.slice(1),
-    ] as unknown as ModuleDetailSummaryColumn[]
-
-    const cells = buildEditorDraftSummaryCells(
-      withSelection,
-      values,
-      '合计（2 行）',
-    )
-
-    expect(cells[0].dataIndex).toBe('name')
-  })
-
-  it('列被隐藏时不产出该单元格（否则会被追加到行末、落到错误的列下面）', () => {
-    const withoutAmount = itemColumns.filter(
-      (column) => column.dataIndex !== 'amount',
-    )
-
-    const cells = buildEditorDraftSummaryCells(
-      withoutAmount,
-      values,
-      '合计（2 行）',
-    )
-
-    expect(cells.map((cell) => cell.dataIndex)).toEqual([
-      'name',
-      'quantity',
-      'weightTon',
-    ])
-  })
-
-  it('未注册金额口径的模块只出件数单元格', () => {
-    const noTotals = resolveEditorDraftSummaryValues('freight-bill', twoRows)
-    const cells = buildEditorDraftSummaryCells(
-      itemColumns,
-      noTotals,
-      '合计（2 行）',
-    )
-
-    expect(cells.map((cell) => cell.dataIndex)).toEqual(['name', 'quantity'])
   })
 })
 
@@ -265,10 +197,10 @@ describe('编辑器明细表底部的草稿合计行', () => {
     return { container, root, render }
   }
 
-  /** tfoot 里每个单元格的文本（按列顺序）。 */
-  function footerTexts(container: HTMLElement) {
-    return Array.from(container.querySelectorAll('tfoot td')).map(
-      (cell) => cell.textContent ?? '',
+  /** 合计行的那句文字（tfoot 里只有一个跨列单元格）。 */
+  function summaryText(container: HTMLElement) {
+    return (
+      container.querySelector('.module-editor-summary-text')?.textContent ?? ''
     )
   }
 
@@ -296,49 +228,50 @@ describe('编辑器明细表底部的草稿合计行', () => {
     }
   })
 
-  it('在明细表底部渲染行数 / 件数 / 重量 / 金额', () => {
+  it('合计渲染成一段文字：行数 / 数量 / 重量 / 金额（含附加费用口径）', () => {
     mounted = renderSection(twoRows)
 
-    expect(footerTexts(mounted.container)).toEqual([
-      '合计（2 行）',
-      '5',
-      '3.750',
-      '303.83',
-    ])
-    // 费用口径挂在金额单元格的悬停说明里（标签与详情页统一成「合计（N 行）」）
-    expect(
-      mounted.container
-        .querySelector('.module-editor-summary-number[title]')
-        ?.getAttribute('title'),
-    ).toContain('含附加费用合计')
+    const text = summaryText(mounted.container)
+    expect(text).toContain('合计 2 行')
+    expect(text).toContain('数量 5')
+    expect(text).toContain('3.750')
+    expect(text).toContain('303.83')
+    // 有附加费用时说清口径：金额是「货物 + 附加费用」
+    expect(text).toContain('含附加费用合计')
+    // 只占一个跨列单元格，不再逐列铺开
+    expect(mounted.container.querySelectorAll('tfoot td')).toHaveLength(1)
   })
 
   it('草稿行变化后合计实时更新（同一条 React 状态链路，不另建 store）', () => {
     mounted = renderSection(twoRows)
-    expect(footerTexts(mounted.container)[0]).toBe('合计（2 行）')
+    expect(summaryText(mounted.container)).toContain('合计 2 行')
 
     mounted.render([
       ...twoRows,
       { id: '3', name: '圆钢', quantity: 1, weightTon: 0.5, amount: 50 },
     ])
 
-    // 行数 +1、件数 +1、重量 +0.5、金额 +50（含附加费用口径不变）
-    expect(footerTexts(mounted.container)).toEqual([
-      '合计（3 行）',
-      '6',
-      '4.250',
-      '353.83',
-    ])
+    // 行数 +1、数量 +1、重量 +0.5、金额 +50（含附加费用口径不变）
+    const text = summaryText(mounted.container)
+    expect(text).toContain('合计 3 行')
+    expect(text).toContain('数量 6')
+    expect(text).toContain('4.250')
+    expect(text).toContain('353.83')
   })
 
-  it('没有附加费用时标签不提「含附加费用」', () => {
+  it('没有附加费用时只说「金额」，不提含费用口径', () => {
     mounted = renderSection(twoRows, [])
 
-    expect(footerTexts(mounted.container)[0]).toBe('合计（2 行）')
-    expect(footerTexts(mounted.container)[3]).toBe('300.50')
-    // 没有附加费用时金额格不挂口径说明
-    expect(
-      mounted.container.querySelector('.module-editor-summary-number[title]'),
-    ).toBeNull()
+    const text = summaryText(mounted.container)
+    expect(text).toContain('合计 2 行')
+    expect(text).toContain('300.50')
+    expect(text).not.toContain('含附加费用合计')
+  })
+
+  it('没有明细行时整行不渲染（空表交给 antd 空态）', () => {
+    mounted = renderSection([])
+
+    expect(summaryText(mounted.container)).toBe('')
+    expect(mounted.container.querySelectorAll('tfoot td')).toHaveLength(0)
   })
 })

@@ -14,9 +14,14 @@ import { listBusinessModule } from '@/api/business/business-listing'
 import { exportModuleData } from '@/api/business/common-export'
 import { fetchGeneratedMasterDataCode } from '@/api/master/master-data-codes'
 import { getRuntimeConfig } from '@/api/system/runtime-config'
+import {
+  type BatchFailure,
+  showBatchFailureNotification,
+} from '@/components/batch-failure-notification'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_LONG, STALE_REALTIME } from '@/constants/query-policies'
 import { getMasterOptionQueryKey } from '@/hooks/master-option-cache-refresh'
+import { describeTargetRecordNo } from '@/hooks/useBusinessGridBatchActions'
 import { resolveModuleRecordCapabilities } from '@/module-system/record/module-record-capabilities'
 import type { SearchParams } from '@/types/api-raw'
 import type {
@@ -273,15 +278,29 @@ export function useMasterDataPage(spec: MasterDataPageSpec) {
         ).length
         const failedCount = results.length - successCount
         if (failedCount > 0) {
-          message.warning(
-            t('hooks.batchActions.actionCompletedWithFailures', {
-              action: t('hooks.toolbarActions.delete'),
+          /*
+           * 删除失败逐条列出来（卡片式通知）：主数据删除同样可能因为"被单据引用"等原因
+           * 个别失败，只报"失败 N 条"用户没法判断该重试哪几条。
+           */
+          const failures: BatchFailure[] = []
+          results.forEach((result, index) => {
+            if (result.status === 'fulfilled') return
+            failures.push({
+              no: describeTargetRecordNo(eligible[index]),
+              reason:
+                result.reason instanceof Error
+                  ? result.reason.message
+                  : t('hooks.batchActions.deleteFailed'),
+            })
+          })
+          showBatchFailureNotification({
+            title: t('hooks.batchActions.deleteCompletedWithFailuresShort', {
               successCount,
               failedCount,
               skippedPart: '',
-              errorPart: '',
             }),
-          )
+            failures,
+          })
         } else {
           message.success(
             t('hooks.batchActions.actionSuccess', {

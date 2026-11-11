@@ -43,7 +43,8 @@ interface Props {
   groups: ModuleItemGroup[]
   moduleKey: string
   columns: TableColumnsType<ModuleLineItem>
-  emptyText: string
+  /** 空表文案；不传时沿用 antd 默认空态（见 ModuleItemsTable）。 */
+  emptyText?: string
   components?: TableProps<ModuleLineItem>['components']
   rowClassName?: TableProps<ModuleLineItem>['rowClassName']
   /** 明细行右键菜单（按行 key 注入，与行内按钮共用同一份动作）。 */

@@ -575,8 +575,17 @@
   border-bottom: none;
 }
 
+/*
+ * 页签**彼此紧挨**：antd 给相邻页签默认 32px 左边距（`.ant-tabs-tab + .ant-tabs-tab`），
+ * 书签式外观下那条缝会让两个"舌头"分开成两个独立块。这里清零，分组交给 padding。
+ */
+.editor-items-tabs .ant-tabs-tab + .ant-tabs-tab {
+  margin-left: 0;
+}
+
 .editor-items-tabs .ant-tabs-tab {
-  margin: 0 var(--space-xxs) 0 0;
+  /* 书签式页签**彼此紧挨**：没有间隙才像一排文件夹舌头；间隔交给 padding 表达。 */
+  margin: 0;
   padding: var(--space-xs) var(--space-md);
   border: 1px solid transparent;
   border-bottom: none;
