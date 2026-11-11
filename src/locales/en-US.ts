@@ -973,6 +973,7 @@ export const enUS = {
       freightBill: 'Freight Bill',
       salesOrder: 'Sales Order',
       activeCount: '{{count}} active',
+      expandMore: 'Show more ({{count}})',
       /* Filter-in-effect hint: counts only conditions differing from defaults. */
       activeFilterCount: '{{count}} filter(s) applied',
       clearActiveFilters: 'Clear filters',

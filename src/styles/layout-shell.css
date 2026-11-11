@@ -2363,20 +2363,87 @@
  * 纵向留白（筛选区 ↔ 命令区）只由本行的内边距给出，行内元素不再自带 margin ——
  * 两处各写一份会把间距算两遍（历史遗留：曾实测 37px）。
  */
+/*
+ * 筛选字段区：每行 4 个等宽字段。
+ *
+ * 用 grid 而不是 flex-wrap：flex 下每个字段按内容宽度占位（「单据编号」和「客户名称」
+ * 宽度不同），列边对不齐；等宽网格让同一列的控件左右边缘完全对齐，扫读时能竖着找。
+ * 列宽用 minmax(0, 1fr)，长标签在窄列里靠省略号收，不会把某一列撑宽。
+ */
+/*
+ * 第一行：字段网格 + 行末「重置」。
+ * 重置不占网格列，否则第 4 列会变成按钮、同一行的字段宽度跟着变窄，
+ * 「每行 4 个等宽」就变成了「3 个字段 + 1 个按钮」。
+ */
+.module-filter-top {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md) 0;
+}
+
+.module-filter-fields {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm) var(--space-md);
+  min-width: 0;
+}
+
+/* 重置固定在第一行行末，不随字段换行下移 */
+.module-filter-top-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: var(--app-control-height);
+}
+
+/* 动作行（快捷筛选 / 查询 / 重置）：字段区之下单独一行，右对齐 */
 .module-filter-form-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  /* 行间 8（换行后不挤）、字段间 16（五个条件能在 1336 宽里排成一行） */
+  justify-content: flex-end;
   gap: var(--space-sm) var(--space-md);
   padding: var(--space-sm) var(--space-md);
 }
 
+/* 窄屏退成 2 列：4 列在 768px 以下每格不足 160px，日期区间会被截断 */
+@media (max-width: 1100px) {
+  .module-filter-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/*
+ * 单个筛选项：填满所在网格列。`display:flex`（不是 inline-flex）才能吃满格子宽度，
+ * 否则控件仍按内容宽度收缩，四列的控件左右边缘又对不齐。
+ */
 .module-filter-field {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   /* 字段名 ↔ 控件 8px */
   gap: var(--space-xs);
+  min-width: 0;
+}
+
+/*
+ * 字段名固定轨道宽度：「客户名称」和「单据状态」字数不同，不固定的话同一列里
+ * 控件起点会差几个字。104px ≈ 中文 5 字 + 冒号留白（另有 6 字标签用省略号收）。
+ */
+.module-filter-field > .module-filter-field-label {
+  flex: 0 0 var(--module-filter-label-width, 104px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 控件自己吃满剩余的列宽 */
+.module-filter-field > .module-filter-control,
+.module-filter-field > .ant-input-affix-wrapper,
+.module-filter-field > .ant-select,
+.module-filter-field > .ant-picker,
+.module-filter-field > .module-filter-chip {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -2406,8 +2473,23 @@
  * 364 = 标签「交货日期」48 + 间隙 8 + 区间控件 308（两侧日期各 ~117 + 图标与内边距）——
  * 106px 时日期还差几像素被截，取 117 才完整显示。
  */
+/*
+ * 日期区间：宽度改由网格列宽决定（不再写死 364px）。
+ * 四列等宽下每列约 300-380px，标签固定 104px + 区间控件吃满剩余，日期仍能完整显示；
+ * 2 列时更宽。1420px 以下列宽不足时由下方媒体查询降到 2 列。
+ */
 .module-filter-field-range {
-  width: 364px;
+  width: auto;
+}
+
+/*
+ * 日期区间的标签不占 104px 固定轨道：区间控件本身要放两个完整日期 + 箭头，
+ * 共用大标签轨道会把控件压到 ~240px，日期被截成「2026年08月1」。
+ * 这里让标签按字数自然宽（约 56px），把宽度让给日期。
+ */
+.module-filter-field-range > .module-filter-field-label {
+  flex: 0 0 auto;
+  overflow: visible;
 }
 
 .module-filter-field .ant-picker {
@@ -2531,15 +2613,15 @@
   color: var(--ant-color-text-secondary);
 }
 
-/* 窄屏：字段各占一行，标签固定宽度让控件左边对齐 */
+/* 窄屏：字段退成单列，动作行改为纵向铺满 */
 @media (max-width: 768px) {
+  .module-filter-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .module-filter-form-row {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .module-filter-field {
-    width: 100%;
   }
 
   .module-filter-form-tail {

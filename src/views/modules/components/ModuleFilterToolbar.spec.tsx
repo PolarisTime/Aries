@@ -46,8 +46,12 @@ vi.mock('antd', () => {
   }) => createElement('div', { className: 'mock-popover' }, children, content)
 
   return {
-    Button: ({ children }: { children?: ReactNode }) =>
-      createElement('button', { type: 'button' }, children),
+    /* 透传 props：折叠按钮的 className / aria-expanded 要能被断言到 */
+    Button: ({
+      children,
+      ...rest
+    }: { children?: ReactNode } & Record<string, unknown>) =>
+      createElement('button', { type: 'button', ...rest }, children),
     Form,
     Input: () => createElement('input'),
     Popover,
@@ -208,6 +212,84 @@ describe('ModuleFilterToolbar', () => {
     )
     expect(chip?.getAttribute('aria-label')).toBe('下游引用: 被物流单引用')
     expect(chip?.getAttribute('aria-haspopup')).toBe('listbox')
+  })
+
+  /*
+   * 折叠：每行 4 个、默认 2 行（8 个），第 9 个起收进「展开更多」。
+   *
+   * 开发库里的模块都只有 ≤6 个条件，靠真实页面验证不到这条分支，
+   * 所以在这里用 9 个输入条件直接压边界。
+   */
+  it('超过 8 个条件时折叠到 8 个, 展开后全部渲染', () => {
+    // hideKeywordFilter：默认会额外渲染「关键词」条件，会干扰 8 / 9 的边界计数
+    const config = {
+      filters: Array.from({ length: 9 }, (_, index) => ({
+        key: `field${index}`,
+        label: `条件${index}`,
+        type: 'input',
+      })),
+      quickFilters: [],
+      hideKeywordFilter: true,
+    } as unknown as ModulePageConfig
+
+    act(() => {
+      root.render(
+        createElement(ModuleFilterToolbar, {
+          config,
+          filters: {},
+          submittedFilters: {},
+          onUpdateFilter: vi.fn(),
+          onApplyFilters: vi.fn(),
+          onReset: vi.fn(),
+        }),
+      )
+    })
+
+    const fields = () => container.querySelector('.module-filter-fields')
+    expect(fields()?.children.length).toBe(8)
+
+    const toggle = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.className.includes('module-filter-toggle-button'),
+    )
+    expect(toggle?.textContent).toBe('modules.filter.expandMore')
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false')
+
+    act(() => toggle?.click())
+
+    expect(fields()?.children.length).toBe(9)
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true')
+    expect(toggle?.textContent).toBe('common.collapse')
+  })
+
+  /* 条件数不超过 8 个时不渲染折叠按钮，外观与改造前一致 */
+  it('条件数未超限时不渲染折叠按钮', () => {
+    const config = {
+      filters: Array.from({ length: 8 }, (_, index) => ({
+        key: `field${index}`,
+        label: `条件${index}`,
+        type: 'input',
+      })),
+      quickFilters: [],
+      hideKeywordFilter: true,
+    } as unknown as ModulePageConfig
+
+    act(() => {
+      root.render(
+        createElement(ModuleFilterToolbar, {
+          config,
+          filters: {},
+          submittedFilters: {},
+          onUpdateFilter: vi.fn(),
+          onApplyFilters: vi.fn(),
+          onReset: vi.fn(),
+        }),
+      )
+    })
+
+    expect(container.querySelector('.module-filter-toggle-button')).toBeNull()
+    expect(
+      container.querySelector('.module-filter-fields')?.children.length,
+    ).toBe(8)
   })
 
   /*

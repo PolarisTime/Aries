@@ -18,6 +18,14 @@ import {
 } from '@/views/modules/components/module-filter-utils'
 import { ModuleFilterChip, ModuleQuickFilterChip } from './ModuleFilterChip'
 
+/**
+ * 筛选区默认可见的字段数：每行 4 个 × 2 行。
+ *
+ * <p>列宽由 CSS 的 4 列等宽网格决定，这里只控制「渲染几个」——多出来的字段
+ * 整个不挂载，因此不会因为 `display:none` 留下空网格单元把第三行撑出来。</p>
+ */
+const FILTER_VISIBLE_LIMIT = 8
+
 interface Props {
   config: ModulePageConfig
   filters: SearchParams
@@ -178,6 +186,42 @@ export function ModuleFilterToolbar({
   )
 
   /*
+   * 筛选区的折叠：每行 4 个等宽字段、默认显示 2 行（8 个），超出的收进「展开」。
+   *
+   * <p>折叠只在字段数超过 {@link FILTER_VISIBLE_LIMIT} 时生效；未超出时与改造前完全一致，
+   * 不渲染切换按钮，也不会因为多一层容器改变外观。</p>
+   *
+   * <p>顺序按「文本 → 日期区间 → 选择/按钮」的分组渲染，因此这里按同一口径拼出**渲染顺序**的
+   * 字段数组，再决定哪 8 个可见 —— 否则折叠会按配置顺序切片、渲染却按分组，切出来的
+   * 前 8 个与屏幕上多出来的那几个对不上。</p>
+   */
+  const renderedFieldCount =
+    (hasConfigKeywordFilter || config.hideKeywordFilter ? 0 : 1) +
+    pillFilters.length +
+    dateRangeFilters.length +
+    chipFilters.length
+  const collapsible = renderedFieldCount > FILTER_VISIBLE_LIMIT
+  const [filtersExpanded, setFiltersExpanded] = useState(false)
+  const visibleLimit =
+    collapsible && !filtersExpanded
+      ? FILTER_VISIBLE_LIMIT
+      : Number.POSITIVE_INFINITY
+
+  /*
+   * 每个字段带「渲染序位」，按序位判断是否落在可见区内。
+   * 统一用 `isVisible(slot)` 而不是各自切片，避免三处各写一份「前 8 个」。
+   */
+  const keywordVisible =
+    !config.hideKeywordFilter && !hasConfigKeywordFilter && 0 < visibleLimit
+  const pillOffset = keywordVisible ? 1 : 0
+  const dateOffset = pillOffset + pillFilters.length
+  const chipOffset = dateOffset + dateRangeFilters.length
+  const isVisible = (slot: number) => slot < visibleLimit
+  const hiddenCount = collapsible
+    ? Math.max(0, renderedFieldCount - FILTER_VISIBLE_LIMIT)
+    : 0
+
+  /*
    * 文本筛选：字段名在控件左侧（表单式），控件是 32px 直角控件而不是药丸。
    * 控件自带 aria-label，可见标签与它同一份文案，读屏不会重复念。
    */
@@ -215,59 +259,103 @@ export function ModuleFilterToolbar({
       className="module-filter-toolbar"
       aria-label={t('modules.filter.conditions')}
     >
-      <div className="module-filter-form-row">
-        {!config.hideKeywordFilter && !hasConfigKeywordFilter
-          ? renderTextField(
-              'keyword',
-              t('common.keyword'),
-              t('common.pleaseInput'),
-              asString(submittedFilters.keyword),
-            )
-          : null}
-        {pillFilters.map((field) =>
-          renderTextField(
-            field.key,
-            field.label,
-            field.placeholder ||
-              t('modules.filter.inputPlaceholder', { label: field.label }),
-            asString(submittedFilters[field.key]),
-          ),
-        )}
-        {dateRangeFilters.map((field) => (
-          <FilterField
-            key={field.key}
-            label={field.label}
-            className="module-filter-field-range"
-          >
-            <ModuleFilterField
-              field={field}
-              filters={filters}
-              submittedFilters={submittedFilters}
-              datePresets={datePresets}
-              onUpdateFilter={onUpdateFilter}
-              onCommitFilter={(key, value) =>
-                commitFilter(key, value, field.resetKeysOnChange)
-              }
-              onCommitTextFilter={commitTextFilter}
-              projectOptions={projectOptions}
-            />
-          </FilterField>
-        ))}
-        {chipFilters.map((field) => (
-          <FilterField key={field.key} label={field.label}>
-            <ModuleFilterChip
-              field={field}
-              filters={filters}
-              submittedFilters={submittedFilters}
-              projectOptions={projectOptions}
-              open={openChipKey === field.key}
-              onToggle={(open) => toggleChip(field.key, open)}
-              onUpdateFilter={onUpdateFilter}
-              onApplyFilters={onApplyFilters}
-            />
-          </FilterField>
-        ))}
-        <div className="module-filter-form-tail">
+      {/*
+        卡片分两段：上面是字段网格（每行 4 个等宽、默认 2 行、超出折叠），
+        下面是动作行（快捷筛选 / 查询 / 重置），右对齐。
+        动作行独立成行而不是挤在第 4 列：挤在一起会让「每行 4 个」在某一行变成 3 个，
+        列宽也随之跳动。
+      */}
+      {/*
+        第一行：字段网格 + 行末「重置」。
+        重置跟着第一行走：它是「把这一整块条件清空」的动作，贴着条件区比落在
+        下面的按钮行更容易被发现；按钮行只留查询类动作。
+      */}
+      <div className="module-filter-top">
+        <div className="module-filter-fields">
+          {keywordVisible
+            ? renderTextField(
+                'keyword',
+                t('common.keyword'),
+                t('common.pleaseInput'),
+                asString(submittedFilters.keyword),
+              )
+            : null}
+          {pillFilters.map((field, index) =>
+            isVisible(pillOffset + index)
+              ? renderTextField(
+                  field.key,
+                  field.label,
+                  field.placeholder ||
+                    t('modules.filter.inputPlaceholder', {
+                      label: field.label,
+                    }),
+                  asString(submittedFilters[field.key]),
+                )
+              : null,
+          )}
+          {dateRangeFilters.map((field, index) =>
+            isVisible(dateOffset + index) ? (
+              <FilterField
+                key={field.key}
+                label={field.label}
+                className="module-filter-field-range"
+              >
+                <ModuleFilterField
+                  field={field}
+                  filters={filters}
+                  submittedFilters={submittedFilters}
+                  datePresets={datePresets}
+                  onUpdateFilter={onUpdateFilter}
+                  onCommitFilter={(key, value) =>
+                    commitFilter(key, value, field.resetKeysOnChange)
+                  }
+                  onCommitTextFilter={commitTextFilter}
+                  projectOptions={projectOptions}
+                />
+              </FilterField>
+            ) : null,
+          )}
+          {chipFilters.map((field, index) =>
+            isVisible(chipOffset + index) ? (
+              <FilterField key={field.key} label={field.label}>
+                <ModuleFilterChip
+                  field={field}
+                  filters={filters}
+                  submittedFilters={submittedFilters}
+                  projectOptions={projectOptions}
+                  open={openChipKey === field.key}
+                  onToggle={(open) => toggleChip(field.key, open)}
+                  onUpdateFilter={onUpdateFilter}
+                  onApplyFilters={onApplyFilters}
+                />
+              </FilterField>
+            ) : null,
+          )}
+        </div>
+        <div className="module-filter-top-actions">
+          {showResetButton ? <ModuleResetButton onClick={onReset} /> : null}
+        </div>
+      </div>
+      {/*
+        第二行：折叠开关 + 快捷筛选 + 查询。
+        展开按钮单独放这里，与「重置（第一行）」「查询（第二行右侧）」各归其位。
+        这一行没有任何内容时不渲染 —— 否则条件少（不折叠、无快捷筛选、无查询按钮）的
+        模块会在卡片底部多出一条空白带。
+      */}
+      {collapsible || quickFilters.length > 0 || showSubmitButton ? (
+        <div className="module-filter-form-row">
+          {collapsible ? (
+            <Button
+              className="module-filter-toggle-button"
+              type="text"
+              aria-expanded={filtersExpanded}
+              onClick={() => setFiltersExpanded((expanded) => !expanded)}
+            >
+              {filtersExpanded
+                ? t('common.collapse')
+                : t('modules.filter.expandMore', { count: hiddenCount })}
+            </Button>
+          ) : null}
           <ModuleQuickFilterChip
             quickFilters={quickFilters}
             defaultFilters={defaultFilters}
@@ -286,9 +374,8 @@ export function ModuleFilterToolbar({
               {t('common.search')}
             </Button>
           ) : null}
-          {showResetButton ? <ModuleResetButton onClick={onReset} /> : null}
         </div>
-      </div>
+      ) : null}
     </Form>
   )
 }

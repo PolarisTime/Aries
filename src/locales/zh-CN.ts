@@ -954,6 +954,8 @@ export const zhCN = {
       freightBill: '物流单',
       salesOrder: '销售订单',
       activeCount: '已启用 {{count}} 项',
+      /* 筛选区折叠按钮：还有几个条件被收起 */
+      expandMore: '展开更多（{{count}}）',
       /* 筛选生效提示: 只统计与默认值不同的条件, 让"现在有几项在生效"可见可清空。 */
       activeFilterCount: '已筛选 {{count}} 项',
       clearActiveFilters: '清空筛选',
