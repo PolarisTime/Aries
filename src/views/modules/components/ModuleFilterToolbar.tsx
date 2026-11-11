@@ -13,6 +13,10 @@ import { asString } from '@/utils/type-narrowing'
 import { ModuleFilterField } from '@/views/modules/components/ModuleFilterField'
 import { buildDateRangePresets } from '@/views/modules/components/module-date-range'
 import {
+  resolveFilterRow,
+  sortFilterFieldsByRow,
+} from '@/views/modules/components/module-filter-rows'
+import {
   buildNextFilters,
   normalizeFilters,
 } from '@/views/modules/components/module-filter-utils'
@@ -137,9 +141,12 @@ export function ModuleFilterToolbar({
   const toggleChip = (key: string, open: boolean) =>
     setOpenChipKey(open ? key : null)
 
-  const sortedFilters = config.filters.toSorted(
-    (left, right) => (left.row || 1) - (right.row || 1),
-  )
+  /*
+   * 行分组走统一默认规则：往来方（客户/供应商/物流商）与项目默认排第二行，
+   * 单据自身属性（单号/状态/日期/结算主体）排第一行；页面配置写 `row` 可覆盖。
+   * 见 module-filter-rows.ts。
+   */
+  const sortedFilters = sortFilterFieldsByRow(config.filters)
   const quickFilters = config.quickFilters || []
   const datePresets = useMemo(() => buildDateRangePresets(t), [t])
   const activeQuickFilterKey = quickFilters.find((filter) =>
@@ -242,6 +249,43 @@ export function ModuleFilterToolbar({
   const showToggle = collapsible || renderedFieldCount > FILTER_COLUMNS
 
   /*
+   * **真正的换行**：`row` 只做排序不会换行 —— 网格会自动把后面 row 的字段填进
+   * 上一行的空位（实测「客户名称/项目名称」写了第二行，仍被塞进第一行第 3、4 格）。
+   * 所以按解析后的行号**切成若干组**，每组各自是一个 4 列网格，行与行之间才是硬的。
+   */
+  const visibleFieldKeys = new Set(
+    orderedFields
+      .filter((field) => isVisible(fieldSlot(field)))
+      .map((field) => field.key),
+  )
+  const filterRowGroups = (() => {
+    const groups: Array<{
+      row: number
+      fields: Array<(typeof orderedFields)[number]>
+    }> = []
+    for (const field of orderedFields) {
+      if (!visibleFieldKeys.has(field.key)) continue
+      const row = resolveFilterRow(field)
+      const last = groups.at(-1)
+      if (last && last.row === row) last.fields.push(field)
+      else groups.push({ row, fields: [field] })
+    }
+    return groups
+  })()
+  const keywordRow = resolveFilterRow({ key: 'keyword' })
+  /*
+   * 关键字按自己的行号插进对应分组的最前面。没有任何分组时（配置只有关键字一个条件）
+   * 补一个空分组，否则关键字无处可落。
+   */
+  if (keywordVisible && filterRowGroups.length === 0) {
+    filterRowGroups.push({ row: keywordRow, fields: [] })
+  }
+  const keywordGroupIndex = Math.max(
+    0,
+    filterRowGroups.findIndex((group) => group.row >= keywordRow),
+  )
+
+  /*
    * 文本筛选：字段名在控件左侧（表单式），控件是 32px 直角控件而不是药丸。
    * 控件自带 aria-label，可见标签与它同一份文案，读屏不会重复念。
    */
@@ -274,6 +318,60 @@ export function ModuleFilterToolbar({
     </FilterField>
   )
 
+  /*
+   * 单个筛选项的渲染：按 `type` 分派到输入框 / 日期区间 / 下拉按钮。
+   * 与行分组解耦 —— 分组只决定它落在哪个 `.module-filter-row` 里。
+   */
+  const renderFilterField = (field: (typeof orderedFields)[number]) => {
+    if (field.type === 'input') {
+      return renderTextField(
+        field.key,
+        field.label,
+        field.placeholder ||
+          t('modules.filter.inputPlaceholder', { label: field.label }),
+        asString(submittedFilters[field.key]),
+        field.span,
+      )
+    }
+    if (field.type === 'dateRange') {
+      return (
+        <FilterField
+          key={field.key}
+          label={field.label}
+          className="module-filter-field-range"
+          span={field.span}
+        >
+          <ModuleFilterField
+            field={field}
+            filters={filters}
+            submittedFilters={submittedFilters}
+            datePresets={datePresets}
+            onUpdateFilter={onUpdateFilter}
+            onCommitFilter={(key, value) =>
+              commitFilter(key, value, field.resetKeysOnChange)
+            }
+            onCommitTextFilter={commitTextFilter}
+            projectOptions={projectOptions}
+          />
+        </FilterField>
+      )
+    }
+    return (
+      <FilterField key={field.key} label={field.label} span={field.span}>
+        <ModuleFilterChip
+          field={field}
+          filters={filters}
+          submittedFilters={submittedFilters}
+          projectOptions={projectOptions}
+          open={openChipKey === field.key}
+          onToggle={(open) => toggleChip(field.key, open)}
+          onUpdateFilter={onUpdateFilter}
+          onApplyFilters={onApplyFilters}
+        />
+      </FilterField>
+    )
+  }
+
   return (
     <Form
       colon={false}
@@ -293,74 +391,20 @@ export function ModuleFilterToolbar({
       */}
       <div className="module-filter-top">
         <div className="module-filter-fields">
-          {keywordVisible
-            ? renderTextField(
-                'keyword',
-                t('common.keyword'),
-                t('common.pleaseInput'),
-                asString(submittedFilters.keyword),
-              )
-            : null}
-          {orderedFields.map((field) =>
-            isVisible(fieldSlot(field)) ? (
-              field.type === 'input' ? (
-                renderTextField(
-                  field.key,
-                  field.label,
-                  field.placeholder ||
-                    t('modules.filter.inputPlaceholder', {
-                      label: field.label,
-                    }),
-                  asString(submittedFilters[field.key]),
-                  field.span,
-                )
-              ) : field.type === 'dateRange' ? (
-                <FilterField
-                  key={field.key}
-                  label={field.label}
-                  className="module-filter-field-range"
-                  span={field.span}
-                >
-                  <ModuleFilterField
-                    field={field}
-                    filters={filters}
-                    submittedFilters={submittedFilters}
-                    datePresets={datePresets}
-                    onUpdateFilter={onUpdateFilter}
-                    onCommitFilter={(key, value) =>
-                      commitFilter(key, value, field.resetKeysOnChange)
-                    }
-                    onCommitTextFilter={commitTextFilter}
-                    projectOptions={projectOptions}
-                  />
-                </FilterField>
-              ) : (
-                <FilterField
-                  key={field.key}
-                  label={field.label}
-                  span={field.span}
-                >
-                  <ModuleFilterChip
-                    field={field}
-                    filters={filters}
-                    submittedFilters={submittedFilters}
-                    projectOptions={projectOptions}
-                    open={openChipKey === field.key}
-                    onToggle={(open) => toggleChip(field.key, open)}
-                    onUpdateFilter={onUpdateFilter}
-                    onApplyFilters={onApplyFilters}
-                  />
-                </FilterField>
-              )
-            ) : null,
-          )}
+          {filterRowGroups.map((group, groupIndex) => (
+            <div className="module-filter-row" key={group.row}>
+              {keywordVisible && groupIndex === keywordGroupIndex
+                ? renderTextField(
+                    'keyword',
+                    t('common.keyword'),
+                    t('common.pleaseInput'),
+                    asString(submittedFilters.keyword),
+                  )
+                : null}
+              {group.fields.map((field) => renderFilterField(field))}
+            </div>
+          ))}
         </div>
-        {/*
-          右侧动作列：重置在上、展开/收起在下方，样式与重置完全一致（同一层次的次级动作）。
-          展开按钮**默认显示**：只要字段铺满两行就出现（此时它不额外撑高卡片）；
-          没有可展开内容时置灰并给出说明。字段只有一行时（≤4 个条件的模块）不渲染 ——
-          否则会为了放下一个用不上的按钮凭空多出一行高度，字段下方留一片空白。
-        */}
         <div className="module-filter-top-actions">
           {showResetButton ? <ModuleResetButton onClick={onReset} /> : null}
           {showToggle ? (

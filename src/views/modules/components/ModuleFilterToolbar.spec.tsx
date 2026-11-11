@@ -245,8 +245,10 @@ describe('ModuleFilterToolbar', () => {
       )
     })
 
-    const fields = () => container.querySelector('.module-filter-fields')
-    expect(fields()?.children.length).toBe(8)
+    // 字段现在按行分组渲染（.module-filter-row 里才是 .module-filter-field），
+    // 计数要落在字段本身，不能数行容器的子节点。
+    const fields = () => container.querySelectorAll('.module-filter-field')
+    expect(fields().length).toBe(8)
 
     const toggle = Array.from(container.querySelectorAll('button')).find(
       (button) => button.className.includes('module-filter-toggle-button'),
@@ -256,7 +258,7 @@ describe('ModuleFilterToolbar', () => {
 
     act(() => toggle?.click())
 
-    expect(fields()?.children.length).toBe(9)
+    expect(fields().length).toBe(9)
     expect(toggle?.getAttribute('aria-expanded')).toBe('true')
     expect(toggle?.textContent).toBe('common.collapse')
   })
@@ -296,9 +298,7 @@ describe('ModuleFilterToolbar', () => {
     expect(toggle).not.toBeNull()
     expect(toggle?.disabled).toBe(true)
     expect(toggle?.textContent).toBe('common.expand')
-    expect(
-      container.querySelector('.module-filter-fields')?.children.length,
-    ).toBe(8)
+    expect(container.querySelectorAll('.module-filter-field').length).toBe(8)
   })
 
   /* 单行字段（≤4 个条件）不渲染展开按钮：否则会为它额外撑出一行空白 */
