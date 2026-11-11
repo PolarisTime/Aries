@@ -1,5 +1,3 @@
-import type { ModuleFilterDefinition } from '@/types/module-page'
-
 /**
  * 默认排到第二行的筛选字段——「往来方 + 项目」这一类**主数据维度**。
  *
@@ -8,7 +6,7 @@ import type { ModuleFilterDefinition } from '@/types/module-page'
  * 这类主数据维度取值长、需要下拉挑，放第二行后第一行能排满高频条件，
  * 也符合「先定位单据、再按往来方收窄」的查找顺序。</p>
  *
- * <p>只在页面配置**没有显式写 {@link ModuleFilterDefinition.row}** 时生效：
+ * <p>只在页面配置**没有显式写 `row`** 时生效：
  * 个别页面若确实想把客户放第一行，写 `row: 1` 即可覆盖。</p>
  */
 const SECOND_ROW_FILTER_KEYS: ReadonlySet<string> = new Set([

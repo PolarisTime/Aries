@@ -292,9 +292,9 @@ describe('ModuleFilterToolbar', () => {
      * 8 个条件铺满两行：展开按钮默认显示（置灰，因为没有被折叠的条件），
      * 但它不会额外撑高卡片 —— 字段本身就占两行。
      */
-    const toggle = container.querySelector(
+    const toggle = container.querySelector<HTMLButtonElement>(
       '.module-filter-toggle-button',
-    ) as HTMLButtonElement | null
+    )
     expect(toggle).not.toBeNull()
     expect(toggle?.disabled).toBe(true)
     expect(toggle?.textContent).toBe('common.expand')

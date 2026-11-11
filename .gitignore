@@ -16,6 +16,7 @@ dist-ssr/
 .agents/
 temppic/
 .tmp-browser/
+.e2e-shots/
 .local-browser/
 # react-doctor 生成的基线快照目录（工具产物，不是源码）
 .rd-base/
