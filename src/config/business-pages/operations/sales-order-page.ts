@@ -1,8 +1,4 @@
-import {
-  EditOutlined,
-  ExportOutlined,
-  PrinterOutlined,
-} from '@ant-design/icons'
+import {} from '@ant-design/icons'
 import i18next from 'i18next'
 import { createElement } from 'react'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
@@ -593,27 +589,14 @@ export const salesOrdersPageConfig: ModulePageConfig = {
    *   `onCloseDetail / onRetryDetail` 传给详情面，没有 openEditor），因此这里接不上，
    *   同样禁用。等详情面拿到编辑回调后，只需给这几项补 `onClick` 并去掉 `disabled`。
    */
-  detailHeaderButtons: [
-    {
-      key: 'print-delivery-note',
-      label: i18next.t('modules.detailCards.printDeliveryNote'),
-      icon: createElement(PrinterOutlined),
-      disabled: true,
-    },
-    {
-      key: 'export-statement',
-      label: i18next.t('modules.detailCards.exportStatement'),
-      icon: createElement(ExportOutlined),
-      disabled: true,
-    },
-    {
-      key: 'change-maintenance',
-      label: i18next.t('modules.detailCards.changeMaintenance'),
-      icon: createElement(EditOutlined),
-      variant: 'primary',
-      disabled: true,
-    },
-  ],
+  /*
+   * 顶栏不再放「打印送货单 / 导出对账单 / 变更维护」三个占位按钮。
+   *
+   * <p>它们原本是 `disabled: true` 且没有 `onClick` 的占位（后端也没有对应能力），
+   * 用户能做的只有 hover 才看到「未接入」—— 三个灰按钮里还有一个是 `variant: 'primary'`
+   * 的主色按钮，不可点的主按钮是误导最强的一档。占位承诺的不是功能，而是"系统坏了"。
+   * 等接口真正就绪时再加回；历史实现见 ef9e8a98。</p>
+   */
   /*
    * 方案 B 的信息区不再重复顶栏已经显示的主单号（18 位数字在一屏里出现两次，
    * 读者会怀疑是不是两张单）。状态字段由 `hasDetailHeaderStatus` 统一处理，不在这里列。

@@ -235,18 +235,20 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
       container.querySelector('.module-detail-info__title')?.textContent,
     ).toBe('订单业务信息')
     /*
-     * 顶栏右侧：本次新增的「单据链」入口（可用）+ 三个接不到接口的禁用占位按钮。
-     * 单据链按钮不在本断言里校验弹层内容——弹层按需挂载，打开后才渲染。
+     * 顶栏右侧只保留「单据链」一个真入口。
+     *
+     * 曾经的「打印送货单 / 导出对账单 / 变更维护」是 `disabled: true` 且无 `onClick`
+     * 的占位（后端也没有对应能力），已删除 —— 不可点的主色按钮会让人以为系统坏了。
+     * 单据链按钮不在本断言里校验弹层内容：弹层按需挂载，打开后才渲染。
      */
     const headerButtons = Array.from(
       container.querySelectorAll<HTMLButtonElement>(
         '.module-detail-header__actions button',
       ),
     )
-    expect(headerButtons).toHaveLength(4)
+    expect(headerButtons).toHaveLength(1)
     expect(headerButtons[0].disabled).toBe(false)
     expect(headerButtons[0].textContent).toContain('单据链')
-    expect(headerButtons.filter((button) => button.disabled)).toHaveLength(3)
     /*
      * 关闭入口只有一个：明细列表标题行的「关闭」按钮。
      * 顶栏不再放返回箭头与 ×（同一动作三个入口会让读屏与键盘用户重复听到关闭）。

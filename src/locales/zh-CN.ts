@@ -1297,9 +1297,6 @@ export const zhCN = {
       relatedProject: '关联项目：',
       /** 顶栏占位按钮的悬停说明：接口尚未接入。 */
       notConnected: '未接入',
-      printDeliveryNote: '打印送货单',
-      exportStatement: '导出对账单',
-      changeMaintenance: '变更维护',
     },
     editorForm: {
       documentInfo: '单据信息',

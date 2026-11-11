@@ -1291,9 +1291,6 @@ export const enUS = {
       contractLabel: 'Contract',
       relatedProject: 'Related project: ',
       notConnected: 'Not connected',
-      printDeliveryNote: 'Print delivery note',
-      exportStatement: 'Export statement',
-      changeMaintenance: 'Change & maintain',
     },
     editorForm: {
       documentInfo: 'Document Info',
