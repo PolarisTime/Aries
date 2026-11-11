@@ -2984,6 +2984,15 @@ export const enUS = {
     viewTimeline: 'Timeline',
     listGroupsTitle: 'Documents by type',
     listRelationsTitle: 'Document relations',
+    /** Column headers for the list view (antd Table). */
+    columnType: 'Type',
+    columnNo: 'No.',
+    columnStatus: 'Status',
+    columnDate: 'Date',
+    columnRelation: 'Relation',
+    columnFromNo: 'From',
+    columnToNo: 'To',
+    columnQuantityWeight: 'Qty / Weight',
     listRelationsEmpty: 'No document relations',
     relationTo: 'to',
     types: {

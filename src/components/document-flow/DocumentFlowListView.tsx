@@ -1,10 +1,12 @@
-import { Card, Empty, Flex, Tag, Typography } from 'antd'
+import { Empty, Table, Tag, Typography } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 import { formatDate } from '@/utils/formatters'
 import type {
   DocumentFlowListGroup,
   DocumentFlowListRelation,
 } from './document-flow-list-model'
 import {
+  DOCUMENT_FLOW_TYPE_META,
   type DocumentFlowTranslator,
   documentFlowEdgeMetricLabel,
   documentFlowLinkTypeLabel,
@@ -13,7 +15,7 @@ import {
   formatDocumentFlowWeight,
 } from './document-flow-meta'
 
-const { Text, Title } = Typography
+const { Text } = Typography
 
 interface Props {
   currentNodeKey: string | null
@@ -22,158 +24,27 @@ interface Props {
   t: DocumentFlowTranslator
 }
 
-function ListRowMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <span className="document-flow-list-row-metric">
-      <Text className="document-flow-list-row-metric-label" type="secondary">
-        {label}
-      </Text>
-      <Text className="document-flow-list-row-metric-value" strong>
-        {value}
-      </Text>
-    </span>
-  )
+/** 单据表的一行：把分组结构摊平成表格数据，分组信息落到「类型」列。 */
+interface DocumentRow {
+  key: string
+  type: string
+  no: string
+  status?: string | null
+  date?: string | null
+  amountText: string
+  weightText: string
 }
 
 /**
- * 一个单据类型分组：antd `Card`（小尺寸）承载，内部是语义化 `ul/li` 行。
+ * 列表视图：单据清单表 + 单据关系表。
  *
- * <p>为什么行不用 antd 的列表组件：v6 已把 `List` 标为废弃，官方替代 `Listy` 是**虚拟滚动**
- * 列表（必须给定 `height`），为十来条单据撑一个固定高度反而更差；而这里的分组清单既要保留
- * 列表语义（读屏能念出「N 项」与项位置），又要跟着内容自适应高度。因此外观交给
- * `Card` + `Typography` + `Tag` + `Flex`，结构保留 `ul/li` —— 与时间线视图同一套取舍。</p>
- */
-function DocumentFlowListGroupBlock({
-  currentNodeKey,
-  group,
-  t,
-}: {
-  currentNodeKey: string | null
-  group: DocumentFlowListGroup
-  t: DocumentFlowTranslator
-}) {
-  return (
-    <Card
-      className="document-flow-list-group"
-      size="small"
-      title={
-        <Text className="document-flow-list-group-title" strong>
-          {t('documentFlow.typeCount', {
-            type: documentFlowTypeLabel(t, group.type),
-            count: group.entries.length,
-          })}
-        </Text>
-      }
-    >
-      <ul className="document-flow-list-rows">
-        {group.entries.map(({ key, node }) => {
-          const isCurrent = key === currentNodeKey
-          const amountText = formatDocumentFlowAmount(node.amount)
-          const weightText = formatDocumentFlowWeight(node.weight)
-          return (
-            <li
-              key={key}
-              aria-current={isCurrent ? 'true' : undefined}
-              className={`document-flow-list-row${
-                isCurrent ? ' document-flow-list-row-current' : ''
-              }`}
-            >
-              <Flex align="center" gap={8} wrap>
-                <Text className="document-flow-list-row-no" strong>
-                  {node.no ?? node.id}
-                </Text>
-                {node.status ? (
-                  <Tag
-                    className="document-flow-list-row-status"
-                    variant="filled"
-                  >
-                    {node.status}
-                  </Tag>
-                ) : null}
-                {node.date ? (
-                  <Text
-                    className="document-flow-list-row-date"
-                    type="secondary"
-                  >
-                    {formatDate(node.date)}
-                  </Text>
-                ) : null}
-                {amountText ? (
-                  <ListRowMetric
-                    label={t('documentFlow.amount')}
-                    value={amountText}
-                  />
-                ) : null}
-                {weightText ? (
-                  <ListRowMetric
-                    label={t('documentFlow.weight')}
-                    value={weightText}
-                  />
-                ) : null}
-                {isCurrent ? (
-                  <Tag
-                    className="document-flow-list-row-badge"
-                    color="processing"
-                    variant="filled"
-                  >
-                    {t('documentFlow.currentBadge')}
-                  </Tag>
-                ) : null}
-              </Flex>
-            </li>
-          )
-        })}
-      </ul>
-    </Card>
-  )
-}
-
-function DocumentFlowListRelationRow({
-  relation,
-  t,
-}: {
-  relation: DocumentFlowListRelation
-  t: DocumentFlowTranslator
-}) {
-  const metric = documentFlowEdgeMetricLabel(t, relation)
-  const linkType = documentFlowLinkTypeLabel(t, relation.linkType)
-  return (
-    <li className="document-flow-list-relation">
-      <Flex align="center" gap={8} wrap>
-        <Text className="document-flow-list-relation-no" strong>
-          {relation.fromNo}
-        </Text>
-        <span
-          aria-label={t('documentFlow.relationTo')}
-          className="document-flow-list-relation-arrow"
-          role="img"
-        >
-          →
-        </span>
-        <Text className="document-flow-list-relation-no" strong>
-          {relation.toNo}
-        </Text>
-        {linkType ? (
-          <Tag className="document-flow-list-relation-type" variant="filled">
-            {linkType}
-          </Tag>
-        ) : null}
-        {/* 数量/重量缺失（后端只对四条明细链路填充）时整段不渲染 */}
-        {metric ? (
-          <Text className="document-flow-list-metric" type="secondary">
-            {metric}
-          </Text>
-        ) : null}
-      </Flex>
-    </li>
-  )
-}
-
-/**
- * 列表视图：按类型分组的单据清单 + 单据关系清单。
+ * <p>两个都用 antd `Table`（`size="small"`、无分页）：列表视图的价值就在于**列对齐**与
+ * 表头——把「类型 / 单号 / 状态 / 日期 / 金额 / 重量」竖着对齐，一眼能横向比较；
+ * 原先按类型分组成一堆 Card、每张卡一行内联文字，既费纵向空间又看不出结构。
+ * 当前查询单据通过 `rowClassName` 高亮（与图视图的当前节点同一含义）。</p>
  *
- * <p>与图视图共用同一份 `data.nodes/links`，纯展示、不额外请求；切换视图不改变
- * 弹层其它状态（查询、滚动位置由外层保留）。</p>
+ * <p>汇总口径仍复用 {@link formatDocumentFlowAmount} / {@link formatDocumentFlowWeight}，
+ * 与图、时间线视图同一处出口；缺失值渲染成 `—` 而不是 0。</p>
  */
 export function DocumentFlowListView({
   currentNodeKey,
@@ -181,46 +52,204 @@ export function DocumentFlowListView({
   relations,
   t,
 }: Props) {
+  const rows: DocumentRow[] = groups.flatMap((group) =>
+    group.entries.map(({ key, node }) => ({
+      key,
+      type: node.type,
+      no: node.no ?? node.id,
+      status: node.status,
+      date: node.date,
+      amountText: formatDocumentFlowAmount(node.amount),
+      weightText: formatDocumentFlowWeight(node.weight),
+    })),
+  )
+
+  const columns: ColumnsType<DocumentRow> = [
+    {
+      dataIndex: 'type',
+      key: 'type',
+      title: t('documentFlow.columnType'),
+      width: 132,
+      render: (type: string) => {
+        const meta = DOCUMENT_FLOW_TYPE_META[type]
+        return (
+          <Tag color={meta?.color} variant="filled">
+            {documentFlowTypeLabel(t, type)}
+          </Tag>
+        )
+      },
+    },
+    {
+      dataIndex: 'no',
+      key: 'no',
+      title: t('documentFlow.columnNo'),
+      render: (no: string) => (
+        <Text className="document-flow-list-no" strong>
+          {no}
+        </Text>
+      ),
+    },
+    {
+      dataIndex: 'status',
+      key: 'status',
+      title: t('documentFlow.columnStatus'),
+      width: 104,
+      render: (status: string | null | undefined) =>
+        status ? (
+          <Tag variant="filled">{status}</Tag>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
+    },
+    {
+      dataIndex: 'date',
+      key: 'date',
+      title: t('documentFlow.columnDate'),
+      width: 128,
+      render: (date: string | null | undefined) => (
+        <Text className="document-flow-list-date" type="secondary">
+          {date ? formatDate(date) : '—'}
+        </Text>
+      ),
+    },
+    {
+      align: 'right',
+      dataIndex: 'amountText',
+      key: 'amount',
+      title: t('documentFlow.amount'),
+      width: 132,
+      render: (value: string) =>
+        value ? (
+          <Text className="document-flow-list-number" strong>
+            {value}
+          </Text>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
+    },
+    {
+      align: 'right',
+      dataIndex: 'weightText',
+      key: 'weight',
+      title: t('documentFlow.weight'),
+      width: 112,
+      render: (value: string) =>
+        value ? (
+          <Text className="document-flow-list-number">{value}</Text>
+        ) : (
+          <Text type="secondary">—</Text>
+        ),
+    },
+  ]
+
+  const relationColumns: ColumnsType<DocumentFlowListRelation> = [
+    {
+      dataIndex: 'fromNo',
+      key: 'fromNo',
+      title: t('documentFlow.columnFromNo'),
+      render: (no: string) => (
+        <Text className="document-flow-list-no" strong>
+          {no}
+        </Text>
+      ),
+    },
+    {
+      align: 'center',
+      key: 'arrow',
+      title: '',
+      width: 48,
+      render: () => (
+        <span
+          aria-label={t('documentFlow.relationTo')}
+          className="document-flow-list-relation-arrow"
+          role="img"
+        >
+          →
+        </span>
+      ),
+    },
+    {
+      dataIndex: 'toNo',
+      key: 'toNo',
+      title: t('documentFlow.columnToNo'),
+      render: (no: string) => (
+        <Text className="document-flow-list-no" strong>
+          {no}
+        </Text>
+      ),
+    },
+    {
+      dataIndex: 'linkType',
+      key: 'linkType',
+      title: t('documentFlow.columnRelation'),
+      width: 104,
+      render: (linkType: string | undefined) => {
+        const label = documentFlowLinkTypeLabel(t, linkType)
+        return label ? (
+          <Tag variant="filled">{label}</Tag>
+        ) : (
+          <Text type="secondary">—</Text>
+        )
+      },
+    },
+    {
+      align: 'right',
+      key: 'metric',
+      title: t('documentFlow.columnQuantityWeight'),
+      width: 168,
+      render: (_, relation) => {
+        const metric = documentFlowEdgeMetricLabel(t, relation)
+        // 数量/重量缺失（后端只对四条明细链路填充）时渲染占位，不补 0
+        return metric ? (
+          <Text className="document-flow-list-metric">{metric}</Text>
+        ) : (
+          <Text type="secondary">—</Text>
+        )
+      },
+    },
+  ]
+
+  const rowClassName = (record: DocumentRow) =>
+    record.key === currentNodeKey ? 'document-flow-list-row-current' : ''
+
   return (
     <div className="document-flow-list">
       <section className="document-flow-list-section">
-        <Title className="document-flow-list-title" level={5}>
+        <Text className="document-flow-list-title" strong>
           {t('documentFlow.listGroupsTitle')}
-        </Title>
-        <div className="document-flow-list-groups">
-          {groups.map((group) => (
-            <DocumentFlowListGroupBlock
-              key={group.type}
-              currentNodeKey={currentNodeKey}
-              group={group}
-              t={t}
-            />
-          ))}
-        </div>
+        </Text>
+        <Table<DocumentRow>
+          className="document-flow-list-table document-flow-list-doc-table"
+          columns={columns}
+          dataSource={rows}
+          pagination={false}
+          rowClassName={rowClassName}
+          rowKey="key"
+          size="small"
+          scroll={{ y: 288 }}
+        />
       </section>
       <section className="document-flow-list-section">
-        <Title className="document-flow-list-title" level={5}>
+        <Text className="document-flow-list-title" strong>
           {t('documentFlow.listRelationsTitle')}
-        </Title>
-        <Card className="document-flow-list-relations-card" size="small">
-          {relations.length ? (
-            <ul className="document-flow-list-relations">
-              {relations.map((relation) => (
-                <DocumentFlowListRelationRow
-                  key={relation.key}
-                  relation={relation}
-                  t={t}
-                />
-              ))}
-            </ul>
-          ) : (
-            <Empty
-              className="document-flow-list-empty"
-              description={t('documentFlow.listRelationsEmpty')}
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-            />
-          )}
-        </Card>
+        </Text>
+        {relations.length ? (
+          <Table<DocumentFlowListRelation>
+            className="document-flow-list-table document-flow-list-relation-table"
+            columns={relationColumns}
+            dataSource={relations}
+            pagination={false}
+            rowKey="key"
+            size="small"
+            scroll={{ y: 200 }}
+          />
+        ) : (
+          <Empty
+            className="document-flow-list-empty"
+            description={t('documentFlow.listRelationsEmpty')}
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
+        )}
       </section>
     </div>
   )

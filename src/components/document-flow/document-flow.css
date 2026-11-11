@@ -237,8 +237,8 @@
   font-size: 11px;
 }
 
-/* ── 列表视图 ───────────────────────────────────────────────── */
-/* 外层只负责滚动：卡片自己提供边框与底色，再套一层容器边框就成"双框" */
+/* ── 列表视图（antd Table） ─────────────────────────────────── */
+/* 外层只负责滚动与分区间距：表格自带边框与表头 */
 .document-flow-list {
   display: flex;
   flex-direction: column;
@@ -254,91 +254,42 @@
   gap: var(--space-xs);
 }
 
-.document-flow-list-title.ant-typography {
-  margin: 0;
+.document-flow-list-title {
   font-size: 13px;
-}
-
-.document-flow-list-groups {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.document-flow-list-group-title {
-  font-size: 12px;
-}
-
-/* 行：Card 内部的一行可扫读记录（Card 负责边框与底色，行只负责 hover 与高亮） */
-.document-flow-list-rows,
-.document-flow-list-relations {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.document-flow-list-row,
-.document-flow-list-relation {
-  padding: 3px var(--space-xs);
-  border-radius: var(--ant-border-radius-sm, 4px);
-  font-size: 12px;
   line-height: 22px;
 }
 
-.document-flow-list-row:hover,
-.document-flow-list-relation:hover {
-  background: var(--ant-color-fill-secondary, rgba(0, 0, 0, 0.06));
+/* 表头压成 12px：弹层里空间紧，13-14px 表头会把数据行往下推 */
+.document-flow-list-table .ant-table-thead > tr > th {
+  font-size: 12px;
 }
 
-/* 当前查询单据：左侧主题色标记 + 保持与图视图一致的强调 */
-.document-flow-list-row-current {
-  background: var(--ant-color-fill-secondary, rgba(0, 0, 0, 0.06));
-  box-shadow: inset 2px 0 0 var(--theme-primary);
-}
-
-.document-flow-list-row-no,
-.document-flow-list-relation-no {
+/* 单号 / 数字统一等宽：单号是拿来比对的，比例字体会让每行长度不齐 */
+.document-flow-list-no {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
-.document-flow-list-row-status.ant-tag,
-.document-flow-list-relation-type.ant-tag {
-  margin-inline-end: 0;
-  padding-inline: 6px;
-  font-size: 10px;
-  line-height: 16px;
-}
-
-.document-flow-list-row-date {
+.document-flow-list-date,
+.document-flow-list-number,
+.document-flow-list-metric {
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
-.document-flow-list-row-badge.ant-tag {
-  margin-inline-end: 0;
-  padding-inline: 6px;
-  font-size: 10px;
-  line-height: 16px;
+/* 当前查询单据：整行浅底 + 左侧主题色标记（与图视图、时间线的当前节点同一含义） */
+.document-flow-list-table .ant-table-row.document-flow-list-row-current > td {
+  background: var(--ant-color-primary-bg, #e6f4ff);
+}
+
+.document-flow-list-table
+  .ant-table-row.document-flow-list-row-current
+  > td:first-child {
+  box-shadow: inset 2px 0 0 var(--theme-primary);
 }
 
 .document-flow-list-relation-arrow {
   color: var(--ant-color-text-quaternary, rgba(0, 0, 0, 0.45));
-}
-
-.document-flow-list-row-metric {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
-.document-flow-list-metric {
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
 }
 
 .document-flow-list-empty {

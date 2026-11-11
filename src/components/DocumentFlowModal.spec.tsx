@@ -59,6 +59,29 @@ describe('DocumentFlowModal', () => {
     ;(
       globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true
+    /*
+     * 列表视图用 antd `Table`：它按容器尺寸做列宽测量（ResizeObserver）与响应式断点
+     * （matchMedia），jsdom 都没有实现，不打桩会直接抛 TypeError。
+     */
+    if (!globalThis.ResizeObserver) {
+      globalThis.ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      } as unknown as typeof ResizeObserver
+    }
+    if (!window.matchMedia) {
+      window.matchMedia = (query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      })
+    }
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
@@ -350,7 +373,7 @@ describe('DocumentFlowModal', () => {
     expect(document.body.querySelector('.document-flow-list')).toBeNull()
   })
 
-  it('列表视图按类型分组：组头用「类型 · N 张」', async () => {
+  it('列表视图用表格呈现：类型/单号/状态/日期/金额/重量按列对齐', async () => {
     mockedGetDocumentFlow.mockResolvedValue({
       ...flow,
       nodes: [
@@ -380,27 +403,25 @@ describe('DocumentFlowModal', () => {
     await renderModal()
     clickViewSwitch('列表')
 
-    const groups = Array.from(
-      document.body.querySelectorAll('.document-flow-list-group'),
-    )
-    expect(groups).toHaveLength(2)
-    expect(
-      groups.map(
-        (group) =>
-          group.querySelector('.document-flow-list-group-title')?.textContent,
-      ),
-    ).toEqual(['采购单 · 1 张', '采购入库单 · 2 张'])
-    // 分组行内展示单号/状态/日期/金额/重量
+    // 表头来自 i18n（Type/No./Status/Date/Amount/Weight 六列）
+    const headers = Array.from(
+      document.body.querySelectorAll('.document-flow-list-doc-table thead th'),
+    ).map((th) => th.textContent)
+    expect(headers).toEqual(['类型', '单号', '状态', '日期', '金额', '重量'])
+
+    // 三类共三条单据，类型列用 Tag 标出（不再靠分组标题）
     const rows = Array.from(
-      document.body.querySelectorAll('.document-flow-list-row'),
+      document.body.querySelectorAll<HTMLTableRowElement>(
+        '.document-flow-list-doc-table tbody tr.ant-table-row',
+      ),
     )
     expect(rows).toHaveLength(3)
+    expect(rows[0]?.textContent).toContain('采购单')
     expect(rows[0]?.textContent).toContain('PO-1')
     expect(rows[0]?.textContent).toContain('已审核')
-    expect(rows[0]?.textContent).toContain('金额')
     // 与节点卡片同一口径：formatAmount（2 位小数、无千分位）
     expect(rows[0]?.textContent).toContain('1000.00')
-    // 当前单据行有标记
+    // 当前单据行有标记（整行高亮由 CSS 按这个类名命中）
     expect(
       document.body.querySelector('.document-flow-list-row-current'),
     ).not.toBeNull()
@@ -412,7 +433,9 @@ describe('DocumentFlowModal', () => {
     clickViewSwitch('列表')
 
     const [relation] = Array.from(
-      document.body.querySelectorAll('.document-flow-list-relation'),
+      document.body.querySelectorAll<HTMLTableRowElement>(
+        '.document-flow-list-relation-table tbody tr.ant-table-row',
+      ),
     )
     expect(relation?.textContent).toContain('PO-1')
     expect(relation?.textContent).toContain('IN-1')

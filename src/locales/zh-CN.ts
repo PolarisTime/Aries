@@ -2950,6 +2950,15 @@ export const zhCN = {
     viewTimeline: '时间线',
     listGroupsTitle: '单据（按类型）',
     listRelationsTitle: '单据关系',
+    /** 列表视图的列头（antd Table）；关系区另有 columnRelation。 */
+    columnType: '类型',
+    columnNo: '单号',
+    columnStatus: '状态',
+    columnDate: '日期',
+    columnRelation: '关系',
+    columnFromNo: '上游单号',
+    columnToNo: '下游单号',
+    columnQuantityWeight: '数量 / 重量',
     listRelationsEmpty: '暂无单据关系',
     /** 列表关系行里箭头（上游 → 下游）的可访问名。 */
     relationTo: '至',
