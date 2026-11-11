@@ -133,27 +133,35 @@ describe('采购订单明细列', () => {
     expect(column?.align).toBe('right')
   })
 
-  it('列表页在总金额后依次展示实际货值、差额与入库进度列', () => {
+  /*
+   * 「暂定 / 实际」互斥：未过磅时后端 totalActualAmount 为 null。
+   * 两列并列会让已结算的行同时挂「暂定」标签，因此合并成一列「金额」按状态渲染，
+   * 差额列紧跟在它后面。
+   */
+  it('列表页金额列按状态渲染，其后是差额与入库进度列', () => {
     const keys = purchaseOrdersPageConfig.columns.map((item) => item.dataIndex)
     const totalAmountIndex = keys.indexOf('totalAmount')
-    expect(keys.slice(totalAmountIndex, totalAmountIndex + 5)).toEqual([
+    expect(keys.slice(totalAmountIndex, totalAmountIndex + 4)).toEqual([
       'totalAmount',
-      'totalActualAmount',
       'totalAmountDifference',
       'totalReceivedQuantity',
       'totalRemainingQuantity',
     ])
+    // 独立「实际货值」列已并入金额列，不再出现在列表配置里
+    expect(keys).not.toContain('totalActualAmount')
   })
 
-  it('实际货值与差额均为右对齐金额列', () => {
-    const actual = purchaseOrdersPageConfig.columns.find(
-      (item) => item.dataIndex === 'totalActualAmount',
+  it('金额列由自定义渲染按状态出值，且与差额列同为右对齐金额列', () => {
+    const amount = purchaseOrdersPageConfig.columns.find(
+      (item) => item.dataIndex === 'totalAmount',
     )
     const difference = purchaseOrdersPageConfig.columns.find(
       (item) => item.dataIndex === 'totalAmountDifference',
     )
-    expect(actual?.type).toBe('amount')
-    expect(actual?.align).toBe('right')
+    // 一列承载两个口径 → 必须走渲染函数，否则只能显示暂定值
+    expect(typeof amount?.render).toBe('function')
+    expect(amount?.type).toBe('amount')
+    expect(amount?.align).toBe('right')
     expect(difference?.type).toBe('amount')
     expect(difference?.align).toBe('right')
   })
@@ -180,9 +188,9 @@ describe('采购订单明细列', () => {
     expect(difference?.width).toBeGreaterThanOrEqual(150)
   })
 
-  it('实际货值、差额与入库进度列默认可见', () => {
+  it('金额、差额与入库进度列默认可见', () => {
     const hidden = purchaseOrdersPageConfig.defaultHiddenColumnKeys ?? []
-    expect(hidden).not.toContain('totalActualAmount')
+    expect(hidden).not.toContain('totalAmount')
     expect(hidden).not.toContain('totalAmountDifference')
     expect(hidden).not.toContain('totalReceivedQuantity')
   })

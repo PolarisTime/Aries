@@ -37,16 +37,46 @@ export function buildPurchaseOrderOverview(rows: ModuleRecord[]) {
   return buildAmountWeightOverview(rows, 'totalAmount')
 }
 
-/** 「总金额」列：暂定金额（按暂定件重计）后附「暂定」标签，说明该金额用于打款。 */
-export function renderPurchaseOrderTotalAmount(
+/**
+ * 「金额」列：**暂定与实际是互斥的两个状态**，一列按状态显示其一。
+ *
+ * <p>未入库/未过磅时后端 `totalActualAmount` 为 null（见 `PurchaseOrderResponse.applyDifference`），
+ * 此时列表展示「总金额」（按暂定件重计，用于打款）并挂橙色「暂定」标签；
+ * 一旦过磅，`totalActualAmount` 有值，该值就是结算口径，直接显示它、不再挂暂定标签。</p>
+ *
+ * <p>此前是两列并列：总金额**永远**带「暂定」标签（即使已结算），实际货值单独一列，
+ * 同一行看起来既暂定又实际，语义自相矛盾，还多占约 110px 宽度。合并后保留 tooltip
+ * 让用户仍能看到两个口径的原始数字。</p>
+ */
+export function renderPurchaseOrderAmount(
   value: unknown,
+  record: ModuleRecord,
 ): React.ReactNode {
-  const numericValue = toFiniteOrNull(value)
-  const amount = numericValue === null ? '-' : formatAmount(numericValue)
+  const actualAmount = toFiniteOrNull(record.totalActualAmount)
+  const provisionalAmount = toFiniteOrNull(value)
+  if (actualAmount !== null) {
+    return React.createElement(
+      'span',
+      {
+        className: 'purchase-order-actual-amount',
+        title:
+          provisionalAmount === null
+            ? undefined
+            : i18next.t('modules.pages.purchaseOrder.colAmountHint', {
+                provisional: formatAmount(provisionalAmount),
+                actual: formatAmount(actualAmount),
+              }),
+      },
+      formatAmount(actualAmount),
+    )
+  }
+  if (provisionalAmount === null) {
+    return '-'
+  }
   return React.createElement(
     'span',
     { className: 'purchase-order-provisional-amount' },
-    amount,
+    formatAmount(provisionalAmount),
     React.createElement(
       Tag,
       {
@@ -57,14 +87,6 @@ export function renderPurchaseOrderTotalAmount(
       i18next.t('modules.pages.purchaseOrder.provisionalAmountTag'),
     ),
   )
-}
-
-/** 「实际货值」列：过磅实际重×单价汇总，空值兜底为短横线。 */
-export function renderPurchaseOrderActualAmount(
-  value: unknown,
-): React.ReactNode {
-  const numericValue = toFiniteOrNull(value)
-  return numericValue === null ? '-' : formatAmount(numericValue)
 }
 
 /** 「差额」列：正数=需补款（红），负数=需退款（绿），零/空=不显示标识。 */

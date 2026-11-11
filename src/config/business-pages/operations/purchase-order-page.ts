@@ -20,11 +20,10 @@ import { resolveModuleItemColumnConfig } from '../shared/shared-item-column-util
 import { statusMap as sharedStatusMap } from '../shared/shared-status'
 import {
   buildPurchaseOrderOverview,
-  renderPurchaseOrderActualAmount,
+  renderPurchaseOrderAmount,
   renderPurchaseOrderAmountDifference,
   renderPurchaseOrderNo,
   renderPurchaseOrderReceiptProgress,
-  renderPurchaseOrderTotalAmount,
   renderPurchaseOrderWeightVariance,
 } from './purchase-order-rules'
 import { renderDerivedQuantity } from './sales-order-rules'
@@ -224,20 +223,18 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       type: 'weight',
     },
     {
-      title: i18next.t('modules.columns.totalAmount'),
+      /*
+       * 「金额」一列按状态显示：未过磅=暂定总金额（带橙色标签），已过磅=实际货值。
+       * 暂定与实际互斥（后端 totalActualAmount 未过磅时为 null），此前两列并列会让
+       * 已结算的行同时挂着「暂定」标签，语义矛盾且多占 110px。
+       * dataIndex 仍取 totalAmount：未过磅行按它排序，已过磅行由渲染函数改读实际值。
+       */
+      title: i18next.t('modules.pages.purchaseOrder.colAmount'),
       dataIndex: 'totalAmount',
-      width: 110,
+      width: 150,
       align: 'right',
       type: 'amount',
-      render: renderPurchaseOrderTotalAmount,
-    },
-    {
-      title: i18next.t('modules.pages.purchaseOrder.colActualAmount'),
-      dataIndex: 'totalActualAmount',
-      width: 116,
-      align: 'right',
-      type: 'amount',
-      render: renderPurchaseOrderActualAmount,
+      render: renderPurchaseOrderAmount,
     },
     {
       title: i18next.t('modules.pages.purchaseOrder.colAmountDifference'),

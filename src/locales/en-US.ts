@@ -1847,6 +1847,8 @@ export const enUS = {
         colOrderDate: 'Order Date',
         formTotalWeight: 'Total Weight (ton)',
         formTotalAmount: 'Total Amount',
+        colAmount: 'Amount',
+        colAmountHint: 'Provisional {{provisional}} / Actual {{actual}}',
         colActualAmount: 'Actual Amount',
         colAmountDifference: 'Difference (Adjust)',
         colReceiptProgress: 'Receipt Progress',

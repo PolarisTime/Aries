@@ -3,11 +3,10 @@ import { describe, expect, it } from 'vitest'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   buildPurchaseOrderOverview,
-  renderPurchaseOrderActualAmount,
+  renderPurchaseOrderAmount,
   renderPurchaseOrderAmountDifference,
   renderPurchaseOrderNo,
   renderPurchaseOrderReceiptProgress,
-  renderPurchaseOrderTotalAmount,
   renderPurchaseOrderWeightVariance,
 } from './purchase-order-rules'
 
@@ -85,17 +84,33 @@ function elementTitle(node: unknown): string {
 }
 
 describe('采购订单金额与进度派生渲染', () => {
-  it('总金额渲染附带「暂定」标签', () => {
-    const node = renderPurchaseOrderTotalAmount(1234.5)
+  /*
+   * 「金额」一列按状态显示：暂定与实际互斥。
+   * 未过磅时后端 totalActualAmount 为 null → 显示暂定总金额 + 「暂定」标签；
+   * 过磅后 → 直接显示实际货值，不再挂暂定标签。
+   */
+  it('未过磅：显示暂定总金额并附「暂定」标签', () => {
+    const node = renderPurchaseOrderAmount(1234.5, {} as never)
     expect(collectText(node)).toContain('1234.50')
     expect(collectText(node)).toContain('暂定')
   })
 
-  it('实际货值按金额格式化，空值回落短横线', () => {
-    expect(renderPurchaseOrderActualAmount(2000)).toBe('2000.00')
-    expect(renderPurchaseOrderActualAmount('2500.5')).toBe('2500.50')
-    expect(renderPurchaseOrderActualAmount(null)).toBe('-')
-    expect(renderPurchaseOrderActualAmount(undefined)).toBe('-')
+  it('已过磅：显示实际货值且不再带「暂定」标签', () => {
+    const node = renderPurchaseOrderAmount(1234.5, {
+      totalActualAmount: 1200.5,
+    } as never)
+    expect(collectText(node)).toBe('1200.50')
+    expect(collectText(node)).not.toContain('暂定')
+    expect(collectText(node)).not.toContain('1234.50')
+  })
+
+  it('两个口径都缺失时回落短横线', () => {
+    expect(renderPurchaseOrderAmount(null, {} as never)).toBe('-')
+    expect(
+      renderPurchaseOrderAmount(undefined, {
+        totalActualAmount: null,
+      } as never),
+    ).toBe('-')
   })
 
   it('差额正数显示需补款标识，负数显示需退款标识并取绝对值', () => {

@@ -1847,6 +1847,9 @@ export const zhCN = {
         colOrderDate: '订单日期',
         formTotalWeight: '总重量（吨）',
         formTotalAmount: '总金额',
+        /** 「金额」列按状态显示实际货值或暂定总金额（两者互斥） */
+        colAmount: '金额',
+        colAmountHint: '暂定 {{provisional}} / 实际 {{actual}}',
         colActualAmount: '实际货值',
         colAmountDifference: '差额(补退)',
         colReceiptProgress: '入库进度',
