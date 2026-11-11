@@ -10,6 +10,7 @@ import {
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
 import { useModuleDisplaySupport } from '@/hooks/useModuleDisplaySupport'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
+import type { ModuleColumnType } from '@/types/module-page-fields'
 
 /**
  * 「明细按钮列」的列 id 与列宽。
@@ -38,6 +39,14 @@ declare module '@tanstack/react-table' {
      * 首列整列滚出视野(实测 `firstCellLeft = -317`)。</p>
      */
     fixed?: 'left' | 'right'
+    /**
+     * 列的业务类型：`amount/weight/count/date/datetime/status/boolean` 这些短值列
+     * 默认不允许省略（见 `utils/table-column-ellipsis`），必须随 meta 透传到 antd 列，
+     * 否则 `buildAntdColumns` 拿不到类型、只能一律省略。
+     */
+    type?: ModuleColumnType
+    /** 列配置显式声明的省略策略，优先级高于类型默认值。 */
+    ellipsis?: boolean
     renderCell?: (record: ModuleRecord) => ReactNode
   }
 }
@@ -72,6 +81,8 @@ export function useGridColumns({
       meta: {
         width: colDef.width ? `${colDef.width}px` : '120px',
         align: 'center',
+        type: colDef.type,
+        ellipsis: colDef.ellipsis,
         renderCell: (record: ModuleRecord) => {
           const value = record[colDef.dataIndex]
           if (colDef.type === 'status') {

@@ -70,7 +70,7 @@ describe('buildParentSelectorDataColumns', () => {
     expect(columns.map((column) => column.dataIndex)).not.toContain('buyerName')
   })
 
-  it('金额/重量列右对齐，其余列居中，均带 ellipsis', () => {
+  it('金额/重量列右对齐，其余列居中；短值列不省略、文本列省略', () => {
     const columns = toPlainColumns(
       buildParentSelectorDataColumns({
         parentModuleKey: 'purchase-order',
@@ -82,7 +82,15 @@ describe('buildParentSelectorDataColumns', () => {
     expect(byKey.get('totalAmount')?.align).toBe('right')
     expect(byKey.get('totalWeight')?.align).toBe('right')
     expect(byKey.get('orderNo')?.align).toBe('center')
+    // 文本列（单号/供应商/采购员）省略，全文进 title
     expect(byKey.get('orderNo')?.ellipsis).toBe(true)
+    /*
+     * 短值列不许省略：截断后的日期是错的（2026-11…），截断后的金额比不了大小。
+     * 判据与列表主表、明细表同源（utils/table-column-ellipsis）。
+     */
+    for (const key of ['orderDate', 'totalWeight', 'totalAmount', 'status']) {
+      expect(byKey.get(key)?.ellipsis).toBe(false)
+    }
   })
 
   it('日期列渲染为中文日期', () => {

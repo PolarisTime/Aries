@@ -17,6 +17,7 @@ import type {
   ModuleParentImportDefinition,
   ModuleRecord,
 } from '@/types/module-page'
+import { shouldEllipsizeColumn } from '@/utils/table-column-ellipsis'
 import { resolveVisibleParentSelectorColumns } from '../module-parent-selector-utils'
 import type {
   ParentSelectorFormatCellValue,
@@ -316,7 +317,8 @@ export function buildParentSelectorDataColumns({
     dataIndex: column.dataIndex,
     title: column.title,
     width: column.width,
-    ellipsis: true,
+    /* 短值列（金额/重量/日期/状态）不省略：截断后的日期是错的、截断后的金额比不了大小 */
+    ellipsis: shouldEllipsizeColumn(column),
     align:
       column.type === 'amount' || column.type === 'weight' ? 'right' : 'center',
     render: (value: unknown, record: ModuleRecord) => {

@@ -34,6 +34,7 @@ import type {
 } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
 import { confirmDanger } from '@/utils/confirm-danger'
+import { shouldEllipsizeColumn } from '@/utils/table-column-ellipsis'
 import {
   mergeColumnOrder,
   moveColumnKey,
@@ -144,7 +145,11 @@ function buildAntdColumns({
         fixed: columnDef.meta?.fixed,
         width: columnDef.meta?.width,
         align: 'center',
-        ellipsis: true,
+        /* 短值列（金额/重量/数量/日期/状态）不省略，见 utils/table-column-ellipsis */
+        ellipsis: shouldEllipsizeColumn({
+          type: columnDef.meta?.type,
+          ellipsis: columnDef.meta?.ellipsis,
+        }),
         render: (_: unknown, record: ModuleRecord) => {
           return columnDef.meta?.renderCell?.(record) ?? null
         },
