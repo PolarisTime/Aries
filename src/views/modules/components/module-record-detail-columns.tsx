@@ -53,6 +53,8 @@ export function buildDetailItemColumns({
         ? 'module-detail-table-cell--numeric'
         : undefined,
     align: column.align || 'center',
+    /* 与编辑器明细表同一口径：短枚举/数值列不省略，长文本列省略并保留 title 全文。 */
+    ellipsis: column.ellipsis ?? true,
     render: (value: unknown, record: ModuleLineItem) => {
       if (
         column.dataIndex === 'pieceWeightTon' &&

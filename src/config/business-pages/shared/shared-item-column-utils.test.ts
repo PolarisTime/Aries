@@ -30,9 +30,16 @@ describe('resolveItemColumns', () => {
       { dataIndex: 'length', required: false },
       { dataIndex: 'unit', required: true },
     ])
-    // 宽度/对齐/类型来自公共目录
-    expect(columns[0]).toMatchObject({ width: 68, align: 'center' })
-    expect(columns[4].width).toBe(64)
+    /*
+     * 宽度/对齐/类型/省略与否都来自公共目录。品牌 76（「盘螺调直」实测 49 + 24）、
+     * 长度 76（「12米定尺」实测 50 + 24），且短枚举列显式不省略。
+     */
+    expect(columns[0]).toMatchObject({
+      width: 76,
+      align: 'center',
+      ellipsis: false,
+    })
+    expect(columns[4].width).toBe(76)
     expect(resolveItemColumns({ include: ['weightTon'] })[0]).toMatchObject({
       editor: {
         control: 'number',

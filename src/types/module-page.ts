@@ -158,6 +158,8 @@ export interface ModuleColumnOverride {
   width?: number
   align?: ModuleColumnDefinition['align']
   type?: ModuleColumnDefinition['type']
+  /** 覆盖目录声明的「放不下是否省略」；缺省沿用目录。 */
+  ellipsis?: boolean
   editor?: Partial<TradeLineItemEditorSemantics>
   /** 模块级自定义单元格渲染（如红字金额负数红色），仅覆盖本模块字段。 */
   render?: (value: unknown) => ReactNode

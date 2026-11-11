@@ -135,9 +135,12 @@ function resolveColumns<PrivateKey extends string>(
     const width = override?.width ?? spec.width
     const align = override?.align ?? spec.align
     const type = override?.type ?? spec.type
+    /* 省略与否同样只认目录（+ 模块 override），编辑器表与只读明细表共用这一份。 */
+    const ellipsis = override?.ellipsis ?? spec.ellipsis
     if (width !== undefined) column.width = width
     if (align !== undefined) column.align = align
     if (type !== undefined) column.type = type
+    if (ellipsis !== undefined) column.ellipsis = ellipsis
     if (mergedEditor !== undefined) column.editor = mergedEditor
     if (override?.render) column.render = override.render
     if (requiredSet.has(key)) column.required = true

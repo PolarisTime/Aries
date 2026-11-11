@@ -477,7 +477,8 @@ export function buildModuleEditorDataColumns({
       key: column.dataIndex,
       width: resolveEditorItemColumnWidth(column),
       align: column.align || 'center',
-      ellipsis: true,
+      /* 省略与否由解析后的列决定（唯一来源：明细字段目录），这里只兜默认值。 */
+      ellipsis: column.ellipsis ?? true,
       render: (value: unknown, record: ModuleLineItem) =>
         customRender && !isItemColumnEditable(column.dataIndex, record)
           ? customRender(value, record)

@@ -134,6 +134,15 @@ export interface ModuleColumnDefinition {
   width?: number
   align?: 'left' | 'center' | 'right'
   type?: ModuleColumnType
+  /**
+   * 放不下时是否允许用省略号截断；**默认 true**。
+   *
+   * <p>短枚举与数值列（品牌/类别/材质/规格/长度/单位/数量/数量单位/件重/重量/单价/金额）
+   * 由明细字段目录声明 `false`：这些值用于一眼比对，截断后既读不出也比不了大小；
+   * 放不下就让表格横向滚动，而不是压列。长度类长文本（项目名/客户名/商品名/来源单号）
+   * 保持默认 true，由 antd 把全文写进 title。</p>
+   */
+  ellipsis?: boolean
   required?: boolean
   editor?: TradeLineItemEditorSemantics
   render?: (value: unknown, record: ModuleRecord) => ReactNode

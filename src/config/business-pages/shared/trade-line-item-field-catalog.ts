@@ -28,6 +28,16 @@ export interface TradeLineItemFieldSpec {
   width: number
   align?: 'left' | 'center' | 'right'
   type?: ModuleColumnType
+  /**
+   * 放不下时是否允许用省略号截断。**默认 true**（长文本列省略并保留 title 全文）。
+   *
+   * <p>短枚举与数值列必须显式 `false`：品牌/类别/材质/规格/长度/单位/数量/数量单位/
+   * 件重/重量/单价/金额这些值本身就是"一眼要比对"的短字符串或数字，截断后
+   * 「盘螺调直」变「盘螺…」、「12345678.90」变「123456…」既读不出含义也比不了大小。
+   * 不许它们换行或省略，宽度不够就让表格横向滚动（`ModuleItemsTable` 的 `scroll.x`
+   * 恒等于列宽合计，天然会出滚动条）。</p>
+   */
+  ellipsis?: boolean
   /** 编辑器控件与基础编辑语义，由解析器透传给明细编辑器 */
   editor?: TradeLineItemEditorSemantics
 }
@@ -79,7 +89,8 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
   brand: {
     key: 'brand',
     labelKey: 'modules.columns.brand',
-    width: 68,
+    width: 76,
+    ellipsis: false,
     align: 'center',
     editor: { control: 'text' },
   },
@@ -87,13 +98,15 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     key: 'category',
     labelKey: 'modules.columns.category',
     width: 58,
+    ellipsis: false,
     align: 'center',
     editor: { control: 'text' },
   },
   material: {
     key: 'material',
     labelKey: 'modules.columns.material',
-    width: 76,
+    width: 84,
+    ellipsis: false,
     align: 'center',
     editor: { control: 'text' },
   },
@@ -101,13 +114,15 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     key: 'spec',
     labelKey: 'modules.columns.spec',
     width: 72,
+    ellipsis: false,
     align: 'center',
     editor: { control: 'text' },
   },
   length: {
     key: 'length',
     labelKey: 'modules.columns.length',
-    width: 64,
+    width: 76,
+    ellipsis: false,
     align: 'center',
     editor: { control: 'text' },
   },
@@ -115,6 +130,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     key: 'unit',
     labelKey: 'modules.columns.unit',
     width: 56,
+    ellipsis: false,
     align: 'center',
     editor: { control: 'text' },
   },
@@ -122,6 +138,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     key: 'piecesPerBundle',
     labelKey: 'modules.columns.piecesPerBundle',
     width: 76,
+    ellipsis: false,
     align: 'center',
     type: 'count',
     editor: { control: 'number', min: 0, controls: true },
@@ -141,7 +158,8 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
   quantity: {
     key: 'quantity',
     labelKey: 'modules.columns.quantity',
-    width: 70,
+    width: 80,
+    ellipsis: false,
     align: 'center',
     type: 'count',
     editor: { control: 'number', min: 0, controls: false },
@@ -149,7 +167,8 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
   quantityUnit: {
     key: 'quantityUnit',
     labelKey: 'modules.columns.quantityUnit',
-    width: 64,
+    width: 76,
+    ellipsis: false,
     align: 'center',
     editor: { control: 'text' },
   },
@@ -157,6 +176,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     key: 'pieceWeightTon',
     labelKey: 'modules.columns.pieceWeightTon',
     width: 76,
+    ellipsis: false,
     align: 'center',
     type: 'weight',
     editor: { control: 'number', precision: 8, min: 0, controls: false },
@@ -165,6 +185,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     key: 'weightTon',
     labelKey: 'modules.columns.weightTon',
     width: 108,
+    ellipsis: false,
     align: 'center',
     type: 'weight',
     editor: { control: 'number', precision: 8, min: 0, controls: false },
@@ -173,6 +194,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     key: 'settlementMode',
     labelKey: 'modules.columns.settlementMode',
     width: 76,
+    ellipsis: false,
     align: 'center',
     editor: { control: 'settlementMode' },
   },
@@ -180,6 +202,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     key: 'weighWeightTon',
     labelKey: 'modules.columns.weighWeight',
     width: 86,
+    ellipsis: false,
     align: 'center',
     type: 'weight',
     editor: {
@@ -193,6 +216,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     key: 'weightAdjustmentTon',
     labelKey: 'modules.columns.weightAdjustmentTon',
     width: 106,
+    ellipsis: false,
     align: 'center',
     type: 'weight',
     editor: { control: 'number', precision: 8, controls: true },
@@ -201,6 +225,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     key: 'weightAdjustmentAmount',
     labelKey: 'modules.columns.weightAdjustmentAmount',
     width: 90,
+    ellipsis: false,
     align: 'center',
     type: 'amount',
     editor: { control: 'number', precision: 2, controls: true },
@@ -209,6 +234,7 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
     key: 'actualWeightTon',
     labelKey: 'modules.columns.weighWeight',
     width: 96,
+    ellipsis: false,
     align: 'center',
     type: 'weight',
     editor: {
@@ -221,7 +247,8 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
   unitPrice: {
     key: 'unitPrice',
     labelKey: 'modules.columns.unitPrice',
-    width: 86,
+    width: 92,
+    ellipsis: false,
     align: 'center',
     type: 'amount',
     editor: { control: 'number', precision: 2, min: 0, controls: false },
@@ -229,7 +256,8 @@ export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
   amount: {
     key: 'amount',
     labelKey: 'modules.columns.amount',
-    width: 90,
+    width: 100,
+    ellipsis: false,
     align: 'center',
     type: 'amount',
     editor: { control: 'number', precision: 2, min: 0, controls: true },
