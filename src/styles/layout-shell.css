@@ -2458,12 +2458,18 @@
 }
 
 /*
- * 字段名固定轨道宽度：「客户名称」和「单据状态」字数不同，不固定的话同一列里
- * 控件起点会差几个字。104px ≈ 中文 5 字 + 冒号留白（另有 6 字标签用省略号收）。
+ * 字段名固定轨道 + **右对齐**。
+ *
+ * 依据（表单标签对齐方式的通行结论）：一行放多个条件时，左对齐会让控件起点随标签
+ * 字数跳动，眼睛要在标签与控件之间来回找；右对齐后同一列的控件左边缘是一条直线，
+ * 标签的右边缘也连成一条线，扫视路径最短。顶对齐虽然更快，但会把筛选区高度翻倍。
+ *
+ * 轨道宽度取 104px（中文 5 字 + 冒号留白），超出的标签用省略号收，不换行。
  */
 .module-filter-field > .module-filter-field-label {
   flex: 0 0 var(--module-filter-label-width, 104px);
   overflow: hidden;
+  text-align: right;
   text-overflow: ellipsis;
 }
 
@@ -2513,23 +2519,23 @@
 }
 
 /*
- * 日期区间占两列后不要跟着拉满：控件拉到 ~660px 时两端日期会隔着半个屏幕，
- * 读起来像两个独立输入框。限宽 480px 既保留「占两格」的视觉分量，
- * 又不至于在控件右侧留下大片空白。
+ * 日期区间占两列就让它吃满两列：限宽会在控件右侧留一条空白，
+ * 而「单据状态」就排在这条空白后面，看起来像少了一个字段。
  */
 .module-filter-field-range > .ant-picker,
 .module-filter-field-range > .module-filter-control {
-  max-width: 480px;
+  max-width: none;
 }
 
 /*
- * 日期区间的标签不占 104px 固定轨道：区间控件本身要放两个完整日期 + 箭头，
- * 共用大标签轨道会把控件压到 ~240px，日期被截成「2026年08月1」。
- * 这里让标签按字数自然宽（约 56px），把宽度让给日期。
+ * 日期区间也走同一条 104px 标签轨道：单独按字数自然宽会让它所在列的控件起点
+ * 比相邻列偏左 50px，一眼就能看出没对齐。占 2 列后控件仍剩 ~560px，两个完整日期放得下。
  */
 .module-filter-field-range > .module-filter-field-label {
-  flex: 0 0 auto;
-  overflow: visible;
+  flex: 0 0 var(--module-filter-label-width, 104px);
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
 }
 
 .module-filter-field .ant-picker {
