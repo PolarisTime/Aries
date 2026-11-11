@@ -1304,6 +1304,19 @@ export const zhCN = {
     },
     editorForm: {
       documentInfo: '单据信息',
+      /**
+       * 多步录入向导（配置了 `formSteps` 的模块才用到）。
+       * 步骤标题是**通用三段**：对方与主体 / 金额与账户 / 凭证与确认 ——
+       * 收付款单与后续单据共用同一套措辞，避免每个模块各写一遍。
+       */
+      wizard: {
+        stepParty: '对方与主体',
+        stepAmount: '金额与账户',
+        stepAttachment: '凭证与确认',
+        previous: '上一步',
+        next: '下一步',
+        progress: '第 {{current}} / {{total}} 步',
+      },
     },
     parentSelector: {
       title: '选择父单据',

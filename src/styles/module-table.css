@@ -391,6 +391,24 @@
   margin-bottom: var(--space-xs);
 }
 
+/*
+ * 多步录入向导（配置了 `formSteps` 的模块：收款单 / 付款单）。
+ * 步骤条与导航条都贴着字段区，用 8/16 的间距阶梯，和字段行距一致。
+ */
+.editor-form-wizard-steps {
+  margin-bottom: var(--space-md);
+}
+
+/*
+ * 导航条与字段区之间留 16px，并加一条上分隔线：下面紧接着是弹层底部的
+ * 「保存 / 保存并审核」，没有这条线时两排按钮会连成一片分不清主次。
+ */
+.editor-form-wizard-nav {
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--theme-border-subtle);
+}
+
 .editor-form-shell {
   margin-bottom: var(--space-md);
 }

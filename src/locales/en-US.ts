@@ -1296,6 +1296,15 @@ export const enUS = {
     },
     editorForm: {
       documentInfo: 'Document Info',
+      /* Multi-step entry wizard: only modules that declare `formSteps` use it. */
+      wizard: {
+        stepParty: 'Party & entity',
+        stepAmount: 'Amount & account',
+        stepAttachment: 'Voucher & confirm',
+        previous: 'Previous',
+        next: 'Next',
+        progress: 'Step {{current}} of {{total}}',
+      },
     },
     parentSelector: {
       title: 'Select Parent Document',

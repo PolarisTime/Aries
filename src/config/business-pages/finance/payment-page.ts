@@ -240,9 +240,26 @@ export const paymentsPageConfig: ModulePageConfig = {
       fullRow: true,
     },
   ],
+  /*
+   * 多步录入向导：对方与主体 → 金额与账户 → 凭证与确认。
+   * 三段是「这笔钱跟谁有关 / 多少钱进哪个账户 / 凭什么入账」的自然顺序，
+   * 与收款单同构（付款单只少了「关联合同项目」）。
+   */
+  formSteps: [
+    {
+      title: i18next.t('modules.editorForm.wizard.stepParty'),
+    },
+    {
+      title: i18next.t('modules.editorForm.wizard.stepAmount'),
+    },
+    {
+      title: i18next.t('modules.editorForm.wizard.stepAttachment'),
+    },
+  ],
   formFields: [
     {
       key: 'paymentNo',
+      formStep: 1,
       label: i18next.t('modules.pages.payment.paymentNo'),
       type: 'input',
       required: true,
@@ -250,6 +267,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       key: 'counterpartyType',
+      formStep: 1,
       label: i18next.t('modules.pages.payment.businessType'),
       type: 'select',
       required: true,
@@ -263,6 +281,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       key: 'counterpartyId',
+      formStep: 1,
       label: i18next.t('modules.pages.payment.counterparty'),
       type: 'select',
       required: true,
@@ -272,6 +291,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       key: 'settlementCompanyId',
+      formStep: 1,
       label: i18next.t('modules.pages.payment.settlementCompany'),
       type: 'select',
       required: true,
@@ -281,6 +301,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       key: 'paymentDate',
+      formStep: 2,
       label: i18next.t('modules.pages.payment.paymentDate'),
       type: 'date',
       required: true,
@@ -288,6 +309,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       key: 'payType',
+      formStep: 2,
       label: i18next.t('modules.pages.payment.payType'),
       type: 'select',
       required: true,
@@ -306,6 +328,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       key: 'amount',
+      formStep: 2,
       label: i18next.t('modules.pages.payment.amount'),
       type: 'number',
       required: true,
@@ -315,6 +338,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       key: 'accountId',
+      formStep: 2,
       label: i18next.t('modules.columns.account'),
       type: 'select',
       required: true,
@@ -339,6 +363,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       key: 'operatorName',
+      formStep: 2,
       label: i18next.t('modules.pages.payment.operator'),
       type: 'input',
       required: true,
@@ -346,6 +371,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       key: 'remark',
+      formStep: 3,
       label: i18next.t('modules.pages.payment.remark'),
       type: 'textarea',
       row: 6,
@@ -353,6 +379,7 @@ export const paymentsPageConfig: ModulePageConfig = {
     },
     {
       key: 'attachments',
+      formStep: 3,
       label: i18next.t('modules.filter.receiptVoucher'),
       type: 'upload',
       /*

@@ -247,9 +247,26 @@ export const receiptsPageConfig: ModulePageConfig = {
       fullRow: true,
     },
   ],
+  /*
+   * 多步录入向导：对方与主体 → 金额与账户 → 凭证与确认。
+   * 三段是「这笔钱跟谁有关 / 多少钱进哪个账户 / 凭什么入账」的自然顺序，
+   * 与收款单同构（付款单只少了「关联合同项目」）。
+   */
+  formSteps: [
+    {
+      title: i18next.t('modules.editorForm.wizard.stepParty'),
+    },
+    {
+      title: i18next.t('modules.editorForm.wizard.stepAmount'),
+    },
+    {
+      title: i18next.t('modules.editorForm.wizard.stepAttachment'),
+    },
+  ],
   formFields: [
     {
       key: 'receiptNo',
+      formStep: 1,
       label: i18next.t('modules.pages.receipt.receiptNo'),
       type: 'input',
       required: true,
@@ -257,6 +274,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'counterpartyType',
+      formStep: 1,
       label: i18next.t('modules.filter.counterpartyType'),
       type: 'select',
       required: true,
@@ -276,6 +294,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'counterpartyId',
+      formStep: 1,
       label: i18next.t('modules.filter.counterparty'),
       type: 'select',
       required: true,
@@ -285,6 +304,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'settlementCompanyId',
+      formStep: 1,
       label: SETTLEMENT_COMPANY_LABEL,
       type: 'select',
       required: true,
@@ -294,6 +314,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'receiptDate',
+      formStep: 2,
       label: i18next.t('modules.pages.receipt.receiptDate'),
       type: 'date',
       required: true,
@@ -301,6 +322,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'payType',
+      formStep: 2,
       label: i18next.t('modules.pages.receipt.receiptMethod'),
       type: 'select',
       required: true,
@@ -323,6 +345,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'amount',
+      formStep: 2,
       label: i18next.t('modules.pages.receipt.amount'),
       type: 'number',
       required: true,
@@ -332,6 +355,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'accountId',
+      formStep: 2,
       label: i18next.t('modules.columns.account'),
       type: 'select',
       required: true,
@@ -359,6 +383,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'projectId',
+      formStep: 1,
       label: i18next.t('modules.filter.relatedContractProject'),
       type: 'select',
       options: getCustomerProjectOptions,
@@ -367,6 +392,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'operatorName',
+      formStep: 2,
       label: i18next.t('modules.pages.receipt.operator'),
       type: 'input',
       required: true,
@@ -374,6 +400,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'remark',
+      formStep: 3,
       label: i18next.t('modules.pages.receipt.remark'),
       type: 'textarea',
       row: 6,
@@ -381,6 +408,7 @@ export const receiptsPageConfig: ModulePageConfig = {
     },
     {
       key: 'attachments',
+      formStep: 3,
       label: i18next.t('modules.filter.receiptVoucher'),
       type: 'upload',
       row: 7,

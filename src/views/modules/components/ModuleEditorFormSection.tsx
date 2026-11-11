@@ -1,4 +1,17 @@
-import { Alert, Col, Divider, Form, Row, Typography } from 'antd'
+import { LeftOutlined, RightOutlined } from '@ant-design/icons'
+import {
+  Alert,
+  Button,
+  Col,
+  Divider,
+  Flex,
+  Form,
+  Row,
+  Space,
+  Steps,
+  Typography,
+} from 'antd'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ProjectOption } from '@/api/master/project-options'
 import { isEditorFieldDisabledForModule } from '@/module-system/adapter/module-adapter-editor'
@@ -105,6 +118,32 @@ export function ModuleEditorFormSection({
         usesSnowflakeBusinessNo(moduleKey, config.primaryNoKey)
       ),
   )
+  /*
+   * 多步录入向导：只有页面声明了 `formSteps` 才启用（收款单 / 付款单）。
+   * 未声明的模块走原来的单页表单，DOM 与行为完全不变。
+   *
+   * <p>分步用**条件渲染**而不是 CSS 隐藏：未挂载的字段 antd 默认 `preserve` 仍保留其值，
+   * 因此在任意一步保存时 `validateFields()` 依旧能校验到全部步骤；而 DOM 里只留当前步，
+   * 屏幕阅读器与 Tab 键不会跑进看不见的字段。</p>
+   */
+  const steps = config.formSteps ?? []
+  const isWizard = steps.length > 0
+  const [currentStep, setCurrentStep] = useState(0)
+  const isLastStep = currentStep === steps.length - 1
+  /* 当前步实际挂载的字段（visibleFields 已按 visibleWhen / 自动单号规则过滤过）。 */
+  const stepFields = isWizard
+    ? visibleFields.filter((field) => field.formStep === currentStep + 1)
+    : visibleFields
+  /* 「下一步」只校验本步：不提前报后面步骤的错误。 */
+  const goNext = async () => {
+    try {
+      await form.validateFields(stepFields.map((field) => field.key))
+      setCurrentStep((step) => Math.min(step + 1, steps.length - 1))
+    } catch {
+      /* 校验失败时 antd 已在字段下方给出提示，这里不再重复 toast */
+    }
+  }
+
   if (!visibleFields.length) {
     return null
   }
@@ -115,8 +154,36 @@ export function ModuleEditorFormSection({
     ...(config.sourceNoKeys ?? []),
   ].filter((key): key is string => Boolean(key))
   const formFieldGroups = groupFieldsBySection(
-    moveDocumentNoFieldsToSectionEnd(visibleFields, documentNoKeys),
+    moveDocumentNoFieldsToSectionEnd(stepFields, documentNoKeys),
   )
+  /*
+   * 向导模式下按 colSpan 重新打包每行：`groupFieldsByRow` 依赖字段声明的 `row`，
+   * 而 `row` 是**单页**表单里的行号 —— 拆成三步后同一步里的 row 会不连续
+   * （如 step 1 只有 row 1、2、4），继续按 row 分组会把三个字段竖向堆在左列、
+   * 右列空着。这里在每一步内部按 24 栅格重新打包，保证两列铺满。
+   */
+  const packFieldRows = (fields: ModuleFormFieldDefinition[]) => {
+    const rows: ModuleFormFieldDefinition[][] = []
+    let current: ModuleFormFieldDefinition[] = []
+    let spanSum = 0
+    for (const field of fields) {
+      const span = getFieldSpan(field, layoutVariant)
+      if (current.length > 0 && spanSum + span > 24) {
+        rows.push(current)
+        current = []
+        spanSum = 0
+      }
+      current.push(field)
+      spanSum += span
+      if (spanSum >= 24) {
+        rows.push(current)
+        current = []
+        spanSum = 0
+      }
+    }
+    if (current.length > 0) rows.push(current)
+    return rows
+  }
 
   return (
     <>
@@ -147,6 +214,24 @@ export function ModuleEditorFormSection({
           </div>
         ) : null}
       </div>
+      {isWizard ? (
+        /*
+         * antd 官方多步导航（type="navigation"）：已完成步骤可点回跳，
+         * 未完成的步骤不可越过校验 —— onChange 里只允许往小走。
+         */
+        <Steps
+          className="editor-form-wizard-steps"
+          current={currentStep}
+          items={steps.map((step) => ({
+            title: step.title,
+            ...(step.subTitle ? { subTitle: step.subTitle } : {}),
+          }))}
+          onChange={(next) => {
+            if (next <= currentStep) setCurrentStep(next)
+          }}
+          type="navigation"
+        />
+      ) : null}
       {formFieldGroups.map((group) => (
         <section
           /* 未分区时不能用数组下标做 key：字段增删会让 React 错配 DOM 状态 */
@@ -164,7 +249,10 @@ export function ModuleEditorFormSection({
               {group.section}
             </Divider>
           ) : null}
-          {groupFieldsByRow(group.fields).map((fieldRow) => (
+          {(isWizard
+            ? packFieldRows(group.fields)
+            : groupFieldsByRow(group.fields)
+          ).map((fieldRow) => (
             <Row
               key={fieldRow.map((field) => field.key).join('-')}
               /* 纵向 8px：字段栅格沿用主数据弹层的 [16, 8] 节奏（AGENTS.md《间距》）。 */
@@ -197,6 +285,40 @@ export function ModuleEditorFormSection({
           ))}
         </section>
       ))}
+      {isWizard ? (
+        <Flex
+          align="center"
+          className="editor-form-wizard-nav"
+          gap={12}
+          justify="space-between"
+        >
+          <Typography.Text type="secondary">
+            {t('modules.editorForm.wizard.progress', {
+              current: currentStep + 1,
+              total: steps.length,
+            })}
+          </Typography.Text>
+          <Space size={8}>
+            <Button
+              disabled={currentStep === 0}
+              icon={<LeftOutlined />}
+              onClick={() => setCurrentStep((step) => Math.max(step - 1, 0))}
+            >
+              {t('modules.editorForm.wizard.previous')}
+            </Button>
+            {isLastStep ? null : (
+              <Button
+                icon={<RightOutlined />}
+                iconPlacement="end"
+                onClick={() => void goNext()}
+                type="primary"
+              >
+                {t('modules.editorForm.wizard.next')}
+              </Button>
+            )}
+          </Space>
+        </Flex>
+      ) : null}
     </>
   )
 }

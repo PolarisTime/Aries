@@ -7,6 +7,7 @@ import type {
   ModuleDetailField,
   ModuleFilterDefinition,
   ModuleFormFieldDefinition,
+  ModuleFormStep,
   ModuleQuickFilterDefinition,
 } from '@/types/module-page-fields'
 import type {
@@ -34,6 +35,7 @@ export type {
   ModuleFormFieldOption,
   ModuleFormFieldOptionResolver,
   ModuleFormFieldType,
+  ModuleFormStep,
   ModuleMasterOptionRequirements,
   ModuleQuickFilterDefinition,
 } from '@/types/module-page-fields'
@@ -396,6 +398,14 @@ export interface ModulePageConfig {
   detailActionLabel?: string
   detailItemTitle?: string
   formFields?: ModuleFormFieldDefinition[]
+  /**
+   * 多步录入向导的步骤声明。**声明后编辑弹层按 `formFields[].formStep` 分步渲染**，
+   * 未声明的模块保持现在的单页表单（DOM 与行为完全不变）。
+   *
+   * <p>步骤标题是配置项而不是组件内置：同一套向导壳要服务收款单、付款单、
+   * 后续的销售合同，各模块的措辞不同。</p>
+   */
+  formSteps?: readonly ModuleFormStep[]
   parentImport?: ModuleParentImportDefinition
   itemColumns?: ModuleColumnDefinition[]
   /** 明细列配置驱动入口；解析结果供 itemColumns / detailItemColumns 兼容输出。 */
