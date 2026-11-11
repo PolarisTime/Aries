@@ -114,6 +114,9 @@ export const salesReturnsPageConfig: ModulePageConfig = {
       key: 'returnDate',
       label: i18next.t('modules.pages.salesReturn.filterReturnDate'),
       type: 'dateRange',
+      row: 2,
+      // 占 2 列：两个完整日期并排放得下（单列 233px 会被截断）
+      span: 2,
     },
   ],
   columns: [
