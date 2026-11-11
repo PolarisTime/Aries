@@ -163,19 +163,26 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
         DOCUMENT_STATUS.AUDITED,
         DOCUMENT_STATUS.PURCHASE_COMPLETED,
       ),
+      // 让位给第一行行尾的订单日期：状态与结算主体一起下移到第二行
+      row: 2,
     },
     {
       key: 'settlementCompanyId',
       label: i18next.t('modules.pages.purchaseOrder.colSettlementCompany'),
       type: 'segmented',
       options: getSettlementCompanyOptions,
+      row: 2,
     },
     {
+      /*
+       * 订单日期排第一行行尾：单号、商品信息两个文本条件之后接日期区间（占 2 列），
+       * 正好铺满 4 列。日期比状态/结算主体更需要「一眼看到」——它是查单的时间入口。
+       */
       key: 'orderDate',
       label: i18next.t('modules.pages.purchaseOrder.filterOrderDate'),
       type: 'dateRange',
       showQuickDateFilter: false,
-      row: 2,
+      row: 1,
       // 占 2 列：两个完整日期并排放得下（单列 233px 会被截断）
       span: 2,
       defaultDateRange: false,
