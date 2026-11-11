@@ -216,4 +216,47 @@ describe('resolveItemColumnProjection', () => {
       resolved.saveResultItemColumns?.map((column) => column.dataIndex),
     ).toEqual(['brand'])
   })
+
+  /*
+   * hiddenByDefault = 「只读展示面默认不出现，需要时从列设置打开」。
+   * 只读详情面没有列设置入口，所以它必须直接不产出这些列 ——
+   * 否则配置写着默认隐藏、详情却永远显示（销售订单「剩余可出库数量」的历史缺陷）。
+   */
+  it('hiddenByDefault 的列不进详情投影，但仍在编辑器列集合里', () => {
+    const resolved = resolveModuleItemColumnConfig({
+      include: ['brand', 'category'],
+      hiddenByDefault: ['category'],
+    })
+
+    // 编辑器保留该列，初始可见性由编辑器的列设置决定
+    expect(resolved.itemColumns.map((column) => column.dataIndex)).toEqual([
+      'brand',
+      'category',
+    ])
+    // 详情面没有列设置入口，直接不产出
+    expect(
+      resolved.detailItemColumns?.map((column) => column.dataIndex),
+    ).toEqual(['brand'])
+  })
+
+  it('声明了 detail 投影时，hiddenByDefault 也在投影结果里被剔除', () => {
+    const resolved = resolveModuleItemColumnConfig({
+      include: ['brand', 'category'],
+      hiddenByDefault: ['category'],
+      projections: { detail: ['brand', 'category'] },
+    })
+
+    expect(
+      resolved.detailItemColumns?.map((column) => column.dataIndex),
+    ).toEqual(['brand'])
+  })
+
+  it('没有 hiddenByDefault 时详情投影行为不变（仍可回退到完整列）', () => {
+    const resolved = resolveModuleItemColumnConfig({
+      include: ['brand'],
+    })
+
+    // 未声明投影 → undefined，由详情组件回退到 itemColumns
+    expect(resolved.detailItemColumns).toBeUndefined()
+  })
 })

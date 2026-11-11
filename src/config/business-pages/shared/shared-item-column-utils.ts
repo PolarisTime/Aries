@@ -34,17 +34,34 @@ export function defineItemColumnConfig<const PrivateKey extends string>(
   return config
 }
 
-/** 统一解析模块明细列的三个兼容出口，避免 itemColumns 与场景投影手写漂移。 */
+/**
+ * 统一解析模块明细列的三个兼容出口，避免 itemColumns 与场景投影手写漂移。
+ *
+ * <p>`hiddenByDefault` 的语义是「**只读展示面默认不出现**，需要时从列设置打开」：</p>
+ * - 编辑器（`itemColumns`）保留这些列，只是初始不在可见集合里，用户可勾选出来；
+ * - 详情/只读面（`detailItemColumns`）**直接不产出**这些列 —— 只读面没有列设置入口，
+ *   产出来就等于永远显示，与 `hiddenByDefault` 的声明自相矛盾
+ *   （实测：销售订单详情一直显示「剩余可出库数量」，而配置里写的是默认隐藏）；
+ * - 保存结果投影（`saveResultItemColumns`）不受影响：它按 include 声明取列，与展示无关。
+ */
 export function resolveModuleItemColumnConfig<PrivateKey extends string>(
   config: ModuleItemColumnConfig<PrivateKey>,
 ): ResolvedModuleItemColumnConfig<PrivateKey> {
+  const itemColumns = resolveItemColumns(config)
+  const hiddenKeys = new Set<string>(config.hiddenByDefault ?? [])
+  const projectedDetail = resolveItemColumnProjection(
+    config,
+    config.projections?.detail,
+  )
   return {
     itemColumnConfig: config,
-    itemColumns: resolveItemColumns(config),
-    detailItemColumns: resolveItemColumnProjection(
-      config,
-      config.projections?.detail,
-    ),
+    itemColumns,
+    detailItemColumns:
+      hiddenKeys.size === 0
+        ? projectedDetail
+        : (projectedDetail ?? itemColumns).filter(
+            (column) => !hiddenKeys.has(String(column.dataIndex)),
+          ),
     saveResultItemColumns: resolveItemColumnProjection(
       config,
       config.projections?.saveResult,
