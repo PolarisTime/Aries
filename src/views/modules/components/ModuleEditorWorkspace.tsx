@@ -354,50 +354,59 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   })
 
   /*
-   * 顶部操作栏：工具动作（新增明细/导入/列设置/自动排序/删除选中）靠左，
-   * 单据级动作（取消/保存/保存并审核）靠右。两组都由**这里**构建 ——
-   * 明细区不再自己渲染工具栏，避免同一批按钮出现两个出口。
+   * 顶部操作栏的启用只看模块（采购 / 销售 / 物流，见 usesTopActionBar）：
+   * 这三块的编辑量大、明细行多，保存组必须常驻在看得见的位置，
+   * 工具动作与单据级动作一起收到页面顶部一条栏里。
+   * 其余模块维持原状：收付款单在弹层 footer、主数据表单在表单头。
    */
+  const topActionBarEnabled = presentation.topActionBarVisible
+  // 列设置弹层的开合状态：工具栏搬到顶部栏后仍由工作区持有，切换页签不丢状态
   const [itemColumnSettingsOpen, setItemColumnSettingsOpen] = useState(false)
-  const itemsToolbarActions = config.itemColumns?.length ? (
-    <ModuleItemsToolbarActions
-      capabilities={{
-        addManualItems: canAddManualItemsForCurrentRecord,
-        importParentItems: canImportParentItems,
-        autoSortItems: canAutoSortItems,
-        save: canSave,
-        audit: canSaveAndAuditInEditor,
-      }}
-      columnSettingsOpen={itemColumnSettingsOpen}
-      config={config}
-      extraActions={buildModuleItemsActions({
-        open,
-        moduleKey,
-        config,
-        currentStatus,
-        formValues: editorFormValues,
-        items,
-        setItems,
-        setFormValue: (key, value) => form.setFieldValue(key, value),
-        saving: editorBusy,
-        projectOptions,
-      })}
-      freightStatementSortDirection={freightStatementSortDirection}
-      itemColumnOrder={itemColumnOrder}
-      onAddItem={addItem}
-      onAutoSortItems={handleAutoSortItems}
-      onColumnSettingsOpenChange={setItemColumnSettingsOpen}
-      onItemColumnOrderChange={onItemColumnOrderChange}
-      onOpenParentSelector={openParentSelector}
-      onRemoveSelectedItems={removeSelectedItems}
-      onToggleItemColumn={toggleItemColumn}
-      parentImportVisible={parentImportVisible}
-      parentImporting={parentImporting}
-      saving={editorBusy}
-      selectedItemCount={selectedItemIds.length}
-      visibleItemColumnKeys={visibleItemColumnKeys}
-    />
-  ) : undefined
+
+  /*
+   * 顶部栏左侧的工具动作节点：新增明细 / 导入 / 列设置 / 自动排序 / 删除选中。
+   * 只在启用顶部栏的模块构建，避免为其它模块多建一份（它们仍在明细区渲染工具栏）。
+   */
+  const itemsToolbarActions =
+    topActionBarEnabled && config.itemColumns?.length ? (
+      <ModuleItemsToolbarActions
+        capabilities={{
+          addManualItems: canAddManualItemsForCurrentRecord,
+          importParentItems: canImportParentItems,
+          autoSortItems: canAutoSortItems,
+          save: canSave,
+          audit: canSaveAndAuditInEditor,
+        }}
+        columnSettingsOpen={itemColumnSettingsOpen}
+        config={config}
+        extraActions={buildModuleItemsActions({
+          open,
+          moduleKey,
+          config,
+          currentStatus,
+          formValues: editorFormValues,
+          items,
+          setItems,
+          setFormValue: (key, value) => form.setFieldValue(key, value),
+          saving: editorBusy,
+          projectOptions,
+        })}
+        freightStatementSortDirection={freightStatementSortDirection}
+        itemColumnOrder={itemColumnOrder}
+        onAddItem={addItem}
+        onAutoSortItems={handleAutoSortItems}
+        onColumnSettingsOpenChange={setItemColumnSettingsOpen}
+        onItemColumnOrderChange={onItemColumnOrderChange}
+        onOpenParentSelector={openParentSelector}
+        onRemoveSelectedItems={removeSelectedItems}
+        onToggleItemColumn={toggleItemColumn}
+        parentImportVisible={parentImportVisible}
+        parentImporting={parentImporting}
+        saving={editorBusy}
+        selectedItemCount={selectedItemIds.length}
+        visibleItemColumnKeys={visibleItemColumnKeys}
+      />
+    ) : undefined
 
   return (
     <>
@@ -417,13 +426,30 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
         }
         onClose={requestCloseEditor}
         className={presentation.overlayClassName}
+        footer={
+          presentation.overlayFooterVisible ? (
+            <EditorFooterActions
+              canSave={canSave}
+              canAudit={canSaveAndAuditInEditor}
+              auditLabel={editorAuditLabel}
+              saving={editorBusy}
+              onCancel={requestCloseEditor}
+              onSave={(audit) => {
+                void handleSave(audit)
+              }}
+            />
+          ) : undefined
+        }
       >
-        <ModuleEditorTopActions
-          tools={itemsToolbarActions}
-          actions={
-            presentation.formActionsVisible ||
-            presentation.overlayFooterVisible ||
-            itemsToolbarActions ? (
+        {/*
+          顶部操作栏只服务**没有明细表**的表单型单据（且 presentation 允许）：有明细区的
+          单据工具栏回到「明细表格正上方」，顶部不再重复一排按钮。收付款单的保存组仍在
+          弹层 footer、主数据弹层维持各自位置。
+        */}
+        {topActionBarEnabled ? (
+          <ModuleEditorTopActions
+            tools={itemsToolbarActions}
+            actions={
               <EditorFooterActions
                 canSave={canSave}
                 canAudit={canSaveAndAuditInEditor}
@@ -434,9 +460,9 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
                   void handleSave(audit)
                 }}
               />
-            ) : undefined
-          }
-        />
+            }
+          />
+        ) : null}
         <ModuleEditorFormArea
           form={form}
           config={config}
@@ -448,8 +474,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
             canSave,
             canAudit: canSaveAndAuditInEditor,
             saving: editorBusy,
-            // 单据级动作已统一到顶部操作栏，表单头不再重复渲染一份
-            visible: false,
+            visible: presentation.formActionsVisible,
             onCancel: requestCloseEditor,
             onSave: (audit) => {
               void handleSave(audit)
@@ -505,9 +530,12 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           }}
           auditLabel={editorAuditLabel}
           saving={editorBusy}
-          // 工具栏与单据级动作都移到顶部操作栏，明细区不再渲染
-          showFooterActions={false}
-          showItemsToolbar={false}
+          /*
+           * 有明细区时工具栏与保存组回到「明细表格上方」那一行（顶部栏不再渲染）；
+           * 表单型单据没有明细区，仍由顶部操作栏承接保存组。
+           */
+          showFooterActions={!topActionBarEnabled}
+          showItemsToolbar={!topActionBarEnabled}
           currentStatus={currentStatus}
           formValues={editorFormValues}
           projectOptions={projectOptions}

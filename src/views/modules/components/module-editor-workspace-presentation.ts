@@ -11,6 +11,31 @@ import type { ModulePageConfig } from '@/types/module-page'
 
 const FINANCE_DOCUMENT_MODULES = new Set(['receipt', 'payment'])
 
+/**
+ * 使用「顶部操作栏」的模块 —— 只有采购 / 销售 / 物流三块业务单据。
+ *
+ * <p>这三块的编辑量大、明细行多，保存组必须常驻在看得见的位置，因此把
+ * 「工具动作靠左 + 取消/保存/保存并审核靠右」收到页面顶部一条栏里。
+ * 收付款单仍用弹层 footer、对账单与主数据表单维持各自原状 —— 它们字段少、
+ * 不存在「滚过明细表就找不到保存」的问题，改成顶部栏反而多一层结构。</p>
+ *
+ * <p>清单与 {@link MODULE_KEYS} 的成员对齐（Serena LSP 核对过联合类型成员），
+ * 新增模块默认**不**进这条栏，需要时在这里显式登记。</p>
+ */
+const TOP_ACTION_BAR_MODULES = new Set([
+  'purchase-order',
+  'purchase-inbound',
+  'sales-order',
+  'sales-outbound',
+  'sales-return',
+  'freight-bill',
+])
+
+/** 该模块是否把工具动作与单据级动作收到顶部操作栏。 */
+export function usesTopActionBar(moduleKey: string) {
+  return TOP_ACTION_BAR_MODULES.has(moduleKey)
+}
+
 /** 收付款单使用财务版布局(整页脚注 + 隐藏明细区页脚按钮)。 */
 export function isFinanceDocumentModule(moduleKey: string) {
   return FINANCE_DOCUMENT_MODULES.has(moduleKey)
@@ -50,6 +75,11 @@ export interface EditorPresentation {
    * 避免调用方为同一判据再加一次计算。
    */
   overlayFooterVisible: boolean
+  /**
+   * 是否使用顶部操作栏（工具动作靠左、单据级动作靠右）。
+   * 为 true 时明细区不再自渲染工具栏，footer 与表单头也不再出保存按钮。
+   */
+  topActionBarVisible: boolean
   layoutVariant: 'finance' | 'default'
   overlayClassName: string | undefined
 }
@@ -60,6 +90,7 @@ export function resolveEditorPresentation(
   moduleKey: string,
 ): EditorPresentation {
   const financeLayout = isFinanceDocumentModule(moduleKey)
+  const topActionBarVisible = usesTopActionBar(moduleKey)
   return {
     financeLayout,
     overlayClassName: financeLayout
@@ -70,9 +101,13 @@ export function resolveEditorPresentation(
      * 其余有明细区的模块把按钮放在明细工具栏（见 resolveEditorShowsOverlayFooter），
      * 由明细区在「货物明细 / 附加费用」两个页签都渲染工具栏来保证不丢入口。
      * 无明细区的模块（主数据式表单）才把按钮放在表单标题右侧。
+     * 顶部操作栏覆盖以上三种：按钮统一在那一条里。
      */
-    formActionsVisible: !financeLayout && !config.itemColumns?.length,
-    overlayFooterVisible: resolveEditorShowsOverlayFooter(moduleKey),
+    formActionsVisible:
+      !financeLayout && !topActionBarVisible && !config.itemColumns?.length,
+    overlayFooterVisible:
+      !topActionBarVisible && resolveEditorShowsOverlayFooter(moduleKey),
+    topActionBarVisible,
     layoutVariant: financeLayout ? 'finance' : 'default',
   }
 }
