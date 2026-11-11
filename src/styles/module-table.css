@@ -372,37 +372,6 @@
   justify-content: flex-start;
 }
 
-/*
- * 编辑器顶部操作栏：工具动作靠左、单据级动作靠右。
- *
- * 单独一层而不是塞进表单头：表单头随表单滚动、明细表头只覆盖明细区，
- * 只有「标题之下、第一个卡片之上」这一条才同时满足「全局可见」与「不进卡片」。
- */
-.editor-top-actions {
-  display: flex;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: var(--space-sm) var(--space-md);
-  margin-bottom: var(--space-md);
-}
-
-.editor-top-actions-tools {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  min-width: 0;
-}
-
-/* 工具按钮变多时只在左侧折行，保存组永远贴右边界 */
-.editor-top-actions-global {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-  margin-inline-start: auto;
-}
-
 .editor-form-title-block,
 .editor-items-title-block {
   display: flex;

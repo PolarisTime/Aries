@@ -1,5 +1,5 @@
 import { Form } from 'antd'
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef } from 'react'
 import { isConcurrencyRecoveryCode } from '@/api/core/resource-version'
 import {
   resolveMasterOptionRequirements,
@@ -36,10 +36,7 @@ import { ModuleEditorExtras } from './ModuleEditorExtras'
 import { ModuleEditorFormArea } from './ModuleEditorFormArea'
 import { ModuleEditorItemsArea } from './ModuleEditorItemsArea'
 import { ModuleEditorSaveResultHost } from './ModuleEditorSaveResultHost'
-import { ModuleEditorTopActions } from './ModuleEditorTopActions'
 import { ModuleEditorWorkspaceTitle } from './ModuleEditorWorkspaceTitle'
-import { ModuleItemsToolbarActions } from './ModuleItemsToolbarActions'
-import { buildModuleItemsActions } from './module-editor-items-actions'
 import {
   isFinanceDocumentModule,
   resolveEditorCustomerId,
@@ -353,61 +350,6 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
       setItems((current) => restoreRemovedItems(current, snapshot)),
   })
 
-  /*
-   * 顶部操作栏的启用只看模块（采购 / 销售 / 物流，见 usesTopActionBar）：
-   * 这三块的编辑量大、明细行多，保存组必须常驻在看得见的位置，
-   * 工具动作与单据级动作一起收到页面顶部一条栏里。
-   * 其余模块维持原状：收付款单在弹层 footer、主数据表单在表单头。
-   */
-  const topActionBarEnabled = presentation.topActionBarVisible
-  // 列设置弹层的开合状态：工具栏搬到顶部栏后仍由工作区持有，切换页签不丢状态
-  const [itemColumnSettingsOpen, setItemColumnSettingsOpen] = useState(false)
-
-  /*
-   * 顶部栏左侧的工具动作节点：新增明细 / 导入 / 列设置 / 自动排序 / 删除选中。
-   * 只在启用顶部栏的模块构建，避免为其它模块多建一份（它们仍在明细区渲染工具栏）。
-   */
-  const itemsToolbarActions =
-    topActionBarEnabled && config.itemColumns?.length ? (
-      <ModuleItemsToolbarActions
-        capabilities={{
-          addManualItems: canAddManualItemsForCurrentRecord,
-          importParentItems: canImportParentItems,
-          autoSortItems: canAutoSortItems,
-          save: canSave,
-          audit: canSaveAndAuditInEditor,
-        }}
-        columnSettingsOpen={itemColumnSettingsOpen}
-        config={config}
-        extraActions={buildModuleItemsActions({
-          open,
-          moduleKey,
-          config,
-          currentStatus,
-          formValues: editorFormValues,
-          items,
-          setItems,
-          setFormValue: (key, value) => form.setFieldValue(key, value),
-          saving: editorBusy,
-          projectOptions,
-        })}
-        freightStatementSortDirection={freightStatementSortDirection}
-        itemColumnOrder={itemColumnOrder}
-        onAddItem={addItem}
-        onAutoSortItems={handleAutoSortItems}
-        onColumnSettingsOpenChange={setItemColumnSettingsOpen}
-        onItemColumnOrderChange={onItemColumnOrderChange}
-        onOpenParentSelector={openParentSelector}
-        onRemoveSelectedItems={removeSelectedItems}
-        onToggleItemColumn={toggleItemColumn}
-        parentImportVisible={parentImportVisible}
-        parentImporting={parentImporting}
-        saving={editorBusy}
-        selectedItemCount={selectedItemIds.length}
-        visibleItemColumnKeys={visibleItemColumnKeys}
-      />
-    ) : undefined
-
   return (
     <>
       {/* 会话宿主哨兵：见 useEditorSessionLifecycle 里的 sessionSentinelId。
@@ -441,28 +383,6 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           ) : undefined
         }
       >
-        {/*
-          顶部操作栏只服务**没有明细表**的表单型单据（且 presentation 允许）：有明细区的
-          单据工具栏回到「明细表格正上方」，顶部不再重复一排按钮。收付款单的保存组仍在
-          弹层 footer、主数据弹层维持各自位置。
-        */}
-        {topActionBarEnabled ? (
-          <ModuleEditorTopActions
-            tools={itemsToolbarActions}
-            actions={
-              <EditorFooterActions
-                canSave={canSave}
-                canAudit={canSaveAndAuditInEditor}
-                auditLabel={editorAuditLabel}
-                saving={editorBusy}
-                onCancel={requestCloseEditor}
-                onSave={(audit) => {
-                  void handleSave(audit)
-                }}
-              />
-            }
-          />
-        ) : null}
         <ModuleEditorFormArea
           form={form}
           config={config}
@@ -531,11 +451,10 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           auditLabel={editorAuditLabel}
           saving={editorBusy}
           /*
-           * 有明细区时工具栏与保存组回到「明细表格上方」那一行（顶部栏不再渲染）；
-           * 表单型单据没有明细区，仍由顶部操作栏承接保存组。
+           * 单据级动作跟着明细工具栏走：工具组在左、取消/保存/保存并审核贴行末（行末槽）。
+           * 弹层 footer 只留给收付款单（见 resolveEditorShowsOverlayFooter）。
            */
-          showFooterActions={!topActionBarEnabled}
-          showItemsToolbar={!topActionBarEnabled}
+          showFooterActions={!presentation.overlayFooterVisible}
           currentStatus={currentStatus}
           formValues={editorFormValues}
           projectOptions={projectOptions}

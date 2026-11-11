@@ -38,7 +38,7 @@ const runtime = vi.hoisted(() => ({
   saving: false,
   parentImporting: false,
   importPromise: null as null | Promise<void>,
-  /** 顶部操作栏里保存组的 saving（唯一出口） */
+  /** 保存组（明细工具栏行末）的 saving（唯一出口） */
   saveGroupSaving: [] as boolean[],
   overlayFooterRendered: false,
   shortcutSaving: [] as boolean[],
@@ -256,26 +256,27 @@ describe('ModuleEditorWorkspace 忙态锁', () => {
   })
 
   /*
-   * 单据级动作的出口按模块分两类（见 usesTopActionBar）：
-   * - 采购 / 销售 / 物流 → 顶部操作栏（不再有弹层 footer）；
+   * 单据级动作的出口按模块分两类（见 resolveEditorShowsOverlayFooter）：
+   * - 采购 / 销售 / 物流 → 明细工具栏的行末槽（弹层 footer 为空）；
    * - 收付款单 → 仍走弹层 footer，与原状一致。
    */
-  it('顶部操作栏路径（销售订单）：导入中锁住保存组与 Ctrl+S', () => {
+  it('明细工具栏路径（销售订单）：导入中锁住保存组与 Ctrl+S', () => {
     runtime.parentImporting = true
     renderWorkspace('sales-order')
 
-    // 顶部操作栏的保存组走同一把锁（保存/保存并审核/取消一起禁用）
+    // 明细工具栏行末的保存组走同一把锁（保存/保存并审核/取消一起禁用）：
+    // 保存组由明细区渲染，因此断言落在明细区收到的 saving 上
     expect(runtime.overlayFooterRendered).toBe(false)
-    expect(last(runtime.saveGroupSaving)).toBe(true)
+    expect(last(runtime.itemsAreaSaving)).toBe(true)
     // 快捷键只在 saving 为真时忽略本次 Ctrl+S
     expect(last(runtime.shortcutSaving)).toBe(true)
   })
 
-  it('弹层 footer 路径（收付款单）：不受顶部操作栏影响，保存组仍被锁', () => {
+  it('弹层 footer 路径（收付款单）：不受明细工具栏影响，保存组仍被锁', () => {
     runtime.parentImporting = true
     renderWorkspace('receipt')
 
-    // 收付款单不在顶部操作栏范围内：footer 照旧渲染
+    // 收付款单不走明细工具栏：footer 照旧渲染
     expect(runtime.overlayFooterRendered).toBe(true)
     expect(last(runtime.saveGroupSaving)).toBe(true)
     expect(last(runtime.shortcutSaving)).toBe(true)
