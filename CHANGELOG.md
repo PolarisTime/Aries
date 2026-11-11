@@ -1,3 +1,24 @@
+# [15.7.0](https://github.com/PolarisTime/Aries/compare/v15.6.0...v15.7.0) (2026-11-11)
+
+
+### Bug Fixes
+
+* **editor:** 顶部操作栏只对采购/销售/物流生效 ([72ed6c9](https://github.com/PolarisTime/Aries/commit/72ed6c9849a41ec1812f91f4db9767612c297630))
+* **lint:** 修掉阻塞 CI 的两处多余类型断言与一处未用类型导入 ([48e91e0](https://github.com/PolarisTime/Aries/commit/48e91e0c3ffb041a875ec15360125fa1c3f6c9f2))
+
+
+### Features
+
+* **editor:** 单据级动作统一到顶部操作栏，工具按钮靠左、保存组靠右 ([1b665cc](https://github.com/PolarisTime/Aries/commit/1b665cc336b9edca40bd477aab6d6a7f1fe54cec))
+* **filter:** 其余列表页的日期区间统一占 2 列并排到行尾 ([3f391ab](https://github.com/PolarisTime/Aries/commit/3f391ab0f4f56e501ab04ebdb2fa086ce367b847))
+* **filter:** 列表筛选区改为每行 4 个等宽、默认 2 行、超出折叠 ([1ef8e65](https://github.com/PolarisTime/Aries/commit/1ef8e65aa19035397aed55e7583130abaddc19cb))
+* **filter:** 筛选区展开按钮归位到重置下方，样式与重置一致 ([8b74fc9](https://github.com/PolarisTime/Aries/commit/8b74fc9b37958549e0949289dcdaa3b2c2dfa69b))
+* **filter:** 筛选字段支持占多列，销售订单改为「单据号 / 交货日期(2 列) / 状态」两行布局 ([ad98e1e](https://github.com/PolarisTime/Aries/commit/ad98e1e102ae1a35d7e2341530f4c9f5af3f8dc6))
+* **filter:** 筛选条件按行分组渲染，往来方/项目默认落第二行 ([9e1568f](https://github.com/PolarisTime/Aries/commit/9e1568f05ed08cc61940d820356eb7f3f26e4471))
+* **finance:** 收款单/付款单新建改为三步录入向导 ([2e845c5](https://github.com/PolarisTime/Aries/commit/2e845c5a0da3a903b5336ea67ff8ca8ac9a64e33))
+* **master:** 基础资料补分区块，物流商与项目资料改两步录入 ([4f2d6a0](https://github.com/PolarisTime/Aries/commit/4f2d6a07ca36afdfe80478b65ca2010f4e0ad118))
+* **purchase-order:** 订单日期移到筛选区第一行行尾 ([6910be5](https://github.com/PolarisTime/Aries/commit/6910be5991ec0c574225887735036e0cad2a4365))
+
 # [15.6.0](https://github.com/PolarisTime/Aries/compare/v15.5.0...v15.6.0) (2026-11-11)
 
 
