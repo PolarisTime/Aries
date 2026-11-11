@@ -47,6 +47,8 @@ declare module '@tanstack/react-table' {
     type?: ModuleColumnType
     /** 列配置显式声明的省略策略，优先级高于类型默认值。 */
     ellipsis?: boolean
+    /** 弹性权重（同 ModuleColumnDefinition.flex）：>0 的列分摊表格富余宽度。 */
+    flex?: number
     renderCell?: (record: ModuleRecord) => ReactNode
   }
 }
@@ -83,6 +85,7 @@ export function useGridColumns({
         align: 'center',
         type: colDef.type,
         ellipsis: colDef.ellipsis,
+        flex: colDef.flex,
         renderCell: (record: ModuleRecord) => {
           const value = record[colDef.dataIndex]
           if (colDef.type === 'status') {

@@ -179,7 +179,8 @@ export function BusinessGridTable({
   }, [rowSelection, renderRowDetailToggle, sequenceStart, t])
 
   /*
-   * 列宽合计不足表体宽度时，把富余量**只**给最后一列。
+   * 列宽合计不足表体宽度时，把富余量分给参与分配的列：
+   * 有 `flex` 列 → 只分给 flex 列（固定列宽度不变）；无 flex 列 → 按各列原宽等比摊派。
    *
    * 不做这一步的话，`table-layout: fixed` 会把富余按比例摊到每一列：身份列（勾选/序号那格）
    * 也会被撑宽（实测 72 → 92.3），看着就是"这列还是有宽度"。

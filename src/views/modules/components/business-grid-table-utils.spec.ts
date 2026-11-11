@@ -35,6 +35,44 @@ describe('distributeSurplusWidth —— 列宽富余按比例分给业务列', (
     expect(total).toBe(400)
   })
 
+  it('有 flex 列时：固定列宽度严格不变，富余只进 flex 列', () => {
+    const columns = [
+      { key: 'no', width: 160 },
+      { key: 'customer', width: 200, flex: 1 },
+      { key: 'amount', width: 100 },
+    ]
+    const next = distributeSurplusWidth(columns, 300)
+    expect(next.map((column) => column.width)).toEqual([160, 500, 100])
+    const total = next.reduce((sum, column) => sum + Number(column.width), 0)
+    expect(total).toBe(460 + 300)
+  })
+
+  it('多个 flex 列按权重分配（flex 1 : 2），取整误差由最后一个 flex 列吸收', () => {
+    const next = distributeSurplusWidth(
+      [
+        { key: 'a', width: 100, flex: 1 },
+        { key: 'b', width: 100, flex: 2 },
+        { key: 'c', width: 100 },
+      ],
+      101,
+    )
+    // 1:2 → 33.67 / 67.33；第一个取整 34，最后一个兜底 67
+    expect(next.map((column) => column.width)).toEqual([134, 167, 100])
+    const total = next.reduce((sum, column) => sum + Number(column.width), 0)
+    expect(total).toBe(300 + 101)
+  })
+
+  it('没有 flex 列时保持旧的等比摊派（逐页可选开启，零视觉回归）', () => {
+    const next = distributeSurplusWidth(
+      [
+        { key: 'a', width: 100 },
+        { key: 'b', width: 200 },
+      ],
+      60,
+    )
+    expect(next.map((column) => column.width)).toEqual([120, 240])
+  })
+
   it('空列集不炸', () => {
     expect(distributeSurplusWidth([], 60)).toEqual([])
   })

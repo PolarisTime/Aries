@@ -83,17 +83,49 @@ export function shouldIgnoreRowInteraction(target: EventTarget | null) {
  * 看起来"这列还是有宽度"。身份列不在这个数组里，所以它保持声明宽度；业务列按比例分到
  * 富余后，列宽合计 == 容器宽，浏览器不再摊宽。</p>
  *
- * <p>舍入余量给最后一列兜底，保证分配后合计**精确等于** 原合计 + 富余（否则会差 1~2px
- * 又挤出横向滚动条）。</p>
+ * <p>舍入余量给最后一个参与分配的列兜底，保证合计**精确等于** 原合计 + 富余
+ * （否则会差 1~2px，又挤出横向滚动条）。</p>
  */
-export function distributeSurplusWidth<T extends { width?: unknown }>(
-  columns: readonly T[],
-  surplus: number,
-): readonly T[] {
+export function distributeSurplusWidth<
+  T extends { width?: unknown; flex?: number },
+>(columns: readonly T[], surplus: number): readonly T[] {
   if (surplus <= 0 || columns.length === 0) return columns
   const widths = columns.map((column) => parseTableColumnWidth(column.width))
   const totalWidth = widths.reduce((total, width) => total + width, 0)
   if (totalWidth <= 0) return columns
+
+  /*
+   * 有列声明了 `flex`（语义同 AG Grid / MUI X 的 flex-grow）时，富余**只**分给这些列：
+   * 固定列宽度严格不变，拖窄/拖宽一列不会再带动全表 —— 否则拖拽永远"调不准"
+   * （把一列拖窄，富余变大，其余列等比放大，视觉上又缩回去了）。
+   * 没有 flex 列时保持原有的等比摊派，行为与改造前完全一致（逐页可选开启）。
+   */
+  const flexColumns = columns.filter(
+    (column) => typeof column.flex === 'number' && column.flex > 0,
+  )
+  if (flexColumns.length > 0) {
+    const flexTotal = flexColumns.reduce(
+      (total, column) => total + (column.flex ?? 0),
+      0,
+    )
+    const lastFlexIndex = columns.findLastIndex(
+      (column) => typeof column.flex === 'number' && column.flex > 0,
+    )
+    let assigned = 0
+    return columns.map((column, index) => {
+      const flex = column.flex
+      if (typeof flex !== 'number' || flex <= 0) {
+        return column
+      }
+      /* 最后一个 flex 列吸收取整误差，保证合计精确等于 原合计 + 富余 */
+      const share =
+        index === lastFlexIndex
+          ? surplus - assigned
+          : Math.round((flex / flexTotal) * surplus)
+      assigned += share
+      return { ...column, width: widths[index] + share }
+    })
+  }
 
   let assigned = 0
   return columns.map((column, index) => {

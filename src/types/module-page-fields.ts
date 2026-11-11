@@ -143,6 +143,14 @@ export interface ModuleColumnDefinition {
    * 保持默认 true，由 antd 把全文写进 title。</p>
    */
   ellipsis?: boolean
+  /**
+   * 弹性权重（语义同 AG Grid / MUI X 的 `flex-grow`，缺省 0 = 固定宽度）。
+   *
+   * <p>>0 的列按权重分摊表格的**富余宽度**，其余列严格保持自身宽度 —— 这样拖拽调宽
+   * 一列时不会把其它列一起带动。一个页面最多标 1 列（通常是名称/单号这类本就该占宽的列）；
+   * 一列都不标时走改造前的等比摊派，行为不变。</p>
+   */
+  flex?: number
   required?: boolean
   editor?: TradeLineItemEditorSemantics
   render?: (value: unknown, record: ModuleRecord) => ReactNode

@@ -145,6 +145,8 @@ function buildAntdColumns({
         fixed: columnDef.meta?.fixed,
         width: columnDef.meta?.width,
         align: 'center',
+        /* 弹性权重透传给富余分配；未声明时该列宽度严格不变 */
+        flex: columnDef.meta?.flex,
         /* 短值列（金额/重量/数量/日期/状态）不省略，见 utils/table-column-ellipsis */
         ellipsis: shouldEllipsizeColumn({
           type: columnDef.meta?.type,
