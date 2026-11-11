@@ -2378,15 +2378,21 @@
 .module-filter-top {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-md) 0;
+  /* 字段区与右侧按钮列之间 24px：两者是靠右的一列，留 16px 会显得贴在一起 */
+  gap: var(--space-xl);
+  padding: var(--space-md) var(--space-md) var(--space-md);
 }
 
+/*
+ * 行间距 16px（与列间距一致）：字段名 + 控件本身只有 32px 高，行距 8px 时上下两行
+ * 几乎贴在一起，扫读时容易把第二行的标签看成第一行的附属文字。
+ * 这个值与右侧按钮列的 `gap` 保持一致，按钮才会和字段行一一对齐。
+ */
 .module-filter-fields {
   display: grid;
   flex: 1 1 auto;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-sm) var(--space-md);
+  gap: var(--space-md);
   min-width: 0;
 }
 
@@ -2398,7 +2404,8 @@
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
-  gap: var(--space-sm);
+  /* 与字段区的行间距一致，重置对第一行、展开对第二行 */
+  gap: var(--space-md);
   align-items: stretch;
 }
 
