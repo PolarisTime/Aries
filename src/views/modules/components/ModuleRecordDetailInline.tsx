@@ -21,8 +21,7 @@ import {
   FreightStatementItemGroupHeader,
   FreightStatementProjectGroupHeader,
 } from './FreightStatementItemGroupHeader'
-import { ModuleDetailFieldGrid } from './ModuleDetailFieldGrid'
-import { hasDetailHeaderStatus, ModuleDetailHeader } from './ModuleDetailHeader'
+import { hasDetailHeaderStatus } from './ModuleDetailHeader'
 import { ModuleDetailSummaryRow } from './ModuleDetailSummaryRow'
 import { ModuleItemsTable } from './ModuleItemsTable'
 import { buildDetailItemColumns } from './module-record-detail-columns'
@@ -350,40 +349,25 @@ export function ModuleRecordDetailInline({
   ) : null
 
   /*
-   * 行展开的方案 B 形态（`detailLayout: 'inline'`，当前仅销售订单）：
+   * 行展开的方案 B 形态（`detailLayout: 'inline'`，当前仅销售订单）：**只渲染明细卡**。
    *
-   * 1. 顶栏卡：顶栏（标题 / 单号 / 状态 / 关联项目）+ 四张指标卡；
-   * 2. 业务信息卡：标题栏 + 「标签：值」网格（容器窄，固定 2 列）；
-   * 3. 明细卡。
+   * <p>行展开是「点开看一眼这张单有什么货」的轻量视图：主单号、状态、客户、日期这些字段
+   * 列表行本身就有，再在展开区复述一遍顶栏 + 四张指标卡 + 业务信息网格，等于把详情弹层
+   * 整页塞进一行里 —— 用户要的是明细，结果先看到一片与列表重复的抬头信息。
+   * 因此这里只留明细表；完整的抬头、指标与业务信息仍在详情弹层（`ModuleRecordDetailContent`）
+   * 与编辑弹层里。</p>
    *
-   * 行展开是列表内嵌视图：**不渲染返回箭头、关闭按钮与单据动作按钮**（顶栏在 compact 下
-   * 自动略过），否则点一下就会把列表挤走或弹出一个覆盖层。
+   * <p>缺省布局的模块（对账单等）不受影响：它们的行展开里表头字段是解读明细的必要上下文
+   * （对账期间、结算主体），仍按原样「表头在上、明细在下」。</p>
    */
   if (isPlanB) {
     return (
       <div className="module-detail-surface module-detail-surface--plan-b module-detail-surface--compact module-record-detail-inline">
         {/*
-          与覆盖层详情一致：顶栏当卡头，指标卡与信息网格接在同一张卡里，
-          行展开与详情弹层看到的是同一套层级，不会一个两张卡、一个三张卡。
+          只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据 ——
+          明细里的「网价匹配」列按行 id 订阅它写入的 store，删掉这段列就全变「未核查」。
         */}
-        <div className="module-detail-card module-detail-card--info">
-          {/* 只读详情面的模块级附加节点(如销售订单网价核查): 无 UI, 只负责准备派生展示的数据。 */}
-          {config.renderDetailExtras?.({ record })}
-          <ModuleDetailHeader config={config} record={record} compact />
-          {detailMetricsSlot
-            ? createElement(detailMetricsSlot, { record })
-            : null}
-          {infoFields.length ? (
-            <ModuleDetailFieldGrid
-              config={config}
-              fields={infoFields}
-              formatCellValue={formatCellValue}
-              record={record}
-              compact
-              title={config.detailInfoTitle}
-            />
-          ) : null}
-        </div>
+        {config.renderDetailExtras?.({ record })}
         {itemsCard}
       </div>
     )

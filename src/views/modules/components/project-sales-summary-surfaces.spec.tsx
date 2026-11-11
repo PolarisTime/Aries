@@ -168,7 +168,14 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
     expect(container.querySelector('.project-sales-summary')).toBeNull()
   }
 
-  it('列表行「+」展开区显示指标条与合计行', async () => {
+  /**
+   * 行展开（列表「+」）只显示明细。
+   *
+   * <p>主单号/状态/客户/日期在列表行本身就有，展开区再复述顶栏、四张指标卡与业务信息网格，
+   * 等于把详情弹层整页塞进一行；用户点开要看的是这张单有什么货。完整抬头与指标仍在
+   * 详情弹层（下一条用例锁定）。</p>
+   */
+  it('列表行「+」展开区只显示明细表（不再复述顶栏 / 指标卡 / 业务信息）', async () => {
     act(() => {
       root.render(
         createElement(ModuleRecordDetailInline, {
@@ -182,11 +189,23 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
     })
     await flushRequest()
 
-    expectMetricsAndSummaryRow()
-    // 只读面按后端已计入本单的口径请求：不传 excludeOrderId / pending
-    expect(fetchProjectSalesSummaryMock.mock.calls[0]?.[0]).toEqual({
-      projectId: '9007199254740993',
-    })
+    // 明细表在，合计行随之在（合计口径仍走 config.detailSummary 唯一出口）
+    const summaryRow = container.querySelector('tr.module-detail-summary-row')
+    expect(summaryRow).not.toBeNull()
+    expect(summaryRow?.textContent).toContain('136180.02')
+
+    // 抬头类内容全部不渲染
+    expect(container.querySelectorAll('.module-detail-metric')).toHaveLength(0)
+    expect(container.querySelector('.module-detail-header')).toBeNull()
+    expect(container.querySelector('.module-detail-field-grid')).toBeNull()
+    const text = container.textContent || ''
+    expect(text).not.toContain('合同金额使用率')
+    expect(text).not.toContain('订单业务信息')
+    /*
+     * 指标卡不渲染 ⇒ 也不会为行展开发项目销售汇总请求：行展开不再预热这份数据，
+     * 列表里逐个展开不再各打一次汇总接口。
+     */
+    expect(fetchProjectSalesSummaryMock).not.toHaveBeenCalled()
   })
 
   it('详情弹窗显示指标条、合计行，以及方案 B 的顶栏与流式信息区', async () => {
