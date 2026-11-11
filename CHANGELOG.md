@@ -1,3 +1,19 @@
+# [15.8.0](https://github.com/PolarisTime/Aries/compare/v15.7.0...v15.8.0) (2026-11-11)
+
+
+### Bug Fixes
+
+* **editor:** 销售订单明细的仓库/材质/网价匹配改为不可手改 ([be7e3a5](https://github.com/PolarisTime/Aries/commit/be7e3a57b4409de01edd16da69d992bebf03a3ef))
+* **items:** 明细短列不再省略，宽度不够改为横向滚动 ([4943a8d](https://github.com/PolarisTime/Aries/commit/4943a8d8cc3eb0138b10daadacdf682042e94cdb))
+
+
+### Features
+
+* **editor:** 明细表改空态与文字合计, 取价结论改弹通知, 新增卡片式通知出口 ([8e4470b](https://github.com/PolarisTime/Aries/commit/8e4470b681c087d5b97a5462fb5ca78b0a7a6305))
+* **editor:** 明细表首列并成「身份列」, 顺序列改拖动柄, 移除复制本行按钮列 ([1743b25](https://github.com/PolarisTime/Aries/commit/1743b2521d5a4b57bbf70bd91a5403577c4edd98))
+* **editor:** 行序拖动柄并入首列，取消独立的「顺序」列 ([a69430b](https://github.com/PolarisTime/Aries/commit/a69430ba9d78513574c1a01984f6289cbf6c4aa6))
+* **editor:** 销售订单明细配置为只允许从上级单据导入 ([585c172](https://github.com/PolarisTime/Aries/commit/585c1729f614fb4e9a1edb0525036728c5400d97))
+
 # [15.7.0](https://github.com/PolarisTime/Aries/compare/v15.6.0...v15.7.0) (2026-11-11)
 
 
