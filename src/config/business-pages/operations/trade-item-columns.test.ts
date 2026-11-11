@@ -125,12 +125,17 @@ describe('采购订单明细列', () => {
     expect(column?.align).toBe('right')
   })
 
-  it('列表页展示订单级未入库件数列', () => {
-    const column = purchaseOrdersPageConfig.columns.find(
-      (item) => item.dataIndex === 'totalRemainingQuantity',
+  /*
+   * 「未入库」列已并入「入库进度」：剩余件数是总件数减已入库的减法结果，
+   * 单独成列属于同一口径两个出口，合并后进度列要足够宽放得下「未入库 · 还剩 20」。
+   */
+  it('未入库件数并入入库进度列，不再单独成列', () => {
+    const keys = purchaseOrdersPageConfig.columns.map((item) => item.dataIndex)
+    expect(keys).not.toContain('totalRemainingQuantity')
+    const progress = purchaseOrdersPageConfig.columns.find(
+      (item) => item.dataIndex === 'totalReceivedQuantity',
     )
-    expect(column?.type).toBe('count')
-    expect(column?.align).toBe('right')
+    expect(progress?.width).toBeGreaterThanOrEqual(200)
   })
 
   /*
@@ -141,11 +146,10 @@ describe('采购订单明细列', () => {
   it('列表页金额列按状态渲染，其后是差额与入库进度列', () => {
     const keys = purchaseOrdersPageConfig.columns.map((item) => item.dataIndex)
     const totalAmountIndex = keys.indexOf('totalAmount')
-    expect(keys.slice(totalAmountIndex, totalAmountIndex + 4)).toEqual([
+    expect(keys.slice(totalAmountIndex, totalAmountIndex + 3)).toEqual([
       'totalAmount',
       'totalAmountDifference',
       'totalReceivedQuantity',
-      'totalRemainingQuantity',
     ])
     // 独立「实际货值」列已并入金额列，不再出现在列表配置里
     expect(keys).not.toContain('totalActualAmount')

@@ -160,11 +160,24 @@ export function renderPurchaseOrderReceiptProgress(
   if (done) {
     return React.createElement(Tag, { color }, statusLabel)
   }
+  /*
+   * 未收满时把「还剩 N / 共 M」写进同一格：剩余件数原先是独立一列（未入库），
+   * 但它是「总件数 − 已入库」的减法结果，同一口径两个出口；合并后省 96px，
+   * 且用户不必再自己相减。
+   */
   const detail = i18next.t('modules.pages.purchaseOrder.receiptProgressValue', {
     received: receivedQuantity,
     total: totalQuantity,
   })
-  return React.createElement(Tag, { color }, `${statusLabel} ${detail}`)
+  const remainingHint = i18next.t(
+    'modules.pages.purchaseOrder.receiptProgressRemaining',
+    { count: remainingQuantity },
+  )
+  return React.createElement(
+    Tag,
+    { color, title: detail },
+    `${statusLabel} · ${remainingHint}`,
+  )
 }
 
 /** 强制结单悬浮说明；非强制结单返回 null。 */

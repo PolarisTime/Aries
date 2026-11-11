@@ -1863,6 +1863,7 @@ export const zhCN = {
         receiptProgressPartial: '部分入库',
         receiptProgressDone: '已全部入库',
         receiptProgressValue: '已入库 {{received}} / {{total}}',
+        receiptProgressRemaining: '还剩 {{count}}',
         itemLabelPieceWeightTon: '暂定件重',
         itemLabelWeightTon: '暂定重量',
         itemLabelActualWeightTon: '码头过磅重',

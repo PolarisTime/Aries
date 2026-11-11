@@ -246,19 +246,17 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       render: renderPurchaseOrderAmountDifference,
     },
     {
+      /*
+       * 「入库进度」吞掉原「未入库」列：剩余件数是「总件数 − 已入库」的减法结果，
+       * 合并后（部分入库 · 还剩 3）既省 96px，也不用用户自己相减。
+       * 收满时只显示「已全部入库」（已含收满之意），悬浮显示「已入库 12 / 20」。
+       */
       title: i18next.t('modules.pages.purchaseOrder.colReceiptProgress'),
       dataIndex: 'totalReceivedQuantity',
-      // 「未入库 已入库 0 / 20」比旧的"已入 0 / 20"更长, 120 会截断末尾件数
-      width: 168,
+      // 「未入库 · 还剩 20」比旧的"已入 0 / 20"更长，太窄会截断件数
+      width: 200,
       align: 'center',
       render: renderPurchaseOrderReceiptProgress,
-    },
-    {
-      title: i18next.t('modules.columns.remainingQuantity'),
-      dataIndex: 'totalRemainingQuantity',
-      width: 96,
-      align: 'right',
-      type: 'count',
     },
     {
       title: i18next.t('modules.columns.status'),

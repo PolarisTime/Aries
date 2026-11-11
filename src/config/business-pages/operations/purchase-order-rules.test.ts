@@ -129,14 +129,18 @@ describe('采购订单金额与进度派生渲染', () => {
     expect(renderPurchaseOrderAmountDifference(null)).toBe('-')
   })
 
-  it('入库进度按书面表述推导未入库、部分入库与已全部入库', () => {
+  /*
+   * 原「未入库」列已并入这一列：剩余件数 = 总件数 − 已入库，
+   * 直接写成「部分入库 · 还剩 1」，免得用户自己相减。
+   */
+  it('入库进度按状态 + 剩余件数表述，收满时只给状态', () => {
     const notStarted = collectText(
       renderPurchaseOrderReceiptProgress(0, {
         totalRemainingQuantity: 8,
       } as unknown as ModuleRecord),
     )
     expect(notStarted).toContain('未入库')
-    expect(notStarted).toContain('已入库 0 / 8')
+    expect(notStarted).toContain('还剩 8')
 
     const partial = collectText(
       renderPurchaseOrderReceiptProgress(7, {
@@ -144,7 +148,7 @@ describe('采购订单金额与进度派生渲染', () => {
       } as unknown as ModuleRecord),
     )
     expect(partial).toContain('部分入库')
-    expect(partial).toContain('已入库 7 / 8')
+    expect(partial).toContain('还剩 1')
 
     const done = collectText(
       renderPurchaseOrderReceiptProgress(8, {

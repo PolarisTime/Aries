@@ -1861,6 +1861,7 @@ export const enUS = {
         receiptProgressPartial: 'Partially Received',
         receiptProgressDone: 'Fully Received',
         receiptProgressValue: 'Received {{received}} / {{total}}',
+        receiptProgressRemaining: '{{count}} left',
         itemLabelPieceWeightTon: 'Provisional Piece Wt',
         itemLabelWeightTon: 'Provisional Weight',
         itemLabelActualWeightTon: 'Dock Weigh Weight',
