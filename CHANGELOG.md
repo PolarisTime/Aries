@@ -1,3 +1,10 @@
+# [15.9.0](https://github.com/PolarisTime/Aries/compare/v15.8.0...v15.9.0) (2026-11-11)
+
+
+### Features
+
+* **editor:** 只允许导入的模块空态改为「暂无明细，请点上方…」 ([edfa784](https://github.com/PolarisTime/Aries/commit/edfa784937ebef44a8cbcfd57e25aee67ad6530d))
+
 # [15.8.0](https://github.com/PolarisTime/Aries/compare/v15.7.0...v15.8.0) (2026-11-11)
 
 
