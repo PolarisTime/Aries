@@ -44,7 +44,7 @@ describe('触摸热区补丁与弹窗关闭按钮', () => {
     )
     expect(index).toBeGreaterThan(-1)
     const block = globalCss.slice(index, globalCss.indexOf('}', index))
-    expect(block).toMatch(/max-height:\s*calc\(100vh - 220px\)/)
+    expect(block).toMatch(/max-height:\s*calc\(100dvh - 220px\)/)
     expect(block).toMatch(/overflow-y:\s*auto/)
   })
 })

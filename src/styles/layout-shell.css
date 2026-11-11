@@ -64,7 +64,7 @@
   left: 0;
   bottom: 0;
   z-index: 100;
-  height: 100vh;
+  height: 100dvh;
   background: var(--theme-sider-surface) !important;
   border-right: 1px solid var(--theme-border-subtle);
   box-shadow: none;
@@ -114,7 +114,7 @@
 }
 
 .leo-menu {
-  height: calc(100vh - 68px);
+  height: calc(100dvh - 68px);
   overflow-y: auto;
   border-inline-end: none !important;
   border-top: none !important;
@@ -1401,7 +1401,7 @@
 }
 
 .cash-ledger-filters {
-  max-height: min(38vh, 280px);
+  max-height: min(38dvh, 280px);
   overflow-y: auto;
 }
 

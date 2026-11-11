@@ -2,7 +2,7 @@
 
 /* 对账打印作业统一由外层承接纵向滚动，避免项目分组表格出现嵌套滚动条。 */
 .print-job-items-scroll {
-  max-height: min(480px, 52vh);
+  max-height: min(480px, 52dvh);
   min-height: 120px;
   overflow-x: hidden;
   overflow-y: auto;
@@ -252,21 +252,21 @@
 }
 
 .auth-page-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--theme-card-bg);
 }
 
 .auth-page-grid {
   display: grid;
   grid-template-columns: minmax(360px, 0.9fr) minmax(480px, 1.1fr);
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .auth-page-visual {
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: 64px;
   overflow: hidden;
   color: var(--theme-header-text);
@@ -321,7 +321,7 @@
 }
 
 .auth-page-content {
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: var(--space-3xl);
 }
 

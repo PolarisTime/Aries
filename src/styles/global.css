@@ -56,7 +56,7 @@ body,
  * 已经自己定高的弹层（品牌穿梭框等）取两者较小值，不受影响。
  */
 .ant-modal-root .ant-modal .ant-modal-body {
-  max-height: calc(100vh - 220px);
+  max-height: calc(100dvh - 220px);
   overflow-y: auto;
 }
 

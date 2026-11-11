@@ -30,13 +30,13 @@
 
 /* 2 级内容区自己滚动：内部表格/列表再长也不把弹窗撑出视口（与 1 级的 64vh 同口径） */
 .app-dialog--level-2 .ant-modal-body {
-  max-height: min(64vh, 560px);
+  max-height: min(64dvh, 560px);
   overflow-y: auto;
 }
 
 /* 3 级预览：内容区占满，但顶部留给标题与关闭按钮，避免预览画布顶到遮罩边缘 */
 .app-dialog--level-3 .ant-modal-body {
-  max-height: calc(100vh - 180px);
+  max-height: calc(100dvh - 180px);
   overflow: hidden;
 }
 

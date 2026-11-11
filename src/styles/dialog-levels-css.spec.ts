@@ -47,7 +47,7 @@ describe('嵌套弹窗层级契约', () => {
 
   it('2 级内容区自己滚动（长内容不会把关闭按钮挤出屏幕）', () => {
     const block = blockOf('.app-dialog--level-2 .ant-modal-body')
-    expect(block).toMatch(/max-height:\s*min\(64vh, 560px\)/)
+    expect(block).toMatch(/max-height:\s*min\(64dvh, 560px\)/)
     expect(block).toMatch(/overflow-y:\s*auto/)
   })
 
