@@ -1,5 +1,6 @@
 import { Form } from 'antd'
 import { useCallback, useEffect, useId, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { isConcurrencyRecoveryCode } from '@/api/core/resource-version'
 import {
   resolveMasterOptionRequirements,
@@ -31,6 +32,7 @@ import { useModuleEditorExpenseItems } from '@/views/modules/use-module-editor-e
 import { useModuleEditorItemControls } from '@/views/modules/use-module-editor-item-controls'
 import { useModuleEditorSettlementAccounts } from '@/views/modules/use-module-editor-settlement-accounts'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
+import { resolveItemsEmptyText } from '../module-editor-empty-text'
 import { EditorFooterActions } from './EditorFooterActions'
 import { ModuleEditorExtras } from './ModuleEditorExtras'
 import { ModuleEditorFormArea } from './ModuleEditorFormArea'
@@ -191,6 +193,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   onCreateAnother,
 }: Props<Key>) {
   const [form] = Form.useForm<EditorFormValues>()
+  const { t } = useTranslation()
   const presentation = resolveEditorPresentation(config, moduleKey)
   const { finishAndCloseEditor, markEditorDirty, requestCloseEditor } =
     useEditorSessionActions(onClose)
@@ -338,6 +341,17 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
   })
 
   /* 删除选中：二次确认 + toast 撤销（P1-4）。唯一实现见 use-confirmed-item-removal。 */
+  /*
+   * 明细空态：只对"不允许手工新增行"的模块给引导（销售订单 = 只能从上级单据导入），
+   * 其余模块保持 antd 默认「暂无数据」——那里「新增明细」就在工具栏上，不用指路。
+   * 唯一出口见 resolveItemsEmptyText（含单测）。
+   */
+  const itemsEmptyText = resolveItemsEmptyText({
+    canAddManualItems: canAddManualItemsForCurrentRecord,
+    importActionLabel: config.parentImport?.buttonText,
+    t,
+  })
+
   const removeSelectedItems = useConfirmedItemRemoval({
     items,
     selectedItemIds,
@@ -434,6 +448,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           parentSelectorOpen={parentSelectorOpen}
           itemColumns={itemColumns}
           itemRowSelection={itemRowSelection}
+          itemsEmptyText={itemsEmptyText}
           itemTableComponents={itemTableComponents}
           itemColumnOrder={itemColumnOrder}
           itemRowMenus={itemRowMenus}

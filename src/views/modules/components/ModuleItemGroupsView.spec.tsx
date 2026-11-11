@@ -161,6 +161,43 @@ describe('模块编辑器明细表拖动接线', () => {
       document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
     ).find((node) => (node.textContent ?? '').trim().startsWith(label))
 
+  it('空态：传 emptyText 时显示该文案，不传时回落到 antd 默认', () => {
+    const emptyGroups = [{ ...groups[0], items: [] as ModuleLineItem[] }]
+
+    act(() => {
+      root.render(
+        createElement(ModuleItemGroupsView, {
+          groups: emptyGroups,
+          moduleKey: 'sales-order',
+          columns: [],
+          emptyText: '暂无明细，请点上方「导入采购订单明细」',
+          onItemsReorder: vi.fn(),
+        }),
+      )
+    })
+    expect(container.textContent ?? '').toContain(
+      '暂无明细，请点上方「导入采购订单明细」',
+    )
+
+    act(() => {
+      root.render(
+        createElement(ModuleItemGroupsView, {
+          groups: emptyGroups,
+          moduleKey: 'purchase-order',
+          columns: [],
+          onItemsReorder: vi.fn(),
+        }),
+      )
+    })
+    /*
+     * 未传 emptyText → antd 默认空态。这里不断言具体文案：默认文案由 antd locale 决定
+     * （应用侧是"暂无数据"，测试环境没有 ConfigProvider 时是 "No data"）。
+     */
+    const defaultText = container.textContent ?? ''
+    expect(defaultText).not.toContain('暂无明细')
+    expect(defaultText).toMatch(/No data|暂无数据/)
+  })
+
   it('行菜单按边界提供「上移 / 下移」', async () => {
     render(vi.fn())
 

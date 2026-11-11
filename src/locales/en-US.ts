@@ -1208,6 +1208,8 @@ export const enUS = {
       confirmRemoveContent:
         'This will delete {{count}} line item(s) and clear the warehouse, brand, material, spec, quantity and unit price you entered. You can click "Undo" on the toast to restore them.',
       confirmRemoveOk: 'Delete',
+      emptyImportOnlyHint: 'No line items yet — use "{{action}}" above',
+      emptyNoManualHint: 'No line items yet',
       removedToast: '{{count}} line item(s) deleted',
       undoRemove: 'Undo',
     },

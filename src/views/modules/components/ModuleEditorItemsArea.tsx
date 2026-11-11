@@ -62,6 +62,11 @@ interface Props {
   itemColumns: TableColumnsType<ModuleLineItem>
   /** 行选择（antd `rowSelection`，与列表页同一套「身份列」）。 */
   itemRowSelection?: TableProps<ModuleLineItem>['rowSelection']
+  /**
+   * 明细表空态文案；`undefined` = 用 antd 默认「暂无数据」。
+   * 由 `resolveItemsEmptyText` 统一决定（只对不允许手工新增行的模块给引导）。
+   */
+  itemsEmptyText?: string
   itemTableComponents: TableProps<ModuleLineItem>['components']
   itemColumnOrder: string[]
   itemRowMenus?: RowContextMenuMap
@@ -121,6 +126,7 @@ export function ModuleEditorItemsArea({
   parentSelectorOpen,
   itemColumns,
   itemRowSelection,
+  itemsEmptyText,
   itemTableComponents,
   itemColumnOrder,
   itemRowMenus,
@@ -166,6 +172,7 @@ export function ModuleEditorItemsArea({
       parentSelectorOpen={parentSelectorOpen}
       itemColumns={itemColumns}
       itemRowSelection={itemRowSelection}
+      itemsEmptyText={itemsEmptyText}
       itemTableComponents={itemTableComponents}
       itemColumnOrder={itemColumnOrder}
       itemRowMenus={itemRowMenus}

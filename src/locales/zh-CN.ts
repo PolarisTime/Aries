@@ -1195,6 +1195,13 @@ export const zhCN = {
       confirmRemoveContent:
         '将删除 {{count}} 行明细，已录入的仓库、品牌、材质、规格、数量、单价等内容将被清空。删除后可在提示条上点「撤销」恢复。',
       confirmRemoveOk: '删除',
+      /*
+       * 明细表空态：只对「不允许手工新增行」的模块生效（销售订单 = 只能从上级单据导入）。
+       * 文案里的按钮名由调用方传入该模块自己的导入按钮名，不在文案里写死。
+       */
+      emptyImportOnlyHint: '暂无明细，请点上方「{{action}}」',
+      /** 既不能手工新增、也没有导入入口时的兜底空态。 */
+      emptyNoManualHint: '暂无明细',
       removedToast: '已删除 {{count}} 行明细',
       undoRemove: '撤销',
     },
