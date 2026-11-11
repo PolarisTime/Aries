@@ -1,10 +1,18 @@
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  HolderOutlined,
+} from '@ant-design/icons'
 import type { TableColumnsType, TableColumnType, TableProps } from 'antd'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { RowContextMenuMap } from '@/components/row-context-menu'
+import type {
+  RowContextMenuConfig,
+  RowContextMenuMap,
+} from '@/components/row-context-menu'
 import {
+  describeRowDragRow,
   type RowDragDescribeRow,
-  RowDragSortMoveButtons,
   RowDragSortRow,
   RowDragSortScope,
 } from '@/components/table/row-drag'
@@ -21,6 +29,10 @@ import {
 } from './FreightStatementItemGroupHeader'
 import { ModuleItemsTable } from './ModuleItemsTable'
 import { resolveModuleItemGroupViewKind } from './module-item-groups'
+
+/** 行菜单里「上移 / 下移」的稳定 key（与 antd Menu 的 onClick 分发共用）。 */
+const ROW_MOVE_UP_MENU_KEY = 'row-move-up'
+const ROW_MOVE_DOWN_MENU_KEY = 'row-move-down'
 
 type ProjectGroup = FreightStatementProjectGroup<ModuleLineItem>
 
@@ -43,6 +55,8 @@ interface Props {
   groups: ModuleItemGroup[]
   moduleKey: string
   columns: TableColumnsType<ModuleLineItem>
+  /** 行选择（antd `rowSelection`）：与列表页同一套「身份列」。 */
+  rowSelection?: TableProps<ModuleLineItem>['rowSelection']
   /** 空表文案；不传时沿用 antd 默认空态（见 ModuleItemsTable）。 */
   emptyText?: string
   components?: TableProps<ModuleLineItem>['components']
@@ -83,6 +97,7 @@ export function ModuleItemGroupsView({
   groups,
   moduleKey,
   columns,
+  rowSelection,
   emptyText,
   components,
   rowClassName,
@@ -113,23 +128,92 @@ export function ModuleItemGroupsView({
   )
 
   /**
-   * 顺序列: **可点击的上移/下移按钮**(WCAG 2.2 SC 2.5.7 要求的非拖动替代)。
+   * 顺序列：**拖动柄**（视觉提示），排在数据列之前 —— antd 的 `rowSelection` 身份列会被插在
+   * 所有列之前，所以这里是视觉上的**第二列**。
    *
-   * <p>只给拖拽 + 键盘拖拽并不满足该条 —— 它要求"功能可用单指针、且不做拖动操作"
-   * 就能完成。按钮与拖动落位共用同一份 moveRow, 因此不会出现两套顺序口径。</p>
+   * <p>为什么只放一个图标：真正的拖动激活点在整行（长按 {@link ROW_DRAG_LONG_PRESS_MS}
+   * 毫秒起拖，见 `RowDragSortScope` 的设计口径），手柄是"这里能拖"的可见线索。它**不是按钮**：
+   * 按钮会被 `isRowDragBlockedTarget` 判为"可交互元素"而放行按下事件，从手柄上就拖不动了。</p>
+   *
+   * <p>单指针的非拖动替代（WCAG 2.2 SC 2.5.7）由行右键菜单里的「上移 / 下移」承担，
+   * 见 {@link rowMenusWithMove}。</p>
    */
   const reorderColumn = useMemo<TableColumnType<ModuleLineItem>>(
     () => ({
       key: 'rowReorder',
-      width: 76,
+      width: 44,
       align: 'center',
       title: t('common.rowDragSort.moveColumnTitle'),
-      render: (_value, item) => <RowDragSortMoveButtons rowId={item.id} />,
+      render: () => (
+        <span className="module-row-drag-handle" aria-hidden="true">
+          <HolderOutlined />
+        </span>
+      ),
     }),
     [t],
   )
+  /**
+   * 行右键菜单补「上移 / 下移」。
+   *
+   * <p>顺序列从可点击的 ↑↓ 按钮换成拖动柄之后，这是**单指针的非拖动替代**
+   * （WCAG 2.2 SC 2.5.7）：不按住拖动也能调整顺序，且与拖动着陆共用同一份
+   * `onItemsReorder`，不会出现两套顺序口径。边界项置灰（首行不能上移、末行不能下移）。</p>
+   */
+  const rowMenusWithMove = useMemo<RowContextMenuMap | undefined>(() => {
+    if (!dragEnabled) return itemRowMenus
+    const menuMap = new Map<string, RowContextMenuConfig>(itemRowMenus ?? [])
+    rowIds.forEach((rowId, index) => {
+      const existing = menuMap.get(rowId)
+      const moveTo = (delta: -1 | 1) => {
+        const target = index + delta
+        if (target < 0 || target >= rowIds.length) return
+        const next = [...rowIds]
+        next.splice(index, 1)
+        next.splice(target, 0, rowId)
+        onItemsReorder?.(next)
+      }
+      const baseItems = existing?.items ?? []
+      menuMap.set(rowId, {
+        ariaLabel:
+          existing?.ariaLabel ??
+          t('modules.table.rowContextMenuLabel', {
+            title: describeRowDragRow(rowId, { rowIds, describeRow, t }),
+          }),
+        items: [
+          ...baseItems,
+          ...(baseItems.length > 0 ? [{ type: 'divider' as const }] : []),
+          {
+            key: ROW_MOVE_UP_MENU_KEY,
+            label: t('common.rowDragSort.moveUpTip'),
+            icon: <ArrowUpOutlined />,
+            disabled: index === 0,
+          },
+          {
+            key: ROW_MOVE_DOWN_MENU_KEY,
+            label: t('common.rowDragSort.moveDownTip'),
+            icon: <ArrowDownOutlined />,
+            disabled: index === rowIds.length - 1,
+          },
+        ],
+        onClick: (info) => {
+          if (info.key === ROW_MOVE_UP_MENU_KEY) {
+            moveTo(-1)
+            return
+          }
+          if (info.key === ROW_MOVE_DOWN_MENU_KEY) {
+            moveTo(1)
+            return
+          }
+          existing?.onClick?.(info)
+        },
+        onOpen: existing?.onOpen,
+      })
+    })
+    return menuMap
+  }, [describeRow, dragEnabled, itemRowMenus, onItemsReorder, rowIds, t])
+
   const tableColumns = useMemo(
-    () => (dragEnabled ? [...columns, reorderColumn] : columns),
+    () => (dragEnabled ? [reorderColumn, ...columns] : columns),
     [columns, dragEnabled, reorderColumn],
   )
 
@@ -160,12 +244,13 @@ export function ModuleItemGroupsView({
                     group={group as ProjectGroup}
                   />
                   <ModuleItemsTable
+                    rowSelection={rowSelection}
                     columns={tableColumns}
                     components={rowComponents}
                     dataSource={(group as ProjectGroup).items}
                     emptyText={emptyText}
                     rowClassName={rowClassName}
-                    itemRowMenus={itemRowMenus}
+                    itemRowMenus={rowMenusWithMove}
                     summary={summary}
                   />
                 </div>
@@ -184,12 +269,13 @@ export function ModuleItemGroupsView({
                         showSubtotal={false}
                       />
                       <ModuleItemsTable
+                        rowSelection={rowSelection}
                         columns={tableColumns}
                         components={rowComponents}
                         dataSource={projectGroup.items}
                         emptyText={emptyText}
                         rowClassName={rowClassName}
-                        itemRowMenus={itemRowMenus}
+                        itemRowMenus={rowMenusWithMove}
                         summary={summary}
                       />
                     </div>
@@ -202,23 +288,25 @@ export function ModuleItemGroupsView({
                   group={group as CustomerStatementItemGroup<ModuleLineItem>}
                 />
                 <ModuleItemsTable
+                  rowSelection={rowSelection}
                   columns={tableColumns}
                   components={rowComponents}
                   dataSource={group.items}
                   emptyText={emptyText}
                   rowClassName={rowClassName}
-                  itemRowMenus={itemRowMenus}
+                  itemRowMenus={rowMenusWithMove}
                   summary={summary}
                 />
               </>
             ) : (
               <ModuleItemsTable
+                rowSelection={rowSelection}
                 columns={tableColumns}
                 components={rowComponents}
                 dataSource={group.items}
                 emptyText={emptyText}
                 rowClassName={rowClassName}
-                itemRowMenus={itemRowMenus}
+                itemRowMenus={rowMenusWithMove}
                 summary={summary}
               />
             )}

@@ -1,6 +1,6 @@
 import { CopyOutlined } from '@ant-design/icons'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import type { TableColumnsType } from 'antd'
+import type { TableColumnsType, TableProps } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchMaterialSearch } from '@/api/master/materials'
@@ -17,7 +17,6 @@ import { isEditorItemColumnEditableForModule } from '@/module-system/adapter/mod
 import { hasSourceParentItemId } from '@/module-system/adapter/module-adapter-parent-import'
 import {
   buildModuleEditorDataColumns,
-  buildModuleEditorManagementColumns,
   dropEmptyItemColumns,
 } from '@/module-system/editor/module-editor-item-column-builders'
 import { useModuleEditorItemColumnHandlers } from '@/module-system/editor/module-editor-item-column-handlers'
@@ -40,11 +39,12 @@ import { mergeColumnOrder, toggleColumnVisibility } from '@/utils/table-columns'
 import { asString } from '@/utils/type-narrowing'
 import { getModuleEditorItemBehavior } from '@/views/modules/module-editor-item-behaviors'
 import { usePurchaseOrderWarehouseRecommendations } from '@/views/modules/use-purchase-order-warehouse-recommendations'
+import { IDENTITY_COLUMN_WIDTH } from './components/BusinessGridTable'
 import { focusFirstEditableItemCell } from './components/module-editor-item-focus'
 import {
-  buildModuleEditorItemDuplicateColumn,
-  EDITOR_ITEM_ACTIONS_COLUMN_KEY,
-} from './components/module-editor-item-row-actions'
+  RowIdentityCell,
+  RowIdentityHeader,
+} from './components/RowIdentityCell'
 
 interface Props {
   moduleKey: string
@@ -301,15 +301,10 @@ export function useModuleEditorItemColumns({
 
   const duplicateItemLabel = t('modules.itemsSection.duplicateItem')
   /*
-   * 导入行不可复制：来源明细（`source*ItemId`）和数量上限挂在同一来源行上，
-   * 复制出的副本与原行引用同一来源，两行各自 ≤ 上限、合计超量 —— 保存时才被后端拒绝。
-   * 行内按钮与行右键菜单共用这一口径（与 haveSourceParentItemId 同源）。
+   * 「复制本行」只保留行右键菜单一个入口（表格里的「操作」列已移除）：
+   * 导入行不可复制 —— 来源明细（`source*ItemId`）和数量上限挂在同一来源行上，
+   * 复制出的副本与原行引用同一来源，两行各自 ≤ 上限、合计超量，保存时才被后端拒绝。
    */
-  const importedItemNotDuplicableLabel = t(
-    'modules.itemsSection.importedItemNotDuplicable',
-  )
-
-  /** 行右键菜单：与行内「复制本行」按钮共用同一份动作与可用性口径。 */
   const itemRowMenus = useMemo<RowContextMenuMap>(() => {
     if (!canDuplicateItem) return new Map()
     return buildRowContextMenus({
@@ -341,25 +336,48 @@ export function useModuleEditorItemColumns({
     t,
   ])
 
+  /**
+   * 行选择：交给 antd 的 `rowSelection`，与列表页**同一套「身份列」**。
+   *
+   * <p>此前是两列（勾选框 48px + 序号 56px），两个列位各装一个 16~24px 的小元素，
+   * 横向一片竖线读起来散；列表页早已合并成一列「序号⇄勾选」，这里复用同一份
+   * `RowIdentityCell` / `RowIdentityHeader`，两处观感与交互一致。</p>
+   *
+   * <p>全选/半选、Shift 连选与「选择此行：…」的可访问名都由 antd 提供（`renderCell` 的
+   * `originNode`），自己画复选框就得把这套语义整抄一遍。</p>
+   */
+  const itemRowSelection = useMemo<
+    TableProps<ModuleLineItem>['rowSelection']
+  >(() => {
+    if (!canManageItems) return undefined
+    const selectedSet = new Set(selectedItemIds)
+    return {
+      selectedRowKeys: selectedItemIds,
+      fixed: 'start',
+      columnWidth: IDENTITY_COLUMN_WIDTH,
+      onSelect: (record, checked) => onSelectItem(record.id, checked),
+      onSelectAll: (checked) => onSelectAll(checked),
+      columnTitle: (selectAll: React.ReactNode) => (
+        <RowIdentityHeader
+          label={t('modules.table.sequence')}
+          selectAll={selectAll}
+        />
+      ),
+      renderCell: (_checked, record, index, originNode) => (
+        <RowIdentityCell
+          sequenceNumber={index + 1}
+          checkbox={originNode}
+          detailToggle={null}
+          selected={selectedSet.has(record.id)}
+        />
+      ),
+    }
+  }, [canManageItems, onSelectAll, onSelectItem, selectedItemIds, t])
+
   const itemColumns: TableColumnsType<ModuleLineItem> = (() => {
     if (!config.itemColumns?.length) return []
 
     const cols: TableColumnsType<ModuleLineItem> = []
-
-    if (canManageItems) {
-      cols.push(
-        ...buildModuleEditorManagementColumns({
-          /*
-           * 取消可见拖动手柄后, 管理列只剩「选择 + 序号」; 排行走整行长按拖动
-           * (共享能力 useRowDragSort / RowDragSortScope), 不再是这一列的 draggable 把手。
-           */
-          items,
-          selectedItemIds,
-          onSelectAll,
-          onSelectItem,
-        }),
-      )
-    }
 
     cols.push(
       ...buildModuleEditorDataColumns({
@@ -382,23 +400,6 @@ export function useModuleEditorItemColumns({
       }),
     )
 
-    if (canManageItems && (canDuplicateItem || !parentImportedItemEditLocked)) {
-      cols.push(
-        buildModuleEditorItemDuplicateColumn({
-          title: t('hooks.gridColumns.actions'),
-          actionLabel: duplicateItemLabel,
-          ariaLabelOf: (record) =>
-            t('modules.itemsSection.duplicateItemAriaLabel', {
-              label: resolveItemRowLabel(record),
-            }),
-          disabled: !canDuplicateItem,
-          disabledOf: (record) => hasSourceParentItemId(record),
-          disabledTitleOf: () => importedItemNotDuplicableLabel,
-          onDuplicate: handleDuplicateItem,
-        }),
-      )
-    }
-
     return cols
   })()
 
@@ -415,13 +416,12 @@ export function useModuleEditorItemColumns({
       onResizeCommit: handleColumnResizeCommit,
       onResizeReset: handleColumnResizeReset,
       isResizable: (column) =>
-        column.key !== 'selection' &&
-        column.key !== '_index' &&
-        column.key !== EDITOR_ITEM_ACTIONS_COLUMN_KEY,
+        column.key !== 'selection' && column.key !== '_index',
     })
 
   return {
     itemColumns: resizableItemColumns,
+    itemRowSelection,
     itemTableComponents,
     itemColumnOrder,
     itemRowMenus,

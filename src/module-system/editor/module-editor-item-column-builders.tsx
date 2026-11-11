@@ -1,5 +1,5 @@
 import type { TableColumnsType } from 'antd'
-import { Checkbox, Input, InputNumber, Select } from 'antd'
+import { Input, InputNumber, Select } from 'antd'
 import i18next from 'i18next'
 import type { WarehouseOption } from '@/api/master/warehouse-options'
 import {
@@ -57,13 +57,6 @@ interface EditableRenderOptions {
     warehouse?: WarehouseOption | null,
   ) => void
   handleSettlementModeChange: (itemId: string, settlementMode: string) => void
-}
-
-interface ManagementColumnOptions {
-  items: ModuleLineItem[]
-  selectedItemIds: string[]
-  onSelectAll: (checked: boolean) => void
-  onSelectItem: (itemId: string, checked: boolean) => void
 }
 
 const NUMBER_COLUMN_DATA_ATTRIBUTE = 'data-module-editor-number-column'
@@ -345,55 +338,6 @@ function buildEditableColumnRender({
         />
       )
     }
-}
-
-/**
- * 管理列: 行选择框 + 序号。
- *
- * <p>序号列**不再兼作拖动手柄**: 行列顺序改由整行长按拖动(共享能力
- * `@/components/table/row-drag`)承担, 因此这里只保留序号本身, 不再挂
- * `draggable` / drag 事件, 也不再多占一列用于拖动。</p>
- */
-export function buildModuleEditorManagementColumns({
-  items,
-  selectedItemIds,
-  onSelectAll,
-  onSelectItem,
-}: ManagementColumnOptions): TableColumnsType<ModuleLineItem> {
-  return [
-    {
-      title: (
-        <Checkbox
-          checked={selectedItemIds.length === items.length && items.length > 0}
-          indeterminate={
-            selectedItemIds.length > 0 && selectedItemIds.length < items.length
-          }
-          onChange={(event) => onSelectAll(event.target.checked)}
-        />
-      ),
-      dataIndex: 'id',
-      key: 'selection',
-      width: 48,
-      fixed: 'left',
-      align: 'center',
-      render: (_: unknown, record: ModuleLineItem) => (
-        <Checkbox
-          checked={selectedItemIds.includes(record.id)}
-          onChange={(event) => onSelectItem(record.id, event.target.checked)}
-        />
-      ),
-    },
-    {
-      title: '#',
-      key: '_index',
-      width: 56,
-      fixed: 'left',
-      align: 'center',
-      render: (_: unknown, _record: ModuleLineItem, index: number) => (
-        <span>{index + 1}</span>
-      ),
-    },
-  ]
 }
 
 /**

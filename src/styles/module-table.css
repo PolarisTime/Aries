@@ -670,6 +670,34 @@
 }
 
 /*
+ * 明细表的拖动柄（行序调整）。
+ *
+ * <p>顺序列从"可点击的 ↑↓ 按钮"改成拖动柄：整行才是拖动激活点（长按起拖，见
+ * `RowDragSortScope`），这个图标是"这里能拖"的可见线索。所以它是**光标提示**，
+ * 不是按钮 —— 做成 button 会被 `isRowDragBlockedTarget` 当成可交互元素放行按下事件，
+ * 从手柄上反而拖不动。命中区仍给足 24×24（SC 2.5.8）。</p>
+ */
+.module-row-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--theme-text-muted);
+  cursor: grab;
+  border-radius: var(--ant-border-radius-sm);
+}
+
+.module-row-drag-handle:active {
+  cursor: grabbing;
+}
+
+.module-detail-table tbody tr:hover .module-row-drag-handle {
+  color: var(--theme-text);
+  background: var(--ant-color-fill-quaternary);
+}
+
+/*
  * 行序「上移 / 下移」按钮组 —— 拖动排序的非拖动替代（WCAG 2.2 SC 2.5.7）。
  *
  * 两个 24×24 的 text 按钮原来是裸露的，视觉上像两个游离的箭头字符，用户认不出这是

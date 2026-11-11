@@ -16,6 +16,8 @@ interface Props<RecordType extends BaseRecord> {
    * 编辑器的"新建单据"就是这种场景：没有明细是正常起点，不需要一句解释性文案。
    */
   emptyText?: React.ReactNode
+  /** 行选择：交给 antd（全选/半选、Shift 连选、可访问名都是它的实现）。 */
+  rowSelection?: TableProps<RecordType>['rowSelection']
   rowClassName?: TableProps<RecordType>['rowClassName']
   /** 行右键菜单：按行 key 注入，与业务列表复用同一套 RowContextMenu 原语。 */
   itemRowMenus?: RowContextMenuMap
@@ -35,6 +37,7 @@ export function ModuleItemsTable<RecordType extends BaseRecord>({
   components,
   dataSource,
   emptyText,
+  rowSelection,
   rowClassName,
   itemRowMenus,
   onRow,
@@ -80,6 +83,7 @@ export function ModuleItemsTable<RecordType extends BaseRecord>({
         .filter(Boolean)
         .join(' ')}
       columns={columns}
+      rowSelection={rowSelection}
       components={resolvedComponents}
       dataSource={dataSource}
       pagination={false}

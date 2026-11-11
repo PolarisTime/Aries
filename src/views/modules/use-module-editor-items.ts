@@ -87,6 +87,7 @@ export function useModuleEditorItems({
   }
   const {
     itemColumns,
+    itemRowSelection,
     itemTableComponents,
     itemColumnOrder,
     itemRowMenus,
@@ -112,6 +113,7 @@ export function useModuleEditorItems({
     clearSelectedItems,
     handleRowReorder,
     itemColumns,
+    itemRowSelection,
     itemTableComponents,
     itemColumnOrder,
     itemRowMenus,

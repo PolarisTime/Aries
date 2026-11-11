@@ -60,6 +60,8 @@ interface Props {
   parentSelectorModuleKey?: ModuleKey
   parentSelectorOpen: boolean
   itemColumns: TableColumnsType<ModuleLineItem>
+  /** 行选择（antd `rowSelection`，与列表页同一套「身份列」）。 */
+  itemRowSelection?: TableProps<ModuleLineItem>['rowSelection']
   itemTableComponents: TableProps<ModuleLineItem>['components']
   itemColumnOrder: string[]
   itemRowMenus?: RowContextMenuMap
@@ -118,6 +120,7 @@ export function ModuleEditorItemsArea({
   parentSelectorModuleKey,
   parentSelectorOpen,
   itemColumns,
+  itemRowSelection,
   itemTableComponents,
   itemColumnOrder,
   itemRowMenus,
@@ -162,6 +165,7 @@ export function ModuleEditorItemsArea({
       parentSelectorModuleKey={parentSelectorModuleKey}
       parentSelectorOpen={parentSelectorOpen}
       itemColumns={itemColumns}
+      itemRowSelection={itemRowSelection}
       itemTableComponents={itemTableComponents}
       itemColumnOrder={itemColumnOrder}
       itemRowMenus={itemRowMenus}

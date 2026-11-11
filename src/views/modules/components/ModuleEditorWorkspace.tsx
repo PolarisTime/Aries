@@ -313,6 +313,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     clearSelectedItems,
     handleRowReorder,
     itemColumns,
+    itemRowSelection,
     itemTableComponents,
     itemColumnOrder,
     itemRowMenus,
@@ -432,6 +433,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           parentSelectorModuleKey={parentSelectorModuleKey}
           parentSelectorOpen={parentSelectorOpen}
           itemColumns={itemColumns}
+          itemRowSelection={itemRowSelection}
           itemTableComponents={itemTableComponents}
           itemColumnOrder={itemColumnOrder}
           itemRowMenus={itemRowMenus}
