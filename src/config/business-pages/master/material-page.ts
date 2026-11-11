@@ -201,6 +201,7 @@ export const materialsPageConfig: ModulePageConfig = {
   formFields: [
     {
       key: 'materialType',
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.material.materialType'),
       type: 'select',
       required: true,
@@ -219,6 +220,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'materialCode',
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.material.materialCode'),
       type: 'input',
       required: true,
@@ -232,6 +234,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'brand',
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.material.brand'),
       type: 'input',
       required: true,
@@ -242,6 +245,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'material',
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.material.material'),
       type: 'input',
       required: true,
@@ -251,6 +255,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'category',
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.material.category'),
       type: 'select',
       required: true,
@@ -260,6 +265,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'spec',
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.material.spec'),
       type: 'input',
       required: true,
@@ -270,6 +276,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'length',
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.material.length'),
       /*
        * 长度是**业务数据**，不是自由文本：取值必须来自定尺主数据（后端 MaterialService
@@ -285,6 +292,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'unit',
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.material.unit'),
       type: 'input',
       required: true,
@@ -294,6 +302,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'quantityUnit',
+      section: i18next.t('modules.formSections.weightPrice'),
       label: i18next.t('modules.pages.material.qtyUnit'),
       type: 'input',
       required: true,
@@ -304,6 +313,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'pieceWeightTon',
+      section: i18next.t('modules.formSections.weightPrice'),
       label: i18next.t('modules.pages.material.pieceWeightTon'),
       type: 'number',
       required: true,
@@ -315,6 +325,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'piecesPerBundle',
+      section: i18next.t('modules.formSections.weightPrice'),
       label: i18next.t('modules.pages.material.pcsPerBundle'),
       type: 'number',
       required: true,
@@ -326,6 +337,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'unitPrice',
+      section: i18next.t('modules.formSections.weightPrice'),
       label: i18next.t('modules.pages.material.unitPrice'),
       type: 'number',
       required: true,
@@ -336,6 +348,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'status',
+      section: i18next.t('modules.formSections.other'),
       label: i18next.t('modules.columns.status'),
       type: 'select',
       defaultValue: STATUS.NORMAL,
@@ -344,6 +357,7 @@ export const materialsPageConfig: ModulePageConfig = {
     },
     {
       key: 'remark',
+      section: i18next.t('modules.formSections.other'),
       label: i18next.t('modules.pages.material.remark'),
       type: 'textarea',
       // 与后端 MaterialRequest `@Size(max = 255)` 对齐。

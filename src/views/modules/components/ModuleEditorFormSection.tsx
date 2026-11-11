@@ -136,8 +136,24 @@ export function ModuleEditorFormSection({
     : visibleFields
   /* 「下一步」只校验本步：不提前报后面步骤的错误。 */
   const goNext = async () => {
+    /*
+     * 只校验**用户改得了**的字段：
+     * - `disabled: true` 的字段（如自动生成的编码）用户无法修改，拦在「下一步」只会造成死循环；
+     * - 雪花号主单号与保存链路同口径跳过（见 use-editor-submission-controller 的
+     *   `skipRequiredFieldKeys`），两处规则必须一致，否则会出现"向导过不去但保存能过"。
+     */
+    const stepKeys = stepFields
+      .filter((field) => !field.disabled)
+      .filter(
+        (field) =>
+          !(
+            field.key === config.primaryNoKey &&
+            usesSnowflakeBusinessNo(moduleKey, config.primaryNoKey)
+          ),
+      )
+      .map((field) => field.key)
     try {
-      await form.validateFields(stepFields.map((field) => field.key))
+      await form.validateFields(stepKeys)
       setCurrentStep((step) => Math.min(step + 1, steps.length - 1))
     } catch {
       /* 校验失败时 antd 已在字段下方给出提示，这里不再重复 toast */
@@ -195,25 +211,33 @@ export function ModuleEditorFormSection({
           className="mb-12"
         />
       ) : null}
-      <div className="editor-form-head">
-        <div className="editor-form-title-block">
-          <Typography.Title level={5} className="m-0">
-            {t('modules.editorForm.documentInfo')}
-          </Typography.Title>
+      {isWizard && !actions.visible ? null : (
+        <div className="editor-form-head">
+          {/*
+           * 向导模式下不渲染「单据信息」标题：步骤条本身就是这一步的标题，
+           * 而且基础资料（物流商 / 项目）不是单据，写「单据信息」是错的措辞。
+           */}
+          {isWizard ? null : (
+            <div className="editor-form-title-block">
+              <Typography.Title level={5} className="m-0">
+                {t('modules.editorForm.documentInfo')}
+              </Typography.Title>
+            </div>
+          )}
+          {actions.visible ? (
+            <div className="editor-form-actions">
+              <EditorFooterActions
+                canSave={actions.canSave}
+                canAudit={actions.canAudit}
+                auditLabel={auditLabel}
+                saving={actions.saving}
+                onCancel={actions.onCancel}
+                onSave={actions.onSave}
+              />
+            </div>
+          ) : null}
         </div>
-        {actions.visible ? (
-          <div className="editor-form-actions">
-            <EditorFooterActions
-              canSave={actions.canSave}
-              canAudit={actions.canAudit}
-              auditLabel={auditLabel}
-              saving={actions.saving}
-              onCancel={actions.onCancel}
-              onSave={actions.onSave}
-            />
-          </div>
-        ) : null}
-      </div>
+      )}
       {isWizard ? (
         /*
          * antd 官方多步导航（type="navigation"）：已完成步骤可点回跳，

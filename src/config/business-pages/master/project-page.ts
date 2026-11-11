@@ -266,9 +266,20 @@ const projectPageConfig: ModulePageConfig = {
    * 上限才报错。project_code 64 / project_name 200 / project_name_abbr 100 / project_manager 32 /
    * project_address 255 / remark 255。客户、结算主体、状态、取价策略等都是受控取值，不声明 maxLength。
    */
+  /*
+   * 两步录入：21 个字段一屏放得下，但「基本信息」和「车辆/报价」是两类心智模型，
+   * 分两步可以让第一步只留必填与常用字段。字段少（≤10）时不要这么做。
+   */
+  formSteps: [
+    { title: i18next.t('modules.formSections.basic') },
+    { title: PRICING_SECTION },
+  ],
   formFields: [
     {
       key: 'projectCode',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.project.projectCode'),
       type: 'input',
       maxLength: 64,
@@ -281,6 +292,9 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'projectName',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.project.projectName'),
       type: 'input',
       maxLength: 200,
@@ -289,6 +303,9 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'projectNameAbbr',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.project.projectNameAbbr'),
       type: 'input',
       maxLength: 100,
@@ -296,6 +313,9 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'customerId',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.project.customer'),
       type: 'select',
       required: true,
@@ -305,6 +325,9 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'settlementCompanyId',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.project.settlementCompany'),
       type: 'select',
       required: true,
@@ -314,6 +337,9 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'projectManager',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.project.projectManager'),
       type: 'input',
       maxLength: 32,
@@ -321,6 +347,8 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'projectAddress',
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.project.projectAddress'),
       type: 'input',
       maxLength: 255,
@@ -329,6 +357,9 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'status',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.columns.status'),
       type: 'select',
       defaultValue: STATUS.NORMAL,
@@ -337,6 +368,8 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'remark',
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.columns.remark'),
       type: 'textarea',
       maxLength: 255,
@@ -351,6 +384,8 @@ const projectPageConfig: ModulePageConfig = {
      */
     {
       key: 'quoteSource',
+      colSpan: 12,
+      formStep: 2,
       label: i18next.t('modules.pages.project.quoteSource'),
       type: 'select',
       defaultValue: 'MYSTEEL',
@@ -360,6 +395,8 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'quoteRegion',
+      colSpan: 12,
+      formStep: 2,
       label: i18next.t('modules.pages.project.quoteRegion'),
       type: 'select',
       // 选项来自 runtime-config 的 business.quoteRegions（resolveQuoteRegions 负责 trim/去重/兜底）；
@@ -371,6 +408,8 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'priceDateBasis',
+      colSpan: 12,
+      formStep: 2,
       label: i18next.t('modules.pages.project.priceDateBasis'),
       type: 'select',
       defaultValue: DEFAULT_PRICE_DATE_BASIS,
@@ -382,6 +421,8 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'priceDateOffsetDays',
+      colSpan: 12,
+      formStep: 2,
       label: i18next.t('modules.pages.project.priceDateOffsetDays'),
       type: 'number',
       defaultValue: 0,
@@ -399,6 +440,8 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'priceClosedSettleDirection',
+      colSpan: 12,
+      formStep: 2,
       label: i18next.t('modules.pages.project.priceClosedSettleDirection'),
       type: 'select',
       defaultValue: DEFAULT_PRICE_CLOSED_SETTLE_DIRECTION,
@@ -415,6 +458,8 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'priceClosedSettleDays',
+      colSpan: 12,
+      formStep: 2,
       label: i18next.t('modules.pages.project.priceClosedSettleDays'),
       type: 'number',
       defaultValue: DEFAULT_PRICE_CLOSED_SETTLE_DAYS,
@@ -431,6 +476,8 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'pricePeriodPolicy',
+      colSpan: 12,
+      formStep: 2,
       label: i18next.t('modules.pages.project.pricePeriodPolicy'),
       type: 'select',
       defaultValue: DEFAULT_PRICE_PERIOD_POLICY,
@@ -442,6 +489,8 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'pricePeriodFixed',
+      colSpan: 12,
+      formStep: 2,
       label: i18next.t('modules.pages.project.pricePeriodFixed'),
       type: 'select',
       allowClear: true,
@@ -469,18 +518,21 @@ const projectPageConfig: ModulePageConfig = {
      */
     {
       key: 'allowedBrands',
+      colSpan: 12,
+      formStep: 2,
       label: i18next.t('modules.pages.project.allowedBrands'),
       type: 'multiSelect',
       options: getBrandOptions,
       placeholder: i18next.t('modules.pages.project.allowedSpecPlaceholder'),
       tooltip: i18next.t('modules.pages.project.allowedSpecHint'),
       extra: i18next.t('modules.pages.project.allowedSpecHint'),
-      colSpan: 12,
       row: 7,
       section: SCOPE_SECTION,
     },
     {
       key: 'allowedBrandSeverity',
+      colSpan: 12,
+      formStep: 2,
       label: i18next.t('modules.pages.project.scopeEnforcement'),
       type: 'select',
       defaultValue: DEFAULT_SCOPE_ENFORCEMENT,
@@ -492,18 +544,21 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'allowedMaterials',
+      colSpan: 12,
+      formStep: 2,
       label: i18next.t('modules.pages.project.allowedMaterials'),
       type: 'multiSelect',
       options: materialGradeOptions,
       placeholder: i18next.t('modules.pages.project.allowedSpecPlaceholder'),
       tooltip: i18next.t('modules.pages.project.allowedSpecHint'),
       extra: i18next.t('modules.pages.project.allowedSpecHint'),
-      colSpan: 12,
       row: 8,
       section: SCOPE_SECTION,
     },
     {
       key: 'allowedMaterialSeverity',
+      colSpan: 12,
+      formStep: 2,
       label: i18next.t('modules.pages.project.scopeEnforcement'),
       type: 'select',
       defaultValue: DEFAULT_SCOPE_ENFORCEMENT,

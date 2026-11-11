@@ -212,34 +212,80 @@ describe('ModuleEditorFormSection 多步向导', () => {
   })
 })
 
+/*
+ * Vite 的动态 import 只支持一层变量路径，因此把配置导入写成显式映射：
+ * 新增启用向导的页面时，在这里补一行即可。
+ */
+const CONFIG_LOADERS = {
+  receipt: () => import('@/config/business-pages/finance/receipt-page'),
+  payment: () => import('@/config/business-pages/finance/payment-page'),
+  carrier: () => import('@/config/business-pages/master/carrier-page'),
+  project: () => import('@/config/business-pages/master/project-page'),
+  material: () => import('@/config/business-pages/master/material-page'),
+} as const
+
+type ConfigKey = keyof typeof CONFIG_LOADERS
+
+async function loadConfig(key: ConfigKey): Promise<ModulePageConfig> {
+  const loaded = (await CONFIG_LOADERS[key]()) as Record<string, unknown>
+  /* 有的页面文件导出单个 config，有的导出 Record<key, config>（如项目资料） */
+  const flat = Object.values(loaded).flatMap((value) =>
+    value && typeof value === 'object' && 'key' in value
+      ? [value as ModulePageConfig]
+      : Object.values(value as Record<string, ModulePageConfig>),
+  )
+  const config = flat.find((value) => value?.key === key)
+  expect(config).toBeTruthy()
+  return config as ModulePageConfig
+}
+
 /**
- * 收付款单的配置契约：三步齐全，且**每个会渲染的字段都归属某一步**。
+ * 已启用向导的页面配置契约：步骤数正确，且**每个会渲染的字段都归属某一步**。
  *
  * <p>漏标 `formStep` 的字段在向导模式下不会出现在任何一步 —— 界面上直接"消失"，
- * 而且不会报错。这条用例把「字段总数 = 已标注数」钉住。</p>
+ * 而且不报错。这条用例把「字段总数 = 已标注数」钉住，新增字段忘标会立刻红。</p>
  */
-describe('收付款单的 formSteps 配置', () => {
+describe('启用向导的页面配置契约', () => {
   it.each([
-    ['receipt', 'receiptsPageConfig'],
-    ['payment', 'paymentsPageConfig'],
-  ])('%s 声明三步且每个可见字段都标注了 formStep', async (key) => {
-    const modulePath = `@/config/business-pages/finance/${key}-page`
-    const loaded = (await import(/* @vite-ignore */ modulePath)) as Record<
-      string,
-      ModulePageConfig
-    >
-    const config = Object.values(loaded).find((value) => value?.key === key)
-    expect(config).toBeTruthy()
-    expect(config?.formSteps).toHaveLength(3)
+    ['receipt', 3],
+    ['payment', 3],
+    ['carrier', 2],
+    ['project', 2],
+  ] as const)(
+    '%s 声明 %s 步且每个可见字段都标注了 formStep',
+    async (key, steps) => {
+      const config = await loadConfig(key)
+      expect(config.formSteps).toHaveLength(steps)
 
-    const fields = config?.formFields ?? []
-    const hidden = fields.filter(
-      (field) => field.visibleWhen && field.visibleWhen({}) === false,
-    )
-    const tagged = fields.filter((field) => typeof field.formStep === 'number')
-    // 隐藏字段（如状态）本就不该出现在任何一步；其余字段必须全部有归属
-    expect(tagged).toHaveLength(fields.length - hidden.length)
-    const steps = new Set(tagged.map((field) => field.formStep))
-    expect([...steps].sort()).toEqual([1, 2, 3])
-  })
+      const fields = config.formFields ?? []
+      const hidden = fields.filter(
+        (field) => field.visibleWhen && field.visibleWhen({}) === false,
+      )
+      const tagged = fields.filter(
+        (field) => typeof field.formStep === 'number',
+      )
+      expect(tagged).toHaveLength(fields.length - hidden.length)
+      const usedSteps = new Set(tagged.map((field) => field.formStep))
+      expect([...usedSteps].sort()).toEqual(
+        Array.from({ length: steps }, (_, index) => index + 1),
+      )
+    },
+  )
+})
+
+/**
+ * 字段多的主数据页必须有分区：21 个字段平铺时用户找不到「结算信息」在哪。
+ * 只锁已分区的三页（收付款单是单据，不受此约束）。
+ */
+describe('基础资料分区块', () => {
+  it.each(['carrier', 'material', 'project'] as const)(
+    '%s 的每个字段都声明了 section',
+    async (key) => {
+      const config = await loadConfig(key)
+      const missing = (config.formFields ?? []).filter(
+        (field) => !field.section,
+      )
+      expect(missing.map((field) => field.key)).toEqual([])
+    },
+  )
 })

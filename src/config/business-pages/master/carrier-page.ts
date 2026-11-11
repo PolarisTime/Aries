@@ -150,9 +150,20 @@ export const carriersPageConfig: ModulePageConfig = {
    * （leo: master/carrier/web/dto/CarrierRequest.java、VehicleItem.java），与 md_carrier / md_vehicle 列宽一致。
    * 默认结算主体是 select、状态是固定枚举，不声明 maxLength。
    */
+  /*
+   * 两步录入：21 个字段一屏放得下，但「基本信息」和「车辆/报价」是两类心智模型，
+   * 分两步可以让第一步只留必填与常用字段。字段少（≤10）时不要这么做。
+   */
+  formSteps: [
+    { title: i18next.t('modules.formSections.basic') },
+    { title: i18next.t('modules.formSections.vehicle') },
+  ],
   formFields: [
     {
       key: 'carrierCode',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.carrier.colCarrierCode'),
       type: 'input',
       maxLength: 64,
@@ -165,6 +176,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'carrierName',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.carrier.colCarrierName'),
       type: 'input',
       maxLength: 128,
@@ -173,6 +187,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'contactName',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.carrier.colContactName'),
       type: 'input',
       maxLength: 32,
@@ -180,6 +197,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'contactPhone',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.carrier.colContactPhone'),
       type: 'input',
       maxLength: 20,
@@ -187,6 +207,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'vehiclePlate',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.formVehiclePlate'),
       type: 'input',
       maxLength: 16,
@@ -194,6 +217,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'vehicleContact',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.formVehicleContact'),
       type: 'input',
       maxLength: 32,
@@ -201,6 +227,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'vehiclePhone',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.formVehiclePhone'),
       type: 'input',
       maxLength: 20,
@@ -208,6 +237,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'vehicleRemark',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.formVehicleRemark'),
       type: 'input',
       maxLength: 64,
@@ -215,6 +247,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'vehiclePlate2',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.formVehiclePlate2'),
       type: 'input',
       maxLength: 16,
@@ -222,6 +257,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'vehicleContact2',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.formVehicleContact2'),
       type: 'input',
       maxLength: 32,
@@ -229,6 +267,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'vehiclePhone2',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.formVehiclePhone2'),
       type: 'input',
       maxLength: 20,
@@ -236,6 +277,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'vehicleRemark2',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.formVehicleRemark2'),
       type: 'input',
       maxLength: 64,
@@ -243,6 +287,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'vehiclePlate3',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.formVehiclePlate3'),
       type: 'input',
       maxLength: 16,
@@ -250,6 +297,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'vehicleContact3',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.formVehicleContact3'),
       type: 'input',
       maxLength: 32,
@@ -257,6 +307,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'vehiclePhone3',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.formVehiclePhone3'),
       type: 'input',
       maxLength: 20,
@@ -264,6 +317,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'vehicleRemark3',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.formVehicleRemark3'),
       type: 'input',
       maxLength: 64,
@@ -273,6 +329,9 @@ export const carriersPageConfig: ModulePageConfig = {
       // 后端 CarrierRequest 有 vehicleType，列表列也展示了它，但此前表单没有该字段
       // （只能看到、不能改）。接入通用列表页时一并补上，与结算方式同排。
       key: 'vehicleType',
+      colSpan: 12,
+      formStep: 2,
+      section: i18next.t('modules.formSections.vehicle'),
       label: i18next.t('modules.pages.carrier.colVehicleType'),
       type: 'input',
       maxLength: 64,
@@ -280,6 +339,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'defaultSettlementCompanyId',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.settlement'),
       label: i18next.t('modules.pages.carrier.colDefaultSettlementCompany'),
       type: 'select',
       required: true,
@@ -288,6 +350,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'priceMode',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.settlement'),
       label: i18next.t('modules.pages.carrier.colPriceMode'),
       type: 'input',
       maxLength: 32,
@@ -295,6 +360,9 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'status',
+      colSpan: 12,
+      formStep: 1,
+      section: i18next.t('modules.formSections.settlement'),
       label: i18next.t('modules.columns.status'),
       type: 'select',
       defaultValue: STATUS.NORMAL,
@@ -303,6 +371,8 @@ export const carriersPageConfig: ModulePageConfig = {
     },
     {
       key: 'remark',
+      formStep: 1,
+      section: i18next.t('modules.formSections.settlement'),
       label: i18next.t('modules.columns.remark'),
       type: 'textarea',
       maxLength: 255,
