@@ -2390,12 +2390,31 @@
   min-width: 0;
 }
 
-/* 重置固定在第一行行末，不随字段换行下移 */
+/*
+ * 右侧动作列：重置在上、展开/收起在下，各占一行高度。
+ * 纵向排列而不是横排，两行各自与左侧字段的第一行、第二行对齐。
+ */
 .module-filter-top-actions {
   display: flex;
   flex: 0 0 auto;
-  align-items: center;
-  height: var(--app-control-height);
+  flex-direction: column;
+  gap: var(--space-sm);
+  align-items: stretch;
+}
+
+/* 两个按钮同宽，纵向叠起来时左右边缘对齐 */
+.module-filter-top-actions > .ant-btn {
+  width: 100%;
+  margin-inline-start: 0;
+}
+
+/*
+ * 展开/收起与「重置」同款：两者是同一层的次级动作，视觉上应该是一对。
+ * 与 `.module-filter-reset-button` 用同一组声明（边框色 + 次要文字色）。
+ */
+.module-filter-top-actions > .module-filter-toggle-button {
+  border-color: var(--ant-color-border);
+  color: var(--ant-color-text-secondary);
 }
 
 /* 动作行（快捷筛选 / 查询 / 重置）：字段区之下单独一行，右对齐 */

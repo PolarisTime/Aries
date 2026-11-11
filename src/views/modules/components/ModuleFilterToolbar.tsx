@@ -26,6 +26,9 @@ import { ModuleFilterChip, ModuleQuickFilterChip } from './ModuleFilterChip'
  */
 const FILTER_VISIBLE_LIMIT = 8
 
+/** 每行显示的字段数（与 CSS 的 grid 列数一致）。 */
+const FILTER_COLUMNS = 4
+
 interface Props {
   config: ModulePageConfig
   filters: SearchParams
@@ -213,13 +216,26 @@ export function ModuleFilterToolbar({
    */
   const keywordVisible =
     !config.hideKeywordFilter && !hasConfigKeywordFilter && 0 < visibleLimit
-  const pillOffset = keywordVisible ? 1 : 0
-  const dateOffset = pillOffset + pillFilters.length
-  const chipOffset = dateOffset + dateRangeFilters.length
+
+  /*
+   * 渲染顺序 = 配置顺序（`row` 升序、同 row 内按声明顺序），**不再按控件类型分组**。
+   *
+   * <p>分组渲染会让配置里的 `row` 失效：销售订单的「项目名称」标了 `row: 2`，
+   * 但因为它属于 select 分组，实际被排到了日期区间之后、落进第一行。改成单次有序遍历后，
+   * 页面配置写第几个就渲染第几个，`row` 也真正决定它落在第几行。</p>
+   */
+  const orderedFields = sortedFilters
   const isVisible = (slot: number) => slot < visibleLimit
+  const fieldSlot = (field: (typeof orderedFields)[number]) =>
+    (keywordVisible ? 1 : 0) + orderedFields.indexOf(field)
   const hiddenCount = collapsible
     ? Math.max(0, renderedFieldCount - FILTER_VISIBLE_LIMIT)
     : 0
+  /*
+   * 展开按钮的显示条件：有被折叠的条件，或者字段本身就铺满两行（此时按钮不额外增高）。
+   * 单行字段（≤4 个条件）不显示，否则卡片会为一个用不上的按钮多出一行。
+   */
+  const showToggle = collapsible || renderedFieldCount > FILTER_COLUMNS
 
   /*
    * 文本筛选：字段名在控件左侧（表单式），控件是 32px 直角控件而不是药丸。
@@ -280,9 +296,10 @@ export function ModuleFilterToolbar({
                 asString(submittedFilters.keyword),
               )
             : null}
-          {pillFilters.map((field, index) =>
-            isVisible(pillOffset + index)
-              ? renderTextField(
+          {orderedFields.map((field) =>
+            isVisible(fieldSlot(field)) ? (
+              field.type === 'input' ? (
+                renderTextField(
                   field.key,
                   field.label,
                   field.placeholder ||
@@ -291,49 +308,67 @@ export function ModuleFilterToolbar({
                     }),
                   asString(submittedFilters[field.key]),
                 )
-              : null,
-          )}
-          {dateRangeFilters.map((field, index) =>
-            isVisible(dateOffset + index) ? (
-              <FilterField
-                key={field.key}
-                label={field.label}
-                className="module-filter-field-range"
-              >
-                <ModuleFilterField
-                  field={field}
-                  filters={filters}
-                  submittedFilters={submittedFilters}
-                  datePresets={datePresets}
-                  onUpdateFilter={onUpdateFilter}
-                  onCommitFilter={(key, value) =>
-                    commitFilter(key, value, field.resetKeysOnChange)
-                  }
-                  onCommitTextFilter={commitTextFilter}
-                  projectOptions={projectOptions}
-                />
-              </FilterField>
-            ) : null,
-          )}
-          {chipFilters.map((field, index) =>
-            isVisible(chipOffset + index) ? (
-              <FilterField key={field.key} label={field.label}>
-                <ModuleFilterChip
-                  field={field}
-                  filters={filters}
-                  submittedFilters={submittedFilters}
-                  projectOptions={projectOptions}
-                  open={openChipKey === field.key}
-                  onToggle={(open) => toggleChip(field.key, open)}
-                  onUpdateFilter={onUpdateFilter}
-                  onApplyFilters={onApplyFilters}
-                />
-              </FilterField>
+              ) : field.type === 'dateRange' ? (
+                <FilterField
+                  key={field.key}
+                  label={field.label}
+                  className="module-filter-field-range"
+                >
+                  <ModuleFilterField
+                    field={field}
+                    filters={filters}
+                    submittedFilters={submittedFilters}
+                    datePresets={datePresets}
+                    onUpdateFilter={onUpdateFilter}
+                    onCommitFilter={(key, value) =>
+                      commitFilter(key, value, field.resetKeysOnChange)
+                    }
+                    onCommitTextFilter={commitTextFilter}
+                    projectOptions={projectOptions}
+                  />
+                </FilterField>
+              ) : (
+                <FilterField key={field.key} label={field.label}>
+                  <ModuleFilterChip
+                    field={field}
+                    filters={filters}
+                    submittedFilters={submittedFilters}
+                    projectOptions={projectOptions}
+                    open={openChipKey === field.key}
+                    onToggle={(open) => toggleChip(field.key, open)}
+                    onUpdateFilter={onUpdateFilter}
+                    onApplyFilters={onApplyFilters}
+                  />
+                </FilterField>
+              )
             ) : null,
           )}
         </div>
+        {/*
+          右侧动作列：重置在上、展开/收起在下方，样式与重置完全一致（同一层次的次级动作）。
+          展开按钮**默认显示**：只要字段铺满两行就出现（此时它不额外撑高卡片）；
+          没有可展开内容时置灰并给出说明。字段只有一行时（≤4 个条件的模块）不渲染 ——
+          否则会为了放下一个用不上的按钮凭空多出一行高度，字段下方留一片空白。
+        */}
         <div className="module-filter-top-actions">
           {showResetButton ? <ModuleResetButton onClick={onReset} /> : null}
+          {showToggle ? (
+            <Button
+              className="module-filter-toggle-button"
+              disabled={!collapsible}
+              aria-expanded={collapsible ? filtersExpanded : false}
+              title={
+                collapsible ? undefined : t('modules.filter.noMoreFilters')
+              }
+              onClick={() => setFiltersExpanded((expanded) => !expanded)}
+            >
+              {filtersExpanded && collapsible
+                ? t('common.collapse')
+                : collapsible
+                  ? t('modules.filter.expandMore', { count: hiddenCount })
+                  : t('common.expand')}
+            </Button>
+          ) : null}
         </div>
       </div>
       {/*
@@ -342,20 +377,8 @@ export function ModuleFilterToolbar({
         这一行没有任何内容时不渲染 —— 否则条件少（不折叠、无快捷筛选、无查询按钮）的
         模块会在卡片底部多出一条空白带。
       */}
-      {collapsible || quickFilters.length > 0 || showSubmitButton ? (
+      {quickFilters.length > 0 || showSubmitButton ? (
         <div className="module-filter-form-row">
-          {collapsible ? (
-            <Button
-              className="module-filter-toggle-button"
-              type="text"
-              aria-expanded={filtersExpanded}
-              onClick={() => setFiltersExpanded((expanded) => !expanded)}
-            >
-              {filtersExpanded
-                ? t('common.collapse')
-                : t('modules.filter.expandMore', { count: hiddenCount })}
-            </Button>
-          ) : null}
           <ModuleQuickFilterChip
             quickFilters={quickFilters}
             defaultFilters={defaultFilters}

@@ -6,6 +6,7 @@ import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   getCustomerOptions,
   getCustomerProjectOptions,
+  getSettlementCompanyOptions,
 } from '@/module-system/core/module-option-resolvers'
 import { computeDraftTotals } from '@/module-system/editor/module-editor-draft'
 import type {
@@ -185,19 +186,21 @@ export const salesOrdersPageConfig: ModulePageConfig = {
   description: i18next.t('modules.pages.salesOrder.description'),
   primaryNoKey: 'orderNo',
   actions: actionSet,
+  /*
+   * 筛选条件按 `row` 分成两行（渲染顺序 = 这里的声明顺序）：
+   * - 第一行：单据编号 / 单据状态 / 结算主体 / 交货日期 —— 都是「这张单本身」的属性，
+   *   查单号、查状态、查主体、查时间窗是最高频的四件事；
+   * - 第二行：客户名称 / 项目名称 —— 两者联动（换客户要清项目），放在一起指代关系更清楚。
+   * 结算主体是补充第一行第 4 格而加的：后端 `salesOrderPage` 早就支持
+   * `settlementCompanyId`，此前前端没有入口。
+   */
   filters: [
     {
       key: 'keyword',
       label: ORDER_NO_FILTER_LABEL,
       type: 'input',
       placeholder: i18next.t('modules.pages.salesOrder.placeholderOrderNo'),
-    },
-    {
-      key: 'customerId',
-      label: CUSTOMER_NAME_LABEL,
-      type: 'select',
-      options: getCustomerOptions,
-      resetKeysOnChange: ['projectId'],
+      row: 1,
     },
     {
       key: 'status',
@@ -209,13 +212,14 @@ export const salesOrdersPageConfig: ModulePageConfig = {
         '交付核定',
         '完成销售',
       ),
+      row: 1,
     },
     {
-      key: 'projectId',
-      label: i18next.t('modules.pages.salesOrder.filterProjectName'),
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
       type: 'select',
-      options: getCustomerProjectOptions,
-      row: 2,
+      options: getSettlementCompanyOptions,
+      row: 1,
     },
     {
       key: 'deliveryDate',
@@ -225,6 +229,21 @@ export const salesOrdersPageConfig: ModulePageConfig = {
         monthsBefore: 3,
         monthsAfter: 1,
       },
+      row: 1,
+    },
+    {
+      key: 'customerId',
+      label: CUSTOMER_NAME_LABEL,
+      type: 'select',
+      options: getCustomerOptions,
+      resetKeysOnChange: ['projectId'],
+      row: 2,
+    },
+    {
+      key: 'projectId',
+      label: i18next.t('modules.pages.salesOrder.filterProjectName'),
+      type: 'select',
+      options: getCustomerProjectOptions,
       row: 2,
     },
   ],

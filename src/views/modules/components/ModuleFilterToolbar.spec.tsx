@@ -262,7 +262,7 @@ describe('ModuleFilterToolbar', () => {
   })
 
   /* 条件数不超过 8 个时不渲染折叠按钮，外观与改造前一致 */
-  it('条件数未超限时不渲染折叠按钮', () => {
+  it('条件数未超限时展开按钮置灰且不带计数', () => {
     const config = {
       filters: Array.from({ length: 8 }, (_, index) => ({
         key: `field${index}`,
@@ -286,10 +286,47 @@ describe('ModuleFilterToolbar', () => {
       )
     })
 
-    expect(container.querySelector('.module-filter-toggle-button')).toBeNull()
+    /*
+     * 8 个条件铺满两行：展开按钮默认显示（置灰，因为没有被折叠的条件），
+     * 但它不会额外撑高卡片 —— 字段本身就占两行。
+     */
+    const toggle = container.querySelector(
+      '.module-filter-toggle-button',
+    ) as HTMLButtonElement | null
+    expect(toggle).not.toBeNull()
+    expect(toggle?.disabled).toBe(true)
+    expect(toggle?.textContent).toBe('common.expand')
     expect(
       container.querySelector('.module-filter-fields')?.children.length,
     ).toBe(8)
+  })
+
+  /* 单行字段（≤4 个条件）不渲染展开按钮：否则会为它额外撑出一行空白 */
+  it('条件只有一行时不渲染展开按钮', () => {
+    const config = {
+      filters: Array.from({ length: 4 }, (_, index) => ({
+        key: `field${index}`,
+        label: `条件${index}`,
+        type: 'input',
+      })),
+      quickFilters: [],
+      hideKeywordFilter: true,
+    } as unknown as ModulePageConfig
+
+    act(() => {
+      root.render(
+        createElement(ModuleFilterToolbar, {
+          config,
+          filters: {},
+          submittedFilters: {},
+          onUpdateFilter: vi.fn(),
+          onApplyFilters: vi.fn(),
+          onReset: vi.fn(),
+        }),
+      )
+    })
+
+    expect(container.querySelector('.module-filter-toggle-button')).toBeNull()
   })
 
   /*
