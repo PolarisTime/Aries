@@ -1548,9 +1548,13 @@
   border-bottom: 1px solid var(--theme-border-subtle);
 }
 
+/*
+ * 命令区（新增 / 列设置 / 刷新）：上 12px、下 16px。
+ * 原来下边距只有 4px，按钮底边几乎贴着表格表头，看起来像按钮压在表头上。
+ */
 .module-grid-command-region {
   flex: 0 0 auto;
-  padding: var(--space-xxs) var(--space-md);
+  padding: var(--space-sm) var(--space-md) var(--space-md);
   background: var(--theme-surface);
   border-bottom: 1px solid var(--theme-border-subtle);
 }
@@ -2448,8 +2452,8 @@
 .module-filter-field {
   display: flex;
   align-items: center;
-  /* 字段名 ↔ 控件 8px */
-  gap: var(--space-xs);
+  /* 字段名 ↔ 控件 12px：8px 时标签与控件贴得太近，长标签像控件的一部分 */
+  gap: var(--space-sm);
   min-width: 0;
 }
 
@@ -2506,6 +2510,16 @@
  */
 .module-filter-field-range {
   width: auto;
+}
+
+/*
+ * 日期区间占两列后不要跟着拉满：控件拉到 ~660px 时两端日期会隔着半个屏幕，
+ * 读起来像两个独立输入框。限宽 480px 既保留「占两格」的视觉分量，
+ * 又不至于在控件右侧留下大片空白。
+ */
+.module-filter-field-range > .ant-picker,
+.module-filter-field-range > .module-filter-control {
+  max-width: 480px;
 }
 
 /*

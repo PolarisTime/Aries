@@ -86,6 +86,8 @@ interface FilterFieldProps {
   /** 字段名（渲染在控件左侧） */
   label: string
   className?: string
+  /** 在网格里占几列（默认 1）；日期区间这类宽控件用 2 */
+  span?: number
   children: ReactNode
 }
 
@@ -95,12 +97,14 @@ interface FilterFieldProps {
  * <p>标签用 `<span>` 而不是 `<label>`：控件自己带 `aria-label`（文案与本处可见标签同一份），
  * 再套一层 `<label>` 会让同一个字段出现两个名字，部分读屏组合会念两遍。</p>
  */
-function FilterField({ label, className, children }: FilterFieldProps) {
+function FilterField({ label, className, span, children }: FilterFieldProps) {
   return (
     <div
       className={
         className ? `module-filter-field ${className}` : 'module-filter-field'
       }
+      // 占多列时用行内样式：列数来自配置，类名无法覆盖任意 span 值
+      style={span && span > 1 ? { gridColumn: `span ${span}` } : undefined}
     >
       <span className="module-filter-field-label">{label}</span>
       {children}
@@ -246,8 +250,9 @@ export function ModuleFilterToolbar({
     label: string,
     placeholder: string,
     committedValue: string,
+    span?: number,
   ) => (
-    <FilterField key={key} label={label}>
+    <FilterField key={key} label={label} span={span}>
       <Input
         name={key}
         allowClear
@@ -307,12 +312,14 @@ export function ModuleFilterToolbar({
                       label: field.label,
                     }),
                   asString(submittedFilters[field.key]),
+                  field.span,
                 )
               ) : field.type === 'dateRange' ? (
                 <FilterField
                   key={field.key}
                   label={field.label}
                   className="module-filter-field-range"
+                  span={field.span}
                 >
                   <ModuleFilterField
                     field={field}
@@ -328,7 +335,11 @@ export function ModuleFilterToolbar({
                   />
                 </FilterField>
               ) : (
-                <FilterField key={field.key} label={field.label}>
+                <FilterField
+                  key={field.key}
+                  label={field.label}
+                  span={field.span}
+                >
                   <ModuleFilterChip
                     field={field}
                     filters={filters}

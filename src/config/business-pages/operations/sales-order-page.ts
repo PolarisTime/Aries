@@ -188,11 +188,11 @@ export const salesOrdersPageConfig: ModulePageConfig = {
   actions: actionSet,
   /*
    * 筛选条件按 `row` 分成两行（渲染顺序 = 这里的声明顺序）：
-   * - 第一行：单据编号 / 单据状态 / 结算主体 / 交货日期 —— 都是「这张单本身」的属性，
-   *   查单号、查状态、查主体、查时间窗是最高频的四件事；
-   * - 第二行：客户名称 / 项目名称 —— 两者联动（换客户要清项目），放在一起指代关系更清楚。
-   * 结算主体是补充第一行第 4 格而加的：后端 `salesOrderPage` 早就支持
-   * `settlementCompanyId`，此前前端没有入口。
+   * - 第一行：单据编号 / 交货日期（占 2 列）/ 单据状态 —— 查单号、查时间窗、查状态；
+   *   日期区间要并排显示两个完整日期，占 2 列才不会被截断，正好把 4 列排满。
+   * - 第二行：客户名称 / 项目名称 / 结算主体 —— 客户与项目联动（换客户清项目），
+   *   结算主体是补充第 3 格新增的入口（后端 `salesOrderPage` 早就支持
+   *   `settlementCompanyId`，前端此前没有）。
    */
   filters: [
     {
@@ -201,6 +201,17 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       type: 'input',
       placeholder: i18next.t('modules.pages.salesOrder.placeholderOrderNo'),
       row: 1,
+    },
+    {
+      key: 'deliveryDate',
+      label: i18next.t('modules.pages.salesOrder.filterDeliveryDate'),
+      type: 'dateRange',
+      defaultDateRange: {
+        monthsBefore: 3,
+        monthsAfter: 1,
+      },
+      row: 1,
+      span: 2,
     },
     {
       key: 'status',
@@ -212,23 +223,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
         '交付核定',
         '完成销售',
       ),
-      row: 1,
-    },
-    {
-      key: 'settlementCompanyId',
-      label: SETTLEMENT_COMPANY_LABEL,
-      type: 'select',
-      options: getSettlementCompanyOptions,
-      row: 1,
-    },
-    {
-      key: 'deliveryDate',
-      label: i18next.t('modules.pages.salesOrder.filterDeliveryDate'),
-      type: 'dateRange',
-      defaultDateRange: {
-        monthsBefore: 3,
-        monthsAfter: 1,
-      },
       row: 1,
     },
     {
@@ -244,6 +238,13 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       label: i18next.t('modules.pages.salesOrder.filterProjectName'),
       type: 'select',
       options: getCustomerProjectOptions,
+      row: 2,
+    },
+    {
+      key: 'settlementCompanyId',
+      label: SETTLEMENT_COMPANY_LABEL,
+      type: 'select',
+      options: getSettlementCompanyOptions,
       row: 2,
     },
   ],

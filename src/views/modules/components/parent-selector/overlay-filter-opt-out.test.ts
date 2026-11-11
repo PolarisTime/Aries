@@ -238,15 +238,16 @@ describe('真实模块：物流单导入销售订单', () => {
     )
 
     /*
-     * 顺序 = 销售订单筛选区配置的声明顺序（第一行 单据编号/状态/结算主体/交货日期，
-     * 第二行 客户名称/项目名称）；status 被剔除后剩 5 项。
+     * 顺序 = 销售订单筛选区配置的声明顺序
+     * （第一行 单据编号/交货日期/单据状态，第二行 客户名称/项目名称/结算主体）；
+     * status 被剔除后剩 5 项。
      */
     expect(filterKeys(config)).toEqual([
       'keyword',
-      'settlementCompanyId',
       'deliveryDate',
       'customerId',
       'projectId',
+      'settlementCompanyId',
     ])
     /*
      * status 被剔除的原因是**接口能力**：后端

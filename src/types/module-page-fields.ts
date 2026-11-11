@@ -112,6 +112,14 @@ export interface ModuleFilterDefinition {
       }
   options?: ModuleFilterOptionEntry[] | ModuleFilterOptionResolver
   row?: number
+  /**
+   * 在筛选区网格里占几列（默认 1）。
+   *
+   * <p>只有「一个字段需要比一列更宽」时才用：日期区间要并排显示两个完整日期，
+   * 单列（约 350px）放不下，占 2 列后不再被截断。字段总数按「列」计，
+   * 折叠阈值仍以 {@link FILTER_VISIBLE_LIMIT} 的列数判断。</p>
+   */
+  span?: number
 }
 
 export interface ModuleQuickFilterDefinition {
@@ -229,4 +237,22 @@ export interface ModuleFormFieldDefinition {
    * 不声明则保持平铺，未分区的模块不受影响。
    */
   section?: string
+  /**
+   * 多步录入向导里的步骤序号（1 起）。**仅当页面声明了 `formSteps` 时生效**。
+   *
+   * <p>刻意不叫 `step`：那个名字已被 {@link ModuleFormFieldDefinition.step} 占用于
+   * `InputNumber` 的数值步进，语义完全不同。</p>
+   *
+   * <p>未声明 `formStep` 的字段在向导模式下不渲染任何一步 —— 这正好承接
+   * `visibleWhen: () => false` 的隐藏字段（如收款单的状态字段），不会在末步突然冒出来。</p>
+   */
+  formStep?: number
+}
+
+/** 多步录入向导的一步（页面配置 `formSteps` 的元素）。 */
+export interface ModuleFormStep {
+  /** 步骤标题（已翻译文案）。 */
+  title: string
+  /** 步骤副标题，用来一句话说明这一步在填什么（可选）。 */
+  subTitle?: string
 }
