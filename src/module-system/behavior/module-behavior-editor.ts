@@ -463,6 +463,15 @@ export const contributeEditorBehaviors: ModuleBehaviorContributor = (
   })
   registerModuleBehavior('sales-order', { defaultOperatorField: 'salesName' })
   registerModuleBehavior('sales-order', {
+    /*
+     * 明细只允许从上级单据导入（采购订单 / 采购入库），不允许手工新增行。
+     *
+     * 与采购入库同一口径。理由：销售订单的仓库、材质、规格、件重都是来源单据的快照，
+     * 手工行的这些字段既没有来源可填、也没有价格口径可核（网价核查按行 id 对应来源），
+     * 全靠人填只会在保存时被后端按来源规则打回。需要新增明细时走工具栏
+     * 「导入采购订单明细」。
+     */
+    allowsManualLineItems: false,
     // 报单日期与交货日期同为业务日期字段：新建时默认当天，编辑既有单据时后端回传值优先。
     defaultDraftValues: () => ({
       orderDate: currentDateTime(),
