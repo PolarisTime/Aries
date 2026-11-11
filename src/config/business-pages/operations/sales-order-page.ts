@@ -97,8 +97,20 @@ const salesOrderItemColumnConfig: ModuleItemColumnConfig<SalesOrderDerivedItemCo
       'unitPrice',
       'amount',
     ],
-    // 剩余可出库量仅在销售订单详情/出库来源候选中只读展示，销售订单编辑态默认隐藏。
-    hiddenByDefault: ['outboundRemainingQuantity'],
+    /*
+     * 默认隐藏的派生列：
+     * - 剩余可出库量只在「出库录入/候选」里有用（那是数量上限的依据），录单与详情都用不上；
+     * - 已交付 / 已退货 / 净交付 是整单口径的派生量，列表行上已经汇总显示过一次，
+     *   展开行再逐行重复一遍会让「整单 vs 行」两个层级混在一屏里
+     *   （且 A 口径下它们与「剩余可出库」不闭合，并排容易被读成数据对不上）。
+     * 需要时都能从明细的「列设置」勾出来。
+     */
+    hiddenByDefault: [
+      'outboundRemainingQuantity',
+      'deliveredQuantity',
+      'returnedQuantity',
+      'deliveredNetQuantity',
+    ],
     // 商品编码列不再占用表格空间；材质列承载物料选择，选中后仍会同步填充
     // materialId/materialCode 及其它物料快照字段，满足后端请求契约。
     overrides: {
