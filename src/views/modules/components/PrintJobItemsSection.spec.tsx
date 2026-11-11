@@ -9,7 +9,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import type { PrintRecordItem } from '@/api/system/print-template'
 import { rowDragAriaKeyshortcuts } from '@/components/table/row-drag'
-import { getPrintItemFields } from '@/utils/print-module-config'
+import {
+  getPrintItemColumnWidth,
+  getPrintItemFields,
+} from '@/utils/print-module-config'
 import { PrintJobItemsSection } from './PrintJobItemsSection'
 import type { PrintJobModalAction } from './print-job-modal-state'
 
@@ -66,6 +69,8 @@ interface HarnessProps {
   items: PrintRecordItem[]
   /** 显式指定有序 id(用于构造"明细不在有序集合里"的兜底场景); 缺省跟随行状态。 */
   orderedIds?: string[]
+  /** 模块 key: 决定打印明细的列集合(默认销售订单, 全量 11 列)。 */
+  moduleKey?: string
   onDispatch: (action: PrintJobModalAction) => void
   onDragStart?: () => void
   onDragEnd?: () => void
@@ -75,6 +80,7 @@ interface HarnessProps {
 function Harness({
   items,
   orderedIds,
+  moduleKey = 'sales-order',
   onDispatch,
   onDragStart,
   onDragEnd,
@@ -104,13 +110,13 @@ function Harness({
           isStatementPrintModule={false}
           itemSelectionEnabled={false}
           mergeMarkersByItemId={{}}
-          moduleKey="sales-order"
+          moduleKey={moduleKey}
           onRetryPrintItems={() => undefined}
           onToggleSplitItem={() => undefined}
           orderedPrintItemIds={ids}
           orderedPrintItems={rows}
           outputPrintItemIdSet={new Set()}
-          printItemFields={getPrintItemFields('sales-order')}
+          printItemFields={getPrintItemFields(moduleKey)}
           printItems={rows}
           printItemsError={false}
           selectedPrintItems={rows}
@@ -487,5 +493,86 @@ describe('打印明细行的非拖动重排替代', () => {
     )
     expect(cells).toContain('1')
     expect(cells).not.toContain('0')
+  })
+
+  /**
+   * 列宽与省略口径：短值列（品牌/材质/金额…）**不省略**，放不下改为横向滚动；
+   * 长文本的单号列仍省略。口径来自 `utils/table-column-ellipsis`，宽度来自
+   * `utils/print-module-config` —— 组件里不该再有第二份判断或第二个宽度数字。
+   *
+   * <p>回退验证（实际改错跑过）：把 `ellipsis: columnEllipsis` 改回
+   * `ellipsis: true`，「短值列不再一律省略」变红（每个数据列都被加上
+   * `ant-table-cell-ellipsis`）；把宽度改回硬编码数字，「列宽取自宽度表」变红。</p>
+   */
+  describe('打印明细列的省略口径与列宽', () => {
+    /** 表头文本 → 该列在 DOM 中的下标（按列名定位，不按下标猜列）。 */
+    const headerIndex = (label: string) =>
+      Array.from(container.querySelectorAll<HTMLElement>('thead th')).findIndex(
+        (cell) => (cell.textContent ?? '').trim() === label,
+      )
+
+    const dataCell = (rowIndex: number, label: string) => {
+      const row = container
+        .querySelectorAll('.ant-table-tbody tr.ant-table-row')
+        .item(rowIndex)
+      const index = headerIndex(label)
+      if (!row || index < 0) return null
+      return row.querySelectorAll<HTMLTableCellElement>('td').item(index)
+    }
+
+    /** 与表头同属一张表的 `<col>` 宽度（antd 把列宽写在 colgroup 上）。 */
+    const renderedColumnWidth = (label: string) => {
+      const headers = Array.from(
+        container.querySelectorAll<HTMLElement>('thead th'),
+      )
+      const index = headers.findIndex(
+        (cell) => (cell.textContent ?? '').trim() === label,
+      )
+      const col = headers[0]
+        ?.closest('table')
+        ?.querySelectorAll<HTMLElement>('colgroup col')
+        .item(index)
+      return col ? Number.parseFloat(col.style.width) : Number.NaN
+    }
+
+    it('短值列不再一律省略: 销售订单明细的每个数据列都不带 ellipsis 类', () => {
+      render({ items: [ITEM_A] })
+      const labels = getPrintItemFields('sales-order').map((field) =>
+        i18n.t(field.labelKey),
+      )
+      expect(labels).toHaveLength(11)
+      for (const label of labels) {
+        const cell = dataCell(0, label)
+        expect(cell, `列「${label}」没渲染出来`).not.toBeNull()
+        expect(cell?.className).not.toContain('ant-table-cell-ellipsis')
+      }
+    })
+
+    it('长文本单号列仍省略, 短值金额列不省略(收付款单: 来源单号 + 金额)', () => {
+      render({ items: [ITEM_A], moduleKey: 'receipt' })
+      expect(
+        dataCell(0, i18n.t('modules.print.itemSourceNo'))?.className,
+      ).toContain('ant-table-cell-ellipsis')
+      expect(
+        dataCell(0, i18n.t('modules.print.itemAmount'))?.className,
+      ).not.toContain('ant-table-cell-ellipsis')
+    })
+
+    it('列宽取自唯一宽度表: 每个数据列的渲染宽度等于配置宽度', () => {
+      render({ items: [ITEM_A] })
+      for (const field of getPrintItemFields('sales-order')) {
+        const label = i18n.t(field.labelKey)
+        expect(renderedColumnWidth(label), `列「${label}」的渲染宽度`).toBe(
+          getPrintItemColumnWidth(field),
+        )
+      }
+    })
+
+    it('数量单位列宽够放表头（原 72px 会把「数量单位」挤换行）', () => {
+      render({ items: [ITEM_A] })
+      const label = i18n.t('modules.columns.quantityUnit')
+      // 表头「数量单位」49 + 单元格左右 padding 24 = 73
+      expect(renderedColumnWidth(label)).toBeGreaterThanOrEqual(73)
+    })
   })
 })

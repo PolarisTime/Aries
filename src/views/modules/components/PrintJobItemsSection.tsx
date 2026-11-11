@@ -44,6 +44,7 @@ import { isModuleKey } from '@/module-system/core/module-key'
 import type { PrintItemFieldSpec } from '@/utils/print-module-config'
 import {
   getPrintItemColumnAlign,
+  getPrintItemColumnEllipsis,
   getPrintItemColumnWidth,
 } from '@/utils/print-module-config'
 import type { PrintItemSplitPart } from '@/views/modules/components/print-item-split'
@@ -572,14 +573,18 @@ export function PrintJobItemsSection({
         ]
       : []),
     ...printItemFields.flatMap((field: PrintItemFieldSpec) => {
+      /*
+       * 是否省略交给唯一判定（utils/table-column-ellipsis）：
+       * 短值列（品牌/类别/材质/规格/长度/数量/数量单位/件重/重量/单价/金额）不省略 ——
+       * 「盘螺调直」截成「盘螺…」、`12345678.90` 截成 `123456…` 既读不出含义也比不了大小；
+       * 放不下就让表格横向滚动。长文本的单号列仍然省略，全文进 title。
+       */
+      const columnEllipsis = getPrintItemColumnEllipsis(field)
       const itemColumn = {
         key: field.key,
-        width:
-          field.key === 'brand' && showMergeGroup
-            ? 136
-            : getPrintItemColumnWidth(field),
+        width: getPrintItemColumnWidth(field, { mergeMarker: showMergeGroup }),
         align: getPrintItemColumnAlign(field, moduleKey),
-        ellipsis: true,
+        ellipsis: columnEllipsis,
         title: t(field.labelKey),
         render: (_: unknown, item: PrintRecordItem) => {
           if (field.key !== 'brand') {
@@ -599,8 +604,9 @@ export function PrintJobItemsSection({
                   {mergeMarker.groupIndex}
                 </Tag>
               ) : null}
+              {/* 内层截断跟着列口径走：列不省略时这里也不截，避免「列没截、内容却截了」 */}
               <Typography.Text
-                ellipsis={{ tooltip: true }}
+                ellipsis={columnEllipsis ? { tooltip: true } : undefined}
                 style={{ minWidth: 0, flex: 1 }}
               >
                 {fieldText(item.brand)}
