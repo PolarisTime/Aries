@@ -203,17 +203,6 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       row: 1,
     },
     {
-      key: 'deliveryDate',
-      label: i18next.t('modules.pages.salesOrder.filterDeliveryDate'),
-      type: 'dateRange',
-      defaultDateRange: {
-        monthsBefore: 3,
-        monthsAfter: 1,
-      },
-      row: 1,
-      span: 2,
-    },
-    {
       key: 'status',
       label: BILL_STATUS_LABEL,
       type: 'segmented',
@@ -224,6 +213,22 @@ export const salesOrdersPageConfig: ModulePageConfig = {
         '完成销售',
       ),
       row: 1,
+    },
+    {
+      /*
+       * 日期区间占 2 列，且**排在行尾**：它比其它字段宽（需要放下两个完整日期），
+       * 放在行中会让右侧剩下的空白夹在字段之间、看起来像少了一个控件；
+       * 放在行尾时多出来的宽度就落在行的右边界上。
+       */
+      key: 'deliveryDate',
+      label: i18next.t('modules.pages.salesOrder.filterDeliveryDate'),
+      type: 'dateRange',
+      defaultDateRange: {
+        monthsBefore: 3,
+        monthsAfter: 1,
+      },
+      row: 1,
+      span: 2,
     },
     {
       key: 'customerId',

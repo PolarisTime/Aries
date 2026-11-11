@@ -2519,12 +2519,12 @@
 }
 
 /*
- * 日期区间占两列就让它吃满两列：限宽会在控件右侧留一条空白，
- * 而「单据状态」就排在这条空白后面，看起来像少了一个字段。
+ * 日期区间占两列，但控件限宽 520px：两列全宽（~600px）会把起止日期拉到相隔半屏，
+ * 看起来像两个独立输入框。限宽后多出来的宽度落在行尾，不会夹在字段之间。
  */
 .module-filter-field-range > .ant-picker,
 .module-filter-field-range > .module-filter-control {
-  max-width: none;
+  max-width: 520px;
 }
 
 /*
