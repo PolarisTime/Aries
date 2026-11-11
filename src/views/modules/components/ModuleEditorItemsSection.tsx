@@ -76,6 +76,11 @@ interface Props {
    * <p>财务单据仍由 `WorkspaceOverlay` 的 footer 槽渲染，这里传 false。</p>
    */
   showFooterActions?: boolean
+  /**
+   * 是否渲染明细工具栏（新增明细 / 导入 / 列设置 / 自动排序 / 删除选中）。
+   * 缺省 true；编辑器工作区把工具栏提到顶部操作栏后传 false。
+   */
+  showItemsToolbar?: boolean
   onAddItem: () => void
   onAutoSortItems: (mode?: FreightStatementSortMode) => void
   freightStatementSortDirection?: FreightStatementSortDirection
@@ -139,6 +144,7 @@ export function ModuleEditorItemsSection({
   auditLabel,
   saving,
   showFooterActions = false,
+  showItemsToolbar = true,
   onAddItem,
   onAutoSortItems,
   freightStatementSortDirection = 'asc',
@@ -226,7 +232,8 @@ export function ModuleEditorItemsSection({
   /*
    * 「取消 / 保存 / 保存并审核」在明细工具栏里的**唯一构建处**：两个页签共用同一份节点，
    * 所以切「货物明细 / 附加费用」都不会丢保存入口。
-   * 货物页签由 ModuleItemsToolbarActions 接收它排在行末；费用页签由本组件单独挂到工具栏槽。
+   * 两个页签都通过「行末槽」摆放（ModuleItemsPanel / ModuleEditorExpensePanel 的
+   * footerActions）：工具按钮在左、单据动作贴右，两者作用域不同，不混在同一序列里。
    */
   const footerActions = showFooterActions ? (
     <EditorFooterActions
@@ -275,7 +282,7 @@ export function ModuleEditorItemsSection({
               expenseTotalAmount={expenseTotalAmount}
               saving={saving}
               /* 费用页签也渲染同一条工具栏的保存组：切页签不丢保存入口。 */
-              footerActions={footerActions}
+              footerActions={showItemsToolbar ? footerActions : null}
               onExpenseSelectedChange={onExpenseSelectedChange}
               onExpenseSelectAll={onExpenseSelectAll}
               onExpenseChange={onExpenseChange}
@@ -295,28 +302,32 @@ export function ModuleEditorItemsSection({
               expenseTotalAmount={
                 supportsExpenseTab ? expenseTotalAmount : undefined
               }
+              footerActions={showItemsToolbar ? footerActions : null}
               actions={
-                <ModuleItemsToolbarActions
-                  capabilities={capabilities}
-                  columnSettingsOpen={columnSettingsOpen}
-                  config={config}
-                  extraActions={extraActions}
-                  footerActions={footerActions}
-                  freightStatementSortDirection={freightStatementSortDirection}
-                  itemColumnOrder={itemColumnOrder}
-                  onAddItem={onAddItem}
-                  onAutoSortItems={onAutoSortItems}
-                  onColumnSettingsOpenChange={setColumnSettingsOpen}
-                  onItemColumnOrderChange={onItemColumnOrderChange}
-                  onOpenParentSelector={onOpenParentSelector}
-                  onRemoveSelectedItems={onRemoveSelectedItems}
-                  onToggleItemColumn={onToggleItemColumn}
-                  parentImportVisible={parentImportVisible}
-                  parentImporting={parentImporting}
-                  saving={saving}
-                  selectedItemCount={selectedItemIds.length}
-                  visibleItemColumnKeys={visibleItemColumnKeys}
-                />
+                showItemsToolbar ? (
+                  <ModuleItemsToolbarActions
+                    capabilities={capabilities}
+                    columnSettingsOpen={columnSettingsOpen}
+                    config={config}
+                    extraActions={extraActions}
+                    freightStatementSortDirection={
+                      freightStatementSortDirection
+                    }
+                    itemColumnOrder={itemColumnOrder}
+                    onAddItem={onAddItem}
+                    onAutoSortItems={onAutoSortItems}
+                    onColumnSettingsOpenChange={setColumnSettingsOpen}
+                    onItemColumnOrderChange={onItemColumnOrderChange}
+                    onOpenParentSelector={onOpenParentSelector}
+                    onRemoveSelectedItems={onRemoveSelectedItems}
+                    onToggleItemColumn={onToggleItemColumn}
+                    parentImportVisible={parentImportVisible}
+                    parentImporting={parentImporting}
+                    saving={saving}
+                    selectedItemCount={selectedItemIds.length}
+                    visibleItemColumnKeys={visibleItemColumnKeys}
+                  />
+                ) : null
               }
             >
               <ModuleItemGroupsView

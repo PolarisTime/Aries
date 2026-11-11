@@ -74,6 +74,13 @@ interface Props {
   auditLabel?: string
   saving: boolean
   showFooterActions: boolean
+  /**
+   * 是否由明细区自行渲染工具栏（新增明细 / 导入 / 列设置…）。
+   *
+   * <p>默认 true；编辑器工作区把工具栏提到顶部操作栏后传 false，
+   * 保证同一批按钮只有一个渲染出口。</p>
+   */
+  showItemsToolbar?: boolean
   setFormValue: (key: string, value: unknown) => void
   currentStatus: string
   formValues: Record<string, unknown>
@@ -119,6 +126,7 @@ export function ModuleEditorItemsArea({
   auditLabel,
   saving,
   showFooterActions,
+  showItemsToolbar = true,
   setFormValue,
   currentStatus,
   formValues,
@@ -162,6 +170,7 @@ export function ModuleEditorItemsArea({
       auditLabel={auditLabel}
       saving={saving}
       showFooterActions={showFooterActions}
+      showItemsToolbar={showItemsToolbar}
       extraActions={buildModuleItemsActions({
         open,
         moduleKey,

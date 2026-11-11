@@ -38,7 +38,9 @@ const runtime = vi.hoisted(() => ({
   saving: false,
   parentImporting: false,
   importPromise: null as null | Promise<void>,
-  footerSaving: [] as boolean[],
+  /** 顶部操作栏里保存组的 saving（唯一出口） */
+  saveGroupSaving: [] as boolean[],
+  overlayFooterRendered: false,
   shortcutSaving: [] as boolean[],
   itemsAreaSaving: [] as boolean[],
   importRecords: null as
@@ -151,12 +153,15 @@ vi.mock('./WorkspaceOverlay', () => ({
   }: {
     children?: ReactNode
     footer?: ReactNode
-  }) => createElement('div', { 'data-testid': 'overlay' }, footer, children),
+  }) => {
+    runtime.overlayFooterRendered = footer !== undefined
+    return createElement('div', { 'data-testid': 'overlay' }, footer, children)
+  },
 }))
 
 vi.mock('./EditorFooterActions', () => ({
   EditorFooterActions: (props: { saving: boolean }) => {
-    runtime.footerSaving.push(props.saving)
+    runtime.saveGroupSaving.push(props.saving)
     return createElement('div', { 'data-testid': 'footer' })
   },
 }))
@@ -206,7 +211,8 @@ describe('ModuleEditorWorkspace 忙态锁', () => {
     runtime.saving = false
     runtime.parentImporting = false
     runtime.importPromise = null
-    runtime.footerSaving = []
+    runtime.saveGroupSaving = []
+    runtime.overlayFooterRendered = false
     runtime.shortcutSaving = []
     runtime.itemsAreaSaving = []
     runtime.importRecords = null
@@ -249,24 +255,27 @@ describe('ModuleEditorWorkspace 忙态锁', () => {
     expect(last(runtime.shortcutSaving)).toBe(false)
   })
 
-  it('明细工具栏路径（销售订单）：导入中锁住保存组与 Ctrl+S', () => {
+  /*
+   * 单据级动作（取消/保存/保存并审核）现在只有**顶部操作栏**一个出口：
+   * 此前销售订单走明细工具栏、收付款单走弹层 footer，两条路径各锁一次。
+   */
+  it('顶部操作栏路径（销售订单）：导入中锁住保存组与 Ctrl+S', () => {
     runtime.parentImporting = true
     renderWorkspace('sales-order')
 
-    // 明细工具栏的保存组走同一把锁（保存/保存并审核/取消一起禁用）
-    expect(last(runtime.itemsAreaSaving)).toBe(true)
+    // 顶部操作栏的保存组走同一把锁（保存/保存并审核/取消一起禁用）
+    expect(last(runtime.saveGroupSaving)).toBe(true)
     // 快捷键只在 saving 为真时忽略本次 Ctrl+S
     expect(last(runtime.shortcutSaving)).toBe(true)
-    // 销售订单的保存组不在弹层 footer
-    expect(runtime.footerSaving).toHaveLength(0)
   })
 
-  it('弹层 footer 路径（收付款单）：导入中 footer 的保存/取消一并锁定', () => {
+  it('顶部操作栏路径（收付款单）：导入中保存组同样被锁', () => {
     runtime.parentImporting = true
     renderWorkspace('receipt')
 
-    // footer 的 saving 同时决定「取消禁用 + 保存按钮 loading」
-    expect(last(runtime.footerSaving)).toBe(true)
+    // 不再有弹层 footer：向导与整页编辑器共用同一条顶部操作栏
+    expect(runtime.overlayFooterRendered).toBe(false)
+    expect(last(runtime.saveGroupSaving)).toBe(true)
     expect(last(runtime.shortcutSaving)).toBe(true)
   })
 

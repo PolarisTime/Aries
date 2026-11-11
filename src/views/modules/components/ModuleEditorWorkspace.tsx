@@ -1,5 +1,5 @@
 import { Form } from 'antd'
-import { useCallback, useEffect, useId, useRef } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { isConcurrencyRecoveryCode } from '@/api/core/resource-version'
 import {
   resolveMasterOptionRequirements,
@@ -36,7 +36,10 @@ import { ModuleEditorExtras } from './ModuleEditorExtras'
 import { ModuleEditorFormArea } from './ModuleEditorFormArea'
 import { ModuleEditorItemsArea } from './ModuleEditorItemsArea'
 import { ModuleEditorSaveResultHost } from './ModuleEditorSaveResultHost'
+import { ModuleEditorTopActions } from './ModuleEditorTopActions'
 import { ModuleEditorWorkspaceTitle } from './ModuleEditorWorkspaceTitle'
+import { ModuleItemsToolbarActions } from './ModuleItemsToolbarActions'
+import { buildModuleItemsActions } from './module-editor-items-actions'
 import {
   isFinanceDocumentModule,
   resolveEditorCustomerId,
@@ -350,6 +353,52 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
       setItems((current) => restoreRemovedItems(current, snapshot)),
   })
 
+  /*
+   * 顶部操作栏：工具动作（新增明细/导入/列设置/自动排序/删除选中）靠左，
+   * 单据级动作（取消/保存/保存并审核）靠右。两组都由**这里**构建 ——
+   * 明细区不再自己渲染工具栏，避免同一批按钮出现两个出口。
+   */
+  const [itemColumnSettingsOpen, setItemColumnSettingsOpen] = useState(false)
+  const itemsToolbarActions = config.itemColumns?.length ? (
+    <ModuleItemsToolbarActions
+      capabilities={{
+        addManualItems: canAddManualItemsForCurrentRecord,
+        importParentItems: canImportParentItems,
+        autoSortItems: canAutoSortItems,
+        save: canSave,
+        audit: canSaveAndAuditInEditor,
+      }}
+      columnSettingsOpen={itemColumnSettingsOpen}
+      config={config}
+      extraActions={buildModuleItemsActions({
+        open,
+        moduleKey,
+        config,
+        currentStatus,
+        formValues: editorFormValues,
+        items,
+        setItems,
+        setFormValue: (key, value) => form.setFieldValue(key, value),
+        saving: editorBusy,
+        projectOptions,
+      })}
+      freightStatementSortDirection={freightStatementSortDirection}
+      itemColumnOrder={itemColumnOrder}
+      onAddItem={addItem}
+      onAutoSortItems={handleAutoSortItems}
+      onColumnSettingsOpenChange={setItemColumnSettingsOpen}
+      onItemColumnOrderChange={onItemColumnOrderChange}
+      onOpenParentSelector={openParentSelector}
+      onRemoveSelectedItems={removeSelectedItems}
+      onToggleItemColumn={toggleItemColumn}
+      parentImportVisible={parentImportVisible}
+      parentImporting={parentImporting}
+      saving={editorBusy}
+      selectedItemCount={selectedItemIds.length}
+      visibleItemColumnKeys={visibleItemColumnKeys}
+    />
+  ) : undefined
+
   return (
     <>
       {/* 会话宿主哨兵：见 useEditorSessionLifecycle 里的 sessionSentinelId。
@@ -368,21 +417,26 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
         }
         onClose={requestCloseEditor}
         className={presentation.overlayClassName}
-        footer={
-          presentation.overlayFooterVisible ? (
-            <EditorFooterActions
-              canSave={canSave}
-              canAudit={canSaveAndAuditInEditor}
-              auditLabel={editorAuditLabel}
-              saving={editorBusy}
-              onCancel={requestCloseEditor}
-              onSave={(audit) => {
-                void handleSave(audit)
-              }}
-            />
-          ) : undefined
-        }
       >
+        <ModuleEditorTopActions
+          tools={itemsToolbarActions}
+          actions={
+            presentation.formActionsVisible ||
+            presentation.overlayFooterVisible ||
+            itemsToolbarActions ? (
+              <EditorFooterActions
+                canSave={canSave}
+                canAudit={canSaveAndAuditInEditor}
+                auditLabel={editorAuditLabel}
+                saving={editorBusy}
+                onCancel={requestCloseEditor}
+                onSave={(audit) => {
+                  void handleSave(audit)
+                }}
+              />
+            ) : undefined
+          }
+        />
         <ModuleEditorFormArea
           form={form}
           config={config}
@@ -394,7 +448,8 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
             canSave,
             canAudit: canSaveAndAuditInEditor,
             saving: editorBusy,
-            visible: presentation.formActionsVisible,
+            // 单据级动作已统一到顶部操作栏，表单头不再重复渲染一份
+            visible: false,
             onCancel: requestCloseEditor,
             onSave: (audit) => {
               void handleSave(audit)
@@ -450,7 +505,9 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           }}
           auditLabel={editorAuditLabel}
           saving={editorBusy}
-          showFooterActions={!presentation.overlayFooterVisible}
+          // 工具栏与单据级动作都移到顶部操作栏，明细区不再渲染
+          showFooterActions={false}
+          showItemsToolbar={false}
           currentStatus={currentStatus}
           formValues={editorFormValues}
           projectOptions={projectOptions}
