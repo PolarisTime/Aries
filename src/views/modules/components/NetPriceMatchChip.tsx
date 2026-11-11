@@ -16,27 +16,43 @@ import {
 /** 各状态的图标与文案(图标 + 文字双通道, 不以颜色为唯一区分 —— WCAG 1.4.1)。 */
 const STATE_META: Record<
   NetPriceMatchState,
-  { color: string; icon: React.ReactNode; labelKey: string }
+  /**
+   * 是否需要描边：只有"需要注意"的状态才描边，其余做成安静的行内标识。
+   * antd 6 用 `variant`（`filled` = 无边框，`outlined` = 描边），`bordered` 已废弃。
+   */
+  { color: string; icon: React.ReactNode; labelKey: string; bordered: boolean }
 > = {
   MATCHED: {
     color: 'success',
     icon: <CheckCircleOutlined />,
     labelKey: 'modules.pages.salesOrder.netPriceMatchMatched',
+    bordered: false,
   },
   MISMATCH: {
     color: 'warning',
     icon: <ExclamationCircleOutlined />,
     labelKey: 'modules.pages.salesOrder.netPriceMatchMismatch',
+    bordered: true,
   },
+  /*
+   * 「无网价 / 未核查」不描边。
+   *
+   * <p>它们是**状态标签**，不是输入框；默认 Tag 的 1px 边框 + 浅底在表格里恰好和
+   * 可编辑单元格长得一样（用户实测反馈："网价匹配那列看起来能改"）。这一列的语义是
+   * 只读核查结果（数据不在明细行上，见 net-price-match-store），所以默认态一律做成
+   * 图标 + 文字、无边框；只有「与网价不一致」需要被看见，才保留描边语义色。</p>
+   */
   NO_PRICE: {
     color: 'default',
     icon: <MinusCircleOutlined />,
     labelKey: 'modules.pages.salesOrder.netPriceMatchNoPrice',
+    bordered: false,
   },
   UNCHECKED: {
     color: 'default',
     icon: <QuestionCircleOutlined />,
     labelKey: 'modules.pages.salesOrder.netPriceMatchUnchecked',
+    bordered: false,
   },
 }
 
@@ -90,7 +106,12 @@ export function NetPriceMatchChip({ itemId }: { itemId: string }) {
   }
   return (
     <Tooltip title={detail}>
-      <Tag color={meta.color} icon={meta.icon} style={{ marginInlineEnd: 0 }}>
+      <Tag
+        color={meta.color}
+        icon={meta.icon}
+        variant={meta.bordered ? 'outlined' : 'filled'}
+        style={{ marginInlineEnd: 0 }}
+      >
         {label}
         <span className="aries-sr-only">{detail}</span>
       </Tag>

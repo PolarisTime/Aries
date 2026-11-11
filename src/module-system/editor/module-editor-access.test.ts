@@ -233,3 +233,56 @@ describe('行序可调与行内字段锁定解耦（canReorderEditorLineItems）
     expect(canReorderEditorLineItems('sales-order', false, true)).toBe(false)
   })
 })
+
+/*
+ * 销售订单的「仓库名称 / 材质」：来源行只读、手工行可编辑。
+ *
+ * <p>业务现实：销售订单明细基本都从上级单据（采购订单 / 采购入库）导入，仓库与材质
+ * 是来源单据的快照，手改会被后端按来源口径覆盖或拒改。但「新增明细」造出来的手工行
+ * 没有来源，必须留出选择入口，否则这行永远填不出商品与仓库。</p>
+ */
+describe('销售订单：仓库名称与材质按"是否来源行"判定', () => {
+  const importedRow: ModuleLineItem = {
+    id: 'r1',
+    materialId: 'm1',
+    warehouseName: '码头仓',
+    sourcePurchaseOrderItemId: 'poi-1',
+  }
+  const importedFromInbound: ModuleLineItem = {
+    id: 'r2',
+    materialId: 'm1',
+    sourceInboundItemId: 'ini-1',
+  }
+  const manualRow: ModuleLineItem = { id: 'r3' }
+
+  it('来源行（采购订单 / 入库导入）两列都只读', () => {
+    for (const record of [importedRow, importedFromInbound]) {
+      expect(editable('sales-order', 'warehouseName', { record })).toBe(false)
+      expect(editable('sales-order', 'material', { record })).toBe(false)
+    }
+  })
+
+  it('手工行（无来源 id）两列仍可编辑，否则选不出商品与仓库', () => {
+    expect(
+      editable('sales-order', 'warehouseName', { record: manualRow }),
+    ).toBe(true)
+    expect(editable('sales-order', 'material', { record: manualRow })).toBe(
+      true,
+    )
+  })
+
+  it('网价匹配列只读：只读后才会用列自定义渲染（chip），否则会变成空输入框', () => {
+    expect(
+      editable('sales-order', '_netPriceMatch', { record: manualRow }),
+    ).toBe(false)
+    expect(
+      editable('sales-order', '_netPriceMatch', { record: importedRow }),
+    ).toBe(false)
+  })
+
+  it('这条只读规则只作用于销售订单，采购订单仍可逐行选仓库', () => {
+    expect(
+      editable('purchase-order', 'warehouseName', { record: manualRow }),
+    ).toBe(true)
+  })
+})

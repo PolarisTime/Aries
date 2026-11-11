@@ -108,6 +108,43 @@ describe('NetPriceMatchChip', () => {
     expect(container.querySelector('.net-price-match-quiet')).toBeNull()
   })
 
+  /**
+   * 只读状态标签**不描边**。
+   *
+   * <p>回归的真实反馈：网价匹配列里"未核查 / 无网价"用的 Tag 带边框，在表格里与可编辑
+   * 单元格长得一模一样，用户以为这一列能改。这一列的语义是只读核查结果（数据在页面级
+   * store，不在明细行上），所以只有"需要注意"的「与网价不一致」保留描边
+   * （`variant="outlined"`），其余用 `variant="filled"` 做成无边框的行内标识。</p>
+   */
+  it('未核查 / 无网价的状态标签不描边，只有不一致才描边', () => {
+    renderChip('r1')
+    expect(container.querySelector('.ant-tag')?.className ?? '').not.toContain(
+      'ant-tag-outlined',
+    )
+
+    act(() => {
+      useNetPriceMatchStore.setState({
+        entries: { r1: { state: 'NO_PRICE' } },
+      })
+    })
+    renderChip('r1')
+    expect(container.querySelector('.ant-tag')?.className ?? '').not.toContain(
+      'ant-tag-outlined',
+    )
+
+    act(() => {
+      useNetPriceMatchStore.setState({
+        entries: {
+          r1: { state: 'MISMATCH', expectedPrice: 3430, currentPrice: 3200 },
+        },
+      })
+    })
+    renderChip('r1')
+    expect(container.querySelector('.ant-tag')?.className ?? '').toContain(
+      'ant-tag-outlined',
+    )
+  })
+
   it('未核查（无 store 条目）也有可读说明，不留空', () => {
     renderChip('r1')
     expect(container.textContent).toContain('未核查')

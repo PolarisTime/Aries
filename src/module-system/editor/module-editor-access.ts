@@ -210,13 +210,31 @@ type ItemColumnReadonlyExemption = (
   record: ModuleLineItem,
 ) => boolean
 
+/**
+ * 该行是否由上级单据导入（采购订单 / 采购入库）。
+ *
+ * <p>销售订单的明细绝大多数是导入来的：仓库、材质、规格等字段都是来源单据的快照，
+ * 手改只会在保存时被后端按来源口径覆盖（或直接拒改）。判据只看来源 id 是否存在，
+ * 与单据状态无关 —— 新建单据导入后同样是来源行。</p>
+ */
+function hasImportedSourceItem(record: ModuleLineItem | undefined): boolean {
+  if (!record) return false
+  return Boolean(
+    asString(record.sourceInboundItemId).trim() ||
+      asString(record.sourcePurchaseOrderItemId).trim(),
+  )
+}
+
 const ITEM_COLUMN_READONLY_EXEMPTIONS = {
-  // 销售订单隐藏商品编码列后，手工行通过“材质”列选择物料。
-  // 已导入来源行仍由父单快照驱动，不能借此绕过来源锁定。
+  /*
+   * 销售订单的「材质」与「仓库名称」：
+   * - 来源行（从采购订单 / 采购入库导入）→ 只读，值来自父单快照，不能借此绕过来源锁定；
+   * - 手工行（`新增明细`，没有来源 id）→ 可编辑，否则这行永远选不出商品与仓库。
+   * 商品编码列已隐藏，材质列就是手工行的选商品入口（见 salesOrderItemColumnConfig）。
+   */
   'sales-order': (columnKey, record) =>
-    columnKey === 'material' &&
-    !asString(record.sourceInboundItemId).trim() &&
-    !asString(record.sourcePurchaseOrderItemId).trim(),
+    (columnKey === 'material' || columnKey === 'warehouseName') &&
+    !hasImportedSourceItem(record),
 } satisfies Partial<Record<ModuleKey, ItemColumnReadonlyExemption>>
 
 function getItemColumnReadonlyExemption(
@@ -247,6 +265,26 @@ function isIntrinsicallyReadonlyItemColumn(
   const exemption = getItemColumnReadonlyExemption(moduleKey)
   if (exemption && record && exemption(columnKey, record)) {
     return false
+  }
+
+  /*
+   * 销售订单的「仓库名称」是来源单据快照（采购订单 / 采购入库的收货仓库），
+   * 明细行不允许手改；手工行由 {@link ITEM_COLUMN_READONLY_EXEMPTIONS} 放行。
+   * 其他模块（如采购订单本身）仍可逐行选仓库。
+   */
+  if (moduleKey === 'sales-order' && columnKey === 'warehouseName') {
+    return true
+  }
+
+  /*
+   * 销售订单的「网价匹配」列（key `_netPriceMatch`，定义见 salesOrderItemColumnConfig）：
+   * 值是**页面级核查快照**，不在明细行上，编辑器里必须判定为只读 ——
+   * 只有只读时 `buildModuleEditorDataColumns` 才会用列自己的 `render`（只读 chip）；
+   * 判成可编辑就会落到通用可编辑渲染，变成一个可输入的空文本框（用户实测反馈：
+   * "网价匹配这列看起来能改"）。加了这条判定后该列不再渲染任何输入控件。
+   */
+  if (moduleKey === 'sales-order' && columnKey === '_netPriceMatch') {
+    return true
   }
 
   if (DERIVED_READONLY_ITEM_COLUMN_KEYS.has(columnKey)) {
