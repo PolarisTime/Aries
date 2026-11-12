@@ -1,27 +1,13 @@
-import { isValidElement, type ReactElement } from 'react'
+import { isValidElement } from 'react'
 import { describe, expect, it } from 'vitest'
 import type { ModuleRecord } from '@/types/module-page'
 import {
   buildPurchaseOrderOverview,
   renderPurchaseOrderAmount,
   renderPurchaseOrderAmountDifference,
-  renderPurchaseOrderNo,
   renderPurchaseOrderReceiptProgress,
   renderPurchaseOrderWeightVariance,
 } from './purchase-order-rules'
-
-/** 递归判断元素树里是否还带「下游引用状态图标」（旧实现的 `statuses` 属性）。 */
-function hasReferenceStatusIcons(node: unknown): boolean {
-  if (!isValidElement(node)) {
-    return false
-  }
-  const props = node.props as { statuses?: unknown; children?: unknown }
-  if (Array.isArray(props.statuses)) {
-    return true
-  }
-  const list = Array.isArray(props.children) ? props.children : [props.children]
-  return list.some((child) => hasReferenceStatusIcons(child))
-}
 
 describe('purchase-order-rules', () => {
   it('空行集合返回零值概览', () => {
@@ -38,22 +24,6 @@ describe('purchase-order-rules', () => {
       { totalAmount: 200 },
     ] as unknown as ModuleRecord[])
     expect(String(overview[2].value)).toContain('300.50')
-  })
-
-  it('renderPurchaseOrderNo 返回 React 元素', () => {
-    const node = renderPurchaseOrderNo('PO-1')
-    expect(node).toBeTruthy()
-    expect(node).toHaveProperty('props')
-  })
-
-  it('单号列只渲染单号文本，不再渲染下游引用图标', () => {
-    const node = renderPurchaseOrderNo('PO-1') as ReactElement<{
-      children?: unknown
-    }>
-
-    expect(collectText(node)).toBe('PO-1')
-    // 旧实现会在单号后追加 DocumentReferenceStatusIcons（props 里带 statuses）
-    expect(hasReferenceStatusIcons(node)).toBe(false)
   })
 })
 

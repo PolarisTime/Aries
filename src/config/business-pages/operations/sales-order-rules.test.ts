@@ -6,7 +6,6 @@ import {
   buildSalesOrderParentFilters,
   hasOverwrittenOriginalWeight,
   mapPurchaseInboundToSalesOrderDraft,
-  renderSalesOrderNo,
   renderSalesOrderTotalWeight,
   sumOriginalWeightTon,
   transformPurchaseInboundItemsToSalesOrderItems,
@@ -87,16 +86,6 @@ describe('sales-order-rules', () => {
 
     it('非法数值显示 -', () => {
       expect(renderSalesOrderTotalWeight(Number.NaN, recordWith({}))).toBe('-')
-    })
-  })
-
-  describe('renderSalesOrderNo', () => {
-    it('返回 React 元素并透传单号（单号列不再带下游引用图标，渲染断言见同名 jsdom 用例）', () => {
-      const node = renderSalesOrderNo('SO-1') as {
-        props: { children: unknown }
-      }
-      expect(node).toBeTruthy()
-      expect(node.props.children).toBeTruthy()
     })
   })
 

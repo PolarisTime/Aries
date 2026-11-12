@@ -4,17 +4,17 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import '@/i18n'
-import { renderSalesOrderNo } from '@/config/business-pages/operations/sales-order-rules'
+import { renderDocumentReferenceNo } from './document-reference'
 
 /**
- * 销售订单「订单编号」列不再渲染下游引用图标的回归。
+ * 单据编号列渲染的**唯一出口**（销售订单、采购订单共用，后续单据同样走这里）。
  *
- * <p>产品要求整体下线单号后的「已被物流单/销售出库/销售退货引用」图标与 tooltip。
- * 该用例断言的是**渲染结果**（可访问名与图标节点），因此把图标加回去就会立刻变红：
- * 只把图标藏成 display:none 是过不了这三条断言的。</p>
+ * <p>两条契约合一：类名结构（单据流弹层靠 `document-reference-trigger` 找到可点单号）
+ * 与「不再渲染下游引用图标」的回归。此前的用例挂在销售订单的本地实现上，
+ * 抽公共层后跟着搬到共享层 —— 否则两个配置各写一份时，只有被断言覆盖的那一份会被守住。</p>
  */
 
-describe('销售订单单号列不再显示下游引用图标', () => {
+describe('单据编号列（共享渲染）', () => {
   let container: HTMLDivElement
   let root: Root
 
@@ -39,11 +39,20 @@ describe('销售订单单号列不再显示下游引用图标', () => {
   const renderCell = (_record: Record<string, unknown>) => {
     act(() => {
       root.render(
-        createElement('div', null, renderSalesOrderNo('SO20261014001')),
+        createElement('div', null, renderDocumentReferenceNo('SO20261014001')),
       )
     })
     return container
   }
+
+  it('外层带单据流触发器类名、内层带链接类名', () => {
+    const cell = renderCell({})
+    const trigger = cell.querySelector('.document-reference-trigger')
+    expect(trigger).not.toBeNull()
+    expect(
+      trigger?.firstElementChild?.classList.contains('document-reference-link'),
+    ).toBe(true)
+  })
 
   it('单号文本仍正常渲染（不是把整列删空）', () => {
     const cell = renderCell({

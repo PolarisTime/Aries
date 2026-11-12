@@ -29,25 +29,6 @@ export function renderDerivedQuantity(value: unknown): React.ReactNode {
   return Number.isFinite(parsed) ? formatInteger(parsed) : null
 }
 
-/**
- * 销售订单「订单编号」列：只渲染单号本身（外层类名供单据流弹层触发使用）。
- *
- * <p>原先在单号后追加下游引用状态图标（已被物流单/销售出库/销售退货引用），按产品要求整体下线：
- * 图标与 tooltip 都不再渲染；行级字段 `referencedByFreightBill` 等也随后端 DTO 一并从响应
- * schema 删除（前端已无消费方）。</p>
- */
-export function renderSalesOrderNo(value: unknown): React.ReactNode {
-  return React.createElement(
-    'span',
-    { className: 'document-reference-trigger' },
-    React.createElement(
-      'span',
-      { className: 'document-reference-link' },
-      String(value ?? ''),
-    ),
-  )
-}
-
 export function formatWeightDisplay(value: unknown): string {
   const n = Number(value)
   return Number.isFinite(n)

@@ -1,7 +1,7 @@
 import { ClockCircleOutlined } from '@ant-design/icons'
 import { Skeleton } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { ModuleDetailMetric, ModuleRecord } from '@/types/module-page'
+import type { ModuleDetailMetric } from '@/types/module-page'
 import { formatAmount, formatWeight } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 import { useProjectSalesSummary } from '@/views/modules/use-project-sales-summary'
@@ -44,7 +44,45 @@ function formatSignedWeight(value: number, unit: string): string {
  * <p>失效兜底：未选项目不渲染；加载失败整块不渲染（指标是增强信息，不能打断详情里的
  * 字段与明细）；只有「首次加载且尚无数据」才出骨架，避免每次重算都闪一下。</p>
  */
-export function SalesOrderDetailMetrics({ record }: { record: ModuleRecord }) {
+/**
+ * 只声明本组件真正读取的两个字段：
+ * 详情面传 `ModuleRecord`、编辑器传 `ModuleRecordInput`（新建时还没有 id），
+ * 收窄到这两个字段后两个调用方都不需要额外断言。
+ */
+export interface SalesOrderMetricsRecord {
+  projectId?: unknown
+  totalWeight?: unknown
+  /** 其余字段不读；保留索引签名让 ModuleRecord / ModuleRecordInput 都直接可传。 */
+  [key: string]: unknown
+}
+
+interface Props {
+  record: SalesOrderMetricsRecord
+  /**
+   * `editor` 变体：本单还没保存，项目汇总需要「排除本单 + 含本单草稿合计」的口径，
+   * 并在卡片下方补一行 pending 说明；`detail` 变体（默认）只读，不传这些覆盖值。
+   */
+  variant?: 'detail' | 'editor'
+  /** 编辑器：排除本单已保存的金额/吨位，避免与草稿合计重复计数。 */
+  excludeOrderId?: string
+  /** 编辑器：本单未保存的草稿合计，由调用方用 computeDraftTotals 算好下发。 */
+  pendingAmount?: number
+  pendingTonnage?: number
+  /**
+   * 本单总重量。详情面取 `record.totalWeight`（后端聚合值）；
+   * 编辑器里单据还没保存，改传草稿合计吨位，否则「/ 总重量」恒为 0。
+   */
+  orderTotalWeight?: number
+}
+
+export function SalesOrderDetailMetrics({
+  record,
+  variant = 'detail',
+  excludeOrderId,
+  pendingAmount,
+  pendingTonnage,
+  orderTotalWeight,
+}: Props) {
   const { t } = useTranslation()
   const ton = t('modules.units.ton')
 
@@ -54,7 +92,12 @@ export function SalesOrderDetailMetrics({ record }: { record: ModuleRecord }) {
    * excludeOrderId。「排除本单」只属于编辑器的 pending 口径（那张单还没保存，
    * 不排除就会和草稿合计重复计数），别在这里加回来 —— 加回来会让使用率与送货少算本单。
    */
-  const { summary, loading, error } = useProjectSalesSummary({ projectId })
+  const { summary, loading, error } = useProjectSalesSummary({
+    projectId,
+    ...(excludeOrderId ? { excludeOrderId } : {}),
+    ...(pendingAmount === undefined ? {} : { pendingAmount }),
+    ...(pendingTonnage === undefined ? {} : { pendingTonnage }),
+  })
 
   // 未选项目：没有可汇总的对象。hook 内部按空 projectId 短路，这里只是不渲染。
   if (!projectId) return null
@@ -71,13 +114,17 @@ export function SalesOrderDetailMetrics({ record }: { record: ModuleRecord }) {
    */
   const usedAmount = summary.contractAmount - summary.remainingAmount
   const usedTonnage = summary.contractTonnage - summary.remainingTonnage
-  // 本单总重量来自单据本身（后端聚合的 totalWeight），不是明细行前端再求和。
-  const orderTotalWeight = Number(record.totalWeight) || 0
+  /*
+   * 本单总重量：详情面取单据字段（后端聚合的 totalWeight）；编辑器里单据还没保存，
+   * 由调用方传草稿合计吨位进来 —— 两条路径都不在前端重新 reduce 明细。
+   */
+  const currentOrderWeight =
+    orderTotalWeight ?? (Number(record.totalWeight) || 0)
   /*
    * 送货差异 = 合计送货吨位 − 本单总重量（正数表示项目送货多于本单订货，含在途）。
    * 两个数同源同上：都取汇总接口与本单记录，不在别处再算一遍。
    */
-  const deliveryVariance = summary.deliveredTonnage - orderTotalWeight
+  const deliveryVariance = summary.deliveredTonnage - currentOrderWeight
 
   /*
    * 胶囊文案的唯一出口：只有后端下发的 exceeded* 才判「超支」，其余（含无合同、使用率
@@ -161,7 +208,7 @@ export function SalesOrderDetailMetrics({ record }: { record: ModuleRecord }) {
        */
       label: `${t('modules.projectSalesSummary.deliveredTonnage')} / ${t('modules.columns.totalWeight')}`,
       value: formatWeight(summary.deliveredTonnage),
-      subValue: `/ ${formatWeight(orderTotalWeight)} ${ton}`,
+      subValue: `/ ${formatWeight(currentOrderWeight)} ${ton}`,
       stats: {
         left: { label: t('modules.detailCards.deliveryVariance') },
         right: {
@@ -195,5 +242,32 @@ export function SalesOrderDetailMetrics({ record }: { record: ModuleRecord }) {
     },
   ]
 
-  return <ModuleDetailMetricBar metrics={metrics} />
+  const bar = <ModuleDetailMetricBar metrics={metrics} />
+
+  if (variant !== 'editor') {
+    return bar
+  }
+
+  /*
+   * 编辑器专属说明（详情面不需要）：
+   * - 「含本单未保存合计」解释这批数字里有多少还没落库；
+   * - 「该项目未关联有效销售合同」解释使用率为什么是 `—`，避免被当成数据缺失。
+   * 两行都放在指标条**下方**，不占卡片区的高度，也不再单独画一个边框面板。
+   */
+  return (
+    <div className="sales-order-metrics-with-hint">
+      {bar}
+      <div className="sales-order-metrics-hint">
+        <span>
+          {t('modules.projectSalesSummary.pendingHint', {
+            amount: formatAmount(pendingAmount ?? 0),
+            tonnage: formatWeight(pendingTonnage ?? 0),
+          })}
+        </span>
+        {summary.hasContract ? null : (
+          <span>{t('modules.projectSalesSummary.noContract')}</span>
+        )}
+      </div>
+    </div>
+  )
 }

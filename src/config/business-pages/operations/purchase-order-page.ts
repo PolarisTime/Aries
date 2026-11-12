@@ -10,6 +10,7 @@ import type {
   ModulePageConfig,
 } from '@/types/module-page'
 import { buildDefaultLineItemSummary } from '@/views/modules/components/module-detail-summary'
+import { renderDocumentReferenceNo } from '../shared/document-reference'
 import {
   BILL_STATUS_LABEL,
   ORDER_NO_FILTER_LABEL,
@@ -22,7 +23,6 @@ import {
   buildPurchaseOrderOverview,
   renderPurchaseOrderAmount,
   renderPurchaseOrderAmountDifference,
-  renderPurchaseOrderNo,
   renderPurchaseOrderReceiptProgress,
   renderPurchaseOrderWeightVariance,
 } from './purchase-order-rules'
@@ -192,7 +192,7 @@ export const purchaseOrdersPageConfig: ModulePageConfig = {
       title: i18next.t('modules.pages.purchaseOrder.colOrderNo'),
       dataIndex: 'orderNo',
       width: 190,
-      render: renderPurchaseOrderNo,
+      render: renderDocumentReferenceNo,
     },
     {
       title: i18next.t('modules.pages.purchaseOrder.colSupplier'),

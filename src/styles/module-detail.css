@@ -348,6 +348,28 @@
   gap: var(--space-sm, 12px);
 }
 
+/*
+ * 编辑器里的四张指标卡 + 说明行（与「完成销售」详情面同一套卡片）。
+ *
+ * <p>说明行放指标条**下方**：它解释的是这批数字的口径（含多少未落库、为何没有使用率），
+ * 属于注释而不是指标，占满整行小字，不再单独画一个带边框的面板。</p>
+ */
+.sales-order-metrics-with-hint {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.sales-order-metrics-hint {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs) var(--space-md);
+  color: var(--theme-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 @media (max-width: 900px) {
   .module-detail-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));

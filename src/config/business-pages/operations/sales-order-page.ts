@@ -17,12 +17,12 @@ import { renderProjectNameCell } from '@/utils/project-display'
 import { asString } from '@/utils/type-narrowing'
 import { buildDefaultLineItemSummary } from '@/views/modules/components/module-detail-summary'
 import { NetPriceMatchChip } from '@/views/modules/components/NetPriceMatchChip'
-import { ProjectSalesSummaryPanel } from '@/views/modules/components/ProjectSalesSummaryPanel'
 import { SalesOrderDetailMetrics } from '@/views/modules/components/SalesOrderDetailMetrics'
 import { SalesOrderNetPriceCheck } from '@/views/modules/components/SalesOrderNetPriceCheck'
 import { SalesOrderNetPriceFiller } from '@/views/modules/components/SalesOrderNetPriceFiller'
 import { sumChargeItemAmount } from '@/views/modules/module-editor-draft-adapter'
 import { sumLineItemsBy } from '@/views/modules/module-editor-workspace-support'
+import { renderDocumentReferenceNo } from '../shared/document-reference'
 import {
   BILL_STATUS_LABEL,
   CUSTOMER_NAME_LABEL,
@@ -37,7 +37,6 @@ import {
   buildSalesOrderParentFilters,
   mapPurchaseInboundToSalesOrderDraft,
   renderDerivedQuantity,
-  renderSalesOrderNo,
   renderSalesOrderTotalWeight,
   transformPurchaseInboundItemsToSalesOrderItems,
   validateSalesOrderPurchaseSourceImport,
@@ -280,7 +279,7 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       title: i18next.t('modules.pages.salesOrder.colOrderNo'),
       dataIndex: 'orderNo',
       width: 190,
-      render: renderSalesOrderNo,
+      render: renderDocumentReferenceNo,
     },
     {
       title: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
@@ -657,9 +656,15 @@ export const salesOrdersPageConfig: ModulePageConfig = {
    */
   detailSummary: ({ items }) => buildDefaultLineItemSummary(items),
   /*
-   * 编辑器(新建/编辑弹层)的「项目数据」: 需要「含本单」口径, 所以把草稿合计作为 pending 下发,
-   * 并排除本单已保存的金额/吨位。合计口径复用 computeDraftTotals —— 与保存载荷同一出口,
-   * 绝不在面板或本配置里再 reduce 一遍明细。
+   * 编辑器(新建/编辑弹层)的项目数据：**与「完成销售」详情面同一套四张指标卡**
+   * （同一个 `SalesOrderDetailMetrics` 组件、同一份口径），不再是三组带边框的小面板。
+   *
+   * 编辑器与详情面的唯一差别是本单还没落库：
+   * - 排除本单已保存的金额/吨位（excludeOrderId），否则与草稿合计重复计数；
+   * - 把草稿合计作为 pending 下发，让使用率/送货包含本单；
+   * - 「/ 总重量」取草稿合计吨位，否则新建单据时恒为 0。
+   *
+   * 合计口径复用 computeDraftTotals —— 与保存载荷同一出口，绝不在本配置里再 reduce 明细。
    */
   renderEditorExtras: ({ record, items, expenseItems }) => {
     const totals = computeDraftTotals(
@@ -669,16 +674,17 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       sumChargeItemAmount(expenseItems),
     )
     const excludeOrderId = asString(record.id).trim()
-    return createElement(ProjectSalesSummaryPanel, {
-      projectId: asString(record.projectId),
+    return createElement(SalesOrderDetailMetrics, {
+      record,
+      variant: 'editor',
       ...(excludeOrderId ? { excludeOrderId } : {}),
       ...(totals
         ? {
             pendingAmount: totals.totalAmount,
             pendingTonnage: totals.totalWeight,
+            orderTotalWeight: totals.totalWeight,
           }
         : {}),
-      variant: 'editor',
     })
   },
   data: [],

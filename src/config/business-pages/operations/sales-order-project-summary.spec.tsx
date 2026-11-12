@@ -4,8 +4,6 @@ import type { ReactElement } from 'react'
 import { describe, expect, it } from 'vitest'
 import { salesOrdersPageConfig } from '@/config/business-pages/operations/sales-order-page'
 import type { ModuleLineItem, ModuleRecordInput } from '@/types/module-page'
-import type { ProjectSalesSummaryPanelProps } from '@/views/modules/components/ProjectSalesSummaryPanel'
-import { ProjectSalesSummaryPanel } from '@/views/modules/components/ProjectSalesSummaryPanel'
 import { SalesOrderDetailMetrics } from '@/views/modules/components/SalesOrderDetailMetrics'
 import { SalesOrderNetPriceCheck } from '@/views/modules/components/SalesOrderNetPriceCheck'
 
@@ -17,7 +15,14 @@ const expenseItems = [{ chargeName: '运费', amount: 30 }]
 
 const form = {} as never
 
-type ExtrasProps = Partial<ProjectSalesSummaryPanelProps>
+type ExtrasProps = {
+  record?: unknown
+  variant?: string
+  excludeOrderId?: string
+  pendingAmount?: number
+  pendingTonnage?: number
+  orderTotalWeight?: number
+}
 
 /**
  * 销售订单「项目数据」的**接线契约**。
@@ -31,8 +36,9 @@ type ExtrasProps = Partial<ProjectSalesSummaryPanelProps>
  *   <li>详情挂载点只剩网价核查，不再产出项目数据面板；</li>
  *   <li>指标条与合计行两个插槽都已配置（漏一个，详情里就只剩一份数字）；</li>
  *   <li>合计行的求和口径仍来自 `sumLineItemsBy`（与编辑器、保存载荷同一出口）；</li>
- *   <li>编辑器仍传 pending 且**排除本单**，pending 金额/吨位来自 `computeDraftTotals`
- *       （货物 + 附加费用），不是面板自己求和。</li>
+ *   <li>编辑器改用**与详情面同一套四张指标卡**（`SalesOrderDetailMetrics`，variant=editor），
+ *       并仍传 pending、**排除本单**，pending 金额/吨位来自 `computeDraftTotals`
+ *       （货物 + 附加费用），不是组件自己求和。</li>
  * </ol>
  */
 describe('销售订单「项目数据」接线', () => {
@@ -74,7 +80,11 @@ describe('销售订单「项目数据」接线', () => {
     expect(salesOrdersPageConfig.detailSummary?.({ items: [] })).toBeNull()
   })
 
-  it('编辑器把草稿合计（货物 + 附加费用）作为 pending，并排除本单', () => {
+  /*
+   * 草稿 / 已审核 / 交付核定 状态下编辑器里的项目数据，改成与「完成销售」详情面
+   * **同一个组件**：四张指标卡，而不是三组带边框的小面板。
+   */
+  it('编辑器改用与详情面同一套指标卡，并传草稿合计与排除本单', () => {
     const element = salesOrdersPageConfig.renderEditorExtras?.({
       record,
       form,
@@ -82,14 +92,15 @@ describe('销售订单「项目数据」接线', () => {
       expenseItems,
     }) as ReactElement<ExtrasProps>
 
-    expect(element.type).toBe(ProjectSalesSummaryPanel)
+    expect(element.type).toBe(SalesOrderDetailMetrics)
     // 货物 300 + 费用 30 = 330（只有货物会是 300，能区分两种口径）；吨位 1.5 + 2.25
     expect(element.props).toMatchObject({
-      projectId: '9007199254740993',
+      variant: 'editor',
       excludeOrderId: '9007199254740995',
       pendingAmount: 330,
       pendingTonnage: 3.75,
-      variant: 'editor',
+      // 单据未保存，「/ 总重量」要用草稿合计吨位，否则恒为 0
+      orderTotalWeight: 3.75,
     })
   })
 
@@ -102,6 +113,10 @@ describe('销售订单「项目数据」接线', () => {
     }) as ReactElement<ExtrasProps>
 
     expect(element.props.excludeOrderId).toBeUndefined()
-    expect(element.props.projectId).toBe('9007199254740993')
+    expect(element.type).toBe(SalesOrderDetailMetrics)
+    // record 原样透传（组件自己取 projectId）
+    expect((element.props.record as { projectId?: string }).projectId).toBe(
+      '9007199254740993',
+    )
   })
 })
