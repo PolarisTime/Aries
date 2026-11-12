@@ -16,45 +16,29 @@ import {
   MoreOutlined,
   SwapOutlined,
   UnlockOutlined,
-  VerticalAlignBottomOutlined,
 } from '@ant-design/icons'
-import {
-  Button,
-  Checkbox,
-  Flex,
-  Input,
-  Popover,
-  Select,
-  Tooltip,
-  Typography,
-} from 'antd'
+import { Button, Checkbox, Input, Select, Tooltip } from 'antd'
 import type { MenuProps } from 'antd/es/menu'
 import type { ColumnsType } from 'antd/es/table'
 import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { ContextMenu } from '@/components/ContextMenu'
-import { message, modal } from '@/utils/antd-app'
-import { substituteMaterialOf } from '@/utils/material-grade'
-import { createPinyinFilterOption } from '@/utils/pinyin-search'
+import { modal } from '@/utils/antd-app'
 import {
   applyRowLock,
   buildVarietyOptions,
   fallbackBadgeMaterial,
-  filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
   isSeparatorRow,
-  isSubstitutableMaterial,
   LOCK_REASON_KEYS,
   netPriceWithFallback,
   pickBestDiffBrands,
   resolveLock,
+  resolveSpotSourceMaterial,
   type SHEET_COLUMN_WIDTH,
-  SPOT_PRICE_MAX,
-  type SupplierSelectOption,
 } from './core'
-import { resolveCellSpotSource } from './spot-source-cancel'
 import { buildTonColumn } from './ton-column'
 import type {
   Brand,
@@ -65,8 +49,6 @@ import type {
   SheetInput,
   Variety,
 } from './types'
-
-const { Text } = Typography
 
 /**
  * 「E」角标：**唯一**渲染出口（网价代取、现货价代取、表头图例共用）。
@@ -99,106 +81,6 @@ export function FallbackBadge({ label }: { label?: string }) {
   )
 }
 
-/** 供应商简称下拉: 支持中文原文 + 拼音全拼/首字母索引。 */
-const filterSupplierOption = createPinyinFilterOption()
-
-/**
- * 供应商批量填入下拉: 选择一个供应商后回调; 用于「整列」与「选中行」两个入口。
- * 复用与单元格一致的品牌过滤与拼音搜索。
- */
-export function SupplierFillSelect({
-  brandName,
-  options,
-  onPick,
-}: {
-  brandName?: string
-  options: SupplierSelectOption[]
-  onPick: (option: { value: string; label: string } | undefined) => void
-}) {
-  const { t } = useTranslation()
-  const filtered = brandName
-    ? filterSupplierOptionsByBrand(options, brandName)
-    : options
-  return (
-    <Select
-      autoFocus
-      size="small"
-      style={{ width: 180 }}
-      className="price-compare-supplier-fill-select"
-      placeholder={t('priceCompare.sheet.fillSupplierPick')}
-      showSearch={{ filterOption: filterSupplierOption }}
-      /* 供应商全称可达 15 字以上, 与触发框同宽必然截断, 按内容撑开下拉。 */
-      popupMatchSelectWidth={false}
-      options={filtered}
-      onChange={(value) => {
-        const option = filtered.find((item) => item.value === value)
-        onPick(
-          value
-            ? { value: String(value), label: option?.label ?? String(value) }
-            : undefined,
-        )
-      }}
-    />
-  )
-}
-
-/** 品牌列「简称」表头: 一键把所选供应商填到该品牌列全部商品行。 */
-function SupplierFillHeader({
-  brandName,
-  options,
-  disabled,
-  open,
-  onOpenChange,
-  onFill,
-}: {
-  brandName: string
-  options: SupplierSelectOption[]
-  disabled: boolean
-  /** 受控开合: 由 SheetPanel 统一管理, 让表头右键菜单也能打开同一个弹层。 */
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onFill: (option: { value: string; label: string } | undefined) => void
-}) {
-  const { t } = useTranslation()
-  const title = t('priceCompare.sheet.fillSupplierColumn', { brand: brandName })
-  return (
-    <span className="price-compare-supplier-header">
-      <span>{t('priceCompare.sheet.columns.supplierShort')}</span>
-      {disabled ? null : (
-        <Popover
-          trigger="click"
-          placement="bottom"
-          open={open}
-          onOpenChange={onOpenChange}
-          content={
-            <Flex vertical gap={4} className="price-compare-supplier-fill">
-              <Text type="secondary" className="price-compare-sub">
-                {title}
-              </Text>
-              <SupplierFillSelect
-                brandName={brandName}
-                options={options}
-                onPick={(option) => {
-                  onFill(option)
-                  onOpenChange(false)
-                }}
-              />
-            </Flex>
-          }
-        >
-          <Button
-            type="text"
-            size="small"
-            className="price-compare-supplier-fill-btn"
-            icon={<VerticalAlignBottomOutlined />}
-            aria-label={title}
-          />
-        </Popover>
-      )}
-    </span>
-  )
-}
-
 /* ------------------------------------------------------------------ 列定义 */
 
 export type ColumnContext = {
@@ -224,32 +106,12 @@ export type ColumnContext = {
   brands: Brand[]
   rows: PriceRow[]
   getSpot: (brandName: string, rowId: string) => number | undefined
-  setSpot: (brandName: string, rowId: string, value: number | undefined) => void
-  /** 单格取消代取标记（置 spotSourceMaterial = null），不影响价格与行级开关。 */
-  clearSpotSource: (brandName: string, rowId: string) => void
   getInput: (brandName: string, rowId: string) => SheetInput | undefined
-  setSupplier: (
-    brandName: string,
-    rowId: string,
-    option: { value: string; label: string } | undefined,
-  ) => void
-  /** 批量填入供应商: 目标行统一改为该供应商(覆盖已有值); undefined 表示清除。 */
-  fillSupplier: (
-    brandName: string,
-    rowIds: string[],
-    option: { value: string; label: string } | undefined,
-  ) => void
-  supplierOptions: SupplierSelectOption[]
   patchRow: (rowId: string, patch: Partial<PriceRow>) => void
-  /** 在品牌列内纵向移动焦点; 返回 false 表示已到列首/列尾(调用方应放行默认 Tab)。 */
-  moveFocus: (brandName: string, rowId: string, delta: number) => boolean
   moveFocusTon: (rowId: string, delta: number) => boolean
   onReorderBrands: (from: number, to: number) => void
   /** 隐藏/显示整组品牌列(与「列显示」弹层共用同一份显隐状态)。 */
   onToggleBrand: (brandName: string, visible: boolean) => void
-  /** 当前通过右键菜单打开「一键填入供应商」弹层的品牌列。 */
-  supplierFillBrand?: string
-  setSupplierFillBrand: (brandName: string | undefined) => void
   /** 行操作菜单当前打开的行(Dropdown 受控开关: 右键行内区域与「更多」按钮共用)。 */
   contextMenuRowId: string | null
   onContextMenuRowChange: (rowId: string | null) => void
@@ -269,8 +131,6 @@ export type ColumnContext = {
   attachSpotRef: boolean
   allowHrb400eFallback: boolean
   bestOn: boolean
-  spotResetNonce: number
-  onInvalidSpot: () => void
   spotRef: React.RefObject<HTMLSpanElement | null>
   /** 项目可选商品白名单(空表示不限)。 */
   allowedProducts?: string[]
@@ -574,11 +434,7 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     rows,
     getSpot,
     getInput,
-    setSpot,
-    clearSpotSource,
-    supplierOptions,
     patchRow,
-    moveFocus,
     selectedIds,
     toggleSelect,
     toggleAll,
@@ -603,10 +459,6 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   const visibleBrandNames = brands
     .filter((brand) => !hiddenBrandSet.has(brand.name))
     .map((brand) => brand.name)
-  /** 商品行 id(排除隔断行), 供整列批量填入复用。 */
-  const productRowIds = rows.flatMap((row) =>
-    isSeparatorRow(row) ? [] : [row.id],
-  )
   /** 锁定规格和数量: 一并禁掉行级增删与拖拽重排(会间接改变规格/数量顺序)。 */
   const quantityLocked = Boolean(sheet.specQuantityLocked)
   const rowInteractionLocked = readOnly || quantityLocked
@@ -948,27 +800,6 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                   />
                 </Tooltip>
               ) : null}
-              {/* 行级「按 E 价」开关：默认跟随单据头；仅单据头放行且材质在白名单内才出现。
-                  勾选后该行价格子按替代牌号带出并打 E 角标（判据见 core.resolveSpotSourceMaterial）。 */}
-              {allowHrb400eFallback &&
-              isSubstitutableMaterial(current.material) ? (
-                <Checkbox
-                  checked={current.hrb400eFallback === true}
-                  className="price-compare-hrb400e-switch"
-                  disabled={selectDisabled}
-                  aria-label={t('priceCompare.sheet.hrb400eRowSwitch', {
-                    material: substituteMaterialOf(current.material) ?? '',
-                  })}
-                  title={t('priceCompare.sheet.hrb400eRowSwitchHint', {
-                    material: substituteMaterialOf(current.material) ?? '',
-                  })}
-                  onChange={(event) =>
-                    patchRow(row.rowId, {
-                      hrb400eFallback: event.target.checked,
-                    })
-                  }
-                />
-              ) : null}
             </div>
           </LockReason>
         )
@@ -984,28 +815,14 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
               {
                 title: (
                   // 表头标题节点: 保留原有拖拽换序, 菜单本身复用共享列头基元
-                  // (隐藏该列 / 移到最前或最后 + 业务追加的「一键填入供应商…」)。
+                  // (隐藏该列 / 移到最前或最后)。
                   <ColumnHeaderMenu
                     ariaLabel={t('priceCompare.sheet.contextMenu.brandLabel', {
                       brand: brand.name,
                     })}
                     columnTitle={brand.name}
-                    extraItems={[
-                      {
-                        key: 'fill-supplier-column',
-                        icon: <VerticalAlignBottomOutlined />,
-                        label: t('priceCompare.sheet.contextMenu.fillSupplier'),
-                        // 与「简称」列的一键填入按钮保持同一禁用口径(只读时按钮本身不渲染)
-                        disabled: readOnly,
-                      },
-                    ]}
                     isFirst={brand.name === visibleBrandNames[0]}
                     isLast={brand.name === visibleBrandNames.at(-1)}
-                    onExtraItem={(key) => {
-                      if (key === 'fill-supplier-column') {
-                        ctx.setSupplierFillBrand(brand.name)
-                      }
-                    }}
                     onHide={() => ctx.onToggleBrand(brand.name, false)}
                     onMoveFirst={() =>
                       onReorderBrands(
@@ -1117,129 +934,34 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         attachSpotRef &&
                         brandIndex === 0 &&
                         current.id === rows[0]?.id
-                      const input = (
-                        <Input
-                          key={`${brand.name}:${current.id}:${spot ?? ''}:${ctx.spotResetNonce}`}
-                          aria-label={cellLabel(
-                            `${brand.name} ${t('priceCompare.sheet.columns.spot')}`,
-                            row,
-                          )}
-                          className={`price-compare-spot${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                          size="small"
-                          variant="borderless"
-                          inputMode="decimal"
-                          disabled={readOnly}
-                          data-spot={`${brand.name}:${current.id}`}
-                          defaultValue={spot === undefined ? '' : String(spot)}
-                          onBlur={(event) => {
-                            const raw = event.target.value
-                            const value = Number(raw)
-                            if (
-                              raw !== '' &&
-                              (Number.isNaN(value) ||
-                                value <= 0 ||
-                                value > SPOT_PRICE_MAX)
-                            ) {
-                              message.warning(
-                                t('priceCompare.sheet.spotOutOfRange', {
-                                  max: SPOT_PRICE_MAX,
-                                }),
-                              )
-                              // 非法输入：触发重挂载，恢复为已保存值
-                              ctx.onInvalidSpot()
-                              return
-                            }
-                            setSpot(
-                              brand.name,
-                              current.id,
-                              raw === '' ? undefined : value,
-                            )
-                          }}
-                          onPressEnter={(event) => {
-                            const raw = (event.target as HTMLInputElement).value
-                            const value = Number(raw)
-                            if (
-                              raw === '' ||
-                              (!Number.isNaN(value) &&
-                                value > 0 &&
-                                value <= SPOT_PRICE_MAX)
-                            ) {
-                              setSpot(
-                                brand.name,
-                                current.id,
-                                raw === '' ? undefined : value,
-                              )
-                            }
-                            event.preventDefault()
-                            moveFocus(brand.name, current.id, 1)
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === 'ArrowDown') {
-                              event.preventDefault()
-                              moveFocus(brand.name, current.id, 1)
-                            } else if (event.key === 'ArrowUp') {
-                              event.preventDefault()
-                              moveFocus(brand.name, current.id, -1)
-                            } else if (event.key === 'Tab') {
-                              // 仅在列内成功移动时拦截默认行为; 到列首/列尾放行,
-                              // 让 Tab 能走到供应商列/下一品牌列, 避免焦点陷阱。
-                              const moved = moveFocus(
-                                brand.name,
-                                current.id,
-                                event.shiftKey ? -1 : 1,
-                              )
-                              if (moved) event.preventDefault()
-                            }
-                          }}
-                        />
-                      )
-                      // spot 代取来源：系统带出（spotSourceMaterial，已落库）优先，
-                      // 否则按会话内判据（单据头放行 + 行级开关 + 白名单）。
-                      // 单格例外层：spot-source-cancel.resolveCellSpotSource
-                      // （显式 null 优先于行级开关）；材质白名单等规则仍唯一在 core。
                       const spotInput = getInput(brand.name, current.id)
-                      const spotSource = resolveCellSpotSource({
+                      // 代取来源的唯一判据出口（导入写入、重开回显）；手工改价已禁止，
+                      // 因此不再有"会话内行级开关"这条来源（见 core.resolveSpotSourceMaterial）。
+                      const spotSource = resolveSpotSourceMaterial({
                         input: spotInput,
-                        row: current,
-                        allowHrb400eFallback,
                       })
                       const spotBadgeLabel = spotSource
-                        ? t(
-                            'priceCompare.sheet.fallbackBadgeLabelWithSupplier',
-                            {
-                              material: spotSource,
-                              supplier: spotInput?.supplierName ?? '',
-                            },
-                          )
+                        ? t('priceCompare.sheet.spotSubstitutedLabel', {
+                            material: spotSource,
+                            supplier: spotInput?.supplierName ?? '',
+                          })
                         : ''
-                      // 角标自带可访问名（role=img + aria-label），不改 input 的 aria-label
-                      // —— 那个字段表达"中天 HRB400E 12 9米"这类字段身份，覆盖掉读屏就找不到格子。
-                      const spotNode = spotSource ? (
-                        <>
-                          {input}
-                          <FallbackBadge label={spotBadgeLabel} />
-                          {/* 单格取消代取：只在有角标时出现（没角标就没有"取消"可言）。
-                              置 spotSourceMaterial = null：不改价格、不动行级开关。 */}
-                          <Button
-                            aria-label={t(
-                              'priceCompare.sheet.clearSpotSource',
-                              { material: spotSource },
-                            )}
-                            className="price-compare-fallback-clear"
-                            size="small"
-                            title={t('priceCompare.sheet.clearSpotSource', {
-                              material: spotSource,
-                            })}
-                            type="text"
-                            onClick={() =>
-                              clearSpotSource(brand.name, current.id)
-                            }
-                          >
-                            ×
-                          </Button>
-                        </>
-                      ) : (
-                        input
+                      /*
+                       * 现货价只读：唯一来源是「从供应商价格表导入」，格子里不接受任何
+                       * 手工输入（默认禁止手动改价，无例外）。`data-spot` 保留在原位置，
+                       * 供 e2e 与测试按「品牌:行」定位；空格子显示「—」。
+                       */
+                      const spotNode = (
+                        <span
+                          className={`price-compare-spot price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                          data-spot={`${brand.name}:${current.id}`}
+                          title={spot === undefined ? undefined : String(spot)}
+                        >
+                          {spot === undefined ? '—' : spot}
+                          {spotSource ? (
+                            <FallbackBadge label={spotBadgeLabel} />
+                          ) : null}
+                        </span>
                       )
                       return isFirst ? (
                         <span ref={ctx.spotRef}>{spotNode}</span>
@@ -1295,81 +1017,24 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     },
                   ),
                   cellOf(
-                    <SupplierFillHeader
-                      brandName={brand.name}
-                      options={supplierOptions}
-                      disabled={readOnly}
-                      open={ctx.supplierFillBrand === brand.name}
-                      onOpenChange={(next) =>
-                        ctx.setSupplierFillBrand(next ? brand.name : undefined)
-                      }
-                      onFill={(option) =>
-                        ctx.fillSupplier(brand.name, productRowIds, option)
-                      }
-                    />,
+                    t('priceCompare.sheet.columns.supplierShort'),
                     widths.supplier,
                     (_, row) => {
-                      const current = row.row
-                      const input = ctx.getInput(brand.name, current.id)
-                      const supplierName = input?.supplierName
-                      const filtered = filterSupplierOptionsByBrand(
-                        ctx.supplierOptions,
+                      /*
+                       * 供应商只读：与现货价同源 —— 价格表导入时一起写入，格子里不再提供
+                       * 下拉（默认禁止手动改价，供应商也就不允许手工指定）。
+                       */
+                      const supplierName = getInput(
                         brand.name,
-                      )
-                      // 保留已选供应商: 若其不属于当前品牌过滤结果, 仍加入选项避免回显丢失,
-                      // 不强制清空用户已选值。
-                      const options =
-                        input?.supplierId &&
-                        !filtered.some(
-                          (item) => item.value === input.supplierId,
-                        )
-                          ? [
-                              {
-                                value: input.supplierId,
-                                label: supplierName || input.supplierId,
-                                brands: [],
-                              },
-                              ...filtered,
-                            ]
-                          : filtered
+                        row.row.id,
+                      )?.supplierName
                       return (
-                        <Select
-                          size="small"
-                          variant="borderless"
-                          aria-label={cellLabel(
-                            `${brand.name} ${t('priceCompare.sheet.columns.supplierShort')}`,
-                            row,
-                          )}
+                        <span
                           className={`price-compare-supplier${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                          disabled={readOnly}
-                          value={input?.supplierId}
                           title={supplierName}
-                          placeholder={t('priceCompare.sheet.supplier')}
-                          allowClear
-                          showSearch={{ filterOption: filterSupplierOption }}
-                          /*
-                           * 供应商简称列同样窄(约 100px), 下拉与该列同宽会把
-                           * 「杭州钢材贸易有限公司」这类长名截成「杭州钢材贸…」,
-                           * 无法分辨供应商。按内容宽度撑开下拉。
-                           */
-                          popupMatchSelectWidth={false}
-                          options={options}
-                          onChange={(value) => {
-                            const option = options.find(
-                              (item) => item.value === value,
-                            )
-                            ctx.setSupplier(
-                              brand.name,
-                              current.id,
-                              value
-                                ? {
-                                    value: String(value),
-                                    label: option?.label ?? String(value),
-                                  }
-                                : undefined,
-                            )
-                          }}
-                        />
+                        >
+                          {supplierName || '—'}
+                        </span>
                       )
                     },
                   ),

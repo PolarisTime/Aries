@@ -165,13 +165,18 @@ describe('SheetPanel 无障碍契约', () => {
     expect(labelOf('input.price-compare-ton')).toBe(`报单吨位，${PRODUCT}`)
     // 备注
     expect(labelOf('input.price-compare-row-remark')).toBe(`备注，${PRODUCT}`)
-    // 现货价(带品牌, 同列多品牌时可区分)
-    expect(labelOf('input.price-compare-spot')).toBe(`中天 现货，${PRODUCT}`)
-    // 供应商(antd Select 的名称落在 combobox 上)
-    const supplierLabel = [
-      ...container.querySelectorAll('.price-compare-supplier input'),
-    ][0]?.getAttribute('aria-label')
-    expect(supplierLabel).toBe(`中天 简称，${PRODUCT}`)
+  })
+
+  /**
+   * 现货价与供应商**禁止手工改价**后都变成只读文本：可写控件一旦存在，用户就能绕过
+   * 「从供应商价格表导入」改价。只读格的可访问名由可见文本与表格结构提供，因此这里
+   * 只断言"没有可写控件、仍有可定位节点"。
+   */
+  it('现货价与供应商只读: 不渲染 input/下拉', () => {
+    render()
+    expect(container.querySelector('input.price-compare-spot')).toBeNull()
+    expect(container.querySelector('[data-spot]')).not.toBeNull()
+    expect(container.querySelector('.price-compare-supplier input')).toBeNull()
   })
 
   it('参照时段下拉也有可访问名称', () => {
@@ -196,9 +201,8 @@ describe('SheetPanel 无障碍契约', () => {
    *   A) 系统带出：input 上已有落库的 spotSourceMaterial；
    *   B) 手工勾选行：只有 spot + 行开关 + 单据头放行（无落库来源，判据现算）。
    */
-  it('代取角标(系统带出来源)有可访问名且含材质', () => {
+  it('代取角标(落库来源)有可访问名且含材质', () => {
     render({
-      allowHrb400eFallback: true,
       sheet: {
         inputs: {
           [`中天:${row.id}`]: { spot: 3420, spotSourceMaterial: 'HRB400E' },
@@ -210,23 +214,6 @@ describe('SheetPanel 无障碍契约', () => {
     )
     expect(badge?.getAttribute('aria-label')).toContain('HRB400E')
     expect(badge?.getAttribute('title')).toContain('HRB400E')
-  })
-
-  it('代取角标(手工勾选行, 无落库来源)同样有可访问名', () => {
-    render({
-      allowHrb400eFallback: true,
-      /*
-       * 手工分支的判据是「行材质可被替代」：必须是 HRB400 这类**未带 E** 的牌号。
-       * 用 HRB400E 做数据的话 substituteMaterialOf 返回 null，角标本就不该出现，
-       * 用例会变成假绿 —— 这正是"用能区分两种分支的数据"的意义。
-       */
-      row: { material: 'HRB400', hrb400eFallback: true },
-      sheet: { inputs: { [`中天:${row.id}`]: { spot: 3420 } } },
-    })
-    const badge = container.querySelector(
-      '.price-compare-fallback-badge[role="img"]',
-    )
-    expect(badge?.getAttribute('aria-label')).toContain('HRB400E')
   })
 
   it('表头图例 chip 是装饰: aria-hidden, 不让读屏单独念一个字母', () => {

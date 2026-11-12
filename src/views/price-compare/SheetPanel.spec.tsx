@@ -4,10 +4,26 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18n from 'i18next'
 import { act, createElement, useEffect, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
+import { bindAntdAppApi } from '@/utils/antd-app'
 import { SheetPanel } from './SheetPanel'
 import type { PriceRow, PriceSheet, Variety } from './types'
+
+/**
+ * 「从供应商价格表导入」的数据源：默认返回空报价，具体用例各自设置。
+ * 用 mock 而不是真请求：导入流程是本用例要验证的行为，不是网络层。
+ */
+const lowestQuotesMock = vi.fn<() => Promise<unknown[]>>(() =>
+  Promise.resolve([]),
+)
+
+vi.mock('@/api/market/supplier-price-lists', () => ({
+  fetchLowestBrandQuotes: (...args: unknown[]) => {
+    void args
+    return lowestQuotesMock()
+  },
+}))
 
 const variety: Variety = {
   category: '螺纹钢',
@@ -142,12 +158,12 @@ describe('SheetPanel 指定品牌展示', () => {
   function renderStateful(
     initialSheet: PriceSheet,
     initialRows: PriceRow[],
-    suppliers: { value: string; label: string; brands?: string[] }[] = [],
     brands: { name: string; freight: number }[] = [
       { name: '中天', freight: 30 },
     ],
     readOnly = false,
     varieties: Variety[] = [variety],
+    allowHrb400eFallback = false,
   ) {
     const observed = {
       rows: initialRows,
@@ -182,8 +198,8 @@ describe('SheetPanel 指定品牌展示', () => {
         onRefresh: () => {},
         chrome: false,
         spotRef: { current: null },
-        suppliers,
         readOnly,
+        allowHrb400eFallback,
       })
     }
     act(() => {
@@ -253,7 +269,6 @@ describe('SheetPanel 指定品牌展示', () => {
     renderStateful(
       { ...makeSheet(), locked: true, specQuantityLocked: true },
       [{ ...baseRow }],
-      [],
       [{ name: '中天', freight: 30 }],
       true,
     )
@@ -278,7 +293,7 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(separatorRow).not.toBeNull()
     expect(separatorRow?.textContent).toContain('隔断')
     expect(separatorRow?.querySelector('input[data-ton]')).toBeNull()
-    expect(separatorRow?.querySelector('input[data-spot]')).toBeNull()
+    expect(separatorRow?.querySelector('[data-spot]')).toBeNull()
     expect(separatorRow?.querySelector('.ant-select')).toBeNull()
   })
 
@@ -319,7 +334,7 @@ describe('SheetPanel 指定品牌展示', () => {
    * 回归: 吨位/现货输入曾对 Tab 一律 preventDefault, 到列首/列尾找不到目标时
    * 焦点原地不动 —— 单行单据下整列变成焦点陷阱, 现货价与供应商列永远到不了。
    */
-  it('吨位/现货列到边界时放行默认 Tab, 不再形成焦点陷阱', () => {
+  it('吨位列到边界时放行默认 Tab, 不再形成焦点陷阱', () => {
     renderStateful({ ...makeSheet() }, [{ ...baseRow, id: 'r1' }])
 
     const ton = container.querySelector<HTMLInputElement>(
@@ -334,23 +349,9 @@ describe('SheetPanel 指定品牌展示', () => {
       ton?.dispatchEvent(tonTab)
     })
     expect(tonTab.defaultPrevented).toBe(false)
-
-    const spot = container.querySelector<HTMLInputElement>(
-      'input[data-spot="中天:r1"]',
-    )
-    expect(spot).not.toBeNull()
-    const spotTab = new KeyboardEvent('keydown', {
-      key: 'Tab',
-      bubbles: true,
-      cancelable: true,
-    })
-    act(() => {
-      spot?.dispatchEvent(spotTab)
-    })
-    expect(spotTab.defaultPrevented).toBe(false)
   })
 
-  it('吨位/现货列内有下一行时仍拦截默认 Tab 并移动焦点', () => {
+  it('吨位列内有下一行时仍拦截默认 Tab 并移动焦点', () => {
     renderStateful({ ...makeSheet() }, [
       { ...baseRow, id: 'r1' },
       { ...baseRow, id: 'r2' },
@@ -370,22 +371,6 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(tonTab.defaultPrevented).toBe(true)
     expect(document.activeElement).toBe(
       container.querySelector<HTMLInputElement>('input[data-ton="r2"]'),
-    )
-
-    const spot = container.querySelector<HTMLInputElement>(
-      'input[data-spot="中天:r1"]',
-    )
-    const spotTab = new KeyboardEvent('keydown', {
-      key: 'Tab',
-      bubbles: true,
-      cancelable: true,
-    })
-    act(() => {
-      spot?.dispatchEvent(spotTab)
-    })
-    expect(spotTab.defaultPrevented).toBe(true)
-    expect(document.activeElement).toBe(
-      container.querySelector<HTMLInputElement>('input[data-spot="中天:r2"]'),
     )
   })
 
@@ -589,513 +574,8 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(addRow?.disabled).toBe(false)
   })
 
-  const suppliers = [
-    { value: 's1', label: '沙钢' },
-    { value: 's2', label: '河钢' },
-  ]
-
-  async function openSupplierDropdown() {
-    const supplierSelect = container.querySelector('.price-compare-supplier')
-    await act(async () => {
-      supplierSelect?.dispatchEvent(
-        new MouseEvent('mousedown', { bubbles: true }),
-      )
-      await new Promise((resolve) => setTimeout(resolve, 0))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-  }
-
-  /** 模拟在会话内修改某单元格现货价(触发 onBlur), 使其成为「价格变动过的行」。 */
-  async function editSpot(brandName: string, rowId: string, value: string) {
-    const input = container.querySelector<HTMLInputElement>(
-      `input[data-spot="${brandName}:${rowId}"]`,
-    )
-    expect(input).not.toBeNull()
-    await act(async () => {
-      const setValue = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        'value',
-      )?.set?.bind(input)
-      setValue?.(value)
-      input?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-  }
-
-  /** 等待下拉选项按 title 出现(轮询, 兼容异步渲染)。 */
-  async function waitForOption(title: string) {
-    for (let i = 0; i < 20; i += 1) {
-      const el = document.body.querySelector(
-        `.ant-select-item-option[title="${title}"]`,
-      )
-      if (el) return el
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 0))
-      })
-    }
-    return null
-  }
-
-  /** 打开指定下拉(容器内选择器)并点击 title 选项。 */
-  async function pickOption(
-    scope: ParentNode,
-    selectSelector: string,
-    title: string,
-  ) {
-    const select = scope.querySelector(selectSelector)
-    await act(async () => {
-      select?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    const option = await waitForOption(title)
-    expect(option).toBeTruthy()
-    await act(async () => {
-      option?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-  }
-
-  it('品牌分组在差价后新增供应商简称列, 现货单元格不再内嵌供应商下拉', () => {
-    renderStateful(
-      {
-        ...makeSheet(),
-        inputs: {
-          '中天:r1': { spot: 3280, supplierId: 's1', supplierName: '沙钢' },
-        },
-      },
-      [{ ...baseRow }],
-      suppliers,
-    )
-
-    const headerRow =
-      container.querySelectorAll('.ant-table-thead tr')[1]?.textContent ?? ''
-    expect(headerRow).toContain('网价')
-    expect(headerRow).toContain('现货')
-    expect(headerRow).toContain('差价')
-    expect(headerRow).toContain('简称')
-    expect(headerRow.indexOf('差价')).toBeLessThan(headerRow.indexOf('简称'))
-
-    const spotCell = container
-      .querySelector('input[data-spot="中天:r1"]')
-      ?.closest('td')
-    expect(spotCell?.querySelector('.ant-select')).toBeNull()
-
-    expect(
-      container.querySelector('.price-compare-supplier')?.textContent,
-    ).toContain('沙钢')
-  })
-
-  it('品牌列头一键填入供应商到该列本次改过价的行', async () => {
-    const observed = renderStateful(
-      makeSheet(),
-      [
-        { ...baseRow, id: 'r1' },
-        { ...baseRow, id: 'r2', spec: 16 },
-      ],
-      suppliers,
-    )
-
-    // 仅 r1 本次改过现货价; r2 未改价
-    await editSpot('中天', 'r1', '3280')
-
-    const fillBtn = container.querySelector('.price-compare-supplier-fill-btn')
-    expect(fillBtn).not.toBeNull()
-    await act(async () => {
-      fillBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    // 在弹出层的供应商下拉中选择"河钢"
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill-select',
-      '河钢',
-    )
-
-    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
-    // 未改价的行不填
-    expect(observed.sheet.inputs['中天:r2']?.supplierName).toBeUndefined()
-  })
-
-  it('批量填入覆盖改过价行的已有供应商值(换家重新报价)', async () => {
-    const observed = renderStateful(
-      {
-        ...makeSheet(),
-        inputs: {
-          '中天:r1': { spot: 3180, supplierId: 's1', supplierName: '沙钢' },
-        },
-      },
-      [
-        { ...baseRow, id: 'r1' },
-        { ...baseRow, id: 'r2', spec: 16 },
-      ],
-      suppliers,
-    )
-
-    // 会话内改价 r1(旧价 3180 → 3200), 触发标记
-    await editSpot('中天', 'r1', '3200')
-
-    const fillBtn = container.querySelector('.price-compare-supplier-fill-btn')
-    await act(async () => {
-      fillBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill .price-compare-supplier-fill-select',
-      '河钢',
-    )
-
-    expect(observed.sheet.inputs['中天:r1']?.supplierId).toBe('s2')
-    // 现货价不被批量填入改动
-    expect(observed.sheet.inputs['中天:r1']?.spot).toBe(3200)
-    // 未改价的行不填
-    expect(observed.sheet.inputs['中天:r2']?.supplierName).toBeUndefined()
-  })
-
-  it('未改价的行保留已有供应商(换第 N 家不误伤)', async () => {
-    const observed = renderStateful(
-      {
-        ...makeSheet(),
-        inputs: {
-          '中天:r1': { spot: 3180, supplierId: 's1', supplierName: '沙钢' },
-          '中天:r2': { spot: 3300, supplierId: 's1', supplierName: '沙钢' },
-        },
-      },
-      [
-        { ...baseRow, id: 'r1' },
-        { ...baseRow, id: 'r2', spec: 16 },
-      ],
-      suppliers,
-    )
-
-    // 仅 r1 改价; r2 保留沙钢
-    await editSpot('中天', 'r1', '3200')
-
-    await act(async () => {
-      container
-        .querySelector('.price-compare-supplier-fill-btn')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill-select',
-      '河钢',
-    )
-
-    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
-    // r2 未改价, 保留原供应商
-    expect(observed.sheet.inputs['中天:r2']?.supplierName).toBe('沙钢')
-  })
-
-  it('现货价下调同样算改价, 批量填入生效', async () => {
-    const observed = renderStateful(
-      {
-        ...makeSheet(),
-        inputs: {
-          '中天:r1': { spot: 3280, supplierId: 's1', supplierName: '沙钢' },
-        },
-      },
-      [{ ...baseRow, id: 'r1' }],
-      suppliers,
-    )
-
-    // 下调 3280 → 3200, 属于价格变动
-    await editSpot('中天', 'r1', '3200')
-
-    await act(async () => {
-      container
-        .querySelector('.price-compare-supplier-fill-btn')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill-select',
-      '河钢',
-    )
-
-    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
-    expect(observed.sheet.inputs['中天:r1']?.spot).toBe(3200)
-  })
-
-  it('现货价编辑后数值未变不算改价, 批量填入不生效', async () => {
-    const observed = renderStateful(
-      {
-        ...makeSheet(),
-        inputs: {
-          '中天:r1': { spot: 3280, supplierId: 's1', supplierName: '沙钢' },
-        },
-      },
-      [{ ...baseRow, id: 'r1' }],
-      suppliers,
-    )
-
-    // 聚焦再失焦, 值仍为 3280(未发生变动)
-    await editSpot('中天', 'r1', '3280')
-
-    await act(async () => {
-      container
-        .querySelector('.price-compare-supplier-fill-btn')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill-select',
-      '河钢',
-    )
-
-    // 价格未变, 不算改价行, 供应商保持原值
-    expect(observed.sheet.inputs['中天:r1']?.supplierId).toBe('s1')
-    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('沙钢')
-  })
-
-  it('所选范围无改价行时批量填入不产生修改', async () => {
-    const observed = renderStateful(
-      {
-        ...makeSheet(),
-        inputs: {
-          '中天:r1': { spot: 3180, supplierId: 's1', supplierName: '沙钢' },
-        },
-      },
-      [{ ...baseRow, id: 'r1' }],
-      suppliers,
-    )
-
-    // 未做任何现货价修改, 直接批量填入
-    await act(async () => {
-      container
-        .querySelector('.price-compare-supplier-fill-btn')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill-select',
-      '河钢',
-    )
-
-    // 原值不变
-    expect(observed.sheet.inputs['中天:r1']?.supplierId).toBe('s1')
-    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('沙钢')
-  })
-
-  it('填入成功后消费改价标记, 再次批量填入不重复生效', async () => {
-    const observed = renderStateful(
-      makeSheet(),
-      [{ ...baseRow, id: 'r1' }],
-      suppliers,
-    )
-
-    await editSpot('中天', 'r1', '3280')
-
-    // 第一次填入: 命中改价行
-    await act(async () => {
-      container
-        .querySelector('.price-compare-supplier-fill-btn')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill-select',
-      '河钢',
-    )
-    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
-
-    // 标记已被消费, 第二次填入不再改动(即使换成另一家)
-    await act(async () => {
-      container
-        .querySelector('.price-compare-supplier-fill-btn')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill-select',
-      '沙钢',
-    )
-    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
-  })
-
-  it('选中行后出现批量填入按钮, 仅填入选中的改价行', async () => {
-    const observed = renderStateful(
-      makeSheet(),
-      [
-        { ...baseRow, id: 'r1' },
-        { ...baseRow, id: 'r2' },
-      ],
-      suppliers,
-    )
-
-    // 两个行都改价, 但只勾选 r1
-    await editSpot('中天', 'r1', '3280')
-    await editSpot('中天', 'r2', '3300')
-
-    // 勾选第一行(跳过 antd 隐藏的 measure row)
-    const rowCheckbox = container.querySelector<HTMLInputElement>(
-      '.ant-table-row input[type="checkbox"]',
-    )
-    await act(async () => {
-      rowCheckbox?.click()
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    const fillBtn = container.querySelector('.price-compare-fill-selected-btn')
-    expect(fillBtn).not.toBeNull()
-    await act(async () => {
-      fillBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    // 弹出层: 先选品牌列(唯一品牌 中天), 再选供应商
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill-brand',
-      '中天',
-    )
-    await pickOption(
-      document.body,
-      '.price-compare-supplier-fill-select',
-      '河钢',
-    )
-
-    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
-    // 未选中的行不变
-    expect(observed.sheet.inputs['中天:r2']?.supplierName).toBeUndefined()
-  })
-
-  it('品牌列只显示绑定该品牌的供应商', async () => {
-    renderStateful(
-      makeSheet(),
-      [{ ...baseRow }],
-      [
-        { value: 's1', label: '沙钢', brands: ['中天'] },
-        { value: 's2', label: '河钢', brands: ['永钢'] },
-      ],
-    )
-
-    await openSupplierDropdown()
-
-    expect(
-      document.body.querySelector('.ant-select-item-option[title="沙钢"]'),
-    ).toBeTruthy()
-    expect(
-      document.body.querySelector('.ant-select-item-option[title="河钢"]'),
-    ).toBeNull()
-  })
-
-  it('品牌无绑定供应商时回退显示全部', async () => {
-    renderStateful(
-      makeSheet(),
-      [{ ...baseRow }],
-      [
-        { value: 's1', label: '沙钢', brands: ['永钢'] },
-        { value: 's2', label: '河钢', brands: ['永钢'] },
-      ],
-    )
-
-    await openSupplierDropdown()
-
-    expect(
-      document.body.querySelector('.ant-select-item-option[title="沙钢"]'),
-    ).toBeTruthy()
-    expect(
-      document.body.querySelector('.ant-select-item-option[title="河钢"]'),
-    ).toBeTruthy()
-  })
-
-  it('已选供应商不属于当前品牌时保留原值回显', () => {
-    renderStateful(
-      {
-        ...makeSheet(),
-        inputs: {
-          '中天:r1': { spot: 3280, supplierId: 's2', supplierName: '河钢' },
-        },
-      },
-      [{ ...baseRow }],
-      [
-        { value: 's1', label: '沙钢', brands: ['中天'] },
-        { value: 's2', label: '河钢', brands: ['永钢'] },
-      ],
-    )
-
-    expect(
-      container.querySelector('.price-compare-supplier')?.textContent,
-    ).toContain('河钢')
-  })
-
-  it('在简称列选择供应商后回显简称并持久化到输入', async () => {
-    const observed = renderStateful(makeSheet(), [{ ...baseRow }], suppliers)
-
-    const supplierSelect = container.querySelector('.price-compare-supplier')
-    expect(supplierSelect).not.toBeNull()
-    await act(async () => {
-      supplierSelect?.dispatchEvent(
-        new MouseEvent('mousedown', { bubbles: true }),
-      )
-      await new Promise((resolve) => setTimeout(resolve, 0))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    const option = document.body.querySelector(
-      '.ant-select-item-option[title="河钢"]',
-    )
-    expect(option).toBeTruthy()
-    await act(async () => {
-      option?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    expect(observed.sheet.inputs['中天:r1']?.supplierId).toBe('s2')
-    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
-    expect(
-      container.querySelector('.price-compare-supplier')?.textContent,
-    ).toContain('河钢')
-  })
-
-  it('简称下拉支持拼音全拼与首字母索引', async () => {
-    renderStateful(makeSheet(), [{ ...baseRow }], suppliers)
-
-    await openSupplierDropdown()
-
-    const searchInput =
-      document.body.querySelector<HTMLInputElement>(
-        '.price-compare-supplier .ant-select-input',
-      ) ??
-      document.body.querySelector<HTMLInputElement>(
-        '.ant-select-dropdown .ant-select-input',
-      )
-    expect(searchInput).not.toBeNull()
-
-    // 拼音首字母 "hg" 命中"河钢", 过滤掉"沙钢"
-    await act(async () => {
-      const setValue = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        'value',
-      )?.set?.bind(searchInput)
-      setValue?.('hg')
-      searchInput?.dispatchEvent(new Event('input', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-
-    expect(
-      document.body.querySelector('.ant-select-item-option[title="河钢"]'),
-    ).toBeTruthy()
-    expect(
-      document.body.querySelector('.ant-select-item-option[title="沙钢"]'),
-    ).toBeNull()
-  })
-
   it('在类别列之前渲染行备注列, 且备注显示到输入框', () => {
-    renderStateful(
-      { ...makeSheet() },
-      [{ ...baseRow, remark: '急单' }],
-      suppliers,
-    )
+    renderStateful({ ...makeSheet() }, [{ ...baseRow, remark: '急单' }])
 
     const headerRow =
       container.querySelectorAll('.ant-table-thead tr')[0]?.textContent ?? ''
@@ -1207,7 +687,6 @@ describe('SheetPanel 指定品牌展示', () => {
     renderStateful(
       { ...makeSheet() },
       [{ ...baseRow }],
-      [],
       [
         { name: '中天', freight: 30 },
         { name: '沙钢', freight: 20 },
@@ -1241,7 +720,6 @@ describe('SheetPanel 指定品牌展示', () => {
     renderStateful(
       { ...makeSheet() },
       [{ ...baseRow }],
-      [],
       [{ name: '中天', freight: 30 }],
     )
     const headerTextOf = () =>
@@ -1282,7 +760,6 @@ describe('SheetPanel 指定品牌展示', () => {
     renderStateful(
       { ...makeSheet() },
       [{ ...baseRow }],
-      [],
       [{ name: '中天', freight: 30 }],
     )
 
@@ -1298,7 +775,6 @@ describe('SheetPanel 指定品牌展示', () => {
     renderStateful(
       { ...makeSheet() },
       [{ ...baseRow }],
-      [],
       [{ name: '中天', freight: 30 }],
     )
     await openColumnSettings()
@@ -1369,7 +845,6 @@ describe('SheetPanel 指定品牌展示', () => {
     renderStateful(
       makeSheet(),
       [{ ...baseRow, id: 'r1' }],
-      [],
       [{ name: '基准价', freight: 0 }],
     )
 
@@ -1400,14 +875,7 @@ describe('SheetPanel 指定品牌展示', () => {
         label: 'b',
       },
     ]
-    renderStateful(
-      makeSheet(),
-      [{ ...baseRow }],
-      [],
-      undefined,
-      false,
-      twoLengths,
-    )
+    renderStateful(makeSheet(), [{ ...baseRow }], undefined, false, twoLengths)
     const switchButton = container.querySelector(
       '.price-compare-variety-switch',
     )
@@ -1439,7 +907,6 @@ describe('SheetPanel 指定品牌展示', () => {
     const observed = renderStateful(
       makeSheet(),
       [{ ...baseRow }],
-      [],
       undefined,
       false,
       twoLengths,
@@ -1499,6 +966,75 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(observed.rows[0].locked).toBe(false)
     expect(observed.rows[0].ton).toBe(12.5)
     expect(observed.rows[0].spec).toBe(12)
+  })
+
+  /**
+   * 「默认禁止手动改价，无例外」的渲染级契约。
+   *
+   * <p>现货价与供应商格子里不能再有任何可写控件：input 或下拉一旦存在，用户就能绕过
+   * 「从供应商价格表导入」手工改价。这里同时钉住列顺序（网价/现货/差价/简称）与
+   * 已删除的三个入口（批量填供应商按钮、表头填入按钮、行级「按 E 价」开关）。</p>
+   */
+  it('现货/供应商列都是只读文本, 且不再有任何手工改价入口', () => {
+    renderStateful(
+      {
+        ...makeSheet(),
+        inputs: {
+          '中天:r1': { spot: 3280, supplierId: 's1', supplierName: '沙钢' },
+        },
+      },
+      [{ ...baseRow, id: 'r1' }],
+      [{ name: '中天', freight: 30 }],
+      false,
+      [variety],
+      true,
+    )
+
+    // 现货价: 只读 span(保留 data-spot 供 e2e/测试定位), 不是 input
+    expect(container.querySelector('input[data-spot]')).toBeNull()
+    const spotCell = container.querySelector('[data-spot="中天:r1"]')
+    expect(spotCell).not.toBeNull()
+    expect(spotCell?.textContent).toContain('3280')
+
+    // 供应商: 只读文本, 不是下拉
+    expect(
+      container.querySelector('.price-compare-supplier')?.textContent,
+    ).toContain('沙钢')
+    expect(
+      container.querySelector('.price-compare-supplier .ant-select'),
+    ).toBeNull()
+
+    // 已删除的手工入口
+    expect(
+      container.querySelector('.price-compare-supplier-fill-btn'),
+    ).toBeNull()
+    expect(
+      container.querySelector('.price-compare-fill-selected-btn'),
+    ).toBeNull()
+    expect(container.querySelector('.price-compare-hrb400e-switch')).toBeNull()
+
+    // 列顺序仍是 网价 / 现货 / 差价 / 简称
+    const headerRow =
+      container.querySelectorAll('.ant-table-thead tr')[1]?.textContent ?? ''
+    expect(headerRow.indexOf('网价')).toBeLessThan(headerRow.indexOf('现货'))
+    expect(headerRow.indexOf('现货')).toBeLessThan(headerRow.indexOf('差价'))
+    expect(headerRow.indexOf('差价')).toBeLessThan(headerRow.indexOf('简称'))
+  })
+
+  it('选中行后只剩删除入口, 没有批量填入供应商按钮', async () => {
+    renderStateful(makeSheet(), [{ ...baseRow, id: 'r1' }])
+    const rowCheckbox = container.querySelector<HTMLInputElement>(
+      '.ant-table-row input[type="checkbox"]',
+    )
+    await act(async () => {
+      rowCheckbox?.click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(
+      container.querySelector('.price-compare-fill-selected-btn'),
+    ).toBeNull()
+    expect(container.textContent).not.toContain('批量填入供应商')
   })
 })
 
@@ -1640,5 +1176,271 @@ describe('SheetPanel 差价最优并列高亮', () => {
     expect(
       bestCells.filter((cell) => cell.classList.contains('price-compare-dim')),
     ).toHaveLength(0)
+  })
+})
+
+/**
+ * 「从供应商价格表导入」的交互契约。
+ *
+ * <p>覆盖式导入前必须让用户看见影响面（新增/改价（涨跌）/清空/不变/代取，并明确
+ * 「未匹配的格子会被清空」）；取消时**不落库**，确认后才 `patchSheet`。价格表里没有任何
+ * 报价时文案改成"会清空全部价格"，不让用户以为只是"没东西可导"。</p>
+ *
+ * <p>数据源用 mock 的 `fetchLowestBrandQuotes`，确认弹窗用假的 `modal.confirm` 捕获，
+ * 不去碰真实网络与真实弹层。</p>
+ */
+describe('SheetPanel 从供应商价格表导入', () => {
+  let container: HTMLDivElement
+  let root: Root
+  let queryClient: QueryClient
+
+  type ConfirmOptions = {
+    title?: string
+    content?: React.ReactNode
+    okText?: string
+    onOk?: () => void
+  }
+  let confirmOptions: ConfirmOptions | null = null
+  let successMock: ReturnType<typeof vi.fn>
+
+  const quote = (
+    brandName: string,
+    spec: number,
+    price: number,
+    overrides: Record<string, unknown> = {},
+  ) => ({
+    brandName,
+    category: '螺纹钢',
+    material: 'HRB400E',
+    spec,
+    length: '9米',
+    price,
+    priceListId: '900',
+    supplierId: 's2',
+    supplierName: '河钢',
+    ...overrides,
+  })
+
+  const rowAt = (id: string, spec: number): PriceRow => ({
+    id,
+    rowType: 'PRODUCT',
+    category: '螺纹钢',
+    material: 'HRB400E',
+    spec,
+    length: '9米',
+  })
+
+  beforeEach(async () => {
+    window.localStorage.removeItem(
+      'aries-list-column-settings:anonymous:price-compare-sheet',
+    )
+    await i18n.changeLanguage('zh-CN')
+    lowestQuotesMock.mockReset()
+    lowestQuotesMock.mockResolvedValue([])
+    confirmOptions = null
+    successMock = vi.fn()
+    bindAntdAppApi({
+      modal: {
+        confirm: (options: ConfirmOptions) => {
+          confirmOptions = options
+          return { destroy: () => {}, update: () => {} }
+        },
+      },
+      message: { success: successMock },
+    } as unknown as Parameters<typeof bindAntdAppApi>[0])
+    if (!window.matchMedia) {
+      window.matchMedia = (query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      })
+    }
+    if (!globalThis.ResizeObserver) {
+      globalThis.ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    }
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    })
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(async () => {
+    bindAntdAppApi(null)
+    act(() => root.unmount())
+    await act(async () => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 25)
+      })
+    })
+    container.remove()
+    document
+      .querySelectorAll(
+        '.ant-dropdown, .ant-popover, .ant-tooltip, .ant-select-dropdown, .ant-modal-root',
+      )
+      .forEach((node) => {
+        node.remove()
+      })
+  })
+
+  function renderPanel(
+    initialSheet: PriceSheet,
+    rows: PriceRow[],
+    readOnly = false,
+  ) {
+    const observed: { sheet: PriceSheet } = { sheet: initialSheet }
+    function Harness() {
+      const [sheet, setSheet] = useState(initialSheet)
+      // 回写放在 effect 里: 渲染期改外层变量会被 React Compiler 判为 immutability 违规
+      useEffect(() => {
+        observed.sheet = sheet
+      }, [sheet])
+      return createElement(SheetPanel, {
+        sheet,
+        data: null,
+        varieties: [variety],
+        brands: [{ name: '中天', freight: 30 }],
+        rows,
+        density: 'small',
+        lengthPremium: 30,
+        patchSheet: (_id, patch) => setSheet((prev) => ({ ...prev, ...patch })),
+        setRows: () => {},
+        onReorderBrands: () => {},
+        periods: [],
+        onRefresh: () => {},
+        chrome: false,
+        spotRef: { current: null },
+        readOnly,
+      })
+    }
+    act(() => {
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(Harness),
+        ),
+      )
+    })
+    return observed
+  }
+
+  const importButton = () =>
+    Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('从供应商价格表导入'),
+    )
+
+  async function clickImport() {
+    const button = importButton()
+    expect(button, '未找到「从供应商价格表导入」按钮').toBeTruthy()
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  it('覆盖已有价 + 清空未匹配格: 先预览确认, 确认后才落库', async () => {
+    lowestQuotesMock.mockResolvedValue([quote('中天', 12, 3420)])
+    const observed = renderPanel(
+      {
+        ...makeSheet(),
+        inputs: {
+          '中天:r1': { spot: 3200, supplierId: 's1', supplierName: '沙钢' },
+          '中天:r2': { spot: 3300, supplierId: 's1', supplierName: '沙钢' },
+        },
+      },
+      [rowAt('r1', 12), rowAt('r2', 16)],
+    )
+
+    await clickImport()
+    expect(lowestQuotesMock).toHaveBeenCalledTimes(1)
+    expect(confirmOptions?.title).toBe('从供应商价格表导入？')
+    const content = String(confirmOptions?.content ?? '')
+    // 影响面逐项可见, 且明确会清空
+    expect(content).toContain('改价 1 处')
+    expect(content).toContain('清空 1 处')
+    expect(content).toContain('未匹配的格子会被清空')
+    // 仅"预览": 未点确定前 inputs 原样
+    expect(observed.sheet.inputs['中天:r1']?.spot).toBe(3200)
+
+    act(() => confirmOptions?.onOk?.())
+
+    // 覆盖: 价格与供应商一起按价格表刷新
+    expect(observed.sheet.inputs['中天:r1']?.spot).toBe(3420)
+    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
+    // 清空: 价格表里没有 r2 的报价 → 整格删除
+    expect(observed.sheet.inputs['中天:r2']).toBeUndefined()
+    // 成功提示含新增/改价/清空
+    expect(successMock).toHaveBeenCalledTimes(1)
+    const successText = String(successMock.mock.calls[0]?.[0] ?? '')
+    expect(successText).toContain('改价 1 处')
+    expect(successText).toContain('清空 1 处')
+  })
+
+  it('取消确认时不修改任何输入', async () => {
+    lowestQuotesMock.mockResolvedValue([quote('中天', 12, 3420)])
+    const observed = renderPanel(
+      { ...makeSheet(), inputs: { '中天:r1': { spot: 3200 } } },
+      [rowAt('r1', 12)],
+    )
+
+    await clickImport()
+    expect(confirmOptions).not.toBeNull()
+    // 不调用 onOk（等价于点「取消」）
+    expect(observed.sheet.inputs['中天:r1']?.spot).toBe(3200)
+    expect(successMock).not.toHaveBeenCalled()
+  })
+
+  it('价格表没有任何报价时, 确认文案明确会清空全部价格', async () => {
+    lowestQuotesMock.mockResolvedValue([])
+    const observed = renderPanel(
+      { ...makeSheet(), inputs: { '中天:r1': { spot: 3200 } } },
+      [rowAt('r1', 12)],
+    )
+
+    await clickImport()
+    const content = String(confirmOptions?.content ?? '')
+    expect(content).toContain('没有任何报价')
+    expect(content).toContain('清空全部 1 处')
+    expect(content).toContain('未匹配的格子会被清空')
+
+    act(() => confirmOptions?.onOk?.())
+    expect(observed.sheet.inputs).toEqual({})
+  })
+
+  it('导入后现货格渲染刷新后的只读价格', async () => {
+    lowestQuotesMock.mockResolvedValue([quote('中天', 12, 3420)])
+    renderPanel({ ...makeSheet(), inputs: { '中天:r1': { spot: 3200 } } }, [
+      rowAt('r1', 12),
+    ])
+
+    await clickImport()
+    act(() => confirmOptions?.onOk?.())
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const spotCell = container.querySelector('[data-spot="中天:r1"]')
+    expect(spotCell?.textContent).toContain('3420')
+    expect(container.querySelector('input[data-spot]')).toBeNull()
+  })
+
+  it('只读态下导入按钮禁用', () => {
+    renderPanel(makeSheet(), [rowAt('r1', 12)], true)
+    expect(importButton()?.disabled).toBe(true)
   })
 })

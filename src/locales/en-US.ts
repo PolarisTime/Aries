@@ -2982,12 +2982,14 @@ export const enUS = {
         'All quotes of this supplier under this brand will be removed; other brands are untouched',
       removeColumn: 'Remove this column',
       removeColumnA11y: 'Remove the quote column of brand {{name}}',
-      fillFromPriceList: 'Fill from price list',
-      fillFromPriceListHint:
-        'Fill empty cells with the lowest quote per brand; existing values are never touched',
-      fillNothing: 'No quotes available in the price list',
-      fillDone:
-        'Filled {{count}} cell(s) from the price list (lowest per brand)',
+      importFromPriceList: 'Import from supplier price list',
+      importConfirmTitle: 'Import from supplier price list?',
+      importConfirmContent:
+        'Add {{added}}, reprice {{updated}} (up {{up}}, down {{down}}), clear {{cleared}}, unchanged {{unchanged}}, substituted {{substituted}}; unmatched cells will be cleared.',
+      importEmptyQuotes:
+        'The price list has no quotes. Importing will clear all {{cleared}} spot prices; unmatched cells will be cleared.',
+      importDone:
+        'Imported from supplier price list: added {{added}}, repriced {{updated}}, cleared {{cleared}}',
       selectionCount: '{{count}} cell(s) selected',
       clearSelection: 'Clear selection (Delete)',
       fillDown: 'Fill down (Ctrl+D)',
@@ -3154,7 +3156,6 @@ export const enUS = {
         removeRowTitle: 'Delete this row?',
         removeRowContent:
           'Spot prices and suppliers entered for this row are removed too. Save the sheet to apply the change.',
-        fillSupplier: 'Fill supplier…',
         hideBrand: 'Hide column',
         moveBrandFirst: 'Move to first',
         moveBrandLast: 'Move to last',
@@ -3175,7 +3176,6 @@ export const enUS = {
       unlockField: 'Unlock "{{label}}"',
       clearField: 'Clear "{{label}}"',
       tonPositive: 'Order tonnage must be a positive number',
-      spotOutOfRange: 'Spot price is out of range (0 - {{max}})',
       spotBetter: 'Spot price is better',
       netBetter: 'Market price is better',
       addRow: '+ Add Row',
@@ -3199,15 +3199,7 @@ export const enUS = {
         'No HRB400 quote for this brand/spec; using the HRB400E reference price',
       // Accessible name for the badge itself (WCAG 1.4.1: never colour/shape only)
       fallbackBadgeLabel: 'Priced as {{material}}',
-      fallbackBadgeLabelWithSupplier:
-        'Priced as {{material}} (source {{supplier}})',
       spotSubstitutedLabel: 'Priced as {{material}} (source {{supplier}})',
-      // Row-level "price as E" switch
-      hrb400eRowSwitch: 'Price as {{material}}',
-      hrb400eRowSwitchHint:
-        'This row is priced as {{material}} (allowed by the document header). Uncheck to opt this row out',
-      // Single-cell cancel substitution
-      clearSpotSource: 'Stop pricing this cell as {{material}}',
       bestDiff: 'Best Difference',
       refreshPrice: 'Refresh Prices',
       config: 'Settings',
@@ -3225,16 +3217,6 @@ export const enUS = {
         'Spec & quantity locked; adding, deleting, or reordering rows is disabled until unlocked',
       /** Short state label used in the row menu while the sheet-level lock applies. */
       specQuantityLockedShort: 'Spec & quantity locked',
-      supplier: 'Supplier',
-      fillSupplier: 'Bulk fill supplier',
-      fillSupplierPick: 'Select supplier',
-      fillSupplierBrand: 'Select brand column',
-      fillSupplierColumn:
-        'Fill the selected supplier into all product rows of the "{{brand}}" column',
-      fillSupplierSelected:
-        'Fill the selected supplier into the {{count}} selected rows',
-      fillSupplierNoChangedRows:
-        'None of the target rows had a spot price changed this session; nothing was modified (only rows with changed prices are updated)',
     },
     config: {
       title: 'Project Settings',

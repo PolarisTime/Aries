@@ -7,8 +7,6 @@ import {
   computeSummary,
   countMissing,
   dataKeyOf,
-  fillSupplierInputs,
-  filterSupplierOptionsByBrand,
   filterVarieties,
   findAlternateLengthVariety,
   isSeparatorRow,
@@ -21,13 +19,11 @@ import {
   netPrice,
   netPriceWithFallback,
   pickBestDiffBrands,
-  reconcileSpotInputs,
   resolveLock,
   SHEET_COLUMN_WIDTH,
   SHEET_WIDTH_BASE_FONT_SIZE,
   scaleSheetColumnWidth,
   sheetColumnWidths,
-  syncSpotInputs,
   TON_INPUT_WIDTH_EM,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet, Variety } from './types'
@@ -366,78 +362,6 @@ describe('countMissing', () => {
   })
 })
 
-describe('syncSpotInputs', () => {
-  it('相同 类别/材质/规格/长度 的行同步现货价', () => {
-    const a = { ...row12, id: 'a' }
-    const b = { ...row12, id: 'b' }
-    const c = { ...row12, id: 'c', spec: 16 }
-    const { inputs, targets } = syncSpotInputs([a, b, c], {}, '中天', 'a', 3300)
-    expect(targets.map((row) => row.id).sort()).toEqual(['a', 'b'])
-    expect(inputs['中天:a'].spot).toBe(3300)
-    expect(inputs['中天:b'].spot).toBe(3300)
-    expect(inputs['中天:c']).toBeUndefined()
-  })
-
-  it('未选择商品的空行不联动', () => {
-    const a = makeRow()
-    const b = makeRow()
-    const { targets } = syncSpotInputs([a, b], {}, '中天', a.id, 100)
-    expect(targets.map((row) => row.id)).toEqual([a.id])
-  })
-
-  /*
-   * 代取来源与手工改价的关系（角标不能撒谎）：
-   * 系统带出的价被人改写后来源就不成立了；只失焦、数值没变则来源必须留着
-   * （否则用户点一下格子再离开，角标就没了）。
-   */
-  it('手工改写代取价后来源被显式清成 null', () => {
-    const a = { ...row12, id: 'a' }
-    const { inputs } = syncSpotInputs(
-      [a],
-      { '中天:a': { spot: 3420, spotSourceMaterial: 'HRB400E' } },
-      '中天',
-      'a',
-      3500,
-    )
-
-    expect(inputs['中天:a'].spot).toBe(3500)
-    expect(inputs['中天:a'].spotSourceMaterial).toBeNull()
-  })
-
-  it('数值未变(只失焦)时来源保留', () => {
-    const a = { ...row12, id: 'a' }
-    const { inputs } = syncSpotInputs(
-      [a],
-      { '中天:a': { spot: 3420, spotSourceMaterial: 'HRB400E' } },
-      '中天',
-      'a',
-      3420,
-    )
-
-    expect(inputs['中天:a'].spotSourceMaterial).toBe('HRB400E')
-  })
-})
-
-describe('reconcileSpotInputs', () => {
-  it('同商品同品牌缺省行自动套用已有现货价', () => {
-    const a = { ...row12, id: 'a' }
-    const b = { ...row12, id: 'b' }
-    const next = reconcileSpotInputs([a, b], { '中天:a': { spot: 3160 } }, [
-      '中天',
-      '铜陵富鑫',
-    ])
-    expect(next['中天:a'].spot).toBe(3160)
-    expect(next['中天:b'].spot).toBe(3160)
-    expect(next['铜陵富鑫:a']).toBeUndefined()
-  })
-
-  it('无变化时返回原对象', () => {
-    const a = { ...row12, id: 'a' }
-    const inputs = { '中天:a': { spot: 3160 } }
-    expect(reconcileSpotInputs([a], inputs, ['中天'])).toBe(inputs)
-  })
-})
-
 describe('canonicalCategory / dataKeyOf', () => {
   it('螺纹钢 与 直条 归一为同一类别', () => {
     expect(canonicalCategory('直条')).toBe('螺纹钢')
@@ -514,34 +438,6 @@ describe('matchesToData / mergePriceData', () => {
   })
 })
 
-describe('filterSupplierOptionsByBrand', () => {
-  const options = [
-    { value: 's1', label: '沙钢', brands: ['中天', '永钢'] },
-    { value: 's2', label: '河钢', brands: ['沙钢'] },
-    { value: 's3', label: '无品牌' },
-  ]
-
-  it('品牌有绑定供应商时只返回绑定项', () => {
-    const result = filterSupplierOptionsByBrand(options, '中天')
-    expect(result.map((option) => option.value)).toEqual(['s1'])
-  })
-
-  it('品牌无任何绑定供应商时回退返回全部', () => {
-    const result = filterSupplierOptionsByBrand(options, '亚新')
-    expect(result.map((option) => option.value)).toEqual(['s1', 's2', 's3'])
-  })
-
-  it('未选品牌时返回全部, 保持兼容', () => {
-    expect(filterSupplierOptionsByBrand(options, undefined)).toBe(options)
-    expect(filterSupplierOptionsByBrand(options, '')).toBe(options)
-  })
-
-  it('多品牌绑定时返回全部命中项', () => {
-    const result = filterSupplierOptionsByBrand(options, '永钢')
-    expect(result.map((option) => option.value)).toEqual(['s1'])
-  })
-})
-
 describe('moveItem', () => {
   it('按位置移动元素, 越界或同位置时原样返回', () => {
     expect(moveItem(['a', 'b', 'c'], 0, 2)).toEqual(['b', 'c', 'a'])
@@ -561,94 +457,6 @@ describe('makeRow', () => {
     expect(row.material).toBe('')
     expect(row.spec).toBeNull()
     expect(row.length).toBe('')
-  })
-})
-
-describe('fillSupplierInputs', () => {
-  const rows: PriceRow[] = [
-    { ...row12, id: 'r1' },
-    { ...row12, id: 'r2' },
-    {
-      id: 'sep1',
-      rowType: 'SEPARATOR',
-      category: '',
-      material: '',
-      spec: null,
-      length: '',
-    },
-    { ...row12, id: 'r3' },
-  ]
-
-  it('按目标行覆盖填入供应商标识, 不动已有现货价', () => {
-    const inputs = { '中天:r1': { spot: 3180 } }
-    const next = fillSupplierInputs(rows, inputs, '中天', ['r1', 'r2'], {
-      value: 's2',
-      label: '河钢',
-    })
-    expect(next['中天:r1']).toEqual({
-      spot: 3180,
-      supplierId: 's2',
-      supplierName: '河钢',
-    })
-    expect(next['中天:r2']).toEqual({ supplierId: 's2', supplierName: '河钢' })
-    // 未选中的行不处理
-    expect(next['中天:r3']).toBeUndefined()
-  })
-
-  it('覆盖已有值为新供应商(支持换第 N 家重新报价)', () => {
-    const inputs = {
-      '中天:r1': { spot: 3180, supplierId: 's1', supplierName: '沙钢' },
-    }
-    const next = fillSupplierInputs(rows, inputs, '中天', ['r1'], {
-      value: 's2',
-      label: '河钢',
-    })
-    expect(next['中天:r1']?.supplierId).toBe('s2')
-    expect(next['中天:r1']?.supplierName).toBe('河钢')
-    expect(next['中天:r1']?.spot).toBe(3180)
-  })
-
-  it('忽略隔断行, 且无实际变化时返回原对象', () => {
-    const inputs = { '中天:r1': { supplierId: 's2', supplierName: '河钢' } }
-    // 隔断行虽在目标集合内, 但跳过 → 无变化
-    const same = fillSupplierInputs(rows, inputs, '中天', ['sep1'], {
-      value: 's9',
-      label: '某钢',
-    })
-    expect(same).toBe(inputs)
-    // 已相同的值不再写入
-    const noop = fillSupplierInputs(rows, inputs, '中天', ['r1'], {
-      value: 's2',
-      label: '河钢',
-    })
-    expect(noop).toBe(inputs)
-  })
-
-  it('传入 undefined 等价清除简称, 保留现货价', () => {
-    const inputs = {
-      '中天:r1': { spot: 3180, supplierId: 's1', supplierName: '沙钢' },
-      '中天:r2': { supplierId: 's1', supplierName: '沙钢' },
-    }
-    const next = fillSupplierInputs(
-      rows,
-      inputs,
-      '中天',
-      ['r1', 'r2'],
-      undefined,
-    )
-    expect(next['中天:r1']).toEqual({ spot: 3180 })
-    // 无其它字段则删除该输入
-    expect('中天:r2' in next).toBe(false)
-  })
-
-  it('空目标行集合不产生变化', () => {
-    const inputs = {}
-    expect(
-      fillSupplierInputs(rows, inputs, '中天', [], {
-        value: 's1',
-        label: '沙钢',
-      }),
-    ).toBe(inputs)
   })
 })
 

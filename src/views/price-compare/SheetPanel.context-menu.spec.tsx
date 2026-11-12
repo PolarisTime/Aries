@@ -7,7 +7,6 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import { bindAntdAppApi } from '@/utils/antd-app'
-import type { SupplierSelectOption } from './core'
 import { SheetPanel } from './SheetPanel'
 import type { Brand, PriceRow, PriceSheet } from './types'
 
@@ -128,7 +127,6 @@ describe('SheetPanel 右键菜单', () => {
       sheet?: PriceSheet
       brands?: Brand[]
       readOnly?: boolean
-      suppliers?: SupplierSelectOption[]
       onReorderBrands?: (from: number, to: number) => void
     } = {},
   ) {
@@ -156,7 +154,6 @@ describe('SheetPanel 右键菜单', () => {
         onRefresh: () => {},
         chrome: false,
         spotRef: { current: null },
-        suppliers: options.suppliers,
         readOnly: options.readOnly,
       })
     }
@@ -529,7 +526,7 @@ describe('SheetPanel 右键菜单', () => {
     expect(brandNameNodes().map((node) => node.textContent)).toEqual(['沙钢'])
     // 只统计表头行: antd 的测量行(ant-table-measure-row)会重复渲染一次列标题
     expect(
-      container.querySelectorAll('thead .price-compare-supplier-header'),
+      container.querySelectorAll('thead .price-compare-brand-name'),
     ).toHaveLength(1)
   })
 
@@ -542,17 +539,7 @@ describe('SheetPanel 右键菜单', () => {
     expect(onReorderBrands).toHaveBeenCalledWith(0, 1)
   })
 
-  it('右键品牌列头「一键填入供应商…」打开原有弹层', async () => {
-    renderPanel()
-    expect(document.querySelector('.price-compare-supplier-fill')).toBeNull()
-    await rightClick(brandNameNodes()[0])
-    await clickTopMenuItem('一键填入供应商')
-    expect(
-      document.querySelector('.price-compare-supplier-fill'),
-    ).not.toBeNull()
-  })
-
-  it('品牌列头菜单项顺序为 一键填入供应商…/隐藏该列/移到最前/移到最后', async () => {
+  it('品牌列头菜单项顺序为 隐藏该列/移到最前/移到最后', async () => {
     renderPanel()
     await rightClick(brandNameNodes()[0])
     const labels = Array.from(
@@ -560,7 +547,6 @@ describe('SheetPanel 右键菜单', () => {
         [],
     ).map((node) => (node.textContent || '').trim())
     expect(labels).toEqual([
-      '一键填入供应商…',
       '隐藏该列',
       // 已在最前时不禁用也不隐藏, 而是在文案里说明原因(禁用项仍可被读屏发现)
       '移到最前（已在最前）',

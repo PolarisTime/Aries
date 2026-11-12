@@ -34,17 +34,6 @@ export function moveFocusBy(
   return false
 }
 
-/** 现货价列内的焦点移动（选择器 `input[data-spot="品牌:行"]`）。 */
-export function moveFocus(orderedRows: PriceRow[]) {
-  return (brandName: string, rowId: string, delta: number) =>
-    moveFocusBy(
-      orderedRows,
-      rowId,
-      delta,
-      (row) => `input[data-spot="${brandName}:${row.id}"]`,
-    )
-}
-
 /** 吨位列内的焦点移动（选择器 `input[data-ton="行"]`）。 */
 export function moveFocusTon(orderedRows: PriceRow[]) {
   return (rowId: string, delta: number) =>

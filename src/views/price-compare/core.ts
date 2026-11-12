@@ -5,7 +5,6 @@ import type {
   PriceRow,
   PriceSheet,
   SheetInput,
-  SheetInputs,
   Variety,
 } from './types'
 
@@ -46,30 +45,6 @@ export const dataKeyOf = (row: PriceRow) =>
     ? `${canonicalCategory(row.category)}|${row.material}`
     : ''
 
-/** 现货价供应商下拉选项: 携带经营品牌用于按品牌列过滤。 */
-export type SupplierSelectOption = {
-  value: string
-  label: string
-  /** 经营品牌(商品品牌名称), 缺省视为未绑定任何品牌。 */
-  brands?: string[]
-}
-
-/**
- * 按品牌列过滤供应商选项。
- *
- * - 品牌名称为空 → 返回全部(保持兼容)。
- * - 存在至少一个绑定该品牌的供应商 → 只返回绑定供应商。
- * - 无任何供应商绑定该品牌 → 回退返回全部(避免下拉为空)。
- */
-export function filterSupplierOptionsByBrand(
-  options: SupplierSelectOption[],
-  brandName: string | undefined,
-): SupplierSelectOption[] {
-  if (!brandName) return options
-  const bound = options.filter((option) => option.brands?.includes(brandName))
-  return bound.length > 0 ? bound : options
-}
-
 /**
  * 现货联动的商品键: 类别+材质+规格+长度 相同即视为同一商品。
  *
@@ -83,132 +58,6 @@ export const productKeyOf = (
     ? `${canonicalCategory(row.category)}|${row.material}|${row.spec}|${row.length}`
     : ''
 
-export function syncSpotInputs(
-  rows: PriceRow[],
-  inputs: SheetInputs,
-  brandName: string,
-  rowId: string,
-  value: number | undefined,
-): { inputs: SheetInputs; targets: PriceRow[] } {
-  const source = rows.find((row) => row.id === rowId)
-  if (!source) return { inputs, targets: [] }
-  const key = productKeyOf(source)
-  const targets = rows.filter(
-    (row) => row.id === rowId || (key && productKeyOf(row) === key),
-  )
-  const next: SheetInputs = { ...inputs }
-  for (const target of targets) {
-    const inputKey = `${brandName}:${target.id}`
-    const current = next[inputKey]
-    // 数值真的被改写了吗（仅失焦、没改数不算）
-    const spotChanged = current?.spot !== value
-    next[inputKey] = {
-      ...(current ?? {}),
-      spot: value,
-      /*
-       * 手工改价后「按抗震牌号代取」的来源不再成立：这一格的价格已由人判定。
-       * 显式写 `null`（而不是删字段）表示"曾经代取、已被手工覆盖"——与后端
-       * `spotSourceMaterial` 的 null 语义一致（= 查过、确认没有代取），
-       * 这样保存载荷能把它带给服务端清掉，刷新后角标不会继续撒谎。
-       */
-      ...(spotChanged && current?.spotSourceMaterial
-        ? { spotSourceMaterial: null }
-        : {}),
-    }
-  }
-  return { inputs: next, targets }
-}
-
-/**
- * 对账式现货联动：同批次内，若某行某品牌缺现货价，而同商品(类别+材质+规格+长度)的其它行已有现货价，
- * 则自动套用，避免同一商品在不同行重复输入。返回新 inputs；无变化时返回原对象。
- */
-export function reconcileSpotInputs(
-  rows: PriceRow[],
-  inputs: SheetInputs,
-  brandNames: string[],
-): SheetInputs {
-  const spotByProduct = new Map<string, number>()
-  for (const row of rows) {
-    const key = productKeyOf(row)
-    if (!key) continue
-    for (const brand of brandNames) {
-      const spot = inputs[`${brand}:${row.id}`]?.spot
-      if (spot !== undefined) spotByProduct.set(`${brand}\u0000${key}`, spot)
-    }
-  }
-
-  let changed = false
-  const next: SheetInputs = { ...inputs }
-  for (const row of rows) {
-    const key = productKeyOf(row)
-    if (!key) continue
-    for (const brand of brandNames) {
-      const inputKey = `${brand}:${row.id}`
-      if (next[inputKey]?.spot !== undefined) continue
-      const spot = spotByProduct.get(`${brand}\u0000${key}`)
-      if (spot !== undefined) {
-        next[inputKey] = { ...(next[inputKey] ?? {}), spot }
-        changed = true
-      }
-    }
-  }
-  return changed ? next : inputs
-}
-
-/**
- * 批量填入同一供应商(仅改供应商简称, 不动现货价)。
- *
- * - 覆盖语义: 目标行已有供应商时改为新供应商, 便于换第 N 家重新报价。
- * - 只处理商品行; 隔断行忽略。
- * - 供应商置空时等价于清除简称, 与单格清除保持一致(无其它字段则删除该输入)。
- * 返回新 inputs; 无变化时返回原对象。
- */
-export function fillSupplierInputs(
-  rows: PriceRow[],
-  inputs: SheetInputs,
-  brandName: string,
-  rowIds: string[],
-  option: { value: string; label: string } | undefined,
-): SheetInputs {
-  const targets = new Set(rowIds)
-  let changed = false
-  const next: SheetInputs = { ...inputs }
-  for (const row of rows) {
-    if (!targets.has(row.id) || isSeparatorRow(row)) continue
-    const key = `${brandName}:${row.id}`
-    const prev = next[key] ?? {}
-    if (option) {
-      if (
-        prev.supplierId === option.value &&
-        prev.supplierName === option.label
-      )
-        continue
-      next[key] = {
-        ...prev,
-        supplierId: option.value,
-        supplierName: option.label,
-      }
-      changed = true
-      continue
-    }
-    if (prev.supplierId === undefined && prev.supplierName === undefined)
-      continue
-    const {
-      supplierId: _supplierId,
-      supplierName: _supplierName,
-      ...rest
-    } = prev
-    if (rest.spot === undefined && rest.ton === undefined) {
-      delete next[key]
-    } else {
-      next[key] = rest
-    }
-    changed = true
-  }
-  return changed ? next : inputs
-}
-
 /**
  * 旧口径「12 米加价只对螺纹钢生效」的品种门禁。
  *
@@ -217,8 +66,6 @@ export function fillSupplierInputs(
  * 加价属于业务数据，不该由代码里的类别/名称清单决定。</p>
  */
 const LENGTH_PREMIUM_CATEGORIES = new Set(['螺纹钢'])
-/** 现货价合理上限(元/吨), 超出提示 */
-export const SPOT_PRICE_MAX = 20000
 /**
  * 默认定尺加价(元/吨)。
  *
@@ -411,7 +258,7 @@ export function netPrice(
  * **不是新功能、也不扩范围**。</p>
  *
  * <p><b>扩容（HRB500 / HRBF400 / HRB335 …）必须经产品确认，不要顺手加。</b>
- * 每加一个材质，「报单比价」与「从价格表带价」都会多出一批原本空白的格子被代取价填上，
+ * 每加一个材质，「报单比价」的网价与「从供应商价格表导入」都会多出一批原本空白的格子被代取价填上，
  * 而这里的价格是业务员的判断结果 —— 属于业务口径变更，不是重构。</p>
  */
 export const SUBSTITUTABLE_MATERIALS: readonly string[] = ['HRB400']
@@ -419,7 +266,7 @@ export const SUBSTITUTABLE_MATERIALS: readonly string[] = ['HRB400']
 /**
  * 该材质是否允许代取。
  *
- * <p>**唯一判据出口**：上层（`netPriceWithFallback` / `applyLowestQuotes`）都要调它，
+ * <p>**唯一判据出口**：上层（`netPriceWithFallback` / `importLowestQuotes`）都要调它，
  * 不要各自再写 `material === 'HRB400'` —— 那会重新变成两份事实。</p>
  */
 export function isSubstitutableMaterial(material: unknown): boolean {
@@ -428,18 +275,6 @@ export function isSubstitutableMaterial(material: unknown): boolean {
   )
 }
 
-/**
- * 现货价「按替代牌号代取」角标的**唯一判据出口**。
- *
- * <p>两条来源必须都走这里，否则会出现"系统带出的有角标、手工勾选行没有"这种半截实现：</p>
- * <ol>
- *   <li><b>系统带出</b>：{@code applyLowestQuotes} 写入的 {@code input.spotSourceMaterial}
- *       （已落库，重新打开单据后仍能显示）；</li>
- *   <li><b>手工勾选行</b>：行级开关 {@code row.hrb400eFallback}，且仍需单据头授权。</li>
- * </ol>
- *
- * @returns 代取所用的材质（渲染 `E` 角标与 tooltip 都用它）；未代取返回 undefined
- */
 /**
  * 网价列角标要显示的替代材质（`netPriceWithFallback` 命中兜底时用）。
  *
@@ -450,20 +285,19 @@ export function fallbackBadgeMaterial(material: unknown): string | undefined {
   return substituteMaterialOf(material) ?? undefined
 }
 
+/**
+ * 现货价「按替代牌号代取」角标的**唯一判据出口**。
+ *
+ * <p>手工改价已全面禁止：现货价的唯一来源是供应商价格表导入，因此代取来源只可能来自
+ * 落库字段 {@code input.spotSourceMaterial}（导入时写入、重新打开单据仍能回显）。
+ * 不再有行级开关这条来源 —— 行锁与代取无关。</p>
+ *
+ * @returns 代取所用的材质（渲染 `E` 角标与 tooltip 都用它）；未代取返回 undefined
+ */
 export function resolveSpotSourceMaterial(args: {
   input?: SheetInput
-  row: Pick<PriceRow, 'material' | 'hrb400eFallback'>
-  allowHrb400eFallback: boolean
 }): string | undefined {
-  const { input, row, allowHrb400eFallback } = args
-  // 系统带出优先：来源已落库，与本次会话的开关状态无关
-  if (input?.spotSourceMaterial) return input.spotSourceMaterial
-  // 手工勾选行：格子必须有价、单据头放行、行开关打开、且材质在白名单内
-  if (input?.spot === undefined) return undefined
-  if (!allowHrb400eFallback) return undefined
-  if (row.hrb400eFallback !== true) return undefined
-  if (!isSubstitutableMaterial(row.material)) return undefined
-  return substituteMaterialOf(row.material) ?? undefined
+  return args.input?.spotSourceMaterial ?? undefined
 }
 
 /**

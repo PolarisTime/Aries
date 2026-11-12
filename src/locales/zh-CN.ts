@@ -2968,11 +2968,14 @@ export const zhCN = {
       removeContent: '该供应商在此品牌下的全部报价将一并移除，其它品牌不受影响',
       removeColumn: '移除这一列',
       removeColumnA11y: '移除品牌 {{name}} 的报价列',
-      fillFromPriceList: '从价格表带价',
-      fillFromPriceListHint:
-        '按品牌取价格表里的最低价，只填**空着的**格子，已有的一律不动',
-      fillNothing: '没有可带价的价格表报价',
-      fillDone: '已从价格表带入 {{count}} 处（取各品牌最低价）',
+      importFromPriceList: '从供应商价格表导入',
+      importConfirmTitle: '从供应商价格表导入？',
+      importConfirmContent:
+        '新增 {{added}} 处、改价 {{updated}} 处（涨 {{up}}、跌 {{down}}）、清空 {{cleared}} 处、不变 {{unchanged}} 处、代取 {{substituted}} 处；未匹配的格子会被清空。',
+      importEmptyQuotes:
+        '价格表里没有任何报价，导入会清空全部 {{cleared}} 处现货价；未匹配的格子会被清空。',
+      importDone:
+        '已从供应商价格表导入：新增 {{added}} 处、改价 {{updated}} 处、清空 {{cleared}} 处',
       /*
        * 以下为 Excel 式网格操作（区域选择、填充、算式、异常价、批量调价、列宽）。
        * 快捷键文案统一为「按键：行为」，与 entryHint 里的按键说明保持同一写法。
@@ -3144,7 +3147,6 @@ export const zhCN = {
         removeRowTitle: '删除该行？',
         removeRowContent:
           '该行的现货价与供应商填写会一并移除，需要保存单据才会生效。',
-        fillSupplier: '一键填入供应商…',
         hideBrand: '隐藏该列',
         moveBrandFirst: '移到最前',
         moveBrandLast: '移到最后',
@@ -3170,7 +3172,6 @@ export const zhCN = {
       unlockField: '解锁「{{label}}」',
       clearField: '清除「{{label}}」',
       tonPositive: '报单吨位需为正数',
-      spotOutOfRange: '现货价超出合理范围（0 - {{max}}）',
       spotBetter: '现货更划算',
       netBetter: '网价更优',
       addRow: '＋ 添加一行',
@@ -3189,15 +3190,7 @@ export const zhCN = {
       fallbackTooltip: '该品牌此规格暂无 HRB400 网价，当前按 HRB400E 参考价',
       // 角标自身的可访问名（WCAG 1.4.1：不能只靠颜色/图形表达状态）
       fallbackBadgeLabel: '按 {{material}} 代取',
-      fallbackBadgeLabelWithSupplier:
-        '按 {{material}} 代取（来源 {{supplier}}）',
       spotSubstitutedLabel: '按 {{material}} 代取（来源 {{supplier}}）',
-      // 行级「按 E 价」开关
-      hrb400eRowSwitch: '按 {{material}} 价',
-      hrb400eRowSwitchHint:
-        '该行价格按 {{material}} 代取（单据头已允许）。取消勾选可只对这一行生效',
-      // 单格取消代取
-      clearSpotSource: '取消本格按 {{material}} 代取',
       bestDiff: '差价最优',
       refreshPrice: '刷新价格',
       config: '配置',
@@ -3214,14 +3207,6 @@ export const zhCN = {
         '已锁定规格和数量，暂不可新增、删除或拖动行；解锁后可继续编辑',
       /** 单据级锁生效时, 行菜单里那一项的短状态文案(替代会误导的"解锁该行")。 */
       specQuantityLockedShort: '已锁定规格和数量',
-      supplier: '供应商',
-      fillSupplier: '批量填入供应商',
-      fillSupplierPick: '选择供应商',
-      fillSupplierBrand: '选择品牌列',
-      fillSupplierColumn: '把所选供应商填入「{{brand}}」列全部商品行',
-      fillSupplierSelected: '把所选供应商填入选中的 {{count}} 行',
-      fillSupplierNoChangedRows:
-        '所选范围内没有本次改过现货价的行，未做任何修改（仅更新价格变动过的行）',
     },
     config: {
       title: '项目配置',

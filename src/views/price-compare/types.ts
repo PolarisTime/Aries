@@ -56,13 +56,6 @@ export type ProjectConfig = {
 export type RowType = 'PRODUCT' | 'SEPARATOR'
 
 export type PriceRow = {
-  /**
-   * 行级「按 HRB400E 价」开关：勾上后该行所有价格子都按替代牌号带出并打 `E` 角标。
-   *
-   * <p>默认 `undefined` = 跟随单据头 `allowHrb400eFallback`；显式 `false` 可在单据头开启时
-   * 单独关掉某一行（单格例外再走 {@code SheetInput.spotSourceMaterial} 的清除操作）。</p>
-   */
-  hrb400eFallback?: boolean
   id: string
   /** 缺省视为 PRODUCT, 兼容历史数据与本地新建行。 */
   rowType?: RowType

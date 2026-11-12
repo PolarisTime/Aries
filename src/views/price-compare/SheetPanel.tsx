@@ -8,7 +8,6 @@ import {
   TagsOutlined,
   TrophyOutlined,
   UnlockOutlined,
-  VerticalAlignBottomOutlined,
 } from '@ant-design/icons'
 import {
   Badge,
@@ -33,7 +32,7 @@ import { useTranslation } from 'react-i18next'
 import { fetchLowestBrandQuotes } from '@/api/market/supplier-price-lists'
 import { isEditableFieldTarget } from '@/components/row-context-menu'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
-import { message } from '@/utils/antd-app'
+import { message, modal } from '@/utils/antd-app'
 import {
   EMPTY_LENGTH_PREMIUMS,
   filterVarieties,
@@ -41,7 +40,6 @@ import {
   PRICE_COMPARE_COLUMN_SETTINGS_KEY,
   resolveRef,
   SHEET_HIDEABLE_COLUMN,
-  type SupplierSelectOption,
 } from './core'
 import { LockableField } from './LockableField'
 import { SpotSyncActions } from './SpotSyncActions'
@@ -49,10 +47,9 @@ import {
   buildSheetColumns,
   type ColumnContext,
   FallbackBadge,
-  SupplierFillSelect,
 } from './sheet-columns'
-import { moveFocus, moveFocusTon } from './sheet-focus-navigation'
-import { applyLowestQuotes } from './spot-from-price-list'
+import { moveFocusTon } from './sheet-focus-navigation'
+import { importLowestQuotes } from './spot-from-price-list'
 import type {
   Brand,
   GridRow,
@@ -503,80 +500,6 @@ function ColumnSettingsButton({
   )
 }
 
-/** 批量填入「选中行」: 先选品牌列, 再选供应商; 覆盖所选行已有简称。 */
-function SupplierFillSelectedButton({
-  brands,
-  options,
-  selectedCount,
-  disabled,
-  onFill,
-}: {
-  brands: Brand[]
-  options: SupplierSelectOption[]
-  selectedCount: number
-  disabled: boolean
-  onFill: (
-    brandName: string,
-    option: { value: string; label: string } | undefined,
-  ) => void
-}) {
-  const { t } = useTranslation()
-  const [brandName, setBrandName] = useState<string | undefined>()
-  const [open, setOpen] = useState(false)
-  const title = t('priceCompare.sheet.fillSupplierSelected', {
-    count: selectedCount,
-  })
-  return (
-    <Popover
-      trigger="click"
-      placement="bottom"
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        if (!next) setBrandName(undefined)
-      }}
-      content={
-        <Flex vertical gap={6} className="price-compare-supplier-fill">
-          <Text type="secondary" className="price-compare-sub">
-            {title}
-          </Text>
-          <Select
-            size="small"
-            style={{ width: 220 }}
-            className="price-compare-supplier-fill-brand"
-            placeholder={t('priceCompare.sheet.fillSupplierBrand')}
-            value={brandName}
-            /* 与表内下拉同一契约: 窄选择器不限制下拉宽度, 选项文本不被省略号截断。 */
-            popupMatchSelectWidth={false}
-            options={brands.map((brand) => ({
-              value: brand.name,
-              label: brand.name,
-            }))}
-            onChange={(value) => setBrandName(value)}
-          />
-          <SupplierFillSelect
-            brandName={brandName}
-            options={options}
-            onPick={(option) => {
-              if (!brandName) return
-              onFill(brandName, option)
-              setOpen(false)
-            }}
-          />
-        </Flex>
-      }
-    >
-      <Button
-        icon={<VerticalAlignBottomOutlined />}
-        disabled={disabled}
-        className="price-compare-fill-selected-btn"
-      >
-        {t('priceCompare.sheet.fillSupplier')}
-      </Button>
-    </Popover>
-  )
-}
-
 /** 锁定/解锁参照日期与时段。 */
 function LockRefButton({
   sheet,
@@ -649,37 +572,21 @@ function LockSpecQuantityButton({
   )
 }
 
-/** 选中行后出现的操作: 批量填入供应商 + 标记已采购 + 删除所选行。 */
+/** 选中行后出现的操作: 删除所选行(手工改价/填供应商入口已随"禁止手动改价"移除)。 */
 function SelectedRowActions({
-  brands,
-  supplierOptions,
   selectedCount,
   readOnly,
   specQuantityLocked,
-  onFillSupplierSelected,
   onRemoveSelected,
 }: {
-  brands: Brand[]
-  supplierOptions: SupplierSelectOption[]
   selectedCount: number
   readOnly: boolean
   specQuantityLocked: boolean
-  onFillSupplierSelected: (
-    brandName: string,
-    option: { value: string; label: string } | undefined,
-  ) => void
   onRemoveSelected: () => void
 }) {
   const { t } = useTranslation()
   return (
     <>
-      <SupplierFillSelectedButton
-        brands={brands}
-        options={supplierOptions}
-        selectedCount={selectedCount}
-        disabled={readOnly || specQuantityLocked}
-        onFill={onFillSupplierSelected}
-      />
       {readOnly || specQuantityLocked ? (
         <Tooltip
           title={
@@ -733,10 +640,9 @@ function SheetHeader({
   onRemarkChange,
   allowHrb400eFallback = false,
   readOnly = false,
+  rows,
   brands,
   columnSettingsSlot,
-  supplierOptions,
-  onFillSupplierSelected,
 }: {
   sheet: PriceSheet
   sheets?: readonly PriceSheet[]
@@ -758,14 +664,12 @@ function SheetHeader({
   onRemarkChange?: (value: string) => void
   allowHrb400eFallback?: boolean
   readOnly?: boolean
+  /** 当前展示的行(导入按它遍历, 与表格同一数据源)。 */
+  rows: PriceRow[]
+  /** 当前参与比价的品牌(导入按它逐列匹配; `sheet.brands` 只是服务端快照, 可能缺省)。 */
   brands: Brand[]
   /** 列显示设置按钮: 由 SheetPanel 构造后作为节点下传(不再逐层透传 5 个 props)。 */
   columnSettingsSlot: React.ReactNode
-  supplierOptions: SupplierSelectOption[]
-  onFillSupplierSelected: (
-    brandName: string,
-    option: { value: string; label: string } | undefined,
-  ) => void
 }) {
   return (
     <Flex vertical gap={8} className="price-compare-toolbar">
@@ -798,12 +702,11 @@ function SheetHeader({
         onToggleBest={onToggleBest}
         refreshing={refreshing}
         onRefresh={onRefresh}
+        rows={rows}
         brands={brands}
         columnSettingsSlot={columnSettingsSlot}
         onOpenConfig={onOpenConfig}
         selectedCount={selectedCount}
-        supplierOptions={supplierOptions}
-        onFillSupplierSelected={onFillSupplierSelected}
         onRemoveSelected={onRemoveSelected}
       />
     </Flex>
@@ -1005,12 +908,11 @@ function SheetActionRow({
   onToggleBest,
   refreshing,
   onRefresh,
+  rows,
   brands,
   columnSettingsSlot,
   onOpenConfig,
   selectedCount,
-  supplierOptions,
-  onFillSupplierSelected,
   onRemoveSelected,
   allowHrb400eFallback,
 }: {
@@ -1025,15 +927,13 @@ function SheetActionRow({
   onToggleBest: () => void
   refreshing: boolean
   onRefresh: () => void
+  /** 当前展示的行: 导入必须遍历实际渲染的行, 而不是可能过期的 sheet.rows。 */
+  rows: PriceRow[]
+  /** 当前参与比价的品牌: `sheet.brands` 只是服务端快照, 可能缺省。 */
   brands: Brand[]
   columnSettingsSlot: React.ReactNode
   onOpenConfig?: () => void
   selectedCount: number
-  supplierOptions: SupplierSelectOption[]
-  onFillSupplierSelected: (
-    brandName: string,
-    option: { value: string; label: string } | undefined,
-  ) => void
   onRemoveSelected: () => void
 }) {
   const { t } = useTranslation()
@@ -1041,29 +941,55 @@ function SheetActionRow({
   const syncSheets = useMemo(() => sheets ?? [sheet], [sheet, sheets])
 
   /**
-   * 从品牌价格表带价：按 (品牌, 商品) 取最低价，**只填空格子**（见 applyLowestQuotes）。
+   * 从供应商价格表导入：**覆盖式**刷新本批次的现货价与供应商，未匹配的格子会被清空
+   * （见 `importLowestQuotes`）。锁定行的价格照常刷新 —— 行锁只冻结规格/吨位。
    *
-   * <p>为什么不做成"进页面就自动填"：报单比价里现货价是业务员的判断结果，自动填充会让人分不清
-   * 「我填的」和「系统带的」。做成显式动作 + 事后提示条数，来源才可追溯。</p>
+   * <p>先算预览（纯函数、不落库）再让用户确认，确认后才 `patchSheet`：让"会清空几格、
+   * 涨跌各几处"在点确定之前就看得见，而不是先改完再报。没有任何报价时确认文案改成
+   * `importEmptyQuotes`，明确会清空全部价格。</p>
    */
-  const [fillingFromPriceList, setFillingFromPriceList] = useState(false)
-  const fillFromPriceList = async () => {
-    setFillingFromPriceList(true)
+  const [importing, setImporting] = useState(false)
+  const importFromPriceList = async () => {
+    setImporting(true)
     try {
       const quotes = await fetchLowestBrandQuotes()
-      const { inputs, filled } = applyLowestQuotes(sheet, quotes, {
-        allowHrb400eFallback,
-      })
-      if (filled === 0) {
-        message.info(t('priceCompare.supplierPrice.fillNothing'))
-        return
-      }
-      patchSheet(sheet.id, { inputs })
-      message.success(
-        t('priceCompare.supplierPrice.fillDone', { count: filled }),
+      // 用当前展示的行与品牌构造快照: 行/品牌是表格的真正数据源,
+      // sheet.rows 与 sheet.brands 可能只是打开时的旧值/服务端快照
+      const { inputs, stats } = importLowestQuotes(
+        { ...sheet, rows, brands },
+        quotes,
+        { allowHrb400eFallback },
       )
+      const variables = {
+        added: stats.added,
+        updated: stats.updated,
+        up: stats.priceUp,
+        down: stats.priceDown,
+        cleared: stats.cleared,
+        unchanged: stats.unchanged,
+        substituted: stats.substituted,
+      }
+      modal.confirm({
+        title: t('priceCompare.supplierPrice.importConfirmTitle'),
+        content:
+          quotes.length === 0
+            ? t('priceCompare.supplierPrice.importEmptyQuotes', variables)
+            : t('priceCompare.supplierPrice.importConfirmContent', variables),
+        okText: t('common.confirm'),
+        cancelText: t('common.cancel'),
+        onOk: () => {
+          patchSheet(sheet.id, { inputs })
+          message.success(
+            t('priceCompare.supplierPrice.importDone', {
+              added: stats.added,
+              updated: stats.updated,
+              cleared: stats.cleared,
+            }),
+          )
+        },
+      })
     } finally {
-      setFillingFromPriceList(false)
+      setImporting(false)
     }
   }
   return (
@@ -1092,16 +1018,14 @@ function SheetActionRow({
       >
         {t('priceCompare.sheet.refreshPrice')}
       </Button>
-      <Tooltip title={t('priceCompare.supplierPrice.fillFromPriceListHint')}>
-        <Button
-          disabled={readOnly}
-          icon={<TagsOutlined />}
-          loading={fillingFromPriceList}
-          onClick={() => void fillFromPriceList()}
-        >
-          {t('priceCompare.supplierPrice.fillFromPriceList')}
-        </Button>
-      </Tooltip>
+      <Button
+        disabled={readOnly}
+        icon={<TagsOutlined />}
+        loading={importing}
+        onClick={() => void importFromPriceList()}
+      >
+        {t('priceCompare.supplierPrice.importFromPriceList')}
+      </Button>
       {columnSettingsSlot}
       {onOpenConfig ? (
         <Button icon={<SettingOutlined />} onClick={onOpenConfig}>
@@ -1116,12 +1040,9 @@ function SheetActionRow({
       />
       {selectedCount > 0 ? (
         <SelectedRowActions
-          brands={brands}
-          supplierOptions={supplierOptions}
           selectedCount={selectedCount}
           readOnly={readOnly}
           specQuantityLocked={Boolean(sheet.specQuantityLocked)}
-          onFillSupplierSelected={onFillSupplierSelected}
           onRemoveSelected={onRemoveSelected}
         />
       ) : null}
@@ -1175,34 +1096,11 @@ type Props = {
   designatedBrands?: string[]
   remark?: string
   onRemarkChange?: (value: string) => void
-  suppliers?: SupplierSelectOption[]
   /** 被他人签出编辑时只读(禁用编辑类交互) */
   readOnly?: boolean
 }
 
-/** 单个报单: 一张扁平表格展示全部行, 现货价同品牌/规格/材质/长度自动联动。 */
-/**
- * 本次会话内现货价被改过的单元格键(`品牌:行id`)集合。
- * 批量填入供应商时只作用于这些行, 避免换第 N 家时误改已定价的其它供应商行;
- * 填入完成后消费标记, 避免下一家重复命中。
- */
-function useSpotTouchedKeys() {
-  const [keys, setKeys] = useState<ReadonlySet<string>>(() => new Set())
-  const mark = (next: string[]) => {
-    if (!next.length) return
-    setKeys((current) => new Set([...current, ...next]))
-  }
-  const consume = (next: string[]) => {
-    if (!next.length) return
-    setKeys((current) => {
-      const result = new Set(current)
-      for (const key of next) result.delete(key)
-      return result
-    })
-  }
-  return { keys, mark, consume }
-}
-
+/** 单个报单: 一张扁平表格展示全部行; 现货价与供应商由「从供应商价格表导入」统一写入。 */
 export function SheetPanel(props: Props) {
   const {
     sheet,
@@ -1231,13 +1129,11 @@ export function SheetPanel(props: Props) {
     designatedBrands,
     remark,
     onRemarkChange,
-    suppliers = [],
     readOnly = false,
   } = props
   const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [bestOn, setBestOn] = useState(false)
-  const [spotResetNonce, setSpotResetNonce] = useState(0)
   /** 仅临时(不持久化)的列显隐: 备注列与整组品牌列。 */
   /**
    * 列显隐(备注 / 整组品牌)走统一的用户偏好持久化: 本地立即写入 + 云端漫游同步,
@@ -1270,16 +1166,7 @@ export function SheetPanel(props: Props) {
     .map((brand) => brand.name)
   /** 行操作菜单当前打开的行: 右键行内区域与「更多」按钮共用一个受控开关。 */
   const [contextMenuRowId, setContextMenuRowId] = useState<string | null>(null)
-  /** 当前通过表头右键菜单打开「一键填入供应商」弹层的品牌列。 */
-  const [supplierFillBrand, setSupplierFillBrand] = useState<
-    string | undefined
-  >()
   const hiddenBrandSet = new Set(hiddenBrands)
-  const {
-    keys: spotTouchedKeys,
-    mark: markSpotsTouched,
-    consume: consumeSpotsTouched,
-  } = useSpotTouchedKeys()
   const toggleBrandVisible = (brandName: string, visible: boolean) =>
     setColumnVisible(SHEET_HIDEABLE_COLUMN.brand(brandName), visible)
   const { refDate, refPeriod } = resolveRef(data, sheet)
@@ -1294,25 +1181,11 @@ export function SheetPanel(props: Props) {
     [varieties],
   )
 
-  // 单元格输入动作(现货价/供应商简称/批量填入)抽到 use-sheet-panel-inputs.ts:
-  // 这 6 个回调约占 100 行, 是 no-giant-component 的主要行数来源, 且与渲染无关。
-  const {
-    clearSpotSource,
-    getSpot,
-    patchRow,
-    setSpot,
-    getInput,
-    setSupplier,
-    fillSupplier,
-  } = useSheetPanelInputActions({
-    consumeSpotsTouched,
-    markSpotsTouched,
-    patchSheet,
-    rows,
+  // 单元格只读取数与行级写入动作抽到 use-sheet-panel-inputs.ts:
+  // 现货价/供应商不再有手工写入动作(唯一来源是供应商价格表导入)。
+  const { getSpot, patchRow, getInput } = useSheetPanelInputActions({
     setRows,
     sheet,
-    spotTouchedKeys,
-    t,
   })
 
   const toggleSelect = (rowId: string, checked: boolean) =>
@@ -1361,17 +1234,10 @@ export function SheetPanel(props: Props) {
     brands,
     density,
     getSpot,
-    setSpot,
     getInput,
-    clearSpotSource,
-    setSupplier,
-    fillSupplier,
-    supplierOptions: suppliers,
     patchRow,
     onReorderBrands,
     onToggleBrand: toggleBrandVisible,
-    supplierFillBrand,
-    setSupplierFillBrand,
     contextMenuRowId,
     onContextMenuRowChange: setContextMenuRowId,
     moveRow,
@@ -1382,8 +1248,6 @@ export function SheetPanel(props: Props) {
     allowHrb400eFallback,
     bestOn,
     allowedProducts,
-    spotResetNonce,
-    onInvalidSpot: () => setSpotResetNonce((nonce) => nonce + 1),
     spotRef,
     readOnly,
     hideRemark,
@@ -1418,6 +1282,7 @@ export function SheetPanel(props: Props) {
         onRemarkChange={onRemarkChange}
         allowHrb400eFallback={allowHrb400eFallback}
         readOnly={readOnly}
+        rows={rows}
         brands={brands}
         columnSettingsSlot={
           <ColumnSettingsButton
@@ -1427,17 +1292,12 @@ export function SheetPanel(props: Props) {
             onToggle={setColumnVisible}
           />
         }
-        supplierOptions={suppliers}
-        onFillSupplierSelected={(brandName, option) =>
-          fillSupplier(brandName, selectedIds, option)
-        }
       />
 
       <SheetTable
         rows={rows}
         base={{
           ...base,
-          moveFocus: moveFocus(rows),
           moveFocusTon: moveFocusTon(rows),
         }}
         onReorderRow={reorderRow}

@@ -19,7 +19,7 @@ export type BrandColumnView = {
   cells: Map<string, ServerCell>
 }
 
-/** 品牌网格的查询键：与「从价格表带价」同源, 保存后统一失效。 */
+/** 品牌网格的查询键：与「从供应商价格表导入」同源, 保存后统一失效。 */
 export const gridQueryKey = (brandName: string) =>
   ['supplier-price-grid', brandName] as const
 

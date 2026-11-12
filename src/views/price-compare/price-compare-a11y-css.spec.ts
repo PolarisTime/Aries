@@ -116,15 +116,6 @@ describe('比价页样式无障碍契约', () => {
     expect(block).toMatch(/min-height:\s*24px/)
   })
 
-  it('表头一键填入按钮命中区不小于 24×24(WCAG 2.5.8)', () => {
-    const fill = blockOf(
-      pageCss,
-      '.price-compare-supplier-header .price-compare-supplier-fill-btn',
-    )
-    expect(fill).toMatch(/min-width:\s*24px/)
-    expect(fill).toMatch(/min-height:\s*24px/)
-  })
-
   it('行操作列收窄到 icon-only 最小值, 且单元格留白不把列撑大', () => {
     // 列宽只在 price-compare.css 里声明(只有 icon-only「更多」按钮),
     // 必须落在 icon-only 的最小尺寸区间内
@@ -205,11 +196,6 @@ describe('比价页样式无障碍契约', () => {
 
   it('语义色文字使用满足 4.5:1 的深色令牌', () => {
     // antd 默认 primary(#1677ff, 4.1:1) 与 error(#ff4d4f, 3.27:1) 对 11–12px 小字偏低
-    const fill = blockOf(
-      pageCss,
-      '.price-compare-supplier-header .price-compare-supplier-fill-btn',
-    )
-    expect(fill).toContain('var(--color-info-active')
     expect(blockOf(pageCss, '.price-compare-variety-switch')).toContain(
       'var(--color-info-active',
     )

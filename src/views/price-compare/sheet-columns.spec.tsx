@@ -7,7 +7,7 @@ import {
   type ColumnContext,
   FallbackBadge,
 } from './sheet-columns'
-import type { Brand, PriceSheet } from './types'
+import type { Brand, PriceRow, PriceSheet } from './types'
 
 /** 只回显 key 的 t(): 列头文案不是本用例的断言对象。 */
 const fakeT = ((key: string) => key) as unknown as TFunction
@@ -63,19 +63,11 @@ function makeContext(overrides: Partial<ColumnContext> = {}): ColumnContext {
     brands,
     rows: [],
     getSpot: () => undefined,
-    setSpot: () => {},
-    clearSpotSource: () => {},
     getInput: () => undefined,
-    setSupplier: () => {},
-    fillSupplier: () => {},
-    supplierOptions: [],
     patchRow: () => {},
-    moveFocus: () => false,
     moveFocusTon: () => false,
     onReorderBrands: () => {},
     onToggleBrand: () => {},
-    supplierFillBrand: undefined,
-    setSupplierFillBrand: () => {},
     contextMenuRowId: null,
     onContextMenuRowChange: () => {},
     moveRow: () => {},
@@ -87,8 +79,6 @@ function makeContext(overrides: Partial<ColumnContext> = {}): ColumnContext {
     attachSpotRef: false,
     allowHrb400eFallback: false,
     bestOn: false,
-    spotResetNonce: 0,
-    onInvalidSpot: () => {},
     spotRef: { current: null },
     allowedProducts: [],
     varietyOptionsFlat: [],
@@ -105,6 +95,7 @@ type AnyColumn = {
   width?: number
   key?: unknown
   fixed?: unknown
+  title?: unknown
   children?: AnyColumn[]
 }
 
@@ -205,5 +196,111 @@ describe('FallbackBadge(列内角标唯一出口)', () => {
     const html = renderToStaticMarkup(<FallbackBadge />)
     expect(html).toContain('aria-hidden="true"')
     expect(html).not.toContain('role="img"')
+  })
+})
+
+type RenderableColumn = AnyColumn & {
+  render?: (
+    value: unknown,
+    row: { key: string; rowId: string; row: PriceRow },
+  ) => React.ReactNode
+}
+
+/** 取某个品牌组的子列(网价/现货/差价/简称)。 */
+function brandChildColumns(
+  overrides: Partial<ColumnContext> = {},
+  brandIndex = 0,
+): RenderableColumn[] {
+  const groups = columnsOf(overrides).filter((column) => column.children)
+  return groups[brandIndex]?.children ?? []
+}
+
+function cellHtml(
+  column: RenderableColumn,
+  rowOverrides: Partial<PriceRow> = {},
+): string {
+  const row: PriceRow = {
+    id: 'r1',
+    rowType: 'PRODUCT',
+    category: '螺纹钢',
+    material: 'HRB400E',
+    spec: 12,
+    length: '9米',
+    ...rowOverrides,
+  }
+  return renderToStaticMarkup(
+    <div>
+      {column.render?.(undefined, { key: row.id, rowId: row.id, row })}
+    </div>,
+  )
+}
+
+/**
+ * 报单比价页「禁止手动改价」的渲染级契约。
+ *
+ * <p>现货价与供应商的格子必须是**只读文本**：去掉 input/Select 后，用户没有任何入口
+ * 手工改价（唯一来源是「从供应商价格表导入」）。这里从列定义的 render 出口断言，
+ * 避免只改注释、忘了删控件。</p>
+ */
+describe('比价表格现货/供应商列只读', () => {
+  const spotCell = (overrides: Partial<ColumnContext> = {}) =>
+    cellHtml(brandChildColumns(overrides)[1])
+
+  it('现货格渲染只读文本, 不渲染任何输入控件', () => {
+    const html = spotCell({
+      getSpot: (brandName, rowId) =>
+        brandName === '中天' && rowId === 'r1' ? 3280 : undefined,
+    })
+    expect(html).toContain('data-spot="中天:r1"')
+    expect(html).toContain('3280')
+    // 没有 input 就没有手工改价入口
+    expect(html).not.toContain('<input')
+    expect(html).not.toContain('ant-input')
+  })
+
+  it('空格子显示「—」占位, 且仍是可定位的只读节点', () => {
+    const html = spotCell()
+    expect(html).toContain('data-spot="中天:r1"')
+    expect(html).toContain('—')
+    expect(html).not.toContain('<input')
+  })
+
+  it('有代取来源时渲染 E 角标(来源仍来自落库字段)', () => {
+    const html = spotCell({
+      getSpot: () => 3280,
+      getInput: (brandName, rowId) =>
+        brandName === '中天' && rowId === 'r1'
+          ? { spot: 3280, spotSourceMaterial: 'HRB400E' }
+          : undefined,
+    })
+    expect(html).toContain('price-compare-fallback-badge')
+    expect(html).toContain('role="img"')
+    expect(html).not.toContain('<input')
+  })
+
+  it('供应商列渲染只读文本(简称或「—」), 不渲染下拉', () => {
+    const withSupplier = cellHtml(
+      brandChildColumns({
+        getInput: (brandName, rowId) =>
+          brandName === '中天' && rowId === 'r1'
+            ? { supplierId: 's1', supplierName: '沙钢' }
+            : undefined,
+      })[3],
+    )
+    expect(withSupplier).toContain('沙钢')
+    expect(withSupplier).not.toContain('ant-select')
+
+    const empty = cellHtml(brandChildColumns()[3])
+    expect(empty).toContain('—')
+    expect(empty).not.toContain('ant-select')
+  })
+
+  it('「简称」列头退回纯文本: 不再挂「一键填入供应商」按钮', () => {
+    const supplierColumn = brandChildColumns()[3]
+    // 列头是 t() 返回的纯文案；旧实现是 <SupplierFillHeader> 元素（带表头填入按钮）
+    expect(typeof supplierColumn.title).toBe('string')
+    expect(supplierColumn.title).toBe(
+      'priceCompare.sheet.columns.supplierShort',
+    )
   })
 })
