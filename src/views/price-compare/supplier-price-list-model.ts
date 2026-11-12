@@ -105,23 +105,6 @@ export function serverCellsOf(
   return cells
 }
 
-/**
- * 报价表的行：**只取自商品资料**（`GET /materials?status=正常`）。
- *
- * <p>商品资料里同一条「类别|材质|规格|定尺」可能有多条重复记录（同一商品被反复录入），这里按该键
- * 合并成一行并按 类别/材质/规格/定尺 排序 —— 表里一行 = 一个商品组合，只出现一次。</p>
- *
- * <p><b>历史价格表不参与建行</b>：品牌网格（`GET /supplier-price-lists/grid`）的行只用于给已存在的
- * 行回填价格（见 {@link serverCellsOf}）。商品被停用/删除后，它的旧报价不再出现在表里（否则会出现
- * 「只有一格能填、其余全是 —」的残行）；那些价格仍随保存原样提交，见 {@link buildColumnSavePlan}。</p>
- */
-/** 行键：`材质|规格|定尺`（表格里行已经不含品牌与类别，见 {@link buildBrandCatalog}）。 */
-export const catalogCellKeyOf = (
-  material: string,
-  spec: number,
-  length: string,
-): string => `${material}|${spec}|${length}`
-
 /** 一个品牌的列结构：材质 → 定尺 → 该定尺下这个品牌真实经营过的规格。 */
 export type BrandCatalog = {
   /** 材质 → 定尺 → 规格集合 */
@@ -205,35 +188,6 @@ export function catalogHas(
       ?.get(length)
       ?.has(spec) ?? false
   )
-}
-
-/**
- * 某个品牌在该类别下的全部商品组合（保存载荷用）。
- *
- * <p>保存是整列替换，所以必须把这个品牌**真实经营**的全部组合都带上；配合
- * {@link buildColumnSavePlan} 对服务端历史条目的并集，历史价格不会被清掉。</p>
- */
-export function brandCatalogRows(
-  category: CategoryCatalog | undefined,
-  brand: string,
-): QuoteRow[] {
-  const catalog = category?.byBrand.get(brand)
-  if (!category || !catalog) return []
-  const rows: QuoteRow[] = []
-  for (const [material, lengths] of catalog.materials) {
-    for (const [length, specs] of lengths) {
-      for (const spec of specs) {
-        rows.push({
-          brand,
-          category: category.category,
-          material,
-          spec,
-          length,
-        })
-      }
-    }
-  }
-  return rows
 }
 
 /**

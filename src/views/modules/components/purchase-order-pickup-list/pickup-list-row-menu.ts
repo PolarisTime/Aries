@@ -6,7 +6,6 @@
  */
 export {
   preserveNativeContextMenuOnInputs,
-  type RowContextMenuConfig as PickupRowMenu,
   RowContextMenuContext as PickupRowMenuContext,
   type RowContextMenuMap as PickupRowMenuMap,
 } from '@/components/row-context-menu'

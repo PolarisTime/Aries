@@ -163,14 +163,6 @@ export function specRowGroupSpans(
   return spans
 }
 
-/** 真正的定尺列（9米/12米…），已按定尺主数据顺序排序。 */
-export function columnLengths(
-  rows: readonly QuoteRow[],
-  sortOrderOf?: Readonly<Record<string, number>>,
-): string[] {
-  return orderedLengths(rows, sortOrderOf).filter(isLengthColumn)
-}
-
 /**
  * 这个定尺值是不是**真实定尺**（9米 / 12米 …）。
  *
@@ -179,19 +171,6 @@ export function columnLengths(
  */
 export function isRealLength(length: string): boolean {
   return length !== '' && length !== '-'
-}
-
-/** 该规格行没有定尺维度（盘螺一类）：价格只需要一格。 */
-export function hasNoLength(row: SpecRow): boolean {
-  return !row.lengths.some(isLengthColumn)
-}
-
-/**
- * 某规格行落格用的定尺值：有定尺取第一个真实定尺；没有定尺就取它自己的占位值（`''`/`'-'`），
- * 保证这类行仍然能算出与后端条目一致的 rowKey。
- */
-export function placementLengthOf(row: SpecRow): string {
-  return row.lengths.find(isLengthColumn) ?? row.lengths[0] ?? ''
 }
 
 /**

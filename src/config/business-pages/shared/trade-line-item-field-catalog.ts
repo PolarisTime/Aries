@@ -50,34 +50,6 @@ export interface TradeLineItemFieldSpec {
   editor?: TradeLineItemEditorSemantics
 }
 
-export const TRADE_LINE_ITEM_FIELD_KEYS: readonly TradeLineItemFieldKey[] = [
-  'sourceNo',
-  'materialCode',
-  'brand',
-  'category',
-  'material',
-  'spec',
-  'length',
-  'unit',
-  'piecesPerBundle',
-  'warehouseName',
-  'batchNo',
-  'quantity',
-  'quantityUnit',
-  'pieceWeightTon',
-  'weightTon',
-  'settlementMode',
-  'weighWeightTon',
-  'weightAdjustmentTon',
-  'weightAdjustmentAmount',
-  'actualWeightTon',
-  'unitPrice',
-  'amount',
-  'materialName',
-  'customerName',
-  'projectName',
-]
-
 export const TRADE_LINE_ITEM_FIELD_CATALOG: Readonly<
   Record<TradeLineItemFieldKey, TradeLineItemFieldSpec>
 > = {

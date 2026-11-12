@@ -70,58 +70,6 @@ export const zhCN = {
     homeButton: '返回首页',
     backButton: '返回上页',
   },
-  toolbar: {
-    searchPlaceholder: '搜索...',
-    refresh: '刷新',
-    create: '新建',
-  },
-  validation: {
-    default: '字段校验失败',
-    required: '请填写{label}',
-    enum: '{label}的取值不在允许范围内',
-    whitespace: '{label}不能为空',
-    date: {
-      format: '{label}格式不正确',
-      parse: '{label}无法识别为日期',
-      invalid: '{label}不是有效日期',
-    },
-    types: {
-      string: '{label}格式不正确',
-      method: '{label}格式不正确',
-      array: '请选择{label}',
-      object: '{label}格式不正确',
-      number: '{label}必须为数字',
-      date: '{label}不是有效日期',
-      boolean: '{label}格式不正确',
-      integer: '{label}必须为整数',
-      float: '{label}必须为数字',
-      regexp: '{label}格式不正确',
-      email: '{label}不是有效邮箱',
-      url: '{label}不是有效链接',
-      hex: '{label}格式不正确',
-    },
-    string: {
-      len: '{label}长度必须为{len}个字符',
-      min: '{label}至少{min}个字符',
-      max: '{label}最多{max}个字符',
-      range: '{label}长度必须在{min}-{max}个字符之间',
-    },
-    number: {
-      len: '{label}必须等于{len}',
-      min: '{label}不能小于{min}',
-      max: '{label}不能大于{max}',
-      range: '{label}必须在{min}-{max}之间',
-    },
-    array: {
-      len: '{label}必须选择{len}项',
-      min: '{label}至少选择{min}项',
-      max: '{label}最多选择{max}项',
-      range: '{label}需选择{min}-{max}项',
-    },
-    pattern: {
-      mismatch: '{label}格式不正确',
-    },
-  },
   dashboard: {
     greeting: {
       welcome: '欢迎回来，{{name}}',
@@ -171,9 +119,6 @@ export const zhCN = {
       goProcess: '去处理',
       empty: '暂无待办',
       loadFailed: '待办加载失败，请稍后重试。',
-    },
-    account: {
-      title: '账户概况',
     },
     flow: {
       material: {
@@ -541,9 +486,6 @@ export const zhCN = {
         submit: '完成初始化',
       },
     },
-    validation: {
-      required: '必填项不能为空',
-    },
     error: {
       network: '网络连接失败，请检查服务是否可用',
       timeout: '请求超时，请稍后重试',
@@ -556,28 +498,6 @@ export const zhCN = {
       missingTokenOrUser: '登录响应缺少 token 或用户信息',
       sessionRestoreFailed: 'Session 恢复失败',
     },
-  },
-  table: {
-    create: '新增',
-    edit: '编辑',
-    delete: '删除',
-    batchDelete: '批量删除',
-    deleteConfirm: '确认删除选中记录？',
-    deleteSuccess: '删除成功',
-    saveSuccess: '保存成功',
-    createSuccess: '新增成功',
-    updateSuccess: '更新成功',
-    operationSuccess: '操作成功',
-    operationFailed: '操作失败',
-  },
-  attachment: {
-    title: '附件管理',
-    upload: '上传附件',
-    preview: '预览',
-    download: '下载',
-    delete: '删除附件',
-    uploadSuccess: '附件上传成功',
-    notSupported: '该附件暂不支持预览',
   },
   api: {
     requestFailed: '请求失败',
@@ -852,42 +772,6 @@ export const zhCN = {
       reloadLatest: '重新加载最新数据',
       createAnother: '再做一张',
       close: '关闭',
-    },
-    statement: {
-      supplier: '供应商',
-      customer: '客户',
-      freight: '物流',
-      counterpartyNotFound: '未找到对方单位信息',
-      multipleCounterparties:
-        '选中的单据包含多个对方单位，请只勾选同一单位的单据',
-      dateMissing: '选中的单据缺少日期信息',
-      generateTitle: '生成{{type}}对账单',
-      selectHint: '请先在列表中勾选需要生成对账单的单据',
-      extractError: '无法从选中的单据中提取对账信息，请检查数据完整性',
-      counterpartyUnit: '对方单位：',
-      period: '对账期间：',
-      documentCount: '单据数量：',
-      documentCountUnit: '笔',
-      generated: '对账单已生成',
-      generateFailed: '生成失败，请稍后重试',
-      generateButton: '生成对账单',
-      gotIt: '知道了',
-    },
-    weightCell: {
-      materialCode: '商品编码',
-      materialType: '商品类型',
-      materialTypePhysical: '实体商品',
-      materialTypeExpense: '附加费用',
-      brand: '品牌',
-      material: '材质',
-      spec: '规格',
-      length: '长度',
-      pieceWeightTon: '件重(吨)',
-      quantity: '数量',
-      weightTon: '总重(吨)',
-      popoverTitle: '每件重量明细',
-      noLineItems: '当前单据无明细数据',
-      loadDetailFailed: '加载明细失败',
     },
     detail: {
       titleSuffix: '详情',
@@ -1344,14 +1228,6 @@ export const zhCN = {
         '已选 {{orderCount}} 个订单（含 {{lineCount}} 条明细）',
       selectedSingleSummary: '已选 {{count}} 个订单：{{docNo}}',
       selectedEmptyHint: '未选择，点击行或勾选框进行选择',
-      status: {
-        draft: '草稿',
-        unaudited: '未审核',
-        audited: '已审核',
-        purchaseComplete: '完成采购',
-        salesComplete: '完成销售',
-        inboundComplete: '完成入库',
-      },
       column: {
         orderNo: '订单编号',
         supplierName: '供应商',
@@ -2390,9 +2266,6 @@ export const zhCN = {
     requestError: {
       requestFailed: '请求失败',
     },
-    pagination: {
-      total: '共 {{count}} 条',
-    },
     displaySupport: {
       yes: '是',
       no: '否',
@@ -2413,12 +2286,6 @@ export const zhCN = {
       syncRetryLater: '列设置已保存到本地，云同步稍后重试',
       resetByAbnormalHidden:
         '检测到该页面的列显示设置异常，已恢复为默认列显示，可在列设置里重新调整',
-    },
-    statement: {
-      noCandidateDocuments: '当前筛选条件下没有可生成的候选单据',
-    },
-    recordHelpers: {
-      currentUser: '当前用户',
     },
   },
   layouts: {

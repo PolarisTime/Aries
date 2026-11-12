@@ -183,21 +183,6 @@ export function syncSteelQuotes(
   )
 }
 
-/** 同步记录分页。 */
-export async function fetchSteelQuoteSyncs(
-  page = 0,
-  size = 20,
-): Promise<{ rows: SteelQuoteSyncRecord[]; total: number }> {
-  const res = await apiGet(
-    ENDPOINTS.STEEL_QUOTE_SYNCS,
-    pageSchema(steelQuoteSyncRecordSchema),
-    {
-      params: { page, size },
-    },
-  )
-  return { rows: res.content, total: Number(res.totalElements) }
-}
-
 /** 行情明细分页。 */
 export async function fetchSteelQuotes(
   params: {

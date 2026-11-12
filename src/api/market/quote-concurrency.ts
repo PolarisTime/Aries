@@ -21,7 +21,6 @@ export const LOCK_CONFLICT_STATUS = 409
 
 export const VERSION_CONFLICT_CODE = 4120
 export const PRECONDITION_REQUIRED_CODE = 4280
-export const CONCURRENT_MODIFICATION_CODE = 4090
 
 /** 并发写请求需要抑制的全局错误状态码: 由业务层统一呈现冲突。 */
 const SUPPRESSED_STATUSES = [

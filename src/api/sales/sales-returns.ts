@@ -1,49 +1,26 @@
-import type { AxiosRequestConfig } from 'axios'
-import {
-  deleteBusinessModule,
-  getBusinessModuleDetail,
-  saveAndAuditBusinessModule,
-  saveBusinessModule,
-  updateBusinessModuleStatus,
-} from '@/api/business/business-crud'
-import { listBusinessModule } from '@/api/business/business-listing'
-import { apiGet, apiPost } from '@/api/core/client'
-import { withIdempotencyKey } from '@/api/core/idempotency'
+import { saveBusinessModule } from '@/api/business/business-crud'
+import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type {
   SalesReturn,
   SalesReturnCandidates,
-  SalesReturnListRecord,
   SalesReturnSaveRequest,
 } from '@/shared/schemas/module-record'
-import {
-  mainFlowDetailResponseSchemas,
-  salesReturnCandidatesSchema,
-} from '@/shared/schemas/module-record'
-import type { TableResponse } from '@/types/api'
-import type { SearchParams } from '@/types/api-raw'
+import { salesReturnCandidatesSchema } from '@/shared/schemas/module-record'
 import type { MainFlowEditorDraft } from '@/types/module-record'
-import type { ListQueryOptions } from '@/utils/list'
 
+/*
+ * 销售退货的增删改审走统一 module 通道（`business-crud` + 页面配置里的 actions），
+ * 这里只保留两条**专属**接口：
+ *
+ * - 来源候选（按已审核销售出库读取可退明细）；
+ * - 从来源候选直接生成退货草稿（请求体字段与统一保存契约不同，需要显式映射）。
+ *
+ * 原先还有 list/get/create/update/audit/saveAndAudit/updateStatus/delete 八个逐函数包装，
+ * 它们只是把 `MODULE_KEY` 转发给 `business-crud`，且全仓零调用方 —— 已删除。
+ * 需要这些能力时直接调 `business-crud` 的通用函数，不要再加回逐单据包装。
+ */
 const MODULE_KEY = 'sales-return' as const
-
-const salesReturnDetailResponseSchema =
-  mainFlowDetailResponseSchemas[MODULE_KEY]
-
-export function listSalesReturns(
-  search: SearchParams,
-  options: ListQueryOptions,
-  config?: AxiosRequestConfig,
-): Promise<TableResponse<SalesReturnListRecord>> {
-  return listBusinessModule(MODULE_KEY, search, options, config)
-}
-
-export function getSalesReturn(
-  id: string,
-  signal?: AbortSignal,
-): Promise<SalesReturn> {
-  return getBusinessModuleDetail(MODULE_KEY, id, signal)
-}
 
 /**
  * 销售退货来源候选：按已审核销售出库读取可退明细（含已退/可退数量）。
@@ -57,13 +34,6 @@ export function getSalesReturnCandidates(
     salesReturnCandidatesSchema,
     { params: { salesOutboundId }, signal },
   )
-}
-
-export function createSalesReturn(
-  record: MainFlowEditorDraft<typeof MODULE_KEY>,
-  idempotencyKey?: string,
-): Promise<SalesReturn> {
-  return saveBusinessModule(MODULE_KEY, record, idempotencyKey)
 }
 
 /**
@@ -101,41 +71,4 @@ export function createSalesReturnFromSource(
     toSalesReturnEditorDraft(payload),
     idempotencyKey,
   )
-}
-
-export function updateSalesReturn(
-  record: MainFlowEditorDraft<typeof MODULE_KEY>,
-  idempotencyKey?: string,
-): Promise<SalesReturn> {
-  return saveBusinessModule(MODULE_KEY, record, idempotencyKey)
-}
-
-export function auditSalesReturn(
-  id: string,
-  idempotencyKey?: string,
-): Promise<SalesReturn> {
-  return apiPost(
-    ENDPOINTS.SALES_RETURN_AUDITS(id),
-    salesReturnDetailResponseSchema,
-    null,
-    withIdempotencyKey(undefined, idempotencyKey),
-  )
-}
-
-export function saveAndAuditSalesReturn(
-  record: MainFlowEditorDraft<typeof MODULE_KEY>,
-  idempotencyKey?: string,
-): Promise<SalesReturn> {
-  return saveAndAuditBusinessModule(MODULE_KEY, record, idempotencyKey)
-}
-
-export function updateSalesReturnStatus(
-  id: string,
-  status: string,
-): Promise<SalesReturn> {
-  return updateBusinessModuleStatus(MODULE_KEY, id, status)
-}
-
-export function deleteSalesReturn(id: string): Promise<void> {
-  return deleteBusinessModule(MODULE_KEY, id)
 }

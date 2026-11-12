@@ -73,58 +73,6 @@ export const enUS = {
     homeButton: 'Back to Home',
     backButton: 'Go Back',
   },
-  toolbar: {
-    searchPlaceholder: 'Search...',
-    refresh: 'Refresh',
-    create: 'Create',
-  },
-  validation: {
-    default: 'Validation failed',
-    required: 'Please enter {label}',
-    enum: '{label} is out of range',
-    whitespace: '{label} cannot be empty',
-    date: {
-      format: '{label} has an invalid format',
-      parse: '{label} could not be parsed as a date',
-      invalid: '{label} is not a valid date',
-    },
-    types: {
-      string: '{label} has an invalid format',
-      method: '{label} has an invalid format',
-      array: 'Please select {label}',
-      object: '{label} has an invalid format',
-      number: '{label} must be a number',
-      date: '{label} is not a valid date',
-      boolean: '{label} has an invalid format',
-      integer: '{label} must be an integer',
-      float: '{label} must be a number',
-      regexp: '{label} has an invalid format',
-      email: '{label} is not a valid email',
-      url: '{label} is not a valid URL',
-      hex: '{label} has an invalid format',
-    },
-    string: {
-      len: '{label} must be {len} characters',
-      min: '{label} must be at least {min} characters',
-      max: '{label} must be at most {max} characters',
-      range: '{label} must be between {min} and {max} characters',
-    },
-    number: {
-      len: '{label} must equal {len}',
-      min: '{label} cannot be less than {min}',
-      max: '{label} cannot be greater than {max}',
-      range: '{label} must be between {min} and {max}',
-    },
-    array: {
-      len: '{label} must have {len} item(s)',
-      min: '{label} must have at least {min} item(s)',
-      max: '{label} must have at most {max} item(s)',
-      range: '{label} must have between {min} and {max} item(s)',
-    },
-    pattern: {
-      mismatch: '{label} has an invalid format',
-    },
-  },
   dashboard: {
     greeting: {
       welcome: 'Welcome back, {{name}}',
@@ -174,9 +122,6 @@ export const enUS = {
       goProcess: 'Process',
       empty: 'No to-dos',
       loadFailed: 'Failed to load to-dos. Please retry later.',
-    },
-    account: {
-      title: 'Account Overview',
     },
     flow: {
       material: {
@@ -559,9 +504,6 @@ export const enUS = {
         submit: 'Finish Initialization',
       },
     },
-    validation: {
-      required: 'This field is required',
-    },
     error: {
       network: 'Network error, please check your connection',
       timeout: 'Request timed out, please try again',
@@ -574,28 +516,6 @@ export const enUS = {
       missingTokenOrUser: 'Login response missing token or user info',
       sessionRestoreFailed: 'Session restore failed',
     },
-  },
-  table: {
-    create: 'Create',
-    edit: 'Edit',
-    delete: 'Delete',
-    batchDelete: 'Batch Delete',
-    deleteConfirm: 'Confirm deletion?',
-    deleteSuccess: 'Deleted successfully',
-    saveSuccess: 'Saved successfully',
-    createSuccess: 'Created successfully',
-    updateSuccess: 'Updated successfully',
-    operationSuccess: 'Operation successful',
-    operationFailed: 'Operation failed',
-  },
-  attachment: {
-    title: 'Attachments',
-    upload: 'Upload',
-    preview: 'Preview',
-    download: 'Download',
-    delete: 'Delete',
-    uploadSuccess: 'Upload successful',
-    notSupported: 'Preview not supported',
   },
   api: {
     requestFailed: 'Request failed',
@@ -867,45 +787,6 @@ export const enUS = {
       reloadLatest: 'Reload Latest Data',
       createAnother: 'Create Another',
       close: 'Close',
-    },
-    statement: {
-      supplier: 'Supplier',
-      customer: 'Customer',
-      freight: 'Freight',
-      counterpartyNotFound: 'Counterparty information not found',
-      multipleCounterparties:
-        'Selected documents contain multiple counterparties. Please select documents from the same counterparty only.',
-      dateMissing: 'Selected documents are missing date information',
-      generateTitle: 'Generate {{type}} Statement',
-      selectHint:
-        'Please select documents from the list to generate a statement',
-      extractError:
-        'Unable to extract statement information from selected documents. Please check data integrity.',
-      counterpartyUnit: 'Counterparty: ',
-      period: 'Period: ',
-      documentCount: 'Documents: ',
-      documentCountUnit: '',
-      generated: 'Statement generated',
-      generateFailed: 'Generation failed, please try again later',
-      generateButton: 'Generate Statement',
-      gotIt: 'Got it',
-    },
-    weightCell: {
-      materialCode: 'Material Code',
-
-      materialType: 'Material Type',
-      materialTypePhysical: 'Physical Goods',
-      materialTypeExpense: 'Additional Charge',
-      brand: 'Brand',
-      material: 'Material',
-      spec: 'Spec',
-      length: 'Length',
-      pieceWeightTon: 'Piece Wt(ton)',
-      quantity: 'Qty',
-      weightTon: 'Weight(ton)',
-      popoverTitle: 'Piece Weight Details',
-      noLineItems: 'No line item data',
-      loadDetailFailed: 'Failed to load details',
     },
     detail: {
       titleSuffix: 'Detail',
@@ -1318,14 +1199,6 @@ export const enUS = {
         'Selected {{orderCount}} orders ({{lineCount}} items)',
       selectedSingleSummary: 'Selected {{count}} order: {{docNo}}',
       selectedEmptyHint: 'Nothing selected. Click a row or checkbox to select.',
-      status: {
-        draft: 'Draft',
-        unaudited: 'Unaudited',
-        audited: 'Audited',
-        purchaseComplete: 'Purchase Complete',
-        salesComplete: 'Sales Complete',
-        inboundComplete: 'Inbound Complete',
-      },
       column: {
         orderNo: 'Order No',
         supplierName: 'Supplier',
@@ -2389,9 +2262,6 @@ export const enUS = {
     requestError: {
       requestFailed: 'Request failed',
     },
-    pagination: {
-      total: '{{count}} total',
-    },
     displaySupport: {
       yes: 'Yes',
       no: 'No',
@@ -2413,13 +2283,6 @@ export const enUS = {
         'Column settings saved locally. Cloud sync will retry later.',
       resetByAbnormalHidden:
         'Abnormal column settings were detected for this page and have been reset to the default column visibility. Adjust them again in Column Settings.',
-    },
-    statement: {
-      noCandidateDocuments:
-        'No candidate documents available for generation with current filters',
-    },
-    recordHelpers: {
-      currentUser: 'Current User',
     },
   },
   layouts: {
