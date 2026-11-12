@@ -1060,12 +1060,6 @@
   scrollbar-gutter: stable;
 }
 
-.account-page {
-  width: min(100%, 920px);
-  align-self: flex-start;
-  gap: 0;
-}
-
 .account-section {
   padding: var(--space-xxs) 0 28px;
   border-bottom: 1px solid var(--theme-border-subtle);
@@ -1073,14 +1067,6 @@
 
 .account-section + .account-section {
   padding-top: 28px;
-}
-
-.account-section-title {
-  margin: 0 0 var(--space-lg);
-  color: var(--theme-text);
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 24px;
 }
 
 .account-form {
@@ -1093,24 +1079,6 @@
   padding-top: var(--space-xxs);
 }
 
-.system-list-card {
-  min-width: 0;
-  border-color: var(--theme-card-border);
-}
-
-.system-list-card > .ant-card-head {
-  min-width: 0;
-}
-
-.system-list-card > .ant-card-head .ant-card-head-wrapper,
-.system-list-card > .ant-card-head .ant-card-extra {
-  min-width: 0;
-}
-
-.system-list-card > .ant-card-head .ant-card-extra {
-  margin-inline-start: var(--space-md);
-}
-
 .system-table-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -1120,20 +1088,11 @@
   min-width: 0;
 }
 
-.system-table-toolbar-search {
-  flex: 0 1 auto;
-  min-width: 220px;
-}
-
 .system-table-toolbar .ant-select {
   flex: 0 0 auto;
 }
 
 .system-table-toolbar > .ant-btn,
-.system-table-toolbar-action {
-  flex: 0 0 auto;
-}
-
 .settings-standard-page {
   width: 100%;
   height: 100%;
@@ -1360,21 +1319,6 @@
   white-space: nowrap;
 }
 
-.finance-overview-metric--outstanding {
-  background: var(--ant-color-error-bg, #fff1f0);
-  border-color: var(--ant-color-error-border, #ffccc7);
-}
-
-.finance-overview-metric--outstanding .ant-statistic-title {
-  color: var(--ant-color-error, #cf1322);
-  font-weight: 600;
-}
-
-.finance-overview-metric--outstanding .ant-statistic-content {
-  color: var(--ant-color-error, #cf1322);
-  font-weight: 700;
-}
-
 .finance-overview-outstanding-value {
   color: var(--ant-color-error, #cf1322);
   font-weight: 600;
@@ -1492,38 +1436,6 @@
   background: var(--theme-card-bg);
   border: 1px solid var(--theme-card-border);
   border-radius: 8px;
-}
-
-.module-workspace-header {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm) var(--space-xl);
-  min-height: 56px;
-  padding: var(--space-xs) var(--space-md);
-  background: var(--theme-surface);
-  border-bottom: 1px solid var(--theme-border-subtle);
-}
-
-.module-workspace-heading {
-  min-width: 0;
-}
-
-.module-workspace-title-row {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-xs);
-  min-width: 0;
-}
-
-.module-workspace-kicker {
-  color: var(--theme-text-muted-light);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 16px;
-  letter-spacing: 0;
-  text-transform: uppercase;
 }
 
 .module-workspace-title {
@@ -1699,10 +1611,6 @@
   display: grid;
   min-width: 0;
   gap: var(--space-md);
-}
-
-.dashboard-flow-region {
-  min-width: 0;
 }
 
 .dashboard-sidebar-panels {
@@ -2046,13 +1954,6 @@
   border-radius: var(--ant-border-radius);
 }
 
-.dashboard-skeleton-status-meta {
-  width: 240px;
-  height: 16px;
-  margin-top: var(--space-6);
-  border-radius: var(--ant-border-radius);
-}
-
 .dashboard-skeleton-avatar {
   width: 40px;
   height: 40px;
@@ -2119,13 +2020,6 @@
   background-size: 200% 100%;
   animation: module-page-skeleton-shimmer 1.4s ease-in-out infinite;
   border-radius: var(--ant-border-radius);
-}
-
-.dashboard-flow-card-placeholder {
-  min-height: 420px;
-  background: var(--theme-surface);
-  border: 1px solid var(--theme-border-light);
-  border-radius: var(--ant-border-radius-lg);
 }
 
 .dashboard-flow-card {
@@ -2301,18 +2195,8 @@
   line-height: 1;
 }
 
-.dashboard-panel {
-  height: 100%;
-  border-color: var(--theme-card-border);
-  box-shadow: var(--ant-box-shadow-tertiary);
-}
-
 .dashboard-sidebar-panels .dashboard-panel {
   height: auto;
-}
-
-.dashboard-descriptions .ant-descriptions-item-label {
-  width: 120px;
 }
 
 /* ===== 待办工作台 ===== */
@@ -2651,13 +2535,6 @@
 }
 
 /* 行末：快捷筛选 / 查询 / 重置靠右收口，不和字段混排 */
-.module-filter-form-tail {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-inline-start: auto;
-}
-
 .module-filter-submit-button {
   flex: 0 0 auto;
 }
@@ -2679,9 +2556,6 @@
     align-items: stretch;
   }
 
-  .module-filter-form-tail {
-    margin-inline-start: 0;
-  }
 }
 
 .module-table-toolbar {
