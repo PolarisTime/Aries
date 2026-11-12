@@ -21,6 +21,8 @@ export interface ModuleDetailSummaryColumn {
   key?: Key
   className?: string
   align?: ModuleDetailSummaryAlign
+  /** 列名。文字形态的合计行用它作标签（如「数量 17」）；缺省则该段只输出值。 */
+  title?: unknown
 }
 
 export interface ModuleDetailSummaryRowProps {
@@ -30,26 +32,11 @@ export interface ModuleDetailSummaryRowProps {
   cells: ModuleDetailSummaryCell[]
 }
 
-/**
- * 数值列标记类。
- *
- * <p>**与 `buildDetailItemColumns` 打的是同一个类名**：右对齐由 `pages.css`、
- * 等宽字体由 `module-detail.css` 统一提供，合计行因此和明细行共用同一份「数值列」
- * 口径 —— 不要在这里另造第二个名字，否则两处样式会各自漂移。</p>
- */
-const NUMERIC_CELL_CLASS = 'module-detail-table-cell--numeric'
-
 interface ResolvedSummarySlot {
   key: string
   cell: ModuleDetailSummaryCell | null
   column: ModuleDetailSummaryColumn | undefined
   index: number
-}
-
-function isNumericColumn(
-  column: ModuleDetailSummaryColumn | undefined,
-): boolean {
-  return column?.className?.split(/\s+/).includes(NUMERIC_CELL_CLASS) ?? false
 }
 
 /**
@@ -122,40 +109,48 @@ function resolveSummarySlots(
 }
 
 /**
- * 明细合计行（antd `Table.Summary.Row`）。
+ * 明细合计行（antd `Table.Summary.Row`）——**一行文字、右端对齐**。
  *
- * <p>用法：把本组件作为 `summary` 的返回值交给 `ModuleItemsTable` /
- * `ModuleItemGroupsView` 的 `summary` prop，列定义与明细表传同一份，
- * 合计数字才能和上面的明细逐列对齐。</p>
+ * <p>与编辑器草稿合计（`ModuleEditorItemsSummary`）保持同一形态：逐列铺开的合计
+ * 在十几列的表里会把三个数拉得很散、看起来像多了一行数据；收成一句
+ * 「合计（4 行） · 数量 17 · 重量(吨) 35.882 · 金额 116745.72」并按表格右边界对齐后，
+ * 三个数挨在一起，扫读路径变成「右下一眼看到」。</p>
  *
- * <p>对齐口径只有一处：数值列沿用列上的 `module-detail-table-cell--numeric`，
- * 本组件只做透传，不重新判断「哪个字段是金额」。</p>
+ * <p>口径没有变：单元格仍由 `config.detailSummary`（如 `buildDefaultLineItemSummary`）
+ * 产出，求和仍来自 `sumLineItemsBy`；本组件只负责排版，不重算任何数字。</p>
  *
- * <p>数值列的 `align` **优先右对齐**，即使列定义上是 `center`（`buildDetailItemColumns`
- * 给所有列都填了 align，数值列默认也是 center）：明细行的右对齐由 `pages.css` 的
- * 选择器完成、只覆盖 thead/tbody，合计行位于 tfoot 拿不到那条规则，只能用 align 属性补。</p>
+ * <p>仍保留 `resolveSummarySlots` 的槽位解析：它决定**哪些单元格出现、按什么顺序**，
+ * 以及 `dataIndex` 与列的对应关系（列名即标签）。没有可用单元格时不渲染整行 ——
+ * 空表交给 antd 的空态，避免出现「合计 0 行」这种没有信息量的行。</p>
  */
 export function ModuleDetailSummaryRow({
   columns,
   cells,
 }: ModuleDetailSummaryRowProps) {
-  const slots = resolveSummarySlots(columns, cells)
+  const parts = resolveSummarySlots(columns, cells)
+    .map(({ cell, column }) => {
+      if (!cell || cell.value === null || cell.value === undefined) return null
+      const value = String(cell.value)
+      /*
+       * 只有「单元格与列按 dataIndex 精确对上」才加列名标签：合计标签
+       * （`dataIndex: '#'` 的「合计（N 行）」）会被补到最左空槽，那一槽的列名是
+       * 「仓库名称」之类，加上去会读成「仓库名称 合计（4 行）」。
+       */
+      const matched =
+        cell.dataIndex !== undefined && column?.dataIndex === cell.dataIndex
+      const title =
+        matched && typeof column?.title === 'string' ? column.title.trim() : ''
+      return title ? `${title} ${value}` : value
+    })
+    .filter((part): part is string => Boolean(part))
+
+  if (parts.length === 0) return null
 
   return (
     <Table.Summary.Row className="module-detail-summary-row">
-      {slots.map(({ key, cell, column, index }) => {
-        const numeric = isNumericColumn(column)
-        return (
-          <Table.Summary.Cell
-            align={cell?.align ?? (numeric ? 'right' : column?.align)}
-            className={numeric ? NUMERIC_CELL_CLASS : undefined}
-            index={index}
-            key={key}
-          >
-            {cell?.value ?? null}
-          </Table.Summary.Cell>
-        )
-      })}
+      <Table.Summary.Cell index={0} colSpan={Math.max(columns.length, 1)}>
+        <div className="module-detail-summary-text">{parts.join(' · ')}</div>
+      </Table.Summary.Cell>
     </Table.Summary.Row>
   )
 }

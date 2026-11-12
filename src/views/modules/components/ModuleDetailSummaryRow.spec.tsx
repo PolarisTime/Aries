@@ -118,99 +118,68 @@ describe('ModuleDetailSummaryRow', () => {
     return footerCells().map((cell) => cell.textContent ?? '')
   }
 
-  it('按 dataIndex 对齐：数字落在自己的列下，缺数据的列渲染空 td', () => {
+  /*
+   * 形态：与编辑器「草稿合计」一致 —— **一行文字、右端对齐**。
+   * 逐列铺开的合计在十几列的表里会把数字拉散、看起来像多了一行数据。
+   * 口径不变：单元格仍由 config.detailSummary 产出，这里只负责排版。
+   */
+  it('收成一行文字：只有一个跨列单元格，按列名带标签、以 · 连接', () => {
     renderSummary([
       { key: 'amount', dataIndex: 'amount', value: '136180.02' },
       { key: 'quantity', dataIndex: 'quantity', value: '5' },
       { key: 'weightTon', dataIndex: 'weightTon', value: '12.500' },
-    ])
-
-    // 数量列缺失也不省略 td：合计单元格是按顺序铺的，少一个后面整体左移
-    expect(footerTexts()).toEqual(['', '5', '12.500', '136180.02'])
-    expect(footerCells()).toHaveLength(columns.length)
-  })
-
-  it('dataIndex 匹配不到列的单元格落到最左侧空槽，而不是追加到行末', () => {
-    /*
-     * 销售订单的真实形态：第一格是 `dataIndex: '#'` 的「行数」，明细表没有序号列。
-     * 追加到行末时它落在滚动区外（明细表 `table-layout: fixed` + `scroll.x`），
-     * 「合计（N 行）」用户看不到。
-     */
-    renderSummary([
-      { key: 'rowCount', dataIndex: '#', value: '行数 1' },
-      { key: 'quantity', dataIndex: 'quantity', value: '5' },
-      { key: 'weightTon', dataIndex: 'weightTon', value: '12.500' },
-      { key: 'amount', dataIndex: 'amount', value: '136180.02' },
-    ])
-
-    const texts = footerTexts()
-    expect(texts).toHaveLength(columns.length)
-    // 首格（仓库名称列）显示行数，右侧三个数值仍在各自列下
-    expect(texts[0]).toBe('行数 1')
-    expect(texts.slice(1)).toEqual(['5', '12.500', '136180.02'])
-  })
-
-  it('没配 dataIndex 的单元格按顺序从左往右补空槽', () => {
-    renderSummary([{ key: 'label', value: '合计' }])
-
-    expect(footerTexts()).toEqual(['合计', '', '', ''])
-  })
-
-  it('空槽填满后仍多余的单元格追加末尾，合计值不被静默丢弃', () => {
-    renderSummary([
-      { key: 'label', dataIndex: 'warehouseName', value: '合计' },
-      { key: 'quantity', dataIndex: 'quantity', value: '5' },
-      { key: 'weightTon', dataIndex: 'weightTon', value: '12.500' },
-      { key: 'amount', dataIndex: 'amount', value: '136180.02' },
-      { key: 'rowCount', dataIndex: '#', value: '行数 1' },
-    ])
-
-    const texts = footerTexts()
-    // 四列都占满，多出来的一格只能追加到末尾：宁可多一格，也不丢合计值
-    expect(texts).toEqual(['合计', '5', '12.500', '136180.02', '行数 1'])
-  })
-
-  it('数值列带 module-detail-table-cell--numeric 并右对齐（合计行 tfoot 拿不到表体的右对齐规则）', () => {
-    renderSummary([
-      { key: 'label', dataIndex: 'warehouseName', value: '合计' },
-      { key: 'quantity', dataIndex: 'quantity', value: '5' },
-      { key: 'weightTon', dataIndex: 'weightTon', value: '12.500' },
-      { key: 'amount', dataIndex: 'amount', value: '136180.02' },
     ])
 
     const cells = footerCells()
-    // 文本列不挂数值标记，避免等宽字体把仓库名也变成等宽
-    expect(cells[0]?.className).not.toContain(NUMERIC)
-    expect(
-      cells.slice(1).map((cell) => cell.className.includes(NUMERIC)),
-    ).toEqual([true, true, true])
-    // 表体的右对齐来自 pages.css 的 tbody 选择器；tfoot 只能用 align 属性补
-    expect(cells.slice(1).map((cell) => cell.style.textAlign)).toEqual([
-      'right',
-      'right',
-      'right',
+    expect(cells).toHaveLength(1)
+    // 跨满整表宽度，否则文字右端贴不到表格右边界
+    expect(cells[0]?.getAttribute('colspan')).toBe(String(columns.length))
+    // 顺序按列顺序（数量 → 重量 → 金额），标签取自列名
+    expect(cells[0]?.textContent).toBe(
+      '数量 5 · 重量(吨) 12.500 · 金额 136180.02',
+    )
+  })
+
+  it('没有列名标签的单元格（合计行数）排在最前，原样输出', () => {
+    renderSummary([
+      { key: 'rowCount', dataIndex: '#', value: '合计（1 行）' },
+      { key: 'quantity', dataIndex: 'quantity', value: '5' },
+      { key: 'weightTon', dataIndex: 'weightTon', value: '12.500' },
+      { key: 'amount', dataIndex: 'amount', value: '136180.02' },
+    ])
+
+    expect(footerTexts()).toEqual([
+      '合计（1 行） · 数量 5 · 重量(吨) 12.500 · 金额 136180.02',
     ])
   })
 
-  it('单元格自带 align 时优先于列定义', () => {
+  it('dataIndex 匹配不到列的单元格也不会丢（追加到文字末尾）', () => {
     renderSummary([
-      {
-        key: 'label',
-        dataIndex: 'warehouseName',
-        value: '合计',
-        align: 'right',
-      },
-      {
-        key: 'amount',
-        dataIndex: 'amount',
-        value: '136180.02',
-        align: 'center',
-      },
+      { key: 'label', dataIndex: 'warehouseName', value: '合计' },
+      { key: 'quantity', dataIndex: 'quantity', value: '5' },
+      { key: 'rowCount', dataIndex: '#', value: '行数 1' },
     ])
 
-    const cells = footerCells()
-    expect(cells[0]?.style.textAlign).toBe('right')
-    // 显式 align 覆盖数值列缺省的 right
-    expect(cells[3]?.style.textAlign).toBe('center')
+    const text = footerCells()[0]?.textContent ?? ''
+    expect(text).toContain('仓库名称 合计')
+    expect(text).toContain('数量 5')
+    // 宁可多一段，也不静默丢掉合计值
+    expect(text).toContain('行数 1')
+  })
+
+  it('没有可用单元格时整行不渲染（空表交给 antd 空态）', () => {
+    renderSummary([])
+    expect(footerCells()).toHaveLength(0)
+  })
+
+  /*
+   * 右对齐与等宽数字由 `pages.css` 的 `.module-detail-summary-text` 提供
+   * （jsdom 不解析外部样式表，这里锁类名；样式契约见 src/styles 下的 CSS 测试）。
+   */
+  it('文字块挂在专用的右对齐样式类上', () => {
+    renderSummary([{ key: 'quantity', dataIndex: 'quantity', value: '5' }])
+    const block = container.querySelector('.module-detail-summary-text')
+    expect(block).not.toBeNull()
+    expect(block?.className).toContain('module-detail-summary-text')
   })
 })

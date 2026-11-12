@@ -108,6 +108,18 @@
   border-bottom: none;
 }
 
+/*
+ * 详情面明细合计：与编辑器「草稿合计」同一形态（一行文字、右端对齐、等宽数字）。
+ * 逐列铺开的合计在十几列的表里会把数字拉散，看起来像多了一行数据。
+ */
+.module-detail-summary-text {
+  padding: var(--space-xs) var(--space-sm);
+  text-align: right;
+  color: var(--theme-text-muted);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
 .module-editor-summary-text {
   padding: var(--space-xs) var(--space-sm);
   text-align: right;

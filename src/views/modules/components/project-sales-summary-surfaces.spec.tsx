@@ -153,16 +153,17 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
     expect(summaryRow).not.toBeNull()
     expect(summaryRow?.textContent).toContain('136180.02')
     /*
-     * 合计行第一格必须是「合计（1 行）」：该单元格没有可对应的列（`dataIndex: '#'`），
-     * 必须落到最左侧空槽（仓库名称列）而不是追加到行末 —— 追加到行末会被横向滚动裁掉。
-     * 文案与编辑器草稿合计行同源（`modules.itemsSummary.summaryRow`）。
+     * 合计行现在是**一行文字、右端对齐**（与编辑器草稿合计同一形态）：
+     * 「合计（1 行） · 数量 5 · 重量(吨) 12.500 · 金额 136180.02」。
+     * 逐列铺开会把三个数拉散、看起来像多了一行数据，所以改成一句。
      */
-    expect(summaryRow?.querySelector('td')?.textContent).toBe('合计（1 行）')
-    // 数值列沿用同一个「数值列」class（等宽 + 合计行 nowrap 都按它命中）。
-    expect(
-      summaryRow?.querySelectorAll('td.module-detail-table-cell--numeric')
-        .length,
-    ).toBeGreaterThan(0)
+    const summaryText = summaryRow?.querySelector('.module-detail-summary-text')
+    expect(summaryText).not.toBeNull()
+    expect(summaryText?.textContent).toBe(
+      '合计（1 行） · 数量 5 · 重量(吨) 12.500 · 金额 136180.02',
+    )
+    // 收成一句后只剩一个跨列单元格
+    expect(summaryRow?.querySelectorAll('td')).toHaveLength(1)
 
     // 负向断言：只读面不再出现「项目数据」卡片行（它只属于编辑器）。
     expect(container.querySelector('.project-sales-summary')).toBeNull()
