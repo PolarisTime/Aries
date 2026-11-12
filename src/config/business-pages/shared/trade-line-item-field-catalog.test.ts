@@ -67,6 +67,36 @@ describe('明细字段目录：省略与列宽', () => {
     expect(total).toBeGreaterThanOrEqual(900)
   })
 
+  /**
+   * 打印弹层的列宽**也**在这一份目录里：`utils/print-module-config` 不再自带宽度表。
+   * 这条用例锁定「打印用到的每个字段都能从目录取到宽度」，避免有人再加回第二份表。
+   */
+  it('打印明细用到的 12 个字段都能从目录取到宽度（printWidth 优先，回落到 width）', () => {
+    const printKeys = [
+      'sourceNo',
+      'brand',
+      'category',
+      'material',
+      'spec',
+      'length',
+      'quantity',
+      'quantityUnit',
+      'pieceWeightTon',
+      'weightTon',
+      'unitPrice',
+      'amount',
+    ] as const
+    for (const key of printKeys) {
+      const spec = TRADE_LINE_ITEM_FIELD_CATALOG[key]
+      expect(spec, key).toBeTruthy()
+      const width = spec.printWidth ?? spec.width
+      expect(width, key).toBeGreaterThanOrEqual(64)
+    }
+    // 打印专用宽度必须显式声明，不能被明细表宽度"顺手"复用（两者密度不同）
+    expect(TRADE_LINE_ITEM_FIELD_CATALOG.quantityUnit.printWidth).toBe(80)
+    expect(TRADE_LINE_ITEM_FIELD_CATALOG.amount.printWidth).toBe(108)
+  })
+
   it('所有不允许省略的列都有可用的像素宽度', () => {
     const bad = Object.values(TRADE_LINE_ITEM_FIELD_CATALOG)
       .filter((field) => field.ellipsis === false)

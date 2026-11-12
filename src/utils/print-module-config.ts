@@ -7,6 +7,7 @@
  * `moduleKey === 'xxx'` 分支。</p>
  */
 
+import { TRADE_LINE_ITEM_FIELD_CATALOG } from '@/config/business-pages/shared/trade-line-item-field-catalog'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import { isModuleKey } from '@/module-system/core/module-key'
 import type { ModuleColumnType } from '@/types/module-page-fields'
@@ -74,31 +75,6 @@ const FIELD_SPECS = new Map<PrintItemFieldKey, PrintItemFieldSpec>(
     { key: 'sourceNo' as const, labelKey: 'modules.print.itemSourceNo' },
   ].map((field) => [field.key, field] as const),
 )
-
-/**
- * 明细数据列固定宽度（px）：打印弹窗宽度是 `min(1440px, 100vw - 32px)`。
- * 最宽的销售订单 / 客户对账单明细（11 个数据列 1016px + 选择/顺序/序号 192px）
- * 合计 1208px，再加品牌覆盖列（132px）仍小于 1440px，正常桌面不出现横向滚动。
- *
- * <p>宽度下限 = 12px 字体下典型内容宽 + 单元格左右 padding 24px。例如品牌
- * 「盘螺调直」49、材质「HRB400E」52、表头「数量单位」49、金额「12345678.90」70。
- * 低于该下限时短值列就不再能"一眼比对" —— 要么被截断、要么换行把行撑高。</p>
- */
-const PRINT_ITEM_COLUMN_WIDTHS: Record<PrintItemFieldKey, number> = {
-  sourceNo: 180,
-  brand: 92,
-  category: 84,
-  material: 96,
-  spec: 104,
-  length: 104,
-  quantity: 72,
-  // 表头「数量单位」49 + padding 24 = 73；取 80 留余量（原 72 会把表头挤到换行）
-  quantityUnit: 80,
-  pieceWeightTon: 88,
-  weightTon: 92,
-  unitPrice: 96,
-  amount: 108,
-}
 
 /**
  * 显示合并序号 Tag 时的品牌列宽：品牌文本 49 + Tag 约 20 + 间距 4 + padding 24 = 97，
@@ -210,7 +186,13 @@ export function getPrintItemColumnWidth(
   if (options?.mergeMarker && field.key === 'brand') {
     return MERGED_BRAND_COLUMN_WIDTH
   }
-  return PRINT_ITEM_COLUMN_WIDTHS[field.key]
+  /*
+   * 宽度只认明细字段目录（唯一来源）：`printWidth` 是打印列专用宽度（纯文本单元格、
+   * 要留勾选与合并序号余量），缺省回落到明细表宽度。本文件不再自带第二份宽度表 ——
+   * 同一字段此前在「打印宽度表」与「字段目录」里各写一遍，改一侧就会两边不一致。
+   */
+  const spec = TRADE_LINE_ITEM_FIELD_CATALOG[field.key]
+  return spec.printWidth ?? spec.width
 }
 
 /**
