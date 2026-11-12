@@ -3289,7 +3289,6 @@ export const enUS = {
       },
       columns: {
         remark: 'Remark',
-        tonnage: 'Tonnage columns',
         brand: 'Brand',
         category: 'Category',
         variety: 'Material / Spec / Length',
@@ -3298,22 +3297,6 @@ export const enUS = {
         spot: 'Spot Price',
         diff: 'Difference',
         supplierShort: 'Abbr.',
-        purchaseOrderNo: 'Order No.',
-        purchaseOrderSupplier: 'Supplier',
-        purchaseOrderOrdered: 'Ordered',
-        /** Tonnage trio: order (input) / issued / unopened (= ordered − issued). */
-        /** Tonnage columns: reported (input) / issued (actual inbound) / unopened (reported − issued). */
-        issuedTon: 'Issued (actual)',
-        unopenedTon: 'Unopened',
-        purchaseOrderIssued: 'Issued',
-        purchaseOrderRemaining: 'Remaining',
-        /**
-         * Picker quota column: "Linkable" (how much this sheet may still link), kept distinct
-         * from the sheet column "Unopened" (reported − issued). Both used to read "Remaining",
-         * which made the two numbers look like a calculation error.
-         */
-        purchaseOrderLinkable: 'Linkable remaining',
-        purchaseOrderStatus: 'Status',
       },
       /** Context menu: row actions and brand header actions (same actions as the visible buttons) */
       contextMenu: {
@@ -3338,7 +3321,7 @@ export const enUS = {
       lockRow: 'Lock row spec & quantity',
       unlockRow: 'Unlock row spec & quantity',
       lockRowHint:
-        'Locking this row spec & quantity enables purchase-order linking; unlocking clears the link',
+        'Lock the row spec & quantity to prevent accidental edits; unlock to edit',
       rowLockedHint:
         'This row is locked: spec and tonnage are final. Unlock to edit.',
       cellLockedHint: 'This field is locked. Choose "Unlock" to edit.',
@@ -3347,7 +3330,6 @@ export const enUS = {
       rowActionsLabel: 'Row actions for "{{row}}"',
       unlockField: 'Unlock "{{label}}"',
       clearField: 'Clear "{{label}}"',
-      purchaseOrderLockFirst: 'Lock this row before linking a purchase order',
       tonPositive: 'Order tonnage must be a positive number',
       spotOutOfRange: 'Spot price is out of range (0 - {{max}})',
       spotBetter: 'Spot price is better',
@@ -3409,99 +3391,6 @@ export const enUS = {
         'Fill the selected supplier into the {{count}} selected rows',
       fillSupplierNoChangedRows:
         'None of the target rows had a spot price changed this session; nothing was modified (only rows with changed prices are updated)',
-      purchaseOrderLabel: 'Linked purchase order',
-      purchaseOrderPlaceholder: 'Link PO',
-      purchaseOrderOptionTitle:
-        '{{orderNo}} · {{supplier}} ({{status}}) | ordered {{ordered}}t | remaining {{remaining}}t',
-      purchaseOrderTonnageHint: 'Issued {{issued}} / left {{remaining}}',
-      purchaseOrderOverLimit: '(over)',
-      purchaseOrderSavedBasis:
-        'Issued = actual inbound total of the linked PO lines (written back on inbound audit); unopened = reported tonnage − issued; ordered tonnage is reference only',
-      purchaseOrderMissing: '{{orderNo}} (deleted)',
-      purchaseOrderMissingHint: 'Linked order was deleted; please re-select',
-      /** Short state for the tonnage columns when the row has no linked PO line yet. */
-      purchaseOrderNotLinkedShort: 'Not linked',
-      purchaseOrderNotLinkedHint:
-        'This row has no linked purchase-order line yet; choose one via ⓘ to see issued/unopened tonnage',
-      /** Short state when the linked line is gone (order deleted). */
-      purchaseOrderMissingShort: 'Deleted',
-      purchaseOrderLoadFailed:
-        'Failed to load purchase-order tonnage; issued/unopened is unavailable (entry and saving are unaffected)',
-      purchaseOrderIssuedShort: 'Issued {{issued}}',
-      /**
-       * Shortfall notice: this row's reported tonnage − the allocated tonnage of its linked
-       * lines (under-allocation is legal; this only informs, it does not block saving).
-       */
-      purchaseOrderUnallocatedTon:
-        '{{ton}} t is not allocated to any purchase-order line',
-      /** Visible cell text: unopened = this sheet reported tonnage − actual issued. */
-      purchaseOrderRemainingShort: 'Remaining {{weight}}',
-      /** Tooltip row: tonnage this sheet reported on the linked PO line. */
-      purchaseOrderSheetReported: 'This sheet (PO line)',
-      /** Source of the issued figure: actualWeightTon, written back on inbound audit. */
-      purchaseOrderIssuedActual: 'Actual issued',
-      purchaseOrderLineShare:
-        'This document on this line (capped by allocation)',
-      /** Ordered tonnage of the PO line (reference only; not part of the unopened maths). */
-      purchaseOrderSelfAllocated: 'Ordered tonnage (reference)',
-      purchaseOrderDetail: 'Purchase order details',
-      purchaseOrderLineActual:
-        'Whole order line received (incl. other documents)',
-      purchaseOrderPickAllocate: 'Allocated tons',
-      purchaseOrderPickAllocateHint:
-        'Tons this document opens on this line; adjust per batch. Total must not exceed this row tonnage',
-      purchaseOrderPickAllocatedTotal:
-        'Allocated {{allocated}} / reported {{reported}} tons',
-      purchaseOrderPickOverAllocated:
-        'Allocated {{allocated}} tons exceeds reported {{reported}} tons; reduce before confirming',
-      purchaseOrderUnlinked: 'No linked purchase order',
-      /**
-       * Over-issued: actual issued exceeds this sheet's reported tonnage (the PO line is
-       * shared or this sheet reported only part of it). Shows the negative remainder as-is.
-       */
-      purchaseOrderOverIssuedShort: 'Over-issued {{over}} t',
-      /** Over-issued explanation (single source): issued, reported and excess. */
-      purchaseOrderOverShippedDetail:
-        'Issued {{shipped}} t > this sheet reported {{reported}} t ⇒ exceeds by {{over}} t (inbound already covers what this sheet reported)',
-      /** PO line linked but the reported tonnage is still empty. */
-      purchaseOrderMissingTonShort: 'No tonnage',
-      purchaseOrderMissingTonHint:
-        'Fill in the reported tonnage and lock the row first; then link a PO line via ⓘ',
-      purchaseOrderPickerOpen: 'Select purchase order',
-      purchaseOrderPickerTitle: 'Select purchase order line',
-      purchaseOrderPickerSearch: 'Search order no., supplier or spec',
-      purchaseOrderPickerEmpty: 'No purchase orders available',
-      purchaseOrderPickerEmptyAllFullyLinked:
-        'No purchase order with remaining tonnage; tick the switch above to view fully linked lines',
-      purchaseOrderPickerClear: 'Clear link',
-      purchaseOrderPickerClearHint: 'Unlink this row from the purchase order',
-      purchaseOrderPickerHint:
-        'Click a row to link it (keyboard: Tab to a row, then press Enter); or tick several rows and press "Confirm" to link them in tick order, allocating the tonnage across them by each line ordered weight. Issued tonnage is based on saved sheets.',
-      /** Multi-select column: header title and the "Confirm (n)" button. */
-      purchaseOrderPickerChoose: 'Select',
-      purchaseOrderPickerConfirm: 'Confirm ({{count}})',
-      purchaseOrderPickerShowOtherVarieties:
-        'Show rows with a different material / spec ({{count}})',
-      purchaseOrderPickerEmptyVariety:
-        "No purchase-order line matches this row's material / spec / length. Use the toggle above to show other specs.",
-      purchaseOrderPickerShowFullyLinked:
-        'Show fully linked orders ({{count}})',
-      purchaseOrderPickerFullyLinkedTag: 'Fully linked',
-      /** Manually marked "issued done" lines are hidden by default; the toggle is modal-local. */
-      purchaseOrderPickerShowIssuedDone: 'Show issued-done orders ({{count}})',
-      /** Column name for the manual "issued done" toggle (a human decision, unrelated to tonnage). */
-      purchaseOrderPickerIssuedDone: 'Issued done',
-      /** Mark/unmark failed and the switch was rolled back; say so instead of failing silently. */
-      purchaseOrderPickerIssuedDoneFailed:
-        'Failed to update the "issued done" mark; please retry',
-      purchaseOrderPickerFullyLinkedMine:
-        'This sheet already linked {{ton}} tons',
-      purchaseOrderPickerFullyLinkedHint:
-        'No remaining tonnage to link; selection is disabled but the line stays visible',
-      /** ⓘ popover with several linked lines: section titles and per-line allocation. */
-      purchaseOrderLinkedLines: 'Linked PO lines ({{count}})',
-      purchaseOrderLinkedTotal: 'Linked total',
-      purchaseOrderAllocatedTon: 'Allocated here',
     },
     config: {
       title: 'Project Settings',

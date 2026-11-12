@@ -848,8 +848,7 @@
  * 取不到变量, `var(--ant-*, 兜底值)` 恒等于兜底值 —— 深色模式会得到纯白底。
  * 文字色也要显式覆盖: antd Tooltip 的文字默认是配深色底的浅色, 只改底色会变成白底白字。
  */
-.price-compare-ton-bubble .ant-tooltip-container,
-.price-compare-ton-bubble .ant-popover-container {
+.price-compare-ton-bubble .ant-tooltip-container {
   background: var(--theme-overlay-surface, #ffffff);
   color: var(--theme-overlay-text, rgba(0, 0, 0, 0.88));
   border-radius: var(--app-border-radius, 8px);
@@ -859,11 +858,9 @@
 
 /*
  * 箭头与气泡同底色: antd 的箭头 `::before` 读的是独立变量(不跟随容器底色), 不覆盖就会
- * 在气泡边缘留一个半透明缺口。变量名由 antd 的 placementArrow 统一生成(tooltip 与
- * popover 共用), 在箭头元素上覆盖即可, 不需要提高选择器权重。
+ * 在气泡边缘留一个半透明缺口。变量名由 antd 的 placementArrow 统一生成(tooltip 专用), 在箭头元素上覆盖即可, 不需要提高选择器权重。
  */
-.price-compare-ton-bubble .ant-tooltip-arrow,
-.price-compare-ton-bubble .ant-popover-arrow {
+.price-compare-ton-bubble .ant-tooltip-arrow {
   --ant-tooltip-arrow-background-color: var(--theme-overlay-surface, #ffffff);
 }
 

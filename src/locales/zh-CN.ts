@@ -3269,7 +3269,6 @@ export const zhCN = {
       },
       columns: {
         remark: '备注',
-        tonnage: '吨位列',
         brand: '品牌',
         category: '类别',
         variety: '材质 / 规格 / 长度',
@@ -3278,20 +3277,6 @@ export const zhCN = {
         spot: '现货',
         diff: '差价',
         supplierShort: '简称',
-        purchaseOrderNo: '采购订单号',
-        purchaseOrderSupplier: '供应商',
-        purchaseOrderOrdered: '订货吨位',
-        purchaseOrderIssued: '已开吨位',
-        purchaseOrderRemaining: '剩余吨位',
-        /**
-         * 选单弹窗的额度列名: 明确写成「剩余可关联吨位」(这一行还能再挂多少吨), 不与表格列
-         * 的「剩余未开」(报单 − 已开货) 共用「剩余」二字 —— 两者分母不同, 曾让用户以为算错。
-         */
-        purchaseOrderLinkable: '剩余可关联吨位',
-        /** 吨位三列: 报单吨位(输入) / 已开货(真实入库) / 剩余未开(报单 − 已开货)。 */
-        issuedTon: '已开货',
-        unopenedTon: '剩余未开',
-        purchaseOrderStatus: '状态',
       },
       /** 右键菜单: 行操作与品牌列头操作(与可见按钮共用同一份动作) */
       contextMenu: {
@@ -3318,8 +3303,7 @@ export const zhCN = {
       /** 行级锁与工具栏「锁定规格和数量」是同一件事, 只是范围 = 一行, 文案保持同词根。 */
       lockRow: '锁定该行规格和数量',
       unlockRow: '解锁该行规格和数量',
-      lockRowHint:
-        '锁定该行规格和数量后可关联采购订单；解锁会清除已关联的采购订单',
+      lockRowHint: '锁定该行规格和数量，防止误改；解锁后可修改',
       /** 行级锁定的作用域说明（锁定该行 = 该行规格与吨位定稿）。 */
       rowLockedHint: '该行已锁定：规格与吨位已定稿，解锁后可修改',
       /** 单元格级锁定的原因说明（与单据级、行级作用域不重叠）。 */
@@ -3331,7 +3315,6 @@ export const zhCN = {
       /** 带字段名的解锁/清除可访问名：同一页面多个可锁定字段时读屏无法区分。 */
       unlockField: '解锁「{{label}}」',
       clearField: '清除「{{label}}」',
-      purchaseOrderLockFirst: '请先锁定该行再关联采购订单',
       tonPositive: '报单吨位需为正数',
       spotOutOfRange: '现货价超出合理范围（0 - {{max}}）',
       spotBetter: '现货更划算',
@@ -3385,109 +3368,6 @@ export const zhCN = {
       fillSupplierSelected: '把所选供应商填入选中的 {{count}} 行',
       fillSupplierNoChangedRows:
         '所选范围内没有本次改过现货价的行，未做任何修改（仅更新价格变动过的行）',
-      purchaseOrderLabel: '关联采购订单',
-      purchaseOrderPlaceholder: '关联采购',
-      purchaseOrderOptionTitle:
-        '{{orderNo}} · {{supplier}}（{{status}}）｜订货 {{ordered}} 吨｜剩余 {{remaining}} 吨',
-      purchaseOrderTonnageHint: '已开 {{issued}} / 剩 {{remaining}}',
-      purchaseOrderOverLimit: '（超额）',
-      purchaseOrderSavedBasis:
-        '已开货 = 关联明细行的真实入库合计（入库审核回写）；剩余未开 = 报单吨位 − 已开货；订货吨位仅作参考',
-      purchaseOrderMissing: '{{orderNo}}（订单已删除）',
-      purchaseOrderMissingHint: '关联订单已删除，请重新选择',
-      /** 吨位口径两列的短状态: 该行还没关联订单明细行, 因此没有已开/未开口径。 */
-      purchaseOrderNotLinkedShort: '未关联',
-      purchaseOrderNotLinkedHint:
-        '该行还未关联采购订单明细行；点右侧 ⓘ 选择后显示已开货与剩余未开',
-      /** 关联的明细行已不在选项里(订单被删)时的短状态。 */
-      purchaseOrderMissingShort: '已删除',
-      purchaseOrderLoadFailed:
-        '采购订单吨位加载失败，已开货/剩余未开暂不可用；不影响吨位填写与保存',
-      purchaseOrderIssuedShort: '已开货 {{issued}}',
-      /**
-       * 欠额提示: 本行报单吨位 − 已关联明细行的分配量合计(欠额合法, 只提示不阻断保存)。
-       * 与「Σ订货量」无关 —— 那个量用于遮蔽判定。
-       */
-      purchaseOrderUnallocatedTon: '还有 {{ton}} 吨未落到订单上',
-      /**
-       * 吨位格可见文案: 剩余未开 = 本单据该明细行报单吨位 − 已开货, 直接给"还差多少没开货"。
-       * 已开货超过本单报单量时原样显示负值并转警告色; 完整口径在悬浮明细里。
-       */
-      purchaseOrderRemainingShort: '剩余 {{weight}}',
-      /** 悬浮明细里的本单据口径: 该订单明细行在本单据的报单吨位合计。 */
-      purchaseOrderSheetReported: '本单该明细行报单',
-      /** 已开货的来源: 服务端 actualWeightTon(入库审核回写, Σ生效入库单过磅重量)。 */
-      purchaseOrderIssuedActual: '真实已开货',
-      /**
-       * ⓘ 弹层里逐条明细的「本单该行已开货」: 已按本单分摊量封顶, 与上面的「真实已开货」
-       * (整条订单行实收) 不是同一个量。两个词必须分开, 否则用户会以为其中一个是错的。
-       */
-      purchaseOrderLineShare: '本单该行已开货（按分摊封顶）',
-      /** 采购订单该明细行的订货吨位(参考值, 不参与剩余未开的减法)。 */
-      purchaseOrderSelfAllocated: '订货吨位（参考）',
-      purchaseOrderDetail: '采购订单明细',
-      /**
-       * 订单行「整行实收」: 与「已开货」(按本单分摊量封顶) 不同时说明差额去向 ——
-       * 一单货覆盖多个批次时, 差额属于同一订单行上的其它单据。
-       */
-      purchaseOrderLineActual: '订单行整行实收（含其它单据分摊）',
-      /** 选单弹层里可手动改写的「分配吨位」列。 */
-      purchaseOrderPickAllocate: '分配吨位',
-      purchaseOrderPickAllocateHint:
-        '本单据在这一行上开多少吨；可按批次手动调整，合计不得超过本行报单吨位',
-      purchaseOrderPickAllocatedTotal:
-        '已分配 {{allocated}} / 报单 {{reported}} 吨',
-      purchaseOrderPickOverAllocated:
-        '分配合计 {{allocated}} 吨超过本行报单吨位 {{reported}} 吨，请调小后再确认',
-      purchaseOrderUnlinked: '未关联采购订单',
-      /**
-       * 已开超短文案: 已开货超过本单报单吨位(订单行被别人共享或本单只报一部分时必然出现)。
-       * 差额 = 已开货合计 − 本单报单吨位(与 remainingTonDisplay 同源)。
-       */
-      purchaseOrderOverIssuedShort: '已开超 {{over}} 吨',
-      /** 已开超说明(唯一来源): 已开货、本单报单吨位、差额三个数一次摆清。 */
-      purchaseOrderOverShippedDetail:
-        '已开货 {{shipped}} 吨 > 本单报单吨位 {{reported}} 吨 ⇒ 超出 {{over}} 吨（该明细行的到货已覆盖本单报的量）',
-      /** 已关联订单明细行但报单吨位还没填: 未开吨位没有可减的基数。 */
-      purchaseOrderMissingTonShort: '未填吨位',
-      purchaseOrderMissingTonHint:
-        '请先填写报单吨位并锁定该行；锁定后可点右侧 ⓘ 关联订单明细行',
-      purchaseOrderPickerOpen: '选择采购订单',
-      purchaseOrderPickerTitle: '选择采购订单规格行',
-      purchaseOrderPickerSearch: '搜索单号、供应商或规格',
-      purchaseOrderPickerEmpty: '暂无可选采购订单',
-      /** 有关键字命中但全部"已关联完"被隐藏时的空态, 引导用户用开关查看。 */
-      purchaseOrderPickerEmptyAllFullyLinked:
-        '没有还有剩余可关联吨位的采购订单，可勾选上方开关查看已关联完的明细',
-      purchaseOrderPickerClear: '清除关联',
-      purchaseOrderPickerClearHint: '解除本行与采购订单的关联',
-      purchaseOrderPickerHint:
-        '点击一行即选中并关联（键盘：Tab 到行后按回车）；也可勾选多行后点「确认」，按勾选顺序一次关联多张明细行并按订货量依次分配吨位。已开吨位按已保存报单统计。',
-      /** 多选列: 勾选列标题与"确认（n）"按钮(按勾选顺序关联多张明细行)。 */
-      purchaseOrderPickerChoose: '选择',
-      purchaseOrderPickerConfirm: '确认（{{count}}）',
-      /** 默认隐藏"剩余可关联吨位为 0"的明细行, 开关只在本弹窗内生效。 */
-      purchaseOrderPickerShowOtherVarieties:
-        '显示材质/规格不一致的行（{{count}}）',
-      purchaseOrderPickerEmptyVariety:
-        '没有与当前行材质 / 规格 / 长度一致的采购订单明细行，可勾选上方开关查看其他规格',
-      purchaseOrderPickerShowFullyLinked: '显示已关联完的订单（{{count}}）',
-      /** 剩余为 0 的行在开关打开后的标记: 可见但不可选。 */
-      purchaseOrderPickerFullyLinkedTag: '已关联完',
-      /** 人工标记「已开完」的行默认隐藏; 开关只在本弹窗内生效。 */
-      purchaseOrderPickerShowIssuedDone: '显示已开完的订单（{{count}}）',
-      /** 「已开完」开关列名(人工裁定, 与吨位无关)。 */
-      purchaseOrderPickerIssuedDone: '已开完',
-      /** 标记/取消标记失败: 开关已回滚, 必须说出来而不是静默。 */
-      purchaseOrderPickerIssuedDoneFailed: '「已开完」标记失败，请重试',
-      /** 剩余为 0 且本单据已用掉吨位时的悬浮说明。 */
-      purchaseOrderPickerFullyLinkedMine: '本单据已关联 {{ton}} 吨',
-      purchaseOrderPickerFullyLinkedHint:
-        '剩余可关联吨位为 0，已禁用选择；可继续查看但不占用额度',
-      /** ⓘ 弹层多行关联: 分区标题 / 单条"本次开出" / 合计标题。 */
-      purchaseOrderLinkedLines: '关联明细行（{{count}} 条）',
-      purchaseOrderLinkedTotal: '关联合计',
-      purchaseOrderAllocatedTon: '本次开出',
     },
     config: {
       title: '项目配置',

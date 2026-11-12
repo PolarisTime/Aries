@@ -223,7 +223,6 @@ export const ENDPOINTS = {
     `/quote-sheets/${pathSegment(id)}/item-order`,
   QUOTE_SHEET_EDIT_LOCK: (id: string | number) =>
     `/quote-sheets/${pathSegment(id)}/edit-locks`,
-  QUOTE_SHEET_PURCHASE_ORDER_TONNAGES: '/quote-sheets/purchase-order-tonnages',
   QUOTE_PROJECT_CONFIGS: '/quote-project-configs',
   QUOTE_PROJECT_CONFIG: (projectId: string | number) =>
     `/quote-project-configs/${pathSegment(projectId)}`,
