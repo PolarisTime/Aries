@@ -21,6 +21,7 @@
     "audit:security": "pnpm audit --registry=https://registry.npmjs.org/",
     "lint": "run-s lint:biome eslint",
     "lint:biome": "biome check .",
+    "deadcode:check": "node scripts/dead-code-check.mjs",
     "lint:fix": "biome check . --write",
     "format": "biome format . --write",
     "test": "vitest run",
