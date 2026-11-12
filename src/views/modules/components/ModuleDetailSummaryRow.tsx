@@ -1,6 +1,7 @@
-import { Table, type TableColumnsType } from 'antd'
+import type { TableColumnsType } from 'antd'
 import type { Key } from 'react'
 import type { ModuleDetailSummaryCell } from '@/types/module-page'
+import { SummaryTextRow } from './SummaryTextRow'
 
 /**
  * 列 `align` 的取值**直接取自 antd 列类型**，不在这里手写子集。
@@ -127,30 +128,30 @@ export function ModuleDetailSummaryRow({
   columns,
   cells,
 }: ModuleDetailSummaryRowProps) {
+  /*
+   * 用公共层 `SummaryTextRow` 渲染：跨列单元格、右对齐、分隔符、空表策略都在那里，
+   * 编辑器草稿合计走的是同一个组件。这里只负责把「单元格 → 段落」翻译一遍：
+   * 列名当标签，`dataIndex` 对不上的（如合计标签 `#`）只输出值。
+   */
   const parts = resolveSummarySlots(columns, cells)
     .map(({ cell, column }) => {
       if (!cell || cell.value === null || cell.value === undefined) return null
-      const value = String(cell.value)
-      /*
-       * 只有「单元格与列按 dataIndex 精确对上」才加列名标签：合计标签
-       * （`dataIndex: '#'` 的「合计（N 行）」）会被补到最左空槽，那一槽的列名是
-       * 「仓库名称」之类，加上去会读成「仓库名称 合计（4 行）」。
-       */
       const matched =
         cell.dataIndex !== undefined && column?.dataIndex === cell.dataIndex
-      const title =
-        matched && typeof column?.title === 'string' ? column.title.trim() : ''
-      return title ? `${title} ${value}` : value
+      const label =
+        matched && typeof column?.title === 'string'
+          ? column.title.trim()
+          : undefined
+      return { ...(label ? { label } : {}), value: String(cell.value) }
     })
-    .filter((part): part is string => Boolean(part))
-
-  if (parts.length === 0) return null
+    .filter((part): part is { label?: string; value: string } => Boolean(part))
 
   return (
-    <Table.Summary.Row className="module-detail-summary-row">
-      <Table.Summary.Cell index={0} colSpan={Math.max(columns.length, 1)}>
-        <div className="module-detail-summary-text">{parts.join(' · ')}</div>
-      </Table.Summary.Cell>
-    </Table.Summary.Row>
+    <SummaryTextRow
+      colSpan={columns.length}
+      parts={parts}
+      rowClassName="module-detail-summary-row"
+      textClassName="module-detail-summary-text"
+    />
   )
 }

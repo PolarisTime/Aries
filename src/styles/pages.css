@@ -109,18 +109,17 @@
 }
 
 /*
- * 详情面明细合计：与编辑器「草稿合计」同一形态（一行文字、右端对齐、等宽数字）。
- * 逐列铺开的合计在十几列的表里会把数字拉散，看起来像多了一行数据。
+ * 明细合计文字块的**唯一实现**（`SummaryTextRow` 渲染）。
+ *
+ * <p>编辑器草稿合计与只读详情面合计共用这一份：一行文字、右端对齐、等宽数字。
+ * 逐列铺开的合计在十几列的表里会把数字拉散、看起来像多了一行数据。</p>
+ *
+ * <p>`module-editor-summary-text` 与 `module-detail-summary-text` 是改造前的两个类名，
+ * 保留成同一份声明（调用方仍在传），下一轮可以删掉。</p>
  */
+.module-summary-text,
+.module-editor-summary-text,
 .module-detail-summary-text {
-  padding: var(--space-xs) var(--space-sm);
-  text-align: right;
-  color: var(--theme-text-muted);
-  font-size: var(--font-size-sm);
-  font-variant-numeric: tabular-nums;
-}
-
-.module-editor-summary-text {
   padding: var(--space-xs) var(--space-sm);
   text-align: right;
   color: var(--theme-text-muted);

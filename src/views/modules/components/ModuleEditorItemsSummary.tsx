@@ -1,10 +1,10 @@
-import { Table } from 'antd'
 import { type Key, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { computeDraftTotals } from '@/module-system/editor/module-editor-draft'
 import type { ModuleLineItem } from '@/types/module-page'
 import { formatAmount, formatWeight } from '@/utils/formatters'
 import { sumLineItemsBy } from '@/views/modules/module-editor-workspace-support'
+import { SummaryTextRow } from './SummaryTextRow'
 
 /**
  * 编辑器明细表底部的「草稿实时合计」。
@@ -154,12 +154,11 @@ export function ModuleEditorItemsSummary({
       )
 
   return (
-    <Table.Summary>
-      <Table.Summary.Row className="module-editor-summary-text-row">
-        <Table.Summary.Cell index={0} colSpan={Math.max(colSpan, 1)}>
-          <div className="module-editor-summary-text">{text}</div>
-        </Table.Summary.Cell>
-      </Table.Summary.Row>
-    </Table.Summary>
+    <SummaryTextRow
+      colSpan={colSpan}
+      parts={[{ value: text }]}
+      rowClassName="module-editor-summary-text-row"
+      textClassName="module-editor-summary-text"
+    />
   )
 }
