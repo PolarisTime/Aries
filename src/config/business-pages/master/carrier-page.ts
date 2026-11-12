@@ -33,6 +33,8 @@ export const carriersPageConfig: ModulePageConfig = {
       title: i18next.t('modules.pages.carrier.colCarrierName'),
       dataIndex: 'carrierName',
       width: 180,
+      /* 弹性列：宽屏时由「名称」吃掉富余，其余列宽度不变（见 distributeSurplusWidth） */
+      flex: 1,
     },
     {
       title: i18next.t('modules.pages.carrier.colContactName'),
