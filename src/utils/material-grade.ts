@@ -8,10 +8,7 @@
  * <p>只认"补 E"这一种关系(不做 400→500、400→300 之类的跨强度替换): 跨强度是改设计强度,
  * 属另一件事, 不能由取价逻辑替用户决定。返回 null 表示该材质没有可替代的抗震牌号。</p>
  *
- * <p><b>为什么放在 utils 而不是某个 view</b>: 这条规则同时被「销售订单网价取价」
- * (`views/modules/net-price-fill`) 与「报单比价现货同步」(`views/price-compare/spot-sync`)
- * 使用。两处各写一份"补 E"的正则就会分叉 —— 一边认 HRBF、另一边不认, 或者大小写处理不同,
- * 结果同一行在"取价"里能补到、在"同步"里补不到, 正是实测反馈的现象。</p>
+ * <p><b>为什么放在 utils 而不是某个 view</b>: 这条规则同时被「销售订单网价取价」\n * (`views/modules/net-price-fill`) 与「报单比价从供应商价格表导入」\n * (`views/price-compare/spot-from-price-list`) 使用。两处各写一份"补 E"的正则就会分叉 ——\n * 一边认 HRBF、另一边不认, 或者大小写处理不同, 结果同一行在"取价"里能补到、在"导入"里补不到。</p>
  */
 export function substituteMaterialOf(material: unknown): string | null {
   const text = String(material ?? '')

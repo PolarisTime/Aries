@@ -3009,46 +3009,6 @@ export const zhCN = {
       shortcutDelete: 'Delete：清空选区内已有价格',
       shortcutClear: 'Esc：放弃本格正在输入的算式',
     },
-    spotSync: {
-      /*
-       * 三个作用域合并进一个下拉后的文案。
-       * 旧文案「当前批次内同步 / 项目级同步 / 全部同步」的问题：都没说同步什么、
-       * 「项目级」是形容词不是动作对象、「全部」到底是全部批次还是全部项目只能看 tooltip。
-       * 现在由「动作名 + 范围标题 + 一句话说明」三段共同表达，范围标题直接写覆盖层级。
-       */
-      action: '同步现货价',
-      actionA11y: '同步现货价，选择同步范围',
-      sourceHint: '以当前批次「{{sheet}}」为准',
-      scope: {
-        sheet: {
-          title: '仅本批次内的其它行',
-          desc: '同商品同品牌的行补齐为当前行的价格，不碰别的批次',
-        },
-        project: {
-          title: '本项目下的所有批次',
-          desc: '写到本项目全部批次（含当前批次），其它项目的批次不动',
-        },
-        all: {
-          title: '全部项目的所有批次',
-          desc: '跨项目写入：所有项目的全部批次都会被覆盖',
-        },
-      },
-      applied: '已应用到 {{batches}} 个批次、共 {{cells}} 处价格，正在保存',
-      /**
-       * 按抗震牌号代取: 本行报 HRB400, 现货只有 HRB400E, 同步时借用 400E 的价。
-       * 计价口径被替换必须显式告知(与网价取价的告知口径一致), 不能悄悄换掉。
-       */
-      substituted:
-        '其中 {{count}} 处按抗震牌号代取（如 HRB400 借用 HRB400E 的价）',
-      confirmTitle: '确认同步现货价',
-      confirmSummary:
-        '将以「{{sheet}}」为准，更新 {{batches}} 个批次、共 {{cells}} 处价格：其中 {{fill}} 处原本为空，{{overwrite}} 处会覆盖已有值。',
-      impactLine:
-        '{{sheet}}：更新 {{cells}} 处（填补 {{fill}} 处，覆盖 {{overwrite}} 处）',
-      skipped: '已跳过 {{count}} 个批次（他人正在编辑）：{{names}}',
-      confirmOk: '覆盖并同步',
-      nothingToSync: '没有需要同步的内容',
-    },
     view: {
       title: '报单比价',
       watermark: '内部资料 · 报单比价',

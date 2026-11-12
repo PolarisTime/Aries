@@ -3024,38 +3024,6 @@ export const enUS = {
       shortcutDelete: 'Delete: clear existing prices in the selection',
       shortcutClear: 'Esc: discard the formula being typed in this cell',
     },
-    spotSync: {
-      action: 'Sync spot prices',
-      actionA11y: 'Sync spot prices, choose scope',
-      sourceHint: 'Source of truth: current batch "{{sheet}}"',
-      scope: {
-        sheet: {
-          title: 'Other rows in this batch only',
-          desc: 'Fill same-product rows in this batch; other batches untouched',
-        },
-        project: {
-          title: 'All batches in this project',
-          desc: 'Write to every batch of this project (including this one); other projects untouched',
-        },
-        all: {
-          title: 'All batches in all projects',
-          desc: 'Cross-project: every batch of every project will be overwritten',
-        },
-      },
-      applied:
-        'Applied to {{batches}} batch(es), {{cells}} price cell(s); saving now',
-      substituted:
-        '{{count}} of them substituted by seismic grade (e.g. HRB400 borrowing the HRB400E price)',
-      confirmTitle: 'Confirm spot price sync',
-      confirmSummary:
-        'Using "{{sheet}}" as the source, {{batches}} batch(es) and {{cells}} price cell(s) will be updated: {{fill}} filled in and {{overwrite}} overwriting existing values.',
-      impactLine:
-        '{{sheet}}: {{cells}} cell(s) updated ({{fill}} filled, {{overwrite}} overwritten)',
-      skipped:
-        '{{count}} batch(es) skipped (being edited by someone else): {{names}}',
-      confirmOk: 'Overwrite and sync',
-      nothingToSync: 'Nothing to sync',
-    },
     view: {
       title: 'Order Price Comparison',
       watermark: 'INTERNAL · Order Price Comparison',
