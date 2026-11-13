@@ -425,8 +425,11 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
    * 盘螺不分定尺、直条分 9米/12米。混在一张表里时盘螺行在 9米/12米 上永远是空格，
    * 表头宽度还要按两类定尺的并集算。拆成两张表后，每张表只保留自己用得到的定尺列。
    */
-  /** 标签页管理（antd：只有 `editable-card` 支持添加与关闭，溢出用内置 more 折叠）。 */
-  it('供应商标签页可关闭，添加入口是可搜索的选择器', async () => {
+  /**
+   * 供应商切换：第二行「带 × 的页签」已删除，改成面包屑 + 可搜索选择器。
+   * 一屏只维护一家供应商，切换前若有草稿由 switchSupplier 弹确认。
+   */
+  it('面包屑显示当前供应商，右侧是可搜索的切换器，不再有多开页签', async () => {
     supplierApi.fetchSupplierOptions.mockResolvedValue([
       SUPPLIER,
       { ...SUPPLIER, id: 's2', value: 's2', label: '杭州中金钢铁有限公司' },
@@ -434,15 +437,24 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     await render()
 
-    const tab = () =>
-      document.querySelector('.supplier-price-supplier-tabs .ant-tabs-tab')
-    expect(tab()?.textContent).toContain('浙江铁都钢材有限公司')
-    expect(tab()?.querySelector('.ant-tabs-tab-remove')).not.toBeNull()
-    // 添加是 Select（可搜索），不是把四十多家铺成菜单
+    const breadcrumb = container.querySelector('.supplier-price-breadcrumb-bar')
+    expect(breadcrumb?.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.breadcrumbRoot'),
+    )
+    expect(breadcrumb?.textContent).toContain('浙江铁都钢材有限公司')
+    // 另一家供应商不在面包屑里（只有当前这家）
+    expect(breadcrumb?.textContent).not.toContain('杭州中金钢铁有限公司')
+
+    // 切换器：可搜索的 Select（按 aria-label 定位，不按顺序）
     expect(
-      document.querySelector('.supplier-price-supplier-tabs .ant-select'),
+      container.querySelector(
+        '.supplier-price-supplier-switch [aria-label="切换供应商"]',
+      ) ?? container.querySelector('[aria-label="切换供应商"]'),
     ).not.toBeNull()
-    expect(container.textContent).not.toContain('杭州中金钢铁有限公司')
+
+    // 不再有带 × 的供应商页签；材质页签是可关闭的例外（line 型，没有 remove icon）
+    expect(container.querySelector('.supplier-price-supplier-tabs')).toBeNull()
+    expect(container.querySelector('.ant-tabs-tab-remove')).toBeNull()
   })
 
   /** 回归：只属于不成列品牌（如商品资料 brand='圆钢'）的规格不该变成空行。 */
