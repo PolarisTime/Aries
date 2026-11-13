@@ -296,6 +296,31 @@ function SheetCell({
    */
   const handledTextRef = useRef<string | null>(null)
   /*
+   * 错误反馈：算式求值失败时给这一格红色闪一下（同时父级已弹 message.warning）。
+   *
+   * <p>只闪 900ms：用户看到"这一格出错了"，改对后红色消失，不需要常驻错误态
+   * （常驻的话每格都要带红框，整张表会变成报错墙）。</p>
+   */
+  const [errorFlash, setErrorFlash] = useState(false)
+  const errorFlashTimerRef = useRef<number | null>(null)
+  const flashError = () => {
+    if (errorFlashTimerRef.current !== null) {
+      window.clearTimeout(errorFlashTimerRef.current)
+    }
+    setErrorFlash(true)
+    errorFlashTimerRef.current = window.setTimeout(() => {
+      errorFlashTimerRef.current = null
+      setErrorFlash(false)
+    }, 900)
+  }
+  useEffect(() => {
+    return () => {
+      if (errorFlashTimerRef.current !== null) {
+        window.clearTimeout(errorFlashTimerRef.current)
+      }
+    }
+  }, [])
+  /*
    * 批量操作（清空 / 填充 / 批量调价）改的是外面这格的值：本格若还留着半截算式文本，
    * 界面就会显示一个已经不成立的值。用渲染期状态校正（React 文档的
    * "adjusting state when a prop changes" 写法）而不是 effect，免得先画一帧旧文本。
@@ -342,7 +367,7 @@ function SheetCell({
     if (text === null || isPlainPriceText(text)) return
     if (handledTextRef.current === text) return
     handledTextRef.current = text
-    onSubmitFormula(text)
+    if (onSubmitFormula(text) === null) flashError()
     setText(null)
   }
 
@@ -354,7 +379,8 @@ function SheetCell({
         if (onSubmitFormula(text) !== null) {
           setText(null)
         } else {
-          // 已经提示过一次，离开格子时不再重复报警
+          // 已提示过一次，离开格子时不再重复报警；红色闪一下表示这一格没提交成功
+          flashError()
           handledTextRef.current = text
         }
         return
@@ -390,8 +416,11 @@ function SheetCell({
 
   const input = (
     <Input
+      aria-invalid={errorFlash || undefined}
       aria-label={ariaLabel}
-      className={className}
+      className={
+        errorFlash ? `${className} supplier-price-cell-error` : className
+      }
       data-editing={text === null ? undefined : 'true'}
       data-grid-cell={cellId}
       disabled={disabled}
@@ -458,6 +487,38 @@ export function SupplierQuoteBoard() {
     {},
   )
   const [saveState, setSaveState] = useState<Record<string, SaveState>>({})
+  /**
+   * 刚保存成功的格子（品牌 + 草稿键集合），用于给单元格和工具栏一个短促的成功反馈。
+   *
+   * <p>自动保存是静默的：输入后 800ms 落库，界面没有任何变化，用户无法确认"到底存没存"。
+   * 保存成功时把本次真正写库的格子标绿闪一下、工具栏显示「已保存」，约 900ms 后自动消失；
+   * 只做视觉提示，不阻塞输入，也不再往表头塞常驻状态点。</p>
+   */
+  const [savedFlash, setSavedFlash] = useState<{
+    brand: string
+    keys: readonly string[]
+  } | null>(null)
+  const savedFlashTimerRef = useRef<number | null>(null)
+  const flashSavedCells = useCallback(
+    (brand: string, keys: readonly string[]) => {
+      if (savedFlashTimerRef.current !== null) {
+        window.clearTimeout(savedFlashTimerRef.current)
+      }
+      setSavedFlash({ brand, keys })
+      savedFlashTimerRef.current = window.setTimeout(() => {
+        savedFlashTimerRef.current = null
+        setSavedFlash(null)
+      }, 900)
+    },
+    [],
+  )
+  useEffect(() => {
+    return () => {
+      if (savedFlashTimerRef.current !== null) {
+        window.clearTimeout(savedFlashTimerRef.current)
+      }
+    }
+  }, [])
   const [history, setHistory] = useState<DraftHistory>(EMPTY_HISTORY)
   const [onlyUnpriced, setOnlyUnpriced] = useState(false)
   /** 本次进页是否从 localStorage 恢复了上次未保存的草稿（恢复后提示「已恢复 / 放弃」）。 */
@@ -945,6 +1006,19 @@ export function SupplierQuoteBoard() {
         commitDrafts(next)
       }
       setSaveState((current) => ({ ...current, [brandName]: 'saved' }))
+      /*
+       * 保存成功的即时反馈只标「这次真的变了」的格子（草稿值与已落库值不同），
+       * 不是整列都闪 —— 否则一次保存会把几十个没改过的价格一起点亮。
+       */
+      flashSavedCells(
+        brandName,
+        Object.entries(snapshot ?? {})
+          .filter(
+            ([key, price]) =>
+              price !== null && price !== serverCells.get(key)?.price,
+          )
+          .map(([key]) => key),
+      )
     } catch {
       // 失败保留草稿：用户不必重敲，点列头圆点即可重试
       setSaveState((current) => ({ ...current, [brandName]: 'error' }))
@@ -1915,6 +1989,14 @@ export function SupplierQuoteBoard() {
               const leaf = leafOfSpec(column, row.spec)
               const rowKey = quoteRowKey(leaf)
               const value = cellValueOfLeaf(brandName, leaf)
+              /*
+               * 交互反馈：草稿与已落库值不一致 = 这一格有未保存改动（左侧琥珀细条）；
+               * 刚保存成功 = 绿色闪一下（`savedFlash` 由 saveBrand 成功后派发）。
+               */
+              const dirty = value !== (serverPriceOf(brandName, rowKey) ?? null)
+              const flashing =
+                savedFlash?.brand === brandName &&
+                savedFlash.keys.includes(rowKey)
               const rowIndex = sheet.indexBySpec.get(row.spec) ?? -1
               const isSelected =
                 selectedBounds !== null &&
@@ -1925,6 +2007,8 @@ export function SupplierQuoteBoard() {
               const className = [
                 'supplier-price-sheet-input',
                 isSelected ? 'supplier-price-cell-selected' : '',
+                dirty ? 'supplier-price-cell-dirty' : '',
+                flashing ? 'supplier-price-cell-saved' : '',
               ]
                 .filter(Boolean)
                 .join(' ')
@@ -2046,6 +2130,11 @@ export function SupplierQuoteBoard() {
               t('priceCompare.supplierPrice.neverEdited')}
           </Typography.Text>
         </Tooltip>
+        {savedFlash ? (
+          <Typography.Text className="supplier-price-saved-hint" type="success">
+            {t('priceCompare.supplierPrice.saved')}
+          </Typography.Text>
+        ) : null}
         <Checkbox
           checked={onlyUnpriced}
           onChange={(event) => {

@@ -2894,6 +2894,7 @@ export const enUS = {
       lastEdited: 'Last edited',
       lastEditedHint:
         'Recorded automatically when a (supplier, brand) price list is saved as a whole; no manual date entry',
+      saved: 'Saved',
       neverEdited: 'Not saved yet',
       notQuotedHint:
         'This supplier has no price list for this brand yet; it is created on the first save',

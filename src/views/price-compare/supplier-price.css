@@ -471,6 +471,10 @@
   --supplier-price-na-text: #cbd3df;
   --supplier-price-sel-bg: #e8f2ff;
   --supplier-price-sel-border: #7cb0ff;
+  /* 交互反馈色：待保存 / 保存成功 / 输入错误 */
+  --supplier-price-dirty: #faad14;
+  --supplier-price-saved: #52c41a;
+  --supplier-price-error: #ff4d4f;
 }
 
 /*
@@ -639,6 +643,78 @@
 .supplier-price-board
 .ant-input.supplier-price-sheet-input.supplier-price-cell-selected:focus {
   box-shadow: inset 0 0 0 2px var(--ant-color-primary, #1677ff);
+}
+
+/*
+ * 输入价格的交互反馈（自动保存是静默的，必须给用户一个肉眼可见的落点）：
+ *
+ * 1. 有未保存改动 → 输入框左侧 2px 琥珀细条；保存成功后草稿清掉，细条自动消失；
+ * 2. 保存成功 → 本次真正写库的格子浅绿闪一下 + 工具栏短暂显示「已保存」；
+ * 3. 算式求值失败 → 该格红色闪一下（同时 message.warning 说明原因）。
+ *
+ * 全部是短促动画/细条，不占表头、不弹常驻提示，也不阻塞继续输入。
+ */
+/*
+ * 未保存改动画在**单元格（td）左侧**而不是输入框上：输入框聚焦时是 2px 内描边，
+ * 画在框上会被聚焦环盖住；td 边缘比输入框靠外，聚焦时也始终看得见。
+ * 用 :has 由格子上的状态类驱动，避免再往列定义里复制一遍「草稿是否等于已落库值」的判断。
+ */
+.supplier-price-board
+  .ant-table-tbody
+  > tr
+  > td:has(.supplier-price-cell-dirty) {
+  box-shadow: inset 2px 0 0 var(--supplier-price-dirty, #faad14);
+}
+
+@keyframes supplier-price-saved-flash {
+  0% {
+    background-color: #ecfdf3;
+    box-shadow: inset 0 0 0 1px var(--supplier-price-saved, #52c41a);
+  }
+
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.supplier-price-board
+  .ant-input.supplier-price-sheet-input.supplier-price-cell-saved {
+  animation: supplier-price-saved-flash 900ms ease-out;
+}
+
+@keyframes supplier-price-error-flash {
+  0% {
+    background-color: #fff1f0;
+    box-shadow: inset 0 0 0 2px var(--supplier-price-error, #ff4d4f);
+  }
+
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.supplier-price-board
+  .ant-input.supplier-price-sheet-input.supplier-price-cell-error {
+  animation: supplier-price-error-flash 900ms ease-out;
+}
+
+/* 工具栏「已保存」：淡入 + 轻微上移，出现即说明这批改动已落库 */
+.supplier-price-saved-hint {
+  animation: supplier-price-saved-hint 900ms ease-out;
+}
+
+@keyframes supplier-price-saved-hint {
+  0% {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* 叶子表头（定尺）：单行居中，文字超宽省略 */

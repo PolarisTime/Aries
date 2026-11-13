@@ -599,6 +599,35 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     )
   })
 
+  it('输入价格有即时反馈：未保存显示琥珀条，保存成功后提示「已保存」', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+
+    await typePrice('中天 HRB400E 12 9米', '3380')
+
+    // 草稿与服务端值不同 → 这一格有未保存改动（左琥珀条）
+    expect(cellInput('中天 HRB400E 12 9米')?.className).toContain(
+      'supplier-price-cell-dirty',
+    )
+
+    await flushAutosave()
+
+    // 保存成功后草稿清掉：琥珀条消失，并出现「已保存」提示 + 该格绿色闪一下
+    await waitFor(() =>
+      Boolean(
+        !cellInput('中天 HRB400E 12 9米')?.className.includes(
+          'supplier-price-cell-dirty',
+        ),
+      ),
+    )
+    expect(cellInput('中天 HRB400E 12 9米')?.className).toContain(
+      'supplier-price-cell-saved',
+    )
+    expect(container.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.saved'),
+    )
+  })
+
   it('只读账号不可编辑，只读提示走 message 而不是页内文字', async () => {
     permissions.canWrite = false
     await render()

@@ -2886,6 +2886,7 @@ export const zhCN = {
       lastEdited: '最后编辑',
       lastEditedHint:
         '价格表按（供应商, 品牌）整列保存时自动记录最后编辑时间，不需要手工选日期',
+      saved: '已保存',
       neverEdited: '尚未保存',
       notQuotedHint: '该供应商这个品牌还没有价格表，首次录入并保存后自动创建',
       lengthUnavailable: '商品资料里该品牌没有 {{length}} 定尺，这一列不能填',
