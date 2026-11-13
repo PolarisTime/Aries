@@ -120,6 +120,11 @@ export function useModuleEditorItemColumns({
     `${config?.key ?? moduleKey}:editor-items`,
     defaultHiddenItemColumnKeys,
     totalItemColumnCount,
+    /*
+     * 当前明细列 key（`dataIndex`）：用于识别「保存的列顺序引用了已不存在的列」。
+     * 物流单等模块调整过 include 后，旧顺序会把仍在的列顶到前面，看起来就是顺序乱了。
+     */
+    config.itemColumns?.map((column) => String(column.dataIndex ?? '')),
   )
   const {
     handleItemInputChange,

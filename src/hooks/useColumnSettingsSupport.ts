@@ -66,6 +66,28 @@ function toColumnSizesState(settings: ListColumnSettings | null) {
   return settings?.columnSizes ?? {}
 }
 
+/**
+ * 保存的列顺序是否「过期」：引用了当前列定义里已经不存在的列。
+ *
+ * <p>为什么必须判：`orderedKeys` 是**绝对顺序**，TanStack 会按它把列往前排、
+ * 没列进去的列再按定义顺序追加。一旦某次改动调整了列集合（删列、换列、改 include），
+ * 旧顺序里留下「已不存在的 key + 仍在的 key」，在仍的列就会保持**旧的相对位置**被推到
+ * 前面 —— 表现就是「列顺序莫名其妙乱了」，而且用户自己怎么拖都对不齐。
+ * 实测案例：物流单明细把 `materialCode`/`projectName`/`materialName` 从列集合里移除后，
+ * 旧顺序把 `仓库/品牌/类别` 甩到了「重量」后面。</p>
+ *
+ * <p>判定口径：只要有一个 key 找不到，就认为整份顺序来自旧列结构，退回默认顺序 ——
+ * 部分复用旧顺序只会得到「半新半旧」的排序，比退回默认更难解释。</p>
+ */
+function hasStaleOrderedKeys(
+  orderedKeys: string[] | undefined,
+  columnKeys: readonly string[] | undefined,
+): boolean {
+  if (!orderedKeys?.length || !columnKeys?.length) return false
+  const validKeys = new Set(columnKeys)
+  return orderedKeys.some((key) => !validKeys.has(key))
+}
+
 function hasAbnormalHiddenKeys(
   hiddenKeys: string[],
   totalColumnCount: number,
@@ -87,6 +109,7 @@ function resolveInitialSettings(
   userKey: string,
   defaultSettings: ListColumnSettings | null,
   totalColumnCount: number,
+  columnKeys?: readonly string[],
 ): ResolvedInitialSettings {
   // config 未就绪时跳过本地存储读取，避免应用旧页面的列设置
   if (totalColumnCount <= 0) {
@@ -95,6 +118,28 @@ function resolveInitialSettings(
   const saved = getListColumnSettings(pageKey, userKey)
   if (!saved) {
     return { settings: defaultSettings, resetByAbnormalHidden: false }
+  }
+  /*
+   * 陈旧顺序优先判：它直接把列排错位，比「隐藏比例异常」更常发生
+   *（每次调整某个模块的列集合都会触发一次）。只清 `orderedKeys`，保留用户的显隐偏好 ——
+   * 顺序退默认、隐藏关系仍是用户自己的选择。
+   */
+  if (hasStaleOrderedKeys(saved.orderedKeys, columnKeys)) {
+    logger.warn(
+      `Column settings for "${pageKey}" has stale orderedKeys (columns changed), resetting order to default`,
+    )
+    setListColumnSettings(
+      pageKey,
+      { orderedKeys: [], hiddenKeys: saved.hiddenKeys },
+      userKey,
+    )
+    return {
+      settings: {
+        ...saved,
+        orderedKeys: [],
+      },
+      resetByAbnormalHidden: false,
+    }
   }
   if (hasAbnormalHiddenKeys(saved.hiddenKeys, totalColumnCount)) {
     logger.warn(
@@ -110,17 +155,30 @@ export function useColumnSettingsSupport(
   pageKey: string,
   defaultHiddenKeys?: string[],
   totalColumnCount = 10,
+  /**
+   * 当前列定义里的全部列 key。
+   *
+   * <p>用于识别「保存的列顺序已过期」（见 {@link hasStaleOrderedKeys}）。不传则跳过这项校验，
+   * 行为与改造前完全一致 —— 便于逐个页面接入。</p>
+   */
+  columnKeys?: readonly string[],
 ) {
   const { t } = useTranslation()
   const user = useAuthStore((state) => state.user)
   const userKey = String(user?.id || user?.loginName || 'anonymous').trim()
   /** 异常隐藏比例重置只提示一次(与 syncWarningShownRef 同一模式) */
   const abnormalResetWarningShownRef = useRef(false)
+  /*
+   * `columnKeys` 的稳定签名：调用方通常内联 `columns.map(...)`，每次渲染都是新数组。
+   * 直接进 effect 依赖会导致每渲染都重新拉一次远端设置（并可能循环），因此只比内容。
+   */
+  const columnKeysSignature = columnKeys?.join('\u0000') ?? ''
   const resolvedInitialSettings = resolveInitialSettings(
     pageKey,
     userKey,
     buildDefaultSettings(defaultHiddenKeys),
     totalColumnCount,
+    columnKeys,
   )
   const initialSettings = resolvedInitialSettings.settings
   /**
@@ -184,6 +242,44 @@ export function useColumnSettingsSupport(
         remotePagesRef.current = remote?.pages || {}
         const remoteSettings = remote?.pages?.[pageKey] || null
         if (remoteSettings) {
+          /*
+           * 远端也可能存着旧列结构下的顺序（同一账号在多台设备/多个版本用过）。
+           * 处理与本地一致：只清顺序、保留显隐；同步回存，避免每次加载都重算。
+           */
+          if (hasStaleOrderedKeys(remoteSettings.orderedKeys, columnKeys)) {
+            logger.warn(
+              `Remote column settings for "${pageKey}" has stale orderedKeys, resetting order to default`,
+            )
+            const cleaned: ListColumnSettings = {
+              ...remoteSettings,
+              orderedKeys: [],
+            }
+            setListColumnSettings(pageKey, cleaned, userKey)
+            const healedPages = {
+              ...remotePagesRef.current,
+              [pageKey]: cleaned,
+            }
+            remotePagesRef.current = healedPages
+            /*
+             * 同步回存：否则每次换设备/清缓存都会重新拉到脏顺序再自愈一遍，
+             * 服务端也会一直留着引用已删列的旧数据。失败不影响本次渲染，只记日志。
+             */
+            void saveUserColumnSettings({ pages: healedPages }).catch(
+              (error) => {
+                logger.warn('Failed to persist healed column order', error)
+              },
+            )
+            if (!userChangedRef.current) {
+              columnOrderRef.current = []
+              columnVisibilityRef.current = toVisibilityState(cleaned)
+              setColumnOrder([])
+              setColumnVisibility(toVisibilityState(cleaned))
+              setColumnSizes(toColumnSizesState(cleaned))
+            }
+            remoteLoadedRef.current = true
+            setLoaded(true)
+            return
+          }
           if (
             hasAbnormalHiddenKeys(remoteSettings.hiddenKeys, totalColumnCount)
           ) {
@@ -225,7 +321,7 @@ export function useColumnSettingsSupport(
     return () => {
       cancelled = true
     }
-  }, [pageKey, userKey, totalColumnCount])
+  }, [pageKey, userKey, totalColumnCount, columnKeysSignature])
 
   const persist = async (
     order: ColumnOrderState,

@@ -82,20 +82,28 @@ describe('useColumnSettingsSupport 列设置异常重置', () => {
   function Harness({
     pageKey,
     totalColumnCount,
+    columnKeys,
   }: {
     pageKey: string
     totalColumnCount: number
+    columnKeys?: string[]
   }) {
     renderCount += 1
     const [, setTick] = useState(0)
     bump = () => setTick((value) => value + 1)
-    useColumnSettingsSupport(pageKey, undefined, totalColumnCount)
+    useColumnSettingsSupport(pageKey, undefined, totalColumnCount, columnKeys)
     return null
   }
 
-  const render = (pageKey: string, totalColumnCount: number) => {
+  const render = (
+    pageKey: string,
+    totalColumnCount: number,
+    columnKeys?: string[],
+  ) => {
     act(() => {
-      root.render(createElement(Harness, { pageKey, totalColumnCount }))
+      root.render(
+        createElement(Harness, { pageKey, totalColumnCount, columnKeys }),
+      )
     })
   }
 
@@ -126,6 +134,41 @@ describe('useColumnSettingsSupport 列设置异常重置', () => {
     ])
   })
 
+  /*
+   * 「列顺序引用已删列」的自愈。
+   * 真实案例：物流单明细把 materialCode/projectName/materialName 从列集合删掉后，
+   * 旧 orderedKeys 仍按旧相对位置把 仓库/品牌/类别 排到「重量」后面 —— 用户怎么看都别扭。
+   */
+  it('本地保存的列顺序引用了已不存在的列: 退回默认顺序, 但保留显隐偏好', () => {
+    seed({
+      orderedKeys: [
+        'sourceNo',
+        'materialCode',
+        'spec',
+        'material',
+        'weightTon',
+      ],
+      hiddenKeys: ['materialCode'],
+    })
+    render(PAGE_KEY, 3, ['sourceNo', 'material', 'spec', 'weightTon'])
+
+    const saved = getListColumnSettings(PAGE_KEY, 'anonymous')
+    // 顺序退回默认（空数组表示由列定义决定），隐藏偏好原样保留
+    expect(saved?.orderedKeys).toEqual([])
+    expect(saved?.hiddenKeys).toEqual(['materialCode'])
+    // 这不是「异常隐藏比例」，不该出提示
+    expect(warnings).toEqual([])
+  })
+
+  it('顺序里的列全部仍存在时不重置（尊重用户拖拽结果）', () => {
+    seed({ orderedKeys: ['weightTon', 'spec'], hiddenKeys: [] })
+    render(PAGE_KEY, 3, ['sourceNo', 'material', 'spec', 'weightTon'])
+    expect(getListColumnSettings(PAGE_KEY, 'anonymous')?.orderedKeys).toEqual([
+      'weightTon',
+      'spec',
+    ])
+  })
+
   it('远端设置为异常隐藏比例: 重置并提示一次', async () => {
     authState.user = { id: 'u1' }
     apiMock.getUserColumnSettings.mockResolvedValue({
@@ -138,5 +181,24 @@ describe('useColumnSettingsSupport 列设置异常重置', () => {
     expect(apiMock.getUserColumnSettings).toHaveBeenCalled()
     expect(warnings).toEqual([RESET_TIP])
     expect(getListColumnSettings(PAGE_KEY, 'u1')?.hiddenKeys).toEqual([])
+  })
+
+  it('远端列顺序引用已删列: 清掉顺序并回存服务端, 避免每次加载重复自愈', async () => {
+    authState.user = { id: 'u1' }
+    apiMock.getUserColumnSettings.mockResolvedValue({
+      pages: {
+        [PAGE_KEY]: {
+          orderedKeys: ['gone', 'spec', 'weightTon'],
+          hiddenKeys: [],
+        },
+      },
+    })
+    render(PAGE_KEY, 3, ['spec', 'weightTon'])
+    await flush()
+
+    expect(getListColumnSettings(PAGE_KEY, 'u1')?.orderedKeys).toEqual([])
+    expect(apiMock.saveUserColumnSettings).toHaveBeenCalledWith({
+      pages: { [PAGE_KEY]: { orderedKeys: [], hiddenKeys: [] } },
+    })
   })
 })
