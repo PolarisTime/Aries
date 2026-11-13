@@ -2024,70 +2024,12 @@ export function SupplierQuoteBoard() {
   )
 
   /*
-   * 标签页管理按 antd 规范来：**只有 `editable-card` 类型支持添加与关闭**，
-   * 溢出由内置的 `more`（省略号）自动折叠，不用自己算宽度。
-   *
-   * 「添加」不用 `onEdit('add')` 弹菜单：供应商四十多家，菜单会铺成一整屏（用户已反馈过）。
-   * 改成标签栏右侧一个**可搜索的 Select**，输入公司名即时过滤，选中即打开标签。
+   * 表格内容整体作为 Tabs 的 `items[].children`：这是 antd 的原生结构 ——
+   * 页签与内容面板连成一体（editable-card 的选中页签不会再像浮空胶囊），
+   * 切换供应商时由 antd 负责卸载/挂载面板。
    */
-  const supplierTabs = (
-    <Tabs
-      activeKey={supplierId}
-      hideAdd
-      items={openSupplierIds.map((id) => ({
-        key: id,
-        label: suppliers.find((option) => option.value === id)?.label ?? id,
-      }))}
-      onChange={switchSupplierTab}
-      onEdit={(
-        targetKey: React.MouseEvent | React.KeyboardEvent | string,
-        action: 'add' | 'remove',
-      ) => {
-        if (action === 'remove' && typeof targetKey === 'string') {
-          closeSupplierTab(targetKey)
-        }
-      }}
-      style={{ width: '100%' }}
-      tabBarExtraContent={{
-        right: (
-          <Select
-            aria-label={t('priceCompare.supplierPrice.addSupplierTab')}
-            loading={suppliersQuery.isPending}
-            notFoundContent={
-              unopenedSuppliers.length
-                ? undefined
-                : t('priceCompare.supplierPrice.allSuppliersOpened')
-            }
-            onChange={(value: string) => openSupplierTab(value)}
-            options={unopenedSuppliers.map((option) => ({
-              value: option.value,
-              label: option.label,
-            }))}
-            placeholder={t('priceCompare.supplierPrice.addSupplierTab')}
-            showSearch={{ optionFilterProp: 'label' }}
-            style={{ width: 220 }}
-            value={null}
-          />
-        ),
-      }}
-      type="editable-card"
-    />
-  )
-
-  if (!supplierId) {
-    return (
-      <Flex vertical gap={12} className="supplier-price-page">
-        {supplierTabs}
-        <Typography.Text type="secondary">
-          {t('priceCompare.supplierPrice.pickSupplier')}
-        </Typography.Text>
-      </Flex>
-    )
-  }
-
-  return (
-    <Flex vertical gap={12} className="supplier-price-page">
-      {supplierTabs}
+  const boardContent = (
+    <>
       {/*
        * 工具栏只保留「最后编辑 + 只看未填」。
        * 搜索 / 刷新 / 撤销重做按钮、快捷键入口都已移除（撤销重做保留 Ctrl+Z / Ctrl+Y）；
@@ -2260,6 +2202,79 @@ export function SupplierQuoteBoard() {
           </div>
         </div>
       )}
+    </>
+  )
+
+  /*
+   * 标签页管理按 antd 规范来：**只有 `editable-card` 类型支持添加与关闭**，
+   * 溢出由内置的 `more`（省略号）自动折叠，不用自己算宽度。
+   *
+   * 「添加」不用 `onEdit('add')` 弹菜单：供应商四十多家，菜单会铺成一整屏（用户已反馈过）。
+   * 改成标签栏右侧一个**可搜索的 Select**，输入公司名即时过滤，选中即打开标签。
+   *
+   * 内容通过 `items[].children` 交给 Tabs（只有当前供应商对应的页签有内容）：
+   * 这是 antd 的原生结构，页签与内容面板连成一体；切换供应商时 antd 会卸载上一家、
+   * 挂载下一家，与「切换供应商即重置本屏临时状态」的行为一致。
+   */
+  const supplierTabs = (
+    <Tabs
+      activeKey={supplierId}
+      hideAdd
+      items={openSupplierIds.map((id) => ({
+        key: id,
+        label: suppliers.find((option) => option.value === id)?.label ?? id,
+        children: id === supplierId ? boardContent : null,
+      }))}
+      onChange={switchSupplierTab}
+      onEdit={(
+        targetKey: React.MouseEvent | React.KeyboardEvent | string,
+        action: 'add' | 'remove',
+      ) => {
+        if (action === 'remove' && typeof targetKey === 'string') {
+          closeSupplierTab(targetKey)
+        }
+      }}
+      style={{ width: '100%' }}
+      tabBarExtraContent={{
+        right: (
+          <Select
+            aria-label={t('priceCompare.supplierPrice.addSupplierTab')}
+            loading={suppliersQuery.isPending}
+            notFoundContent={
+              unopenedSuppliers.length
+                ? undefined
+                : t('priceCompare.supplierPrice.allSuppliersOpened')
+            }
+            onChange={(value: string) => openSupplierTab(value)}
+            options={unopenedSuppliers.map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+            placeholder={t('priceCompare.supplierPrice.addSupplierTab')}
+            showSearch={{ optionFilterProp: 'label' }}
+            style={{ width: 220 }}
+            value={null}
+          />
+        ),
+      }}
+      type="editable-card"
+    />
+  )
+
+  if (!supplierId) {
+    return (
+      <Flex vertical gap={12} className="supplier-price-page">
+        {supplierTabs}
+        <Typography.Text type="secondary">
+          {t('priceCompare.supplierPrice.pickSupplier')}
+        </Typography.Text>
+      </Flex>
+    )
+  }
+
+  return (
+    <Flex vertical gap={12} className="supplier-price-page">
+      {supplierTabs}
     </Flex>
   )
 }

@@ -5,8 +5,50 @@
  * 表格边框由 antd 的 `bordered` 提供，这里只补密度与数字排版。</p>
  */
 .supplier-price-page {
+  /* 页面本身是纵向 flex：标签栏固定，表格区吃掉剩余高度，表体自己滚动，表头固定 */
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  /* 页面本身是纵向 flex：表格区吃掉剩余高度，表体自己滚动，表头固定 */
+  min-height: 0;
+}
+
+/*
+ * 高度接力：内容现在放在 antd Tabs 的 `items[].children` 里（原生页签 + 内容面板），
+ * 中间多了三层 DOM，必须把「撑满剩余高度」一路传下去，否则表格退回自然高度、
+ * 整个页面被裁掉底部（实测 Tabs 内容区只按内容撑开，`.supplier-price-sheet-shell` 的 flex:1 失效）。
+ *
+ * 类名是 antd 6 的结构（v5 的 content-holder/tabpane 已改成 body-holder/body/content），
+ * 若以后升级 antd 再跟着调整。
+ */
+.supplier-price-page > .ant-tabs {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.supplier-price-page > .ant-tabs > .ant-tabs-body-holder {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.supplier-price-page > .ant-tabs > .ant-tabs-body-holder > .ant-tabs-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/*
+ * 页签内容容器：还原原 `.supplier-price-page` 的纵向间距（工具栏 / 选区栏 / 表格之间 12px），
+ * 同时把剩余高度继续传给表格外壳。
+ */
+.supplier-price-page .ant-tabs-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-sm, 12px);
   min-height: 0;
 }
 
@@ -14,7 +56,7 @@
  * 报价表撑满内容区：外壳占满剩余高度，**表体在容器内滚动**（每个品类一张表，
  * 不能再给单张表定高 —— 那样第二张表会直接看不见）。
  */
-.supplier-price-page > .supplier-price-sheet-shell {
+.supplier-price-page .supplier-price-sheet-shell {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
