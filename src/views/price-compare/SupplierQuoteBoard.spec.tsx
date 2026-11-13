@@ -266,10 +266,12 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     expect(headers().some((text) => text.includes('规格'))).toBe(true)
     // 品牌作为一级表头只出现一次，材质与定尺挂在它下面
     expect(headers().filter((text) => text.includes('中天'))).toHaveLength(1)
-    // 材质是分区标题，不在表头里重复；列头只剩品牌 → 定尺
+    // 材质收进表格左上角（第一行第一列），不再单独占一行标题
     expect(
       Array.from(
-        document.querySelectorAll('.supplier-price-sheet-material-name'),
+        document.querySelectorAll(
+          '.ant-table-thead .supplier-price-corner-material',
+        ),
       ).map((node) => node.textContent?.trim()),
     ).toContain('HRB400E')
     expect(headers()).toContain('9米')
@@ -368,7 +370,9 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     // 材质不再是 tab，而是同屏堆叠：两张表都直接渲染，不需要点击切换
     const materials = Array.from(
-      document.querySelectorAll('.supplier-price-sheet-material-name'),
+      document.querySelectorAll(
+        '.ant-table-thead .supplier-price-corner-material',
+      ),
     ).map((node) => node.textContent?.trim())
     expect(materials).toEqual(['HRB400', 'HRB400E'])
     // 材质 tab 已移除；页面上唯一的 tab 栏是供应商页签

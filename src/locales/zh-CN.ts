@@ -2891,7 +2891,6 @@ export const zhCN = {
       notQuotedHint: '该供应商这个品牌还没有价格表，首次录入并保存后自动创建',
       lengthUnavailable: '商品资料里该品牌没有 {{length}} 定尺，这一列不能填',
       specUnavailable: '商品资料里该品牌没有 {{spec}} 规格，这一格不能填',
-      materialScale: '{{columns}} 列 · {{rows}} 行',
       categoryScale: '{{materials}} 个材质 · {{filled}}/{{total}} 格已填',
       lengthColumns: '定尺列',
       notApplicable: '该规格没有这个定尺',

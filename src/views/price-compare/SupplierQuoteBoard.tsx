@@ -133,7 +133,8 @@ const AUTOSAVE_DELAY_MS = 800
  */
 const ROW_HEAD_WIDTHS = {
   material: 88,
-  spec: 52,
+  /** 规格列同时承载材质名（HRB400E），52px 放不下，按 6 个字符留宽。 */
+  spec: 72,
   category: 56,
 } as const
 /*
@@ -1875,9 +1876,24 @@ export function SupplierQuoteBoard() {
   ): { columns: ColumnsType<SpecRow>; totalWidth: number } => {
     /** 表身份（类别 + 材质）：列宽偏好按它分组，同一品牌在不同材质下各记各的宽度。 */
     const sheetKey = sheetKeyOf(group.categoryName, sheet.material)
+    /*
+     * 左上角单元格：材质 + 规格。
+     *
+     * 材质不再单独占一行标题（那会让每张表上面多一条横带），而是收进表格的第一行第一列：
+     * 「HRB400E / 规格」两行文字，一眼看出这张表是哪个材质、第一列是规格。
+     */
     const columns: ColumnsType<SpecRow> = [
       {
-        title: t('priceCompare.supplierPrice.specNo'),
+        title: (
+          <span className="supplier-price-corner">
+            <span className="supplier-price-corner-material">
+              {sheet.material}
+            </span>
+            <span className="supplier-price-corner-spec">
+              {t('priceCompare.supplierPrice.specNo')}
+            </span>
+          </span>
+        ),
         key: 'spec',
         width: ROW_HEAD_WIDTHS.spec,
         align: 'center',
@@ -2456,17 +2472,6 @@ export function SupplierQuoteBoard() {
                       className="supplier-price-sheet-material"
                       key={sheet.material}
                     >
-                      <div className="supplier-price-sheet-material-head">
-                        <span className="supplier-price-sheet-material-name">
-                          {sheet.material}
-                        </span>
-                        <span className="supplier-price-sheet-material-meta">
-                          {t('priceCompare.supplierPrice.materialScale', {
-                            columns: sheet.cellColumns.length,
-                            rows: sheet.rows.length,
-                          })}
-                        </span>
-                      </div>
                       <Table<SpecRow>
                         bordered
                         columns={sheetColumns}

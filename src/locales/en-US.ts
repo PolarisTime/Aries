@@ -2902,7 +2902,6 @@ export const enUS = {
         'No {{length}} length for this brand in material data; this column cannot be filled',
       specUnavailable:
         'No {{spec}} spec for this brand in material data; this cell cannot be filled',
-      materialScale: '{{columns}} columns · {{rows}} rows',
       categoryScale:
         '{{materials}} material(s) · {{filled}}/{{total}} cells filled',
       lengthColumns: 'Length columns',
