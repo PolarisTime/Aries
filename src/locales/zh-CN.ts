@@ -1570,6 +1570,8 @@ export const zhCN = {
         projectName: '项目名称',
         auditStatus: '审核状态',
         remark: '备注',
+        /* 导入按钮文案唯一出口：物流单明细由上级销售订单生成（可多次导入，故不再标注「可部分」） */
+        parentImportButton: '选择销售订单导入',
         freightBillDesc:
           '物流单独立维护物流商、客户、项目、运输明细，并继续流向物流对账。',
       },

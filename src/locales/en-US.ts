@@ -1553,6 +1553,7 @@ export const enUS = {
         projectName: 'Project',
         auditStatus: 'Audit status',
         remark: 'Remark',
+        parentImportButton: 'Import SO Items',
         freightBillDesc:
           'Manage carriers, customers, projects, shipment details, and freight charges independently.',
       },
