@@ -21,10 +21,22 @@ export interface ContextMenuSettings {
   hiddenActionKeys?: string[]
 }
 
+/**
+ * 单据编辑器里「取消 / 保存 / 保存并审核」这三个右对齐按钮的位置。
+ *
+ * <p>`top` = 明细列表工具栏右侧（当前默认）；`bottom` = 弹层右下角 footer 槽常驻。
+ * 长表单滚动时 footer 始终可见，所以两种习惯各有拥趸，做成个人设置而不是全局改版。</p>
+ */
+export type EditorActionPlacement = 'top' | 'bottom'
+
+export const DEFAULT_EDITOR_ACTION_PLACEMENT: EditorActionPlacement = 'top'
+
 export interface PersonalSettings {
   fontSize?: number
   layoutMode?: LayoutMode
   themeMode?: ThemeMode
+  /** 单据动作按钮的位置；缺省 `top`。 */
+  editorActionPlacement?: EditorActionPlacement
   /** 行右键菜单的显示偏好；缺省 = 三组全显示。 */
   contextMenu?: ContextMenuSettings
 }
@@ -114,6 +126,12 @@ export function normalizePersonalSettings(
   }
   if (themeMode) {
     settings.themeMode = themeMode
+  }
+  if (
+    candidate.editorActionPlacement === 'top' ||
+    candidate.editorActionPlacement === 'bottom'
+  ) {
+    settings.editorActionPlacement = candidate.editorActionPlacement
   }
   const contextMenu = normalizeContextMenuSettings(candidate.contextMenu)
   if (contextMenu) {

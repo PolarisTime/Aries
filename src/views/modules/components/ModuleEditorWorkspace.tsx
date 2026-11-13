@@ -11,6 +11,7 @@ import {
   useEditorSession,
 } from '@/layouts/editor-session/EditorSessionGuard'
 import type { ModuleKey } from '@/module-system/core/module-key'
+import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import type {
   ModulePageConfig,
   ModuleParentImportSource,
@@ -194,7 +195,17 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
 }: Props<Key>) {
   const [form] = Form.useForm<EditorFormValues>()
   const { t } = useTranslation()
-  const presentation = resolveEditorPresentation(config, moduleKey)
+  /*
+   * 「取消 / 保存 / 保存并审核」的位置来自个人设置（顶部工具栏 / 右下角 footer）。
+   * 直接订阅 store 而不是经 props 传：这是**用户级偏好**，与单据内容无关，
+   * 也不该让每层调用方都多接一个参数。
+   */
+  const editorActionPlacement = useUiSettingsStore(
+    (state) => state.settings?.editorActionPlacement ?? 'top',
+  )
+  const presentation = resolveEditorPresentation(config, moduleKey, {
+    actionPlacement: editorActionPlacement,
+  })
   const { finishAndCloseEditor, markEditorDirty, requestCloseEditor } =
     useEditorSessionActions(onClose)
   const watchedSettlementCompanyId = Form.useWatch('settlementCompanyId', form)

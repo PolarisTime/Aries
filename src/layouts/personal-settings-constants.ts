@@ -1,5 +1,6 @@
 import type { TFunction } from 'i18next'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
+import type { EditorActionPlacement } from '@/stores/uiSettingsStore'
 import type { ThemeMode } from '@/utils/storage'
 
 export const fontSizeOptions = [11, 12, 13, 14, 16, 18]
@@ -27,6 +28,23 @@ export function getLayoutModeOptions(
       value: 'top',
       label: t('layouts.settings.layout.top'),
       description: t('layouts.settings.layout.topDesc'),
+    },
+  ]
+}
+
+export function getEditorActionPlacementOptions(
+  t: TFunction,
+): Array<{ value: EditorActionPlacement; label: string; description: string }> {
+  return [
+    {
+      value: 'top',
+      label: t('layouts.settings.editorActions.top'),
+      description: t('layouts.settings.editorActions.topDesc'),
+    },
+    {
+      value: 'bottom',
+      label: t('layouts.settings.editorActions.bottom'),
+      description: t('layouts.settings.editorActions.bottomDesc'),
     },
   ]
 }

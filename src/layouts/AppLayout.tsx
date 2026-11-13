@@ -31,6 +31,7 @@ import {
 } from '@/layouts/usePersonalSettings'
 import type { DocumentFlowNode } from '@/shared/schemas/document-flow'
 import { useAuthStore } from '@/stores/authStore'
+import type { EditorActionPlacement } from '@/stores/uiSettingsStore'
 import type { GlobalSearchResult } from '@/types/global-search'
 import { message, modal } from '@/utils/antd-app'
 import { appTitle } from '@/utils/env'
@@ -97,6 +98,8 @@ function SideNavigation({
 type PersonalSettingsHostProps = {
   fontSize: number
   layoutMode: LayoutMode
+  editorActionPlacement: EditorActionPlacement
+  onEditorActionPlacementChange: (value: EditorActionPlacement) => void
   onClose: () => void
   onFontSizeChange: (value: number) => void
   onLayoutModeChange: (value: LayoutMode) => void
@@ -118,6 +121,8 @@ type PersonalSettingsHostProps = {
 function PersonalSettingsHost({
   fontSize,
   layoutMode,
+  editorActionPlacement,
+  onEditorActionPlacementChange,
   onClose,
   onFontSizeChange,
   onLayoutModeChange,
@@ -142,6 +147,8 @@ function PersonalSettingsHost({
       onFontSizeChange={onFontSizeChange}
       layoutMode={layoutMode}
       onLayoutModeChange={onLayoutModeChange}
+      editorActionPlacement={editorActionPlacement}
+      onEditorActionPlacementChange={onEditorActionPlacementChange}
       themeMode={themeMode}
       onThemeModeChange={onThemeModeChange}
       contextMenu={contextMenu}
@@ -183,6 +190,8 @@ export function AppLayout() {
     setLayoutMode,
     themeMode,
     setThemeMode,
+    editorActionPlacement,
+    setEditorActionPlacement,
     contextMenu,
     toggleContextMenuAction,
     setContextMenuGroupVisible,
@@ -426,6 +435,8 @@ export function AppLayout() {
         onLayoutModeChange={setLayoutMode}
         themeMode={themeMode}
         onThemeModeChange={setThemeMode}
+        editorActionPlacement={editorActionPlacement}
+        onEditorActionPlacementChange={setEditorActionPlacement}
         contextMenu={contextMenu}
         onToggleContextMenuAction={toggleContextMenuAction}
         onContextMenuGroupVisibleChange={setContextMenuGroupVisible}

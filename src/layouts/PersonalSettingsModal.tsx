@@ -6,6 +6,7 @@ import type {
   AppliedContextMenuSettings,
   LayoutMode,
 } from '@/layouts/usePersonalSettings'
+import type { EditorActionPlacement } from '@/stores/uiSettingsStore'
 import type { ThemeMode } from '@/utils/storage'
 import {
   AccountPasswordPanel,
@@ -23,6 +24,8 @@ interface Props {
   onLayoutModeChange: (value: LayoutMode) => void
   themeMode: ThemeMode
   onThemeModeChange: (value: ThemeMode) => void
+  editorActionPlacement: EditorActionPlacement
+  onEditorActionPlacementChange: (value: EditorActionPlacement) => void
   contextMenu: AppliedContextMenuSettings
   onToggleContextMenuAction: (actionKey: string, visible: boolean) => void
   onContextMenuGroupVisibleChange: (
@@ -44,6 +47,8 @@ export function PersonalSettingsModal({
   onLayoutModeChange,
   themeMode,
   onThemeModeChange,
+  editorActionPlacement,
+  onEditorActionPlacementChange,
   contextMenu,
   onToggleContextMenuAction,
   onContextMenuGroupVisibleChange,
@@ -72,6 +77,8 @@ export function PersonalSettingsModal({
                 fontSize={fontSize}
                 layoutMode={layoutMode}
                 themeMode={themeMode}
+                editorActionPlacement={editorActionPlacement}
+                onEditorActionPlacementChange={onEditorActionPlacementChange}
                 onFontSizeChange={onFontSizeChange}
                 onLayoutModeChange={onLayoutModeChange}
                 onThemeModeChange={onThemeModeChange}

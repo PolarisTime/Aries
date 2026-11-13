@@ -46,12 +46,29 @@ export interface EditorPresentation {
   overlayClassName: string | undefined
 }
 
+export interface EditorPresentationOptions {
+  /**
+   * 个人设置里的「单据动作按钮位置」。
+   *
+   * <p>`top`（默认）= 明细列表工具栏右侧；`bottom` = 弹层 footer 槽（右下角常驻）。
+   * 由 `useUiSettingsStore` 的 `editorActionPlacement` 提供，属于**用户偏好**，
+   * 因此不写进各模块的页面配置。</p>
+   */
+  actionPlacement?: 'top' | 'bottom'
+}
+
 /** 财务版布局在 JSX 上的投影: 集中一次判断, 避免同一条件散成多个三元。 */
 export function resolveEditorPresentation(
   config: ModulePageConfig,
   moduleKey: string,
+  options: EditorPresentationOptions = {},
 ): EditorPresentation {
   const financeLayout = isFinanceDocumentModule(moduleKey)
+  /*
+   * 用户把按钮位置设成「底部」时，等价于财务单据那种常驻 footer 的形态：
+   * 无论有没有明细区、当前在哪个页签，保存入口都在右下角，不会被滚动或页签切走。
+   */
+  const bottomActions = options.actionPlacement === 'bottom'
   return {
     financeLayout,
     overlayClassName: financeLayout
@@ -62,9 +79,12 @@ export function resolveEditorPresentation(
      * 其余有明细区的模块把按钮放在明细工具栏（见 resolveEditorShowsOverlayFooter），
      * 由明细区在「货物明细 / 附加费用」两个页签都渲染工具栏来保证不丢入口。
      * 无明细区的模块（主数据式表单）才把按钮放在表单标题右侧。
+     * 用户选了「底部」时，以上三处一律让位给 footer，避免出现两条按钮。
      */
-    formActionsVisible: !financeLayout && !config.itemColumns?.length,
-    overlayFooterVisible: resolveEditorShowsOverlayFooter(moduleKey),
+    formActionsVisible:
+      !financeLayout && !config.itemColumns?.length && !bottomActions,
+    overlayFooterVisible:
+      resolveEditorShowsOverlayFooter(moduleKey) || bottomActions,
     layoutVariant: financeLayout ? 'finance' : 'default',
   }
 }

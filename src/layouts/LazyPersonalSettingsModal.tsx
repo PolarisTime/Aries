@@ -4,6 +4,7 @@ import type {
   AppliedContextMenuSettings,
   LayoutMode,
 } from '@/layouts/usePersonalSettings'
+import type { EditorActionPlacement } from '@/stores/uiSettingsStore'
 import type { ThemeMode } from '@/utils/storage'
 
 const PersonalSettingsModal = lazy(() =>
@@ -23,6 +24,8 @@ interface Props {
   onLayoutModeChange: (value: LayoutMode) => void
   themeMode: ThemeMode
   onThemeModeChange: (value: ThemeMode) => void
+  editorActionPlacement: EditorActionPlacement
+  onEditorActionPlacementChange: (value: EditorActionPlacement) => void
   contextMenu: AppliedContextMenuSettings
   onToggleContextMenuAction: (actionKey: string, visible: boolean) => void
   onContextMenuGroupVisibleChange: (

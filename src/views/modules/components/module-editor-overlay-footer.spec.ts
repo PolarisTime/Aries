@@ -62,6 +62,45 @@ describe('resolveEditorPresentation 与 footer 的互斥关系', () => {
     expect(resolveEditorShowsOverlayFooter('customer')).toBe(false)
   })
 
+  /*
+   * 个人设置里的「单据按钮位置」：底部 = 弹层右下角常驻。
+   * 无论有没有明细区都必须把保存入口交给 footer，否则会出现两条按钮。
+   */
+  it('用户选「底部」：有明细区的模块改由 footer 承载', () => {
+    const presentation = resolveEditorPresentation(
+      configWithItems as unknown as ModulePageConfig,
+      'sales-order',
+      { actionPlacement: 'bottom' },
+    )
+    expect(presentation.overlayFooterVisible).toBe(true)
+    expect(presentation.formActionsVisible).toBe(false)
+  })
+
+  it('用户选「底部」：无明细区的模块同样改由 footer 承载', () => {
+    const presentation = resolveEditorPresentation(
+      configWithoutItems as unknown as ModulePageConfig,
+      'customer',
+      { actionPlacement: 'bottom' },
+    )
+    expect(presentation.overlayFooterVisible).toBe(true)
+    expect(presentation.formActionsVisible).toBe(false)
+  })
+
+  it('默认（用户未改或选「顶部」）保持原行为', () => {
+    const asTop = resolveEditorPresentation(
+      configWithItems as unknown as ModulePageConfig,
+      'sales-order',
+      { actionPlacement: 'top' },
+    )
+    const asDefault = resolveEditorPresentation(
+      configWithItems as unknown as ModulePageConfig,
+      'sales-order',
+    )
+    expect(asTop.overlayFooterVisible).toBe(false)
+    expect(asDefault.overlayFooterVisible).toBe(false)
+    expect(asTop).toEqual(asDefault)
+  })
+
   it('财务布局：表单区不出按钮，footer 出按钮', () => {
     const presentation = resolveEditorPresentation(
       {

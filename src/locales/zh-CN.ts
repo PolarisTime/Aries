@@ -2336,6 +2336,13 @@ export const zhCN = {
         bulkReverseAudit: '批量反审核',
         bulkDelete: '批量删除',
       },
+      editorActions: {
+        label: '单据按钮位置',
+        top: '顶部',
+        topDesc: '放在明细列表工具栏右侧，与新增/导入等工具按钮同一行。',
+        bottom: '底部',
+        bottomDesc: '放在弹层右下角常驻，明细再多也不会随滚动移出视野。',
+      },
       theme: {
         light: '亮色',
         dark: '暗色',

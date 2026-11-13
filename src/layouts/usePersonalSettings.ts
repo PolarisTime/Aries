@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { contextMenuActionKeysByGroup } from '@/layouts/context-menu-actions'
 import {
   type ContextMenuSettings,
+  DEFAULT_EDITOR_ACTION_PLACEMENT,
+  type EditorActionPlacement,
   type PersonalSettings,
   type ThemeMode,
   useUiSettingsStore,
@@ -40,12 +42,21 @@ function normalizeContextMenu(
   }
 }
 
+function normalizeEditorActionPlacement(
+  value: EditorActionPlacement | undefined,
+): EditorActionPlacement {
+  return value === 'bottom' ? 'bottom' : DEFAULT_EDITOR_ACTION_PLACEMENT
+}
+
 function normalizePersonalSettings(
   settings: PersonalSettings | null | undefined,
   defaultFontSize: number,
   defaultLayoutMode: LayoutMode,
 ) {
   return {
+    editorActionPlacement: normalizeEditorActionPlacement(
+      settings?.editorActionPlacement,
+    ),
     fontSize: settings?.fontSize || defaultFontSize,
     layoutMode:
       settings?.layoutMode === 'top' || settings?.layoutMode === 'sider'
@@ -110,6 +121,10 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
   const [appliedThemeMode, setAppliedThemeMode] = useState<ThemeMode>(
     initialSettings.themeMode,
   )
+  const [editorActionPlacement, setEditorActionPlacement] =
+    useState<EditorActionPlacement>(initialSettings.editorActionPlacement)
+  const [appliedEditorActionPlacement, setAppliedEditorActionPlacement] =
+    useState<EditorActionPlacement>(initialSettings.editorActionPlacement)
   const [contextMenu, setContextMenu] = useState<AppliedContextMenuSettings>(
     initialSettings.contextMenu,
   )
@@ -159,6 +174,8 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setAppliedLayoutMode(normalized.layoutMode)
     setThemeMode(normalized.themeMode)
     setAppliedThemeMode(normalized.themeMode)
+    setEditorActionPlacement(normalized.editorActionPlacement)
+    setAppliedEditorActionPlacement(normalized.editorActionPlacement)
     setContextMenu(normalized.contextMenu)
     setAppliedContextMenu(normalized.contextMenu)
   }
@@ -179,6 +196,7 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setFontSize(appliedFontSize)
     setLayoutMode(appliedLayoutMode)
     setThemeMode(appliedThemeMode)
+    setEditorActionPlacement(appliedEditorActionPlacement)
     setContextMenu(appliedContextMenu)
     setVisible(false)
   }
@@ -187,6 +205,7 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setFontSize(defaultFontSize)
     setLayoutMode(defaultLayoutMode)
     setThemeMode('system')
+    setEditorActionPlacement(DEFAULT_EDITOR_ACTION_PLACEMENT)
     setContextMenu(DEFAULT_CONTEXT_MENU_SETTINGS)
   }
 
@@ -194,11 +213,13 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     setAppliedFontSize(fontSize)
     setAppliedLayoutMode(layoutMode)
     setAppliedThemeMode(themeMode)
+    setAppliedEditorActionPlacement(editorActionPlacement)
     setAppliedContextMenu(contextMenu)
     persistSettings({
       fontSize,
       layoutMode,
       themeMode,
+      editorActionPlacement,
       contextMenu,
     })
     window.dispatchEvent(new CustomEvent('personal-settings-changed'))
@@ -216,6 +237,9 @@ export function usePersonalSettings(options: UsePersonalSettingsOptions = {}) {
     themeMode,
     appliedThemeMode,
     setThemeMode,
+    editorActionPlacement,
+    appliedEditorActionPlacement,
+    setEditorActionPlacement,
     contextMenu,
     appliedContextMenu,
     toggleContextMenuAction,

@@ -2332,6 +2332,15 @@ export const enUS = {
         bulkReverseAudit: 'Batch reverse audit',
         bulkDelete: 'Batch delete',
       },
+      editorActions: {
+        label: 'Document action buttons',
+        top: 'Top',
+        topDesc:
+          'Aligned right in the items toolbar, on the same row as add/import tools.',
+        bottom: 'Bottom',
+        bottomDesc:
+          'Pinned to the bottom-right of the dialog so they stay visible while scrolling.',
+      },
       theme: {
         light: 'Light',
         dark: 'Dark',

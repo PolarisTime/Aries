@@ -2,16 +2,20 @@ import { Button, Radio, Select } from 'antd'
 import { useTranslation } from 'react-i18next'
 import {
   fontSizeOptions,
+  getEditorActionPlacementOptions,
   getLayoutModeOptions,
   getThemeModeOptions,
 } from '@/layouts/personal-settings-constants'
 import type { LayoutMode } from '@/layouts/usePersonalSettings'
+import type { EditorActionPlacement } from '@/stores/uiSettingsStore'
 import type { ThemeMode } from '@/utils/storage'
 
 interface Props {
   fontSize: number
   layoutMode: LayoutMode
   themeMode: ThemeMode
+  editorActionPlacement: EditorActionPlacement
+  onEditorActionPlacementChange: (value: EditorActionPlacement) => void
   onFontSizeChange: (value: number) => void
   onLayoutModeChange: (value: LayoutMode) => void
   onThemeModeChange: (value: ThemeMode) => void
@@ -23,6 +27,8 @@ export function PersonalSettingsDisplayTab({
   fontSize,
   layoutMode,
   themeMode,
+  editorActionPlacement,
+  onEditorActionPlacementChange,
   onFontSizeChange,
   onLayoutModeChange,
   onThemeModeChange,
@@ -32,6 +38,7 @@ export function PersonalSettingsDisplayTab({
   const { t } = useTranslation()
   const themeModeOptions = getThemeModeOptions(t)
   const layoutModeOptions = getLayoutModeOptions(t)
+  const editorActionPlacementOptions = getEditorActionPlacementOptions(t)
 
   return (
     <div className="personal-setting-panel">
@@ -102,6 +109,34 @@ export function PersonalSettingsDisplayTab({
             </Radio.Button>
           ))}
         </Radio.Group>
+      </div>
+      <div className="personal-setting-row">
+        <span className="personal-setting-label">
+          {t('layouts.settings.editorActions.label')}
+        </span>
+        <Radio.Group
+          optionType="button"
+          buttonStyle="solid"
+          value={editorActionPlacement}
+          onChange={(event) =>
+            onEditorActionPlacementChange(
+              event.target.value as EditorActionPlacement,
+            )
+          }
+        >
+          {editorActionPlacementOptions.map((item) => (
+            <Radio.Button key={item.value} value={item.value}>
+              {item.label}
+            </Radio.Button>
+          ))}
+        </Radio.Group>
+      </div>
+      <div className="personal-layout-mode-desc">
+        {
+          editorActionPlacementOptions.find(
+            (item) => item.value === editorActionPlacement,
+          )?.description
+        }
       </div>
       <div className="personal-setting-actions">
         <Button onClick={onResetDisplay}>
