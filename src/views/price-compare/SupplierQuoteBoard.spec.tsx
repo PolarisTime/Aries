@@ -259,16 +259,24 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     })
   }
 
-  it('只有一家供应商时直接进入表格：行 = 商品，列 = 该供应商的经营品牌', async () => {
+  it('直条固定 12 个规格：行来自品类模板，列 = 该供应商的经营品牌', async () => {
     await render()
 
     // 表头：规格 + 「品牌 → 材质 → 定尺」三级
     expect(headers().some((text) => text.includes('规格'))).toBe(true)
     // 品牌作为一级表头只出现一次，材质与定尺挂在它下面
     expect(headers().filter((text) => text.includes('中天'))).toHaveLength(1)
-    expect(headers()).toContain('HRB400E')
+    // 材质是分区标题，不在表头里重复；列头只剩品牌 → 定尺
+    expect(
+      Array.from(
+        document.querySelectorAll('.supplier-price-sheet-material-name'),
+      ).map((node) => node.textContent?.trim()),
+    ).toContain('HRB400E')
     expect(headers()).toContain('9米')
-    expect(rows()).toHaveLength(2)
+    // 定尺列固定为品类模板：商品资料里只有 9米，12米列也保留（整列不可填）
+    expect(headers()).toContain('12米')
+    // 直条模板 12 个规格（10–40），不再等于商品资料里的 2 行
+    expect(rows()).toHaveLength(12)
     // 服务端价格直接回显
     await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
     expect(cellInput('中天 HRB400E 14 9米')?.value).toBe('3300')
@@ -326,7 +334,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
    * 列不是预设的，而是按**每个品牌在商品资料里真实经营**的「材质 × 定尺」生成 ——
    * 萍钢没有 HRB400E、没有 12米，就不该给它这些列；中天有就出现。
    */
-  it('每个品牌的材质/定尺列只取商品资料里该品牌真实存在的组合', async () => {
+  it('材质分区堆叠，定尺列固定模板：缺该定尺的品牌整列保留但不可填', async () => {
     priceApi.fetchSpecRows.mockResolvedValue([
       // 中天：HRB400E 的 9米 与 12米 都有
       {
@@ -358,31 +366,27 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     await render()
 
-    // 材质做成二级 tab：中天只有 HRB400E，萍钢只有 HRB400，两个材质各一个 tab
-    const materialTabs = Array.from(
-      document.querySelectorAll('.ant-tabs-tab'),
+    // 材质不再是 tab，而是同屏堆叠：两张表都直接渲染，不需要点击切换
+    const materials = Array.from(
+      document.querySelectorAll('.supplier-price-sheet-material-name'),
     ).map((node) => node.textContent?.trim())
-    expect(materialTabs).toContain('HRB400E')
-    expect(materialTabs).toContain('HRB400')
+    expect(materials).toEqual(['HRB400', 'HRB400E'])
+    // 材质 tab 已移除；页面上唯一的 tab 栏是供应商页签
+    expect(
+      document.querySelector('.supplier-price-page .ant-tabs-tab'),
+    ).not.toBeNull()
 
-    // 默认第一个材质 tab（HRB400E）：只有中天的 9米/12米 两列
+    // 中天的 9米 / 12米 都可填（商品资料里两种定尺都有）
     expect(cellInput('中天 HRB400E 12 9米')).not.toBeNull()
     expect(cellInput('中天 HRB400E 12 12米')).not.toBeNull()
-    expect(cellInput('萍钢 HRB400 12 9米')).toBeNull()
 
-    // 切到 HRB400 tab：只有萍钢的 9米，没有 12米（商品资料里没有）
-    const hr400Tab = Array.from(
-      document.querySelectorAll('.ant-tabs-tab'),
-    ).find((node) => node.textContent?.trim() === 'HRB400') as
-      | HTMLElement
-      | undefined
-    await act(async () => {
-      hr400Tab?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    await waitFor(() => cellInput('萍钢 HRB400 12 9米') !== null)
+    // 萍钢只有 9米：9米可填，12米列**保留但整列不可填**（没有输入框，只有斜纹占位）
     expect(cellInput('萍钢 HRB400 12 9米')).not.toBeNull()
     expect(cellInput('萍钢 HRB400 12 12米')).toBeNull()
+    // 表头划线标记「这个定尺整列不能填」
+    expect(
+      document.querySelectorAll('.supplier-price-col-head-na').length,
+    ).toBeGreaterThan(0)
   })
 
   /**
@@ -439,7 +443,8 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     expect(cellInput('中天 HRB400E 12 9米')).not.toBeNull()
     expect(container.textContent).not.toContain('HPB300')
-    expect(rows()).toHaveLength(1)
+    // 行来自固定模板（12 个规格），但不成列的品牌不会新增材质表或列
+    expect(rows()).toHaveLength(12)
   })
 
   it('盘螺与直条分成两张表，且各自只保留用得到的定尺列', async () => {
@@ -520,54 +525,35 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     )
   })
 
-  it('最低价格子高亮（最低价列已移除，改用单元格高亮表达）', async () => {
-    priceApi.fetchSpecRows.mockResolvedValue([ROW_A])
-    priceApi.fetchSupplierPriceGrid.mockResolvedValue({
-      brandName: '中天',
-      columns: [COLUMN],
-      rows: [
-        {
-          ...ROW_A,
-          prices: { l1: 3280 },
-          priceStatuses: {},
-          remarks: {},
-        },
-      ],
-    })
-    supplierApi.fetchSupplierOptions.mockResolvedValue([
-      {
-        ...SUPPLIER,
-        brands: ['中天', '永钢'],
-      },
+  it('没有价格表的品牌列头标「未报价」，有价格表的显示最后编辑时间', async () => {
+    // 中天有价格表；永钢是经营品牌且商品资料里有货，但还没建价格表
+    priceApi.fetchSpecRows.mockResolvedValue([
+      ROW_A,
+      ROW_B,
+      { ...ROW_A, brand: '永钢' },
     ])
-    // 永钢这一列是新列（无价格）
-    priceApi.addSupplierPriceColumn.mockResolvedValue({
-      ...COLUMN,
-      listId: 'l2',
-      supplierId: 's2',
-      supplierName: '沙钢贸易',
-    })
+    priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
+      Promise.resolve(
+        brandName === '永钢'
+          ? { brandName: '永钢', columns: [], rows: [] }
+          : gridWithColumn(),
+      ),
+    )
+    supplierApi.fetchSupplierOptions.mockResolvedValue([
+      { ...SUPPLIER, brands: ['中天', '永钢'] },
+    ])
+
     await render()
 
-    // 只有一个品牌有价：该格打上高亮类，行末不再单列「最低价」
-    // 价格格已从 InputNumber 换成 Input（可敲算式），状态类因此挂在 input 本身而不是外层
-    await waitFor(() =>
-      Boolean(
-        container.querySelector(
-          'input.supplier-price-cheapest[aria-label="中天 HRB400E 12 9米"]',
-        ),
-      ),
+    await waitFor(() => cellInput('永钢 HRB400E 12 9米') !== null)
+    // 等中天的价格表回来（列头时间来自价格表列，不是商品资料）
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    // 中天：列头显示 quotedOn 的 MM-DD（updatedAt 为空时回退到报价日期）
+    expect(container.textContent).toContain('10-29')
+    // 永钢：还没有价格表 → 「未报价」
+    expect(container.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.notQuoted'),
     )
-    const cheapest = container.querySelector(
-      'input.supplier-price-cheapest[aria-label="中天 HRB400E 12 9米"]',
-    )
-    expect(cheapest).not.toBeNull()
-    // 没有价的永钢不算最低价
-    expect(
-      container.querySelector(
-        'input.supplier-price-cheapest[aria-label="永钢 HRB400E 12 9米"]',
-      ),
-    ).toBeNull()
   })
 
   it('搜索按材质/规格/定尺过滤行', async () => {

@@ -134,27 +134,15 @@ describe('供应商报价表：Excel 式数字排版', () => {
   })
 
   /*
-   * 最低价强调必须落在样式表里，而不是组件内联 style：
-   * 2026-11 的第一版实现漏了这条规则（类名挂了、没有任何 CSS），视觉上完全看不出最低价；
-   * 修复时又一度改用组件内联常量，评审按「样式归样式表」打回。这条用例把规则本身钉住。
+   * 不可填格子必须在视觉上「看得见」：斜纹 + 横杠，且原因写在 title/aria-label（组件侧），
+   * 不靠颜色单独承载语义。表头对「整列不可填」的定尺划线，与格子表达同一件事。
    */
-  it('最低价强调由样式表提供（success token），声明顺序为 最低价 → 异常价 → 选中态', () => {
-    expect(
-      blockOf('.supplier-price-board .ant-input.supplier-price-cheapest'),
-    ).toContain('--ant-color-success-bg')
-    const cheapest = css.indexOf(
-      '.supplier-price-board .ant-input.supplier-price-cheapest',
-    )
-    const abnormal = css.indexOf(
-      '.supplier-price-board .ant-input.supplier-price-cell-abnormal',
-    )
-    const selected = css.indexOf(
-      '.supplier-price-board .ant-input.supplier-price-cell-selected',
-    )
-    expect(cheapest).toBeGreaterThan(-1)
-    expect(abnormal).toBeGreaterThan(cheapest)
-    // 选中态排最后：一格既被选中又是最低价时，选区颜色要压过价格强调色
-    expect(selected).toBeGreaterThan(abnormal)
+  it('不可填格子用斜纹 + 表头划线表达，颜色走主题 token', () => {
+    const na = blockOf('.supplier-price-cell-na')
+    expect(na).toContain('repeating-linear-gradient')
+    expect(na).toContain('text-align: center')
+    expect(na).toContain('cursor: not-allowed')
+    expect(blockOf('.supplier-price-col-head-na')).toContain('line-through')
   })
 
   it('列宽把手命中区 ≥24×24（WCAG 2.5.8），聚焦时有可见焦点框', () => {

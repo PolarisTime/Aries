@@ -103,33 +103,6 @@ function gridOfZhongtian(): SupplierPriceGrid {
   }
 }
 
-/**
- * 异常价边界夹具：两行的最低价都是 3280。
- *
- * <p>3280 × 1.05 = 3444 —— 恰好 5% **不算**异常，3445 才算。用两行同基准的不同价把
- * 「≥」与「>」两种口径区分开：若实现写成 `>=`，12 那一行会被错标。</p>
- */
-function gridOfYonggang(): SupplierPriceGrid {
-  return {
-    brandName: '永钢',
-    columns: [COLUMN_WY],
-    rows: [
-      {
-        ...ROW_A,
-        prices: { l2: 3444 },
-        priceStatuses: {},
-        remarks: {},
-      },
-      {
-        ...ROW_B,
-        prices: { l2: 3445 },
-        priceStatuses: {},
-        remarks: {},
-      },
-    ],
-  }
-}
-
 /** 保存载荷里不含 brand（品牌由价格表列本身确定），断言时从行夹具里剔除。 */
 const withoutBrand = (row: Record<string, unknown>) => {
   const { brand: _brand, ...rest } = row
@@ -430,49 +403,6 @@ describe('供应商报价表：Excel 式网格操作', () => {
     expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3280')
   })
 
-  it('异常价边界：恰好高 5%（3444）不标黄，超过（3445）标黄', async () => {
-    supplierApi.fetchSupplierOptions.mockResolvedValue([
-      { ...SUPPLIER, brands: ['中天', '永钢'] },
-    ])
-    // 商品资料里也要有永钢：列只按「该品牌真实经营的材质 × 定尺」生成
-    priceApi.fetchSpecRows.mockResolvedValue([
-      ROW_A,
-      ROW_B,
-      { ...ROW_A, brand: '永钢' },
-      { ...ROW_B, brand: '永钢' },
-    ])
-    // 两行的中天都报 3280：这样 12 行的基准与 14 行相同，3444/3445 才构成同一基准下的边界
-    const flatZhongtian: SupplierPriceGrid = {
-      brandName: '中天',
-      columns: [COLUMN],
-      rows: [
-        { ...ROW_A, prices: { l1: 3280 }, priceStatuses: {}, remarks: {} },
-        { ...ROW_B, prices: { l1: 3280 }, priceStatuses: {}, remarks: {} },
-      ],
-    }
-    priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
-      Promise.resolve(brandName === '永钢' ? gridOfYonggang() : flatZhongtian),
-    )
-
-    await render()
-
-    const boundary = cellInput('永钢 HRB400E 12 9米')
-    const over = cellInput('永钢 HRB400E 14 9米')
-    expect(boundary?.value).toBe('3444')
-    expect(over?.value).toBe('3445')
-
-    expect(boundary?.classList.contains('supplier-price-cell-abnormal')).toBe(
-      false,
-    )
-    expect(over?.classList.contains('supplier-price-cell-abnormal')).toBe(true)
-    // 基准价（本行最低）不标黄
-    expect(
-      cellInput('中天 HRB400E 12 9米')?.classList.contains(
-        'supplier-price-cell-abnormal',
-      ),
-    ).toBe(false)
-  })
-
   it('批量调价 +50：选中的格子按当前价相对调整', async () => {
     await render()
 
@@ -743,71 +673,6 @@ describe('供应商报价表：Excel 式网格操作', () => {
     // 矩形是 2×2 = 4 格，但 永钢14 不存在 → 只有 3 格可写
     expect(container.textContent).toContain(
       i18n.t('priceCompare.supplierPrice.selectionCount', { count: 3 }),
-    )
-  })
-
-  /*
-   * 最低价高亮：只有 class 而没有样式时，用户分不出「最便宜」和「普通价」。
-   * 强调色取 success 系 token，与异常价（warning 黄）/ 选中态（primary 蓝）分属不同色系。
-   */
-  it('本行最低价格子的强调色只在样式表里（组件不再内联色值）', async () => {
-    await render()
-
-    const cheapest = cellInput('中天 HRB400E 12 9米')
-    expect(cheapest?.classList.contains('supplier-price-cheapest')).toBe(true)
-    // 唯一的色值来源是 supplier-price.css 的 .supplier-price-cheapest（success 色系，
-    // 与异常价 warning、选中态 primary 区分）；组件里若重新加内联样式这里会红
-    expect(cheapest?.getAttribute('style')).toBeNull()
-
-    // 选中态与最低价可以同时成立：样式表里 selected 声明更靠后，视觉以选区为准
-    await pointerDown(cheapest)
-    expect(cheapest?.classList.contains('supplier-price-cell-selected')).toBe(
-      true,
-    )
-  })
-
-  it('异常价的 Tooltip 文案写明高出的比例与本行最低价', async () => {
-    supplierApi.fetchSupplierOptions.mockResolvedValue([
-      { ...SUPPLIER, brands: ['中天', '永钢'] },
-    ])
-    priceApi.fetchSpecRows.mockResolvedValue([
-      ROW_A,
-      ROW_B,
-      { ...ROW_A, brand: '永钢' },
-      { ...ROW_B, brand: '永钢' },
-    ])
-    const flatZhongtian: SupplierPriceGrid = {
-      brandName: '中天',
-      columns: [COLUMN],
-      rows: [
-        { ...ROW_A, prices: { l1: 3280 }, priceStatuses: {}, remarks: {} },
-        { ...ROW_B, prices: { l1: 3280 }, priceStatuses: {}, remarks: {} },
-      ],
-    }
-    priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
-      Promise.resolve(brandName === '永钢' ? gridOfYonggang() : flatZhongtian),
-    )
-    await render()
-
-    const abnormal = cellInput('永钢 HRB400E 14 9米')
-    expect(abnormal).not.toBeNull()
-    /*
-     * 键盘聚焦即打开说明气泡（antd Tooltip 的 hover 触发同时响应 focus；React 19 监听
-     * focusin，所以两个焦点事件都要派发）。这也是读屏 / 键盘用户读到「高出多少」的路径。
-     */
-    await act(async () => {
-      abnormal?.dispatchEvent(
-        new MouseEvent('mouseover', { bubbles: true, relatedTarget: null }),
-      )
-      await new Promise((resolve) => setTimeout(resolve, 300))
-    })
-    const bubble = document.querySelector<HTMLElement>('.ant-tooltip')
-    expect(bubble, '聚焦异常价后未渲染出说明气泡').not.toBeNull()
-    expect(bubble?.textContent).toContain(
-      i18n.t('priceCompare.supplierPrice.abnormalPrice', {
-        ratio: 5,
-        min: 3280,
-      }),
     )
   })
 })

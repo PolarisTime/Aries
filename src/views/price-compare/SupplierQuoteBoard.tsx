@@ -11,7 +11,6 @@ import {
   Alert,
   Button,
   Checkbox,
-  DatePicker,
   Dropdown,
   Empty,
   Flex,
@@ -90,12 +89,13 @@ import {
   type FormulaFailureReason,
   isPlainPriceText,
 } from './supplier-quote-formula'
-import { parseClipboardGrid, roundPrice } from './supplier-quote-grid'
 import {
-  abnormalRatioPercent,
-  isAbnormalPrice,
-  rowPriceStats,
-} from './supplier-quote-price'
+  materialRankOf,
+  parseClipboardGrid,
+  roundPrice,
+  templateLengthsOf,
+  templateSpecsOf,
+} from './supplier-quote-grid'
 import {
   boundsContain,
   buildClearPlan,
@@ -158,7 +158,13 @@ const sortLengths = (left: string, right: string) => {
   return left.localeCompare(right)
 }
 
-/** 该类别下的列顺序：品牌 → 材质 → 定尺（只含商品资料里真实存在的组合）。 */
+/**
+ * 该类别下的列顺序：品牌 → 材质 → 定尺。
+ *
+ * <p>定尺取**品类模板**（直条固定 9米/12米，盘螺单列）：品牌在商品资料里没有某个定尺时，
+ * 列仍然保留，只是整列不可填（渲染层用 `catalogHas` 判断并画斜纹）。
+ * 这样同一材质下所有供应商的表结构一致，可以直接横向对比。</p>
+ */
 const cellColumnsOf = (
   category: CategoryCatalog | undefined,
   brandNames: readonly string[],
@@ -168,8 +174,16 @@ const cellColumnsOf = (
   for (const brandName of brandNames) {
     const brandCatalog = category.byBrand.get(brandName)
     if (!brandCatalog) continue
-    for (const [material, lengths] of brandCatalog.materials) {
-      for (const length of [...lengths.keys()].sort(sortLengths)) {
+    const materials = [...brandCatalog.materials.entries()].sort(
+      ([left], [right]) =>
+        materialRankOf(left) - materialRankOf(right) ||
+        left.localeCompare(right, 'zh-Hans-CN'),
+    )
+    for (const [material, lengths] of materials) {
+      const orderedLengths = templateLengthsOf(category.category, [
+        ...lengths.keys(),
+      ]).sort(sortLengths)
+      for (const length of orderedLengths) {
         columns.push({
           category: category.category,
           brandName,
@@ -212,6 +226,21 @@ const leafOfSpec = (column: CellColumn, spec: number): QuoteRow => ({
   spec,
   length: column.length,
 })
+
+/**
+ * 「最后编辑」显示口径（列头与工具栏共用这一处，避免两处格式不一致）。
+ *
+ * <p>`updatedAt` 是带时间的 ISO；`quotedOn` 只有日期（历史数据 / 后端建列时的默认值）。
+ * 有时间的显示到分钟，只有日期的显示 `MM-DD`。</p>
+ */
+const formatLastEdit = (value: string | null): string | null => {
+  if (!value) return null
+  const parsed = dayjs(value)
+  if (!parsed.isValid()) return null
+  return value.length > 10
+    ? parsed.format('MM-DD HH:mm')
+    : parsed.format('MM-DD')
+}
 
 const dotStyle = (color: string): CSSProperties => ({
   width: 6,
@@ -440,7 +469,6 @@ export function SupplierQuoteBoard() {
   const [openSupplierIds, setOpenSupplierIds] = useState<string[]>([])
   /** 当前激活的供应商标签页。 */
   const [activeSupplierId, setActiveSupplierId] = useState<string>()
-  const [quotedOn, setQuotedOn] = useState(() => dayjs())
   /** 未落库的改动：品牌 →（行键 → 价格；null = 明确清空）。 */
   const [drafts, setDrafts] = useState<Record<string, BrandDraft>>({})
   /** 已保存但缓存可能尚未刷新的值：让「敲完即显示」不依赖一次网络往返。 */
@@ -678,16 +706,8 @@ export function SupplierQuoteBoard() {
       const category = catalog.get(categoryName)
       const cellColumns = cellColumnsOf(category, brandNames)
       /*
-       * 行只取**已成名品牌的**规格并集，不能取整个类别的规格并集。
-       *
-       * <p>商品资料里存在一些不成列的品牌（`圆钢`、`盘螺调直`、E2E 夹具等：既不是该供应商的
-       * 经营品牌，也没有任何价格表），如果行按整个类别的规格算，它们独有的规格会变成
-       * 「整行没有任何可填格子」的死行 —— 用户看到的正是这种行。列按品牌筛、行却按全量算，
-       * 是口径不一致。</p>
-       */
-      /*
-       * 材质做成二级 tab：每个材质一张表（行 = 规格，列 = 品牌 × 定尺）。
-       * 行的范围也只取**该材质**下的组合，避免出现「这一页没有任何可填格子」的行。
+       * 材质按商品资料派生：该供应商经营品牌里真实有的材质才出表（没有的材质不凭空造表）。
+       * 表内顺序交给 `materialRankOf`，与列头顺序保持同一口径。
        */
       const materialNames: string[] = []
       for (const column of cellColumns) {
@@ -695,20 +715,38 @@ export function SupplierQuoteBoard() {
           materialNames.push(column.material)
         }
       }
+      materialNames.sort(
+        (left, right) =>
+          materialRankOf(left) - materialRankOf(right) ||
+          left.localeCompare(right, 'zh-Hans-CN'),
+      )
       const sheets = materialNames.map((material) => {
         const materialColumns = cellColumns.filter(
           (column) => column.material === material,
         )
-        const specSet = new Set<number>()
-        for (const column of materialColumns) {
-          const specsOfColumn =
-            category?.byBrand
-              .get(column.brandName)
-              ?.materials.get(column.material)
-              ?.get(column.length) ?? []
-          for (const spec of specsOfColumn) specSet.add(spec)
+        /*
+         * 行 = **品类模板规格**（直条 10–40、盘螺 6/8/10）。
+         *
+         * 之前用「该材质下各品牌商品资料的并集」，商品资料缺一项就整行消失，两张表对不上；
+         * 现在固定模板行，缺数据的格子在渲染时标成不可填（`catalogHas` 为 false）。
+         * 无模板的品类（历史 / 新品类）仍回退到商品资料并集。
+         */
+        const templateSpecs = templateSpecsOf(categoryName)
+        let specs: number[]
+        if (templateSpecs) {
+          specs = templateSpecs
+        } else {
+          const specSet = new Set<number>()
+          for (const column of materialColumns) {
+            const specsOfColumn =
+              category?.byBrand
+                .get(column.brandName)
+                ?.materials.get(column.material)
+                ?.get(column.length) ?? []
+            for (const spec of specsOfColumn) specSet.add(spec)
+          }
+          specs = [...specSet].sort((left, right) => left - right)
         }
-        let specs = [...specSet].sort((left, right) => left - right)
         if (needle) {
           const lengthHit = materialColumns.some((column) =>
             column.length.toLowerCase().includes(needle),
@@ -717,32 +755,28 @@ export function SupplierQuoteBoard() {
             (spec) => lengthHit || String(spec).includes(needle),
           )
         }
-        const rows: SpecRow[] = specs.map((spec) => ({ spec }))
+        let rows: SpecRow[] = specs.map((spec) => ({ spec }))
         if (onlyUnpriced) {
-          rows.splice(
-            0,
-            rows.length,
-            ...rows.filter((row) =>
-              materialColumns.every((column) => {
-                if (
-                  !catalogHas(
-                    category,
-                    column.brandName,
-                    column.material,
-                    row.spec,
-                    column.length,
-                  )
-                ) {
-                  return true
-                }
-                const key = quoteRowKey(leafOfSpec(column, row.spec))
-                const price =
-                  savedValues[column.brandName]?.[key] ??
-                  serverPriceOf(column.brandName, key)
-                return price === undefined || price === null
-              }),
-            ),
-          )
+          rows = rows.filter((row) => {
+            const writable = materialColumns.filter((column) =>
+              catalogHas(
+                category,
+                column.brandName,
+                column.material,
+                row.spec,
+                column.length,
+              ),
+            )
+            // 整行都没有可填格子（模板里有、商品资料里没有任何品牌报）→ 不算「未填」
+            if (writable.length === 0) return false
+            return writable.some((column) => {
+              const key = quoteRowKey(leafOfSpec(column, row.spec))
+              const price =
+                savedValues[column.brandName]?.[key] ??
+                serverPriceOf(column.brandName, key)
+              return price === undefined || price === null
+            })
+          })
         }
         const indexBySpec = new Map<number, number>()
         for (const [index, row] of rows.entries()) {
@@ -771,12 +805,7 @@ export function SupplierQuoteBoard() {
   const draftsRef = useRef<Record<string, BrandDraft>>({})
   const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const savingRef = useRef(new Set<string>())
-  const quotedOnRef = useRef(quotedOn)
   const supplierIdRef = useRef(supplierId)
-
-  useEffect(() => {
-    quotedOnRef.current = quotedOn
-  }, [quotedOn])
 
   useEffect(() => {
     supplierIdRef.current = supplierId
@@ -906,7 +935,7 @@ export function SupplierQuoteBoard() {
         : await addSupplierPriceColumn({
             brandName,
             supplierId: currentSupplierId,
-            quotedOn: quotedOnRef.current.format('YYYY-MM-DD'),
+            quotedOn: dayjs().format('YYYY-MM-DD'),
           })
       const target = existing ?? created
       if (created) {
@@ -1665,6 +1694,26 @@ export function SupplierQuoteBoard() {
     0,
   )
 
+  /*
+   * 「最后编辑」= 当前供应商所有品牌列里最近一次保存时间（`updatedAt`，历史数据回退 `quotedOn`）。
+   * 报价日期不再让用户手选：价格表的时间本来就是系统事实，手选只会与真实保存时间打架。
+   */
+  const lastEdited = useMemo(() => {
+    let latest: string | null = null
+    let latestAt = 0
+    for (const column of byBrand.columns.values()) {
+      const value = column?.updatedAt ?? column?.quotedOn
+      if (!value) continue
+      const time = dayjs(value).valueOf()
+      if (!Number.isFinite(time)) continue
+      if (time > latestAt) {
+        latestAt = time
+        latest = value
+      }
+    }
+    return latest
+  }, [byBrand.columns])
+
   /**
    * 一张类别表（盘螺 / 直条）的列定义。
    *
@@ -1677,66 +1726,82 @@ export function SupplierQuoteBoard() {
    * <p>三段式而不是 flex 居中：品牌名绝对定位铺满整格并居中，右侧工具叠在上面，
    * 所以工具出现/消失（保存中、保存失败、⋯）都不会把品牌文字挤偏。</p>
    */
-  const brandHeaderOf = (brandName: string) => (
-    <span className="supplier-price-brand-head">
-      <span className="supplier-price-brand-head-title">{brandName}</span>
-      <span className="supplier-price-brand-head-tools">
-        {saveState[brandName] === 'saving' ? (
-          <span aria-hidden="true" style={dotStyle('#faad14')} />
-        ) : null}
-        {saveState[brandName] === 'error' ? (
-          <Tooltip
-            title={t('priceCompare.supplierPrice.saveFailed', {
-              names: brandName,
-            })}
-          >
-            <Button
-              aria-label={t('priceCompare.supplierPrice.saveFailed', {
+  const brandHeaderOf = (brandName: string) => {
+    const column = byBrand.columns.get(brandName) ?? null
+    const lastEdit = formatLastEdit(
+      column?.updatedAt ?? column?.quotedOn ?? null,
+    )
+    return (
+      <span className="supplier-price-brand-head">
+        <span className="supplier-price-brand-head-title">{brandName}</span>
+        <span
+          className="supplier-price-brand-head-meta"
+          title={
+            lastEdit
+              ? t('priceCompare.supplierPrice.lastEditedHint')
+              : t('priceCompare.supplierPrice.notQuotedHint')
+          }
+        >
+          {lastEdit ?? t('priceCompare.supplierPrice.notQuoted')}
+        </span>
+        <span className="supplier-price-brand-head-tools">
+          {saveState[brandName] === 'saving' ? (
+            <span aria-hidden="true" style={dotStyle('#faad14')} />
+          ) : null}
+          {saveState[brandName] === 'error' ? (
+            <Tooltip
+              title={t('priceCompare.supplierPrice.saveFailed', {
                 names: brandName,
               })}
+            >
+              <Button
+                aria-label={t('priceCompare.supplierPrice.saveFailed', {
+                  names: brandName,
+                })}
+                size="small"
+                type="text"
+                onClick={() => void saveBrand(brandName)}
+              >
+                <span style={dotStyle('#ff4d4f')} />
+              </Button>
+            </Tooltip>
+          ) : null}
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: [
+                {
+                  key: 'clear',
+                  icon: <DeleteOutlined />,
+                  label: t('priceCompare.supplierPrice.clearColumn'),
+                  disabled: !canUpdate,
+                },
+                {
+                  key: 'remove',
+                  danger: true,
+                  label: t('priceCompare.supplierPrice.removeColumn'),
+                  disabled: !canDelete,
+                },
+              ],
+              onClick: ({ key }) => {
+                if (key === 'clear') clearBrand(brandName)
+                if (key === 'remove') removeBrand(brandName)
+              },
+            }}
+          >
+            <Button
+              aria-label={t('priceCompare.supplierPrice.removeColumnA11y', {
+                name: brandName,
+              })}
+              icon={<EllipsisOutlined />}
               size="small"
               type="text"
-              onClick={() => void saveBrand(brandName)}
-            >
-              <span style={dotStyle('#ff4d4f')} />
-            </Button>
-          </Tooltip>
-        ) : null}
-        <Dropdown
-          trigger={['click']}
-          menu={{
-            items: [
-              {
-                key: 'clear',
-                icon: <DeleteOutlined />,
-                label: t('priceCompare.supplierPrice.clearColumn'),
-                disabled: !canUpdate,
-              },
-              {
-                key: 'remove',
-                danger: true,
-                label: t('priceCompare.supplierPrice.removeColumn'),
-                disabled: !canDelete,
-              },
-            ],
-            onClick: ({ key }) => {
-              if (key === 'clear') clearBrand(brandName)
-              if (key === 'remove') removeBrand(brandName)
-            },
-          }}
-        >
-          <Button
-            aria-label={t('priceCompare.supplierPrice.removeColumnA11y', {
-              name: brandName,
-            })}
-            icon={<EllipsisOutlined />}
-            size="small"
-            type="text"
-          />
-        </Dropdown>
+            />
+          </Dropdown>
+        </span>
       </span>
-    </span>
-  )
+    )
+  }
 
   /**
    * 一张类别表（盘螺 / 直条）的列定义：行 = 规格，列 = 品牌 → 材质 → 定尺。
@@ -1766,43 +1831,21 @@ export function SupplierQuoteBoard() {
     ]
     let totalWidth = ROW_HEAD_WIDTHS.spec
 
-    /*
-     * 每行只算一次最低价：最低价高亮与异常价标黄**共用这一个 min**（唯一口径）。
-     *
-     * 放在 render 里逐格算会让同一行被算 N 次（N = 该行可见列数），而且两处各算一份就可能
-     * 出现「标了最低价、又被判成异常」的自相矛盾。
-     */
-    const minBySpec = new Map<number, number | null>()
-    for (const row of sheet.rows) {
-      const prices: (number | null)[] = []
-      for (const column of sheet.cellColumns) {
-        if (
-          !catalogHas(
-            group.category,
-            column.brandName,
-            column.material,
-            row.spec,
-            column.length,
-          )
-        ) {
-          continue
-        }
-        prices.push(
-          cellValueOfLeaf(column.brandName, leafOfSpec(column, row.spec)),
-        )
-      }
-      minBySpec.set(row.spec, rowPriceStats(prices).min)
-    }
-
     const material = sheet.material
     for (const brandName of brandNames) {
-      const lengths = group.category?.byBrand
-        .get(brandName)
-        ?.materials.get(material)
-      if (!lengths) continue
+      /*
+       * 定尺列来自**品类模板**（不是商品资料里该品牌有的定尺）：品牌只报 9 米时，
+       * 12 米列仍然保留并整列标「不可填」，保证同一材质下所有供应商的表结构一致。
+       */
+      const lengthKeys = sheet.cellColumns
+        .filter(
+          (column) =>
+            column.brandName === brandName && column.material === material,
+        )
+        .map((column) => column.length)
+      if (lengthKeys.length === 0) continue
       const materialColumns: ColumnsType<SpecRow> = []
       {
-        const lengthKeys = [...lengths.keys()].sort(sortLengths)
         /*
          * `label` 是叶子表头显示的文字：多定尺时是定尺名（9米 / 12米），单定尺时退回材质名
          * （品牌名已经在上一行）。**列宽把手必须跟着它一起渲染** —— 单定尺列也需要能调宽，
@@ -1831,10 +1874,35 @@ export function SupplierQuoteBoard() {
             length === '-' ? BRAND_FLAT_COLUMN_WIDTH : BRAND_COLUMN_WIDTH,
           )
           totalWidth += leafWidth
+          /*
+           * 「整列不可填」：该品牌在商品资料里没有任何这个定尺的规格。
+           * 表头划线 + 单元格斜纹，两层都表达同一件事，不靠颜色单打独斗。
+           */
+          const lengthWritable =
+            group.category?.byBrand
+              .get(brandName)
+              ?.materials.get(material)
+              ?.has(length) ?? false
           return {
             title: (
               <span className="supplier-price-col-head">
-                <span className="supplier-price-col-head-label">{label}</span>
+                <span
+                  className={[
+                    'supplier-price-col-head-label',
+                    lengthWritable ? '' : 'supplier-price-col-head-na',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  title={
+                    lengthWritable
+                      ? undefined
+                      : t('priceCompare.supplierPrice.lengthUnavailable', {
+                          length,
+                        })
+                  }
+                >
+                  {label}
+                </span>
                 <ColumnResizeHandle
                   label={
                     length === '-'
@@ -1863,17 +1931,37 @@ export function SupplierQuoteBoard() {
                   length,
                 )
               ) {
-                // 商品资料里没有这个「品牌 + 材质 + 定尺 + 规格」：格子都不出现
-                return null
+                /*
+                 * 商品资料里没有这个组合：**渲染成不可填的占位**（不是空白）。
+                 * 空白会让人以为漏了数据；斜纹 + 「—」明确表示"这一格不能报价"。
+                 * 两个原因分开说：该品牌没有这个定尺（整列不可填），或没有这个规格。
+                 */
+                const hasLength =
+                  group.category?.byBrand
+                    .get(brandName)
+                    ?.materials.get(material)
+                    ?.has(length) ?? false
+                const reason = hasLength
+                  ? t('priceCompare.supplierPrice.specUnavailable', {
+                      spec: row.spec,
+                    })
+                  : t('priceCompare.supplierPrice.lengthUnavailable', {
+                      length,
+                    })
+                return (
+                  <span
+                    aria-label={reason}
+                    className="supplier-price-cell-na"
+                    role="img"
+                    title={reason}
+                  >
+                    —
+                  </span>
+                )
               }
               const leaf = leafOfSpec(column, row.spec)
               const rowKey = quoteRowKey(leaf)
               const value = cellValueOfLeaf(brandName, leaf)
-              // 与异常价标黄共用同一个 min（每行只算一次，见上面的 minBySpec）
-              const min = minBySpec.get(row.spec) ?? null
-              const isCheapest =
-                value !== null && value > 0 && min !== null && value === min
-              const isAbnormal = isAbnormalPrice(value, min)
               const rowIndex = sheet.indexBySpec.get(row.spec) ?? -1
               const isSelected =
                 selectedBounds !== null &&
@@ -1883,9 +1971,7 @@ export function SupplierQuoteBoard() {
                 boundsContain(selectedBounds, rowIndex, columnIndex)
               const className = [
                 'supplier-price-sheet-input',
-                isCheapest ? 'supplier-price-cheapest' : '',
                 isSelected ? 'supplier-price-cell-selected' : '',
-                isAbnormal ? 'supplier-price-cell-abnormal' : '',
               ]
                 .filter(Boolean)
                 .join(' ')
@@ -1937,41 +2023,21 @@ export function SupplierQuoteBoard() {
                     )
                   }
                   resetToken={bulkResetToken}
-                  /*
-                   * 异常价与最低价都是**只用颜色**表达的语义（WCAG 1.4.1 不允许）：各给一条
-                   * 文字说明，`SheetCell` 内部用 Tooltip 以 hover+focus 触发，键盘可达。
-                   * 两者互斥（最低价 = min，异常价 > min × 1.05），所以一条字符串就够。
-                   */
-                  tooltip={
-                    isAbnormal && value !== null && min !== null
-                      ? t('priceCompare.supplierPrice.abnormalPrice', {
-                          ratio: abnormalRatioPercent(value, min),
-                          min,
-                        })
-                      : isCheapest
-                        ? t('priceCompare.supplierPrice.cheapestHint')
-                        : undefined
-                  }
                   value={value}
                 />
               )
             },
           }
         }
-        if (lengthKeys.length > 1) {
+        /*
+         * 材质已经是**分区标题**（每个材质一张表），列头里不再重复材质名：
+         * 多定尺时叶子格显示定尺（9米 / 12米），单定尺（盘螺）留空，品牌名由上一行表达。
+         * 列宽把手仍然渲染在叶子格上（单定尺列也需要能调宽）。
+         */
+        for (const length of lengthKeys) {
           materialColumns.push({
-            title: material,
-            key: `${brandName}\u0000${material}`,
-            align: 'center',
-            children: lengthKeys.map((length) =>
-              cellOf(length, length === '-' ? '—' : length),
-            ),
-          })
-        } else {
-          // 单定尺（盘螺）：不套定尺层，叶子格直接显示材质名；列宽把手照样保留
-          materialColumns.push({
-            ...cellOf(lengthKeys[0] ?? '-', material),
-            key: `${brandName}\u0000${material}`,
+            ...cellOf(length, lengthKeys.length > 1 ? length : ''),
+            key: `${brandName}\u0000${material}\u0000${length}`,
             align: 'center',
           })
         }
@@ -2060,14 +2126,12 @@ export function SupplierQuoteBoard() {
     <Flex vertical gap={12} className="supplier-price-page">
       {supplierTabs}
       <Flex align="center" gap={8} wrap>
-        <Tooltip title={t('priceCompare.supplierPrice.quotedOnHint')}>
-          <DatePicker
-            allowClear={false}
-            aria-label={t('priceCompare.supplierPrice.quotedOn')}
-            style={{ width: 156 }}
-            value={quotedOn}
-            onChange={(value) => value && setQuotedOn(value)}
-          />
+        <Tooltip title={t('priceCompare.supplierPrice.lastEditedHint')}>
+          <Typography.Text type="secondary">
+            {t('priceCompare.supplierPrice.lastEdited')}：
+            {formatLastEdit(lastEdited) ??
+              t('priceCompare.supplierPrice.neverEdited')}
+          </Typography.Text>
         </Tooltip>
         <Button
           aria-label={t('priceCompare.supplierPrice.undo')}
@@ -2276,48 +2340,55 @@ export function SupplierQuoteBoard() {
                   {group.categoryName}
                 </Typography.Text>
                 {/*
-                 * 材质做成二级 tab：一个材质一张表（行 = 规格，列 = 品牌 × 定尺）。
-                 * 直条有 HRB400/HRB400E/HRB500E 三种材质，混在一张表里列会翻三倍；
-                 * 分开后每张表只有该材质的列，价格列宽压到 4 位数字也放得下。
+                 * 材质**分区堆叠**（不再是二级 tab）：每个材质一张小表，一次全展开。
+                 *
+                 * <p>实测每个材质只有 3–14 行、列 ≤ 6（一家供应商 1–3 个经营品牌），
+                 * 三张表一屏就能看完；做成 tab 反而要多点两次才能看全同一批规格。
+                 * 表格仍是「行 = 规格，列 = 品牌 × 定尺」，互不干扰。</p>
                  */}
-                <Tabs
-                  destroyOnHidden={false}
-                  items={group.sheets.map((sheet) => {
-                    /*
-                     * 列定义与 `scroll.x` 取自**同一处**：叶列宽可被用户拖动 / 方向键调整，
-                     * 两处各算一遍就会变成「列变宽了、横向滚动范围还是老宽度」。
-                     */
-                    const { columns: sheetColumns, totalWidth } =
-                      columnsOfSheet(group, sheet)
-                    return {
-                      key: sheet.material,
-                      label: sheet.material,
-                      children: (
-                        <Table<SpecRow>
-                          bordered
-                          columns={sheetColumns}
-                          dataSource={sheet.rows}
-                          pagination={false}
-                          rowKey={(row) => row.spec}
-                          /*
-                           * 始终给 `scroll.x`：表格宽度 = 各列宽之和，**不随容器拉伸**。
-                           * 之前不传 scroll 时表格会撑满 100%，价格列被摊到几百像素宽
-                           * （用户反馈「怎么变成自动拉伸了」）。
-                           */
-                          scroll={{ x: totalWidth }}
-                          size="small"
-                          tableLayout="fixed"
-                        />
-                      ),
-                    }
-                  })}
-                  onChange={() => {
-                    // 切材质就是换了一张表：行/列下标不再可比，选区必须清空
-                    setSelection(null)
-                  }}
-                  size="small"
-                  type="card"
-                />
+                {group.sheets.map((sheet) => {
+                  /*
+                   * 列定义与 `scroll.x` 取自**同一处**：叶列宽可被用户拖动 / 方向键调整，
+                   * 两处各算一遍就会变成「列变宽了、横向滚动范围还是老宽度」。
+                   */
+                  const { columns: sheetColumns, totalWidth } = columnsOfSheet(
+                    group,
+                    sheet,
+                  )
+                  return (
+                    <section
+                      className="supplier-price-sheet-material"
+                      key={sheet.material}
+                    >
+                      <div className="supplier-price-sheet-material-head">
+                        <span className="supplier-price-sheet-material-name">
+                          {sheet.material}
+                        </span>
+                        <span className="supplier-price-sheet-material-meta">
+                          {t('priceCompare.supplierPrice.materialScale', {
+                            columns: sheet.cellColumns.length,
+                            rows: sheet.rows.length,
+                          })}
+                        </span>
+                      </div>
+                      <Table<SpecRow>
+                        bordered
+                        columns={sheetColumns}
+                        dataSource={sheet.rows}
+                        pagination={false}
+                        rowKey={(row) => row.spec}
+                        /*
+                         * 始终给 `scroll.x`：表格宽度 = 各列宽之和，**不随容器拉伸**。
+                         * 之前不传 scroll 时表格会撑满 100%，价格列被摊到几百像素宽
+                         * （用户反馈「怎么变成自动拉伸了」）。
+                         */
+                        scroll={{ x: totalWidth }}
+                        size="small"
+                        tableLayout="fixed"
+                      />
+                    </section>
+                  )
+                })}
               </div>
             ))}
           </div>

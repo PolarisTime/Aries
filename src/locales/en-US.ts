@@ -2891,9 +2891,18 @@ export const enUS = {
       brand: 'Brand',
       supplier: 'Supplier',
       supplierPlaceholder: 'Select a supplier',
-      quotedOn: 'Quoted on',
-      quotedOnHint:
-        'Used only when creating a brand column; existing columns keep their own quoted date',
+      lastEdited: 'Last edited',
+      lastEditedHint:
+        'Recorded automatically when a (supplier, brand) price list is saved as a whole; no manual date entry',
+      neverEdited: 'Not saved yet',
+      notQuoted: 'Not quoted',
+      notQuotedHint:
+        'This supplier has no price list for this brand yet; it is created on the first save',
+      lengthUnavailable:
+        'No {{length}} length for this brand in material data; this column cannot be filled',
+      specUnavailable:
+        'No {{spec}} spec for this brand in material data; this cell cannot be filled',
+      materialScale: '{{columns}} columns · {{rows}} rows',
       lengthColumns: 'Length columns',
       notApplicable: 'Not available for this spec',
       refresh: 'Refresh',
@@ -3021,9 +3030,7 @@ export const enUS = {
         'A leading + - * / adjusts the current price; otherwise every filled cell is set to that price (blank cells are skipped)',
       batchAdjustApplied: 'Adjusted {{count}} cell(s)',
       batchAdjustNothing: 'No prices to adjust in the selection',
-      abnormalPrice:
-        '{{ratio}}% above this row’s lowest price (lowest {{min}})',
-      cheapestHint: 'Lowest price in this row',
+
       resizeColumn: 'Resize the "{{name}}" column',
       resizeColumnHint:
         'Drag to resize; when focused, use the left/right arrow keys; Home restores the default',

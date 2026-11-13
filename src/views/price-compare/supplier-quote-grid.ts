@@ -103,12 +103,74 @@ export function categoryRankOf(category: string): number {
   return index >= 0 ? index : 50
 }
 
-/** 材质分组顺序：HRB400 → HRB400E → HPB300 → 其它（组内仍按规格数值排序）。 */
-const MATERIAL_ORDER = ['HRB400', 'HRB400E', 'HPB300']
+/** 材质分组顺序：HRB400 → HRB400E → HRB500E → HPB300 → 其它（组内仍按规格数值排序）。 */
+const MATERIAL_ORDER = ['HRB400', 'HRB400E', 'HRB500E', 'HPB300']
 
 export function materialRankOf(material: string): number {
   const index = MATERIAL_ORDER.indexOf((material ?? '').trim().toUpperCase())
   return index >= 0 ? index : 50
+}
+
+/**
+ * 品类报价模板：规格 / 定尺 / 材质**固定**，是报价表的骨架。
+ *
+ * <p>为什么固定：行如果按「该供应商各品牌商品资料的并集」算，商品资料缺一项（某品牌没维护
+ * 36 规格、或只报 9 米）时整行/整列就会消失，两张表对不上、也没法横向比较；
+ * 固定模板后，任何供应商打开都是同一副骨架，缺数据的格子在渲染时标成「不可填」。</p>
+ *
+ * <p>只覆盖业务确认的两个品类；其它品类（历史遗留 / 新品类）仍按商品资料派生，不硬编码。</p>
+ */
+export type CategorySpecTemplate = {
+  /** 规格（升序），报价表固定行。 */
+  specs: number[]
+  /** 定尺（已按报价单习惯排序），报价表固定列。 */
+  lengths: string[]
+  /** 材质（顺序即表内顺序）。 */
+  materials: string[]
+}
+
+export const CATEGORY_SPEC_TEMPLATES: Readonly<
+  Record<string, CategorySpecTemplate>
+> = {
+  直条: {
+    specs: [10, 12, 14, 16, 18, 20, 22, 25, 28, 32, 36, 40],
+    lengths: ['9米', '12米'],
+    materials: ['HRB400', 'HRB400E', 'HRB500E'],
+  },
+  盘螺: {
+    specs: [6, 8, 10],
+    lengths: ['-'],
+    materials: ['HRB400', 'HRB400E'],
+  },
+}
+
+/** 取品类模板；没有模板的品类返回 null（调用方回退到商品资料派生）。 */
+export function categoryTemplateOf(
+  category: string,
+): CategorySpecTemplate | null {
+  const name = (category ?? '').trim()
+  return Object.hasOwn(CATEGORY_SPEC_TEMPLATES, name)
+    ? (CATEGORY_SPEC_TEMPLATES[name] ?? null)
+    : null
+}
+
+/**
+ * 该品类的固定规格；无模板返回 null（调用方自行按商品资料算）。
+ *
+ * <p>返回副本，避免调用方排序/过滤时改到常量本身。</p>
+ */
+export function templateSpecsOf(category: string): number[] | null {
+  const template = categoryTemplateOf(category)
+  return template ? [...template.specs] : null
+}
+
+/** 该品类的固定定尺；无模板时回退到传入的“商品资料里出现过的定尺”。 */
+export function templateLengthsOf(
+  category: string,
+  fallback: readonly string[],
+): string[] {
+  const template = categoryTemplateOf(category)
+  return template ? [...template.lengths] : [...fallback]
 }
 
 /**

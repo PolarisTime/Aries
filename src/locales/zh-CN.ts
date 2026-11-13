@@ -2883,9 +2883,15 @@ export const zhCN = {
       brand: '品牌',
       supplier: '供应商',
       supplierPlaceholder: '选择供应商',
-      quotedOn: '报价日期',
-      quotedOnHint:
-        '新建品牌列时使用该报价日期；已有列显示各自的报价日期，保存不会改动它',
+      lastEdited: '最后编辑',
+      lastEditedHint:
+        '价格表按（供应商, 品牌）整列保存时自动记录最后编辑时间，不需要手工选日期',
+      neverEdited: '尚未保存',
+      notQuoted: '未报价',
+      notQuotedHint: '该供应商这个品牌还没有价格表，首次录入并保存后自动创建',
+      lengthUnavailable: '商品资料里该品牌没有 {{length}} 定尺，这一列不能填',
+      specUnavailable: '商品资料里该品牌没有 {{spec}} 规格，这一格不能填',
+      materialScale: '{{columns}} 列 · {{rows}} 行',
       lengthColumns: '定尺列',
       notApplicable: '该规格没有这个定尺',
       refresh: '刷新',
@@ -3008,8 +3014,7 @@ export const zhCN = {
         '以 + - * / 开头表示在当前价上调整；否则把所有已填格子设为该价（空格跳过）',
       batchAdjustApplied: '已调整 {{count}} 格',
       batchAdjustNothing: '选区内没有可调整的价格',
-      abnormalPrice: '高于本行最低价 {{ratio}}%（最低 {{min}}）',
-      cheapestHint: '本行最低价',
+
       resizeColumn: '调整「{{name}}」列宽',
       resizeColumnHint: '拖动调整列宽；聚焦后按左右方向键调整，Home 恢复默认',
       shortcuts: '快捷键',
