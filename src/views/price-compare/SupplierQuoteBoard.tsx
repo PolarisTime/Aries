@@ -1713,6 +1713,40 @@ export function SupplierQuoteBoard() {
   }, [byBrand.columns])
 
   /**
+   * 品类级「已填 / 可填」计数：分母只算商品资料里真实存在的格子（斜纹格不计入），
+   * 与列头「未报价」、单元格可填判断共用同一套 `catalogHas`，不另算一份。
+   */
+  const categoryProgress = (group: CategoryGroup) => {
+    let total = 0
+    let filled = 0
+    for (const sheet of group.sheets) {
+      for (const row of sheet.rows) {
+        for (const column of sheet.cellColumns) {
+          if (
+            !catalogHas(
+              group.category,
+              column.brandName,
+              column.material,
+              row.spec,
+              column.length,
+            )
+          ) {
+            continue
+          }
+          total += 1
+          if (
+            cellValueOfLeaf(column.brandName, leafOfSpec(column, row.spec)) !==
+            null
+          ) {
+            filled += 1
+          }
+        }
+      }
+    }
+    return { total, filled }
+  }
+
+  /**
    * 一张类别表（盘螺 / 直条）的列定义。
    *
    * <p>类别已经由分区标题表达，所以表里不再保留「品牌（类别）」列；定尺子列只取这一张表
@@ -1732,70 +1766,72 @@ export function SupplierQuoteBoard() {
     return (
       <span className="supplier-price-brand-head">
         <span className="supplier-price-brand-head-title">{brandName}</span>
-        <span
-          className="supplier-price-brand-head-meta"
-          title={
-            lastEdit
-              ? t('priceCompare.supplierPrice.lastEditedHint')
-              : t('priceCompare.supplierPrice.notQuotedHint')
-          }
-        >
-          {lastEdit ?? t('priceCompare.supplierPrice.notQuoted')}
-        </span>
-        <span className="supplier-price-brand-head-tools">
-          {saveState[brandName] === 'saving' ? (
-            <span aria-hidden="true" style={dotStyle('#faad14')} />
-          ) : null}
-          {saveState[brandName] === 'error' ? (
-            <Tooltip
-              title={t('priceCompare.supplierPrice.saveFailed', {
-                names: brandName,
-              })}
-            >
-              <Button
-                aria-label={t('priceCompare.supplierPrice.saveFailed', {
+        <span className="supplier-price-brand-head-line">
+          <span
+            className="supplier-price-brand-head-meta"
+            title={
+              lastEdit
+                ? t('priceCompare.supplierPrice.lastEditedHint')
+                : t('priceCompare.supplierPrice.notQuotedHint')
+            }
+          >
+            {lastEdit ?? t('priceCompare.supplierPrice.notQuoted')}
+          </span>
+          <span className="supplier-price-brand-head-tools">
+            {saveState[brandName] === 'saving' ? (
+              <span aria-hidden="true" style={dotStyle('#faad14')} />
+            ) : null}
+            {saveState[brandName] === 'error' ? (
+              <Tooltip
+                title={t('priceCompare.supplierPrice.saveFailed', {
                   names: brandName,
                 })}
+              >
+                <Button
+                  aria-label={t('priceCompare.supplierPrice.saveFailed', {
+                    names: brandName,
+                  })}
+                  size="small"
+                  type="text"
+                  onClick={() => void saveBrand(brandName)}
+                >
+                  <span style={dotStyle('#ff4d4f')} />
+                </Button>
+              </Tooltip>
+            ) : null}
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: [
+                  {
+                    key: 'clear',
+                    icon: <DeleteOutlined />,
+                    label: t('priceCompare.supplierPrice.clearColumn'),
+                    disabled: !canUpdate,
+                  },
+                  {
+                    key: 'remove',
+                    danger: true,
+                    label: t('priceCompare.supplierPrice.removeColumn'),
+                    disabled: !canDelete,
+                  },
+                ],
+                onClick: ({ key }) => {
+                  if (key === 'clear') clearBrand(brandName)
+                  if (key === 'remove') removeBrand(brandName)
+                },
+              }}
+            >
+              <Button
+                aria-label={t('priceCompare.supplierPrice.removeColumnA11y', {
+                  name: brandName,
+                })}
+                icon={<EllipsisOutlined />}
                 size="small"
                 type="text"
-                onClick={() => void saveBrand(brandName)}
-              >
-                <span style={dotStyle('#ff4d4f')} />
-              </Button>
-            </Tooltip>
-          ) : null}
-          <Dropdown
-            trigger={['click']}
-            menu={{
-              items: [
-                {
-                  key: 'clear',
-                  icon: <DeleteOutlined />,
-                  label: t('priceCompare.supplierPrice.clearColumn'),
-                  disabled: !canUpdate,
-                },
-                {
-                  key: 'remove',
-                  danger: true,
-                  label: t('priceCompare.supplierPrice.removeColumn'),
-                  disabled: !canDelete,
-                },
-              ],
-              onClick: ({ key }) => {
-                if (key === 'clear') clearBrand(brandName)
-                if (key === 'remove') removeBrand(brandName)
-              },
-            }}
-          >
-            <Button
-              aria-label={t('priceCompare.supplierPrice.removeColumnA11y', {
-                name: brandName,
-              })}
-              icon={<EllipsisOutlined />}
-              size="small"
-              type="text"
-            />
-          </Dropdown>
+              />
+            </Dropdown>
+          </span>
         </span>
       </span>
     )
@@ -2144,9 +2180,16 @@ export function SupplierQuoteBoard() {
   return (
     <Flex vertical gap={12} className="supplier-price-page">
       {supplierTabs}
-      <Flex align="center" gap={8} wrap>
+      {/*
+       * 工具栏压成一行：最后编辑 / 撤销重做 / 刷新 / 搜索 / 只看未填 / 状态。
+       * 只读提示与「快捷键」靠右，不与筛选控件混在一起。
+       */}
+      <Flex align="center" className="supplier-price-toolbar" gap={8} wrap>
         <Tooltip title={t('priceCompare.supplierPrice.lastEditedHint')}>
-          <Typography.Text type="secondary">
+          <Typography.Text
+            className="supplier-price-last-edited"
+            type="secondary"
+          >
             {t('priceCompare.supplierPrice.lastEdited')}：
             {formatLastEdit(lastEdited) ??
               t('priceCompare.supplierPrice.neverEdited')}
@@ -2178,15 +2221,12 @@ export function SupplierQuoteBoard() {
         >
           {t('priceCompare.supplierPrice.refresh')}
         </Button>
-      </Flex>
-
-      <Flex align="center" gap={8} wrap>
         <Input
           allowClear
           aria-label={t('priceCompare.supplierPrice.searchSpecs')}
           placeholder={t('priceCompare.supplierPrice.searchSpecs')}
           prefix={<SearchOutlined />}
-          style={{ width: 260 }}
+          style={{ width: 240 }}
           value={keyword}
           onChange={(event) => {
             setKeyword(event.target.value)
@@ -2209,73 +2249,80 @@ export function SupplierQuoteBoard() {
             {t('priceCompare.supplierPrice.saveAll', { count: pendingCount })}
           </Typography.Text>
         ) : null}
-        {!canUpdate ? (
-          <Typography.Text type="warning">
-            {t('priceCompare.supplierPrice.readOnlyHint')}
-          </Typography.Text>
-        ) : null}
+        <Flex align="center" className="supplier-price-toolbar-tail" gap={8}>
+          {!canUpdate ? (
+            <Typography.Text type="warning">
+              {t('priceCompare.supplierPrice.readOnlyHint')}
+            </Typography.Text>
+          ) : null}
+          <Tooltip
+            title={
+              <Flex gap={2} vertical>
+                <span>{t('priceCompare.supplierPrice.shortcutTab')}</span>
+                <span>{t('priceCompare.supplierPrice.shortcutFill')}</span>
+                <span>{t('priceCompare.supplierPrice.shortcutDelete')}</span>
+                <span>{t('priceCompare.supplierPrice.shortcutClear')}</span>
+              </Flex>
+            }
+          >
+            <Button size="small" type="text">
+              {t('priceCompare.supplierPrice.shortcuts')}
+            </Button>
+          </Tooltip>
+        </Flex>
       </Flex>
 
       {/*
-       * 选区工具栏：选中格数 + 四个批量动作。
+       * 选区工具栏：**只有真的选中了格子才出现**（否则整行灰按钮常驻，页面显得很空）。
        *
        * 键盘路径（Ctrl+D / Ctrl+R / Delete）是主路径，但按钮不能省：鼠标用户、触屏用户
        * 和读屏用户都要有可点的等价入口；按钮文案里同时带着快捷键，等于一处可见的说明。
        */}
-      <Flex align="center" gap={8} wrap>
-        {selection ? (
+      {selection ? (
+        <Flex
+          align="center"
+          className="supplier-price-selection-bar"
+          gap={8}
+          wrap
+        >
           <Typography.Text type="secondary">
             {t('priceCompare.supplierPrice.selectionCount', {
               count: selectionWritableCount,
             })}
           </Typography.Text>
-        ) : null}
-        <Button
-          disabled={!canUpdate || selectionWritableCount <= 1}
-          onClick={() => fillSelectedCells('down')}
-          size="small"
-        >
-          {t('priceCompare.supplierPrice.fillDown')}
-        </Button>
-        <Button
-          disabled={!canUpdate || selectionWritableCount <= 1}
-          onClick={() => fillSelectedCells('right')}
-          size="small"
-        >
-          {t('priceCompare.supplierPrice.fillRight')}
-        </Button>
-        <Button
-          disabled={!canUpdate || !selection}
-          onClick={() => {
-            setBatchText('')
-            setBatchOpen(true)
-          }}
-          size="small"
-        >
-          {t('priceCompare.supplierPrice.batchAdjust')}
-        </Button>
-        <Button
-          disabled={!canUpdate || !selection}
-          onClick={clearSelectedCells}
-          size="small"
-        >
-          {t('priceCompare.supplierPrice.clearSelection')}
-        </Button>
-        <Tooltip
-          title={
-            <Flex gap={2} vertical>
-              <span>{t('priceCompare.supplierPrice.shortcutTab')}</span>
-              <span>{t('priceCompare.supplierPrice.shortcutFill')}</span>
-              <span>{t('priceCompare.supplierPrice.shortcutDelete')}</span>
-              <span>{t('priceCompare.supplierPrice.shortcutClear')}</span>
-            </Flex>
-          }
-        >
-          <Button size="small" type="text">
-            {t('priceCompare.supplierPrice.shortcuts')}
+          <Button
+            disabled={!canUpdate || selectionWritableCount <= 1}
+            onClick={() => fillSelectedCells('down')}
+            size="small"
+          >
+            {t('priceCompare.supplierPrice.fillDown')}
           </Button>
-        </Tooltip>
-      </Flex>
+          <Button
+            disabled={!canUpdate || selectionWritableCount <= 1}
+            onClick={() => fillSelectedCells('right')}
+            size="small"
+          >
+            {t('priceCompare.supplierPrice.fillRight')}
+          </Button>
+          <Button
+            disabled={!canUpdate}
+            onClick={() => {
+              setBatchText('')
+              setBatchOpen(true)
+            }}
+            size="small"
+          >
+            {t('priceCompare.supplierPrice.batchAdjust')}
+          </Button>
+          <Button
+            disabled={!canUpdate}
+            onClick={clearSelectedCells}
+            size="small"
+          >
+            {t('priceCompare.supplierPrice.clearSelection')}
+          </Button>
+        </Flex>
+      ) : null}
 
       {/*
        * 批量调价：一个输入框，两套语义（以运算符开头 = 相对调整，否则 = 设为该价）。
@@ -2355,9 +2402,17 @@ export function SupplierQuoteBoard() {
                 className="supplier-price-sheet-category"
                 key={group.categoryName}
               >
-                <Typography.Text className="supplier-price-transposed-category">
-                  {group.categoryName}
-                </Typography.Text>
+                <div className="supplier-price-sheet-category-head">
+                  <span className="supplier-price-sheet-category-name">
+                    {group.categoryName}
+                  </span>
+                  <span className="supplier-price-sheet-category-meta">
+                    {t('priceCompare.supplierPrice.categoryScale', {
+                      materials: group.sheets.length,
+                      ...categoryProgress(group),
+                    })}
+                  </span>
+                </div>
                 {/*
                  * 材质**分区堆叠**（不再是二级 tab）：每个材质一张小表，一次全展开。
                  *

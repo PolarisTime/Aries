@@ -324,11 +324,29 @@
   margin-top: var(--space-sm);
 }
 
-.supplier-price-transposed-category {
-  display: block;
-  margin-bottom: var(--space-xxs);
+/*
+ * 品类标题（盘螺 / 直条）：名称 + 该品类的「已填 / 可填」计数。
+ *
+ * 与材质标题构成两级信息层级：品类是分区，材质是分区里的表。
+ */
+.supplier-price-sheet-category-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs, 8px);
+  margin: 0 0 var(--space-xs, 8px);
+  padding-inline-start: var(--space-xs, 8px);
+  border-inline-start: 3px solid var(--ant-color-primary);
+}
+
+.supplier-price-sheet-category-name {
+  font-size: 14px;
   font-weight: 600;
-  color: var(--ant-color-text-secondary);
+  color: var(--ant-color-text);
+}
+
+.supplier-price-sheet-category-meta {
+  font-size: 12px;
+  color: var(--ant-color-text-tertiary);
 }
 
 .supplier-price-transposed-empty {
@@ -403,7 +421,8 @@
   display: flex;
   align-items: baseline;
   gap: var(--space-xs, 8px);
-  margin-bottom: var(--space-xxs, 4px);
+  margin: 0 0 var(--space-xxs, 4px);
+  padding-inline-start: var(--space-xs, 8px);
 }
 
 .supplier-price-sheet-material-name {
@@ -423,12 +442,11 @@
  * 这样「保存中」「保存失败」「⋯」出现或消失都不会把品牌文字挤向左。
  */
 .supplier-price-brand-head {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 0;
   width: 100%;
   min-height: 30px;
 }
@@ -436,30 +454,47 @@
 .supplier-price-brand-head-title {
   text-align: center;
   white-space: nowrap;
-  /*
-   * 只给右侧工具留 20px，左侧留 4px：盘螺的品牌列只有 96px，
-   * 两边都留 20px 会把「武钢汉钢」挤到和 ⋯ 图标重叠。
-   */
-  padding-inline: 4px 20px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* 品牌列头第二行：最后编辑时间（没有价格表时显示「未报价」） */
+/*
+ * 品牌列头第二行：最后编辑 / 未报价 + 更多菜单。
+ *
+ * 两者同一行，⋯ 不再绝对定位覆盖日期（此前 ⋯ 压在「11-03 11:48」右侧，
+ * 窄列里直接挡住文字）。尺寸压到 16px，保持表头只有两行。
+ */
+.supplier-price-brand-head-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  max-width: 100%;
+}
+
 .supplier-price-brand-head-meta {
   font-size: 11px;
-  line-height: 1.2;
+  line-height: 16px;
   font-weight: 400;
   color: var(--ant-color-text-tertiary);
   white-space: nowrap;
 }
 
 .supplier-price-brand-head-tools {
-  position: absolute;
-  inset-inline-end: 0;
-  top: 50%;
+  position: static;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  transform: translateY(-50%);
+  gap: 1px;
+  transform: none;
+}
+
+.supplier-price-brand-head-tools .ant-btn {
+  min-width: 16px;
+  height: 16px;
+  padding-inline: 0;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 /*
@@ -547,4 +582,33 @@
 .supplier-price-col-resize:focus-visible {
   outline: 2px solid var(--ant-color-primary, #1677ff);
   outline-offset: -2px;
+}
+
+/*
+ * 工具栏：所有全局动作收进一行（面板化）。
+ *
+ * <p>此前是三个各自独立的 Flex 行（最后一排还是常驻的灰色选区按钮），视觉上像三块
+ * 互不相关的控件。现在：第一行放全局动作与筛选；选区动作只在真的选中格子时出现，
+ * 用主色浅底区分「这是针对选区的临时操作」。</p>
+ */
+.supplier-price-toolbar {
+  padding: var(--space-xs, 8px) var(--space-md, 16px);
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: var(--ant-border-radius-lg, 8px);
+}
+
+.supplier-price-toolbar-tail {
+  margin-inline-start: auto;
+}
+
+.supplier-price-last-edited {
+  white-space: nowrap;
+}
+
+.supplier-price-selection-bar {
+  padding: var(--space-xxs, 4px) var(--space-md, 16px);
+  background: var(--ant-color-primary-bg, #e6f4ff);
+  border: 1px solid var(--ant-color-primary-border, #91caff);
+  border-radius: var(--ant-border-radius-lg, 8px);
 }

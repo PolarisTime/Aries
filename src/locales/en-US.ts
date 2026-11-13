@@ -2903,6 +2903,8 @@ export const enUS = {
       specUnavailable:
         'No {{spec}} spec for this brand in material data; this cell cannot be filled',
       materialScale: '{{columns}} columns · {{rows}} rows',
+      categoryScale:
+        '{{materials}} material(s) · {{filled}}/{{total}} cells filled',
       lengthColumns: 'Length columns',
       notApplicable: 'Not available for this spec',
       refresh: 'Refresh',

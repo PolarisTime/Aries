@@ -465,7 +465,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     const sectionOf = (name: string) =>
       sections.find((node) =>
         node
-          .querySelector('.supplier-price-transposed-category')
+          .querySelector('.supplier-price-sheet-category-name')
           ?.textContent?.includes(name),
       ) as HTMLElement
 
