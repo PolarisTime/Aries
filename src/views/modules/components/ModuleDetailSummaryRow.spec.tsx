@@ -91,16 +91,22 @@ describe('ModuleDetailSummaryRow', () => {
   })
 
   /** 把合计行挂进真实 antd 表格的 footer：列槽位与明细表完全同一份。 */
-  function renderSummary(cells: ModuleDetailSummaryCell[]) {
+  function renderSummary(
+    cells: ModuleDetailSummaryCell[],
+    customColumns: TableColumnsType<Row> = columns,
+  ) {
     act(() => {
       root.render(
         createElement(Table<Row>, {
           rowKey: 'id',
-          columns,
+          columns: customColumns,
           dataSource,
           pagination: false,
           summary: () =>
-            createElement(ModuleDetailSummaryRow, { columns, cells }),
+            createElement(ModuleDetailSummaryRow, {
+              columns: customColumns,
+              cells,
+            }),
         }),
       )
     })
@@ -165,6 +171,28 @@ describe('ModuleDetailSummaryRow', () => {
     expect(text).toContain('数量 5')
     // 宁可多一段，也不静默丢掉合计值
     expect(text).toContain('行数 1')
+  })
+
+  /*
+   * 物流单明细没有「金额」列，但共用的 `buildDefaultLineItemSummary` 仍会产出 amount 合计。
+   * 收成一句后它会变成没头没尾的「· 0.00 ·」，必须丢掉；而自带文字标签的
+   * 「合计（N 行）」对不上列也要保留。
+   */
+  it('对不上列且值为纯数字的单元格被丢弃，自带文字标签的保留', () => {
+    // 物流单形态：明细列里没有「金额」，但共用的合计仍会产出 amount
+    const withoutAmount = columns.filter(
+      (column) => (column as { dataIndex?: unknown }).dataIndex !== 'amount',
+    )
+    renderSummary(
+      [
+        { key: 'rowCount', dataIndex: '#', value: '合计（1 行）' },
+        { key: 'quantity', dataIndex: 'quantity', value: '5' },
+        { key: 'amount', dataIndex: 'amount', value: '0.00' },
+      ],
+      withoutAmount,
+    )
+
+    expect(footerTexts()).toEqual(['合计（1 行） · 数量 5'])
   })
 
   it('没有可用单元格时整行不渲染（空表交给 antd 空态）', () => {

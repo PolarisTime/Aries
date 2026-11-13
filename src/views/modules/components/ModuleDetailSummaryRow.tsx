@@ -142,7 +142,20 @@ export function ModuleDetailSummaryRow({
         matched && typeof column?.title === 'string'
           ? column.title.trim()
           : undefined
-      return { ...(label ? { label } : {}), value: String(cell.value) }
+      const value = String(cell.value)
+      /*
+       * 没有列可对、值又是纯数字的单元格直接丢掉。
+       *
+       * <p>典型场景：物流单明细没有「金额」列，但 `buildDefaultLineItemSummary` 是六个模块
+       * 共用的，仍会产出 amount 合计 —— 收成一句后它就成了没头没尾的「· 0.00 ·」。
+       * 收成文字行之后，标签由列名提供，**对不上列的纯数字没有意义**（旧版逐列渲染时它
+       * 还能落到某个列槽里，现在只会变成噪声）。</p>
+       *
+       * <p>反过来，对不上列但本身是短语的单元格必须保留 —— 合计首格
+       * 「合计（N 行）」（`dataIndex: '#'`）就属于这类，它自带文字标签。</p>
+       */
+      if (!label && /^-?[\d.,\s]+$/.test(value)) return null
+      return { ...(label ? { label } : {}), value }
     })
     .filter((part): part is { label?: string; value: string } => Boolean(part))
 
