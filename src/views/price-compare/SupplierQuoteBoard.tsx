@@ -29,6 +29,7 @@ import {
   type ChangeEvent as ReactChangeEvent,
   type ClipboardEvent as ReactClipboardEvent,
   type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
@@ -1862,6 +1863,7 @@ export function SupplierQuoteBoard() {
         const cellOf = (
           length: string,
           label: string,
+          headerNode?: ReactNode,
         ): ColumnsType<SpecRow>[number] => {
           const columnIndex =
             columnIndexOf.get(`${brandName}\u0000${material}\u0000${length}`) ??
@@ -1891,23 +1893,25 @@ export function SupplierQuoteBoard() {
           return {
             title: (
               <span className="supplier-price-col-head">
-                <span
-                  className={[
-                    'supplier-price-col-head-label',
-                    lengthWritable ? '' : 'supplier-price-col-head-na',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  title={
-                    lengthWritable
-                      ? undefined
-                      : t('priceCompare.supplierPrice.lengthUnavailable', {
-                          length,
-                        })
-                  }
-                >
-                  {label}
-                </span>
+                {headerNode ?? (
+                  <span
+                    className={[
+                      'supplier-price-col-head-label',
+                      lengthWritable ? '' : 'supplier-price-col-head-na',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    title={
+                      lengthWritable
+                        ? undefined
+                        : t('priceCompare.supplierPrice.lengthUnavailable', {
+                            length,
+                          })
+                    }
+                  >
+                    {label}
+                  </span>
+                )}
                 <ColumnResizeHandle
                   label={
                     length === '-'
@@ -2039,9 +2043,18 @@ export function SupplierQuoteBoard() {
          * 多定尺时叶子格显示定尺（9米 / 12米），单定尺（盘螺）留空，品牌名由上一行表达。
          * 列宽把手仍然渲染在叶子格上（单定尺列也需要能调宽）。
          */
+        if (lengthKeys.length === 1) {
+          // 单定尺（盘螺）：品牌表头直接坐在价格列上，省掉一行空表头
+          columns.push({
+            ...cellOf(lengthKeys[0] ?? '-', '', brandHeaderOf(brandName)),
+            key: brandName,
+            align: 'center',
+          })
+          continue
+        }
         for (const length of lengthKeys) {
           materialColumns.push({
-            ...cellOf(length, lengthKeys.length > 1 ? length : ''),
+            ...cellOf(length, length),
             key: `${brandName}\u0000${material}\u0000${length}`,
             align: 'center',
           })
