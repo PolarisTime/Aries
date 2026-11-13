@@ -26,6 +26,13 @@ const feedback = vi.hoisted(() => ({
     warning: vi.fn(),
   },
   modal: { confirm: vi.fn() },
+  notification: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    destroy: vi.fn(),
+  },
 }))
 
 vi.mock('@/api/market/supplier-price-lists', () => priceApi)
@@ -181,6 +188,11 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     feedback.message.info.mockReset()
     feedback.message.warning.mockReset()
     feedback.modal.confirm.mockReset()
+    feedback.notification.success.mockReset()
+    feedback.notification.error.mockReset()
+    feedback.notification.info.mockReset()
+    feedback.notification.warning.mockReset()
+    feedback.notification.destroy.mockReset()
 
     container = document.createElement('div')
     document.body.appendChild(container)
@@ -587,12 +599,15 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     )
   })
 
-  it('只读账号不可编辑', async () => {
+  it('只读账号不可编辑，只读提示走 message 而不是页内文字', async () => {
     permissions.canWrite = false
     await render()
 
     expect(cellInput('中天 HRB400E 12 9米')?.disabled).toBe(true)
-    expect(container.textContent).toContain(
+    expect(feedback.message.warning).toHaveBeenCalledWith(
+      i18n.t('priceCompare.supplierPrice.readOnlyHint'),
+    )
+    expect(container.textContent).not.toContain(
       i18n.t('priceCompare.supplierPrice.readOnlyHint'),
     )
   })

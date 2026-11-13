@@ -2905,9 +2905,9 @@ export const enUS = {
         '{{materials}} material(s) · {{filled}}/{{total}} cells filled',
       lengthColumns: 'Length columns',
       notApplicable: 'Not available for this spec',
-      saveAll: 'Save ({{count}})',
       savedBrands: 'Saved {{count}} brand column(s)',
-      saveFailedRetry: '{{names}} failed to save — click to retry',
+      saveFailedNames:
+        'Failed to save: {{names}}; changes are kept — you can retry',
       saveNothing: 'Nothing to save',
       material: 'Material',
       specNo: 'Size',

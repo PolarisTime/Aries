@@ -1,6 +1,5 @@
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Alert,
   Button,
   Checkbox,
   Empty,
@@ -40,7 +39,7 @@ import {
 import { fetchSupplierOptions } from '@/api/master/supplier-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useHasPermission } from '@/hooks/usePermission'
-import { message, modal } from '@/utils/antd-app'
+import { message, modal, notification } from '@/utils/antd-app'
 import {
   type BrandDraft,
   buildBrandCatalog,
@@ -124,6 +123,14 @@ const ROW_HEAD_WIDTHS = {
 const BRAND_COLUMN_WIDTH = 64
 /* 单定尺（盘螺）时品牌表头直接坐在价格列上，64px 放不下「武钢汉钢」+ ⋯，列宽单独放宽。 */
 const BRAND_FLAT_COLUMN_WIDTH = 96
+
+/*
+ * 通知卡片的固定 key：同一类提示只保留一张。重复失败时 key 相同 → antd 原地刷新卡片，
+ * 不会一失败就叠出一串；失败消除后调用 `notification.destroy(key)` 主动收起。
+ */
+const SAVE_FAILED_NOTIFICATION_KEY = 'supplier-price-save-failed'
+const DRAFTS_RESTORED_NOTIFICATION_KEY = 'supplier-price-drafts-restored'
+const SPECS_FAILED_NOTIFICATION_KEY = 'supplier-price-specs-failed'
 
 /** 定尺排序：9米 → 12米 → 其它 → 不分定尺(-)，与报价单习惯一致。 */
 const sortLengths = (left: string, right: string) => {
@@ -1560,15 +1567,93 @@ export function SupplierQuoteBoard() {
 
   /* ---------------------------------------------------------------- 渲染 */
 
-  /** 保存失败的品牌：表头不再有红点，失败提示统一放在工具栏（只在失败时出现）。 */
+  /*
+   * 页内不再放任何提示条 / 提示按钮：保存失败、只读、草稿恢复、规格加载失败
+   * 全部改走 antd `notification` / `message`，页面主体保持干净。
+   *
+   * 失败通知带「重试」按钮且不自动消失（duration: 0），点击后对失败品牌重新保存；
+   * 用固定 key 保证重复失败只刷新同一张卡片，成功后主动 destroy。
+   */
   const failedBrands = Object.keys(saveState).filter(
     (brandName) => saveState[brandName] === 'error',
   )
+  const failedNames = failedBrands.join('、')
+  const failedBrandsRef = useRef(failedBrands)
+  failedBrandsRef.current = failedBrands
+  const saveBrandRef = useRef(saveBrand)
+  saveBrandRef.current = saveBrand
+  useEffect(() => {
+    if (failedBrands.length === 0) {
+      notification.destroy(SAVE_FAILED_NOTIFICATION_KEY)
+      return
+    }
+    notification.error({
+      key: SAVE_FAILED_NOTIFICATION_KEY,
+      message: t('common.saveFailed'),
+      description: t('priceCompare.supplierPrice.saveFailedNames', {
+        names: failedNames,
+      }),
+      duration: 0,
+      btn: (
+        <Button
+          size="small"
+          onClick={() => {
+            for (const brandName of failedBrandsRef.current) {
+              void saveBrandRef.current(brandName)
+            }
+          }}
+        >
+          {t('priceCompare.supplierPrice.retry')}
+        </Button>
+      ),
+    })
+  }, [failedBrands.length, failedNames, t])
 
-  const pendingCount = Object.values(drafts).reduce(
-    (sum, draft) => sum + draftCount(draft),
-    0,
-  )
+  /** 只读账号：进页面提示一次即可，不再常驻一行灰字。 */
+  const readOnlyHintedRef = useRef(false)
+  useEffect(() => {
+    if (canUpdate || readOnlyHintedRef.current) return
+    readOnlyHintedRef.current = true
+    message.warning(t('priceCompare.supplierPrice.readOnlyHint'))
+  }, [canUpdate, t])
+
+  /** 恢复出未保存草稿：通知里给「放弃草稿」，替代原来的橙色 Alert 条。 */
+  const discardDraftsRef = useRef(discardRestoredDrafts)
+  discardDraftsRef.current = discardRestoredDrafts
+  useEffect(() => {
+    if (!restoredDrafts) {
+      notification.destroy(DRAFTS_RESTORED_NOTIFICATION_KEY)
+      return
+    }
+    notification.warning({
+      key: DRAFTS_RESTORED_NOTIFICATION_KEY,
+      message: t('priceCompare.supplierPrice.draftsRestored'),
+      duration: 0,
+      btn: (
+        <Button size="small" onClick={() => discardDraftsRef.current()}>
+          {t('priceCompare.supplierPrice.discardDrafts')}
+        </Button>
+      ),
+    })
+  }, [restoredDrafts, t])
+
+  /** 规格列表加载失败：通知带「重试」，页面只保留一个空态占位。 */
+  useEffect(() => {
+    if (!specsQuery.isError) {
+      notification.destroy(SPECS_FAILED_NOTIFICATION_KEY)
+      return
+    }
+    notification.error({
+      key: SPECS_FAILED_NOTIFICATION_KEY,
+      message: t('priceCompare.supplierPrice.specsLoadFailed'),
+      duration: 0,
+      btn: (
+        <Button size="small" onClick={() => void specsQuery.refetch()}>
+          {t('priceCompare.supplierPrice.retry')}
+        </Button>
+      ),
+    })
+  }, [specsQuery.isError, specsQuery.refetch, t])
 
   /*
    * 「最后编辑」= 当前供应商所有品牌列里最近一次保存时间（`updatedAt`，历史数据回退 `quotedOn`）。
@@ -2004,8 +2089,9 @@ export function SupplierQuoteBoard() {
     <Flex vertical gap={12} className="supplier-price-page">
       {supplierTabs}
       {/*
-       * 工具栏：只保留「最后编辑 + 只看未填 + 保存状态」。
-       * 搜索 / 刷新 / 撤销重做按钮、快捷键入口都已移除（撤销重做保留 Ctrl+Z / Ctrl+Y）。
+       * 工具栏只保留「最后编辑 + 只看未填」。
+       * 搜索 / 刷新 / 撤销重做按钮、快捷键入口都已移除（撤销重做保留 Ctrl+Z / Ctrl+Y）；
+       * 只读、保存失败、草稿恢复、规格加载失败全部改走 message / notification。
        */}
       <Flex align="center" className="supplier-price-toolbar" gap={8} wrap>
         <Tooltip title={t('priceCompare.supplierPrice.lastEditedHint')}>
@@ -2028,34 +2114,6 @@ export function SupplierQuoteBoard() {
         >
           {t('priceCompare.supplierPrice.onlyUnpriced')}
         </Checkbox>
-        {pendingCount > 0 ? (
-          <Typography.Text type="secondary">
-            {t('priceCompare.supplierPrice.saveAll', { count: pendingCount })}
-          </Typography.Text>
-        ) : null}
-        <Flex align="center" className="supplier-price-toolbar-tail" gap={8}>
-          {failedBrands.length > 0 ? (
-            <Button
-              danger
-              onClick={() => {
-                for (const brandName of failedBrands) {
-                  void saveBrand(brandName)
-                }
-              }}
-              size="small"
-              type="link"
-            >
-              {t('priceCompare.supplierPrice.saveFailedRetry', {
-                names: failedBrands.join('、'),
-              })}
-            </Button>
-          ) : null}
-          {!canUpdate ? (
-            <Typography.Text type="warning">
-              {t('priceCompare.supplierPrice.readOnlyHint')}
-            </Typography.Text>
-          ) : null}
-        </Flex>
       </Flex>
 
       {/*
@@ -2119,32 +2177,12 @@ export function SupplierQuoteBoard() {
         </Flex>
       </Modal>
 
-      {restoredDrafts ? (
-        <Alert
-          showIcon
-          action={
-            <Button size="small" onClick={discardRestoredDrafts}>
-              {t('priceCompare.supplierPrice.discardDrafts')}
-            </Button>
-          }
-          title={t('priceCompare.supplierPrice.draftsRestored')}
-          type="warning"
-        />
-      ) : null}
-
       {brandNames.length === 0 ? (
         <Typography.Text type="secondary">
           {t('priceCompare.supplierPrice.noBrands')}
         </Typography.Text>
       ) : specsQuery.isError ? (
-        <Flex align="center" gap={8}>
-          <Typography.Text type="danger">
-            {t('priceCompare.supplierPrice.specsLoadFailed')}
-          </Typography.Text>
-          <Button size="small" onClick={() => void specsQuery.refetch()}>
-            {t('priceCompare.supplierPrice.retry')}
-          </Button>
-        </Flex>
+        <Empty description={t('priceCompare.supplierPrice.specsLoadFailed')} />
       ) : categoryGroups.every((group) =>
           group.sheets.every((sheet) => sheet.rows.length === 0),
         ) ? (

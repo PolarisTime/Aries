@@ -32,6 +32,13 @@ const feedback = vi.hoisted(() => ({
     warning: vi.fn(),
   },
   modal: { confirm: vi.fn() },
+  notification: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    destroy: vi.fn(),
+  },
 }))
 
 vi.mock('@/api/market/supplier-price-lists', () => priceApi)
