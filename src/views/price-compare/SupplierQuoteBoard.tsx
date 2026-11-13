@@ -697,8 +697,9 @@ export function SupplierQuoteBoard() {
     for (const categoryName of PREFERRED_CATEGORY_ORDER) {
       if (catalog.has(categoryName)) order.push(categoryName)
     }
+    const orderedCategories = new Set(order)
     for (const categoryName of catalog.keys()) {
-      if (!order.includes(categoryName)) order.push(categoryName)
+      if (!orderedCategories.has(categoryName)) order.push(categoryName)
     }
 
     const needle = keyword.trim().toLowerCase()
@@ -709,13 +710,9 @@ export function SupplierQuoteBoard() {
        * 材质按商品资料派生：该供应商经营品牌里真实有的材质才出表（没有的材质不凭空造表）。
        * 表内顺序交给 `materialRankOf`，与列头顺序保持同一口径。
        */
-      const materialNames: string[] = []
-      for (const column of cellColumns) {
-        if (!materialNames.includes(column.material)) {
-          materialNames.push(column.material)
-        }
-      }
-      materialNames.sort(
+      const materialSet = new Set<string>()
+      for (const column of cellColumns) materialSet.add(column.material)
+      const materialNames = [...materialSet].sort(
         (left, right) =>
           materialRankOf(left) - materialRankOf(right) ||
           left.localeCompare(right, 'zh-Hans-CN'),
@@ -1830,6 +1827,17 @@ export function SupplierQuoteBoard() {
       },
     ]
     let totalWidth = ROW_HEAD_WIDTHS.spec
+    /*
+     * 列下标查表（品牌|材质|定尺 → 列下标）：每次渲染只建一次。
+     * 之前在每个叶列里 `findIndex`，列数一多就变成 O(列²)，属于典型的「循环里做数组查找」。
+     */
+    const columnIndexOf = new Map<string, number>()
+    sheet.cellColumns.forEach((column, index) => {
+      columnIndexOf.set(
+        `${column.brandName}\u0000${column.material}\u0000${column.length}`,
+        index,
+      )
+    })
 
     const material = sheet.material
     for (const brandName of brandNames) {
@@ -1855,12 +1863,9 @@ export function SupplierQuoteBoard() {
           length: string,
           label: string,
         ): ColumnsType<SpecRow>[number] => {
-          const columnIndex = sheet.cellColumns.findIndex(
-            (column) =>
-              column.brandName === brandName &&
-              column.material === material &&
-              column.length === length,
-          )
+          const columnIndex =
+            columnIndexOf.get(`${brandName}\u0000${material}\u0000${length}`) ??
+            -1
           const column = sheet.cellColumns[columnIndex]
           const columnKey = columnKeyOf(brandName, length)
           /*
@@ -2056,8 +2061,9 @@ export function SupplierQuoteBoard() {
   }
 
   /** 还没打开的供应商（「添加」下拉的候选）。 */
+  const openedSupplierIds = new Set(openSupplierIds)
   const unopenedSuppliers = suppliers.filter(
-    (option) => !openSupplierIds.includes(option.value),
+    (option) => !openedSupplierIds.has(option.value),
   )
 
   /*
