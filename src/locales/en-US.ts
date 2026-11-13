@@ -2905,7 +2905,6 @@ export const enUS = {
         '{{materials}} material(s) · {{filled}}/{{total}} cells filled',
       lengthColumns: 'Length columns',
       notApplicable: 'Not available for this spec',
-      refresh: 'Refresh',
       saveAll: 'Save ({{count}})',
       savedBrands: 'Saved {{count}} brand column(s)',
       saveFailedRetry: '{{names}} failed to save — click to retry',
@@ -2960,8 +2959,6 @@ export const enUS = {
       clearColumnContent:
         'All entered prices in this column will be marked as not quoted; it takes effect after you click Save.',
       clearColumnOk: 'Clear',
-      undo: 'Undo (Ctrl+Z)',
-      redo: 'Redo (Ctrl+Y)',
       readOnlyHint:
         'This account has no permission to maintain quotes; the page is read-only',
       pasteConfirmTitle: 'Paste into the grid?',
@@ -2974,7 +2971,6 @@ export const enUS = {
       draftsRestored:
         'Unsaved drafts from last time were restored; they go away after save or "Discard drafts"',
       discardDrafts: 'Discard drafts',
-      searchSpecs: 'Search specs (material / size / length)',
       onlyUnpriced: 'Unpriced only',
       entryHint:
         'Spreadsheet-style entry: rows = specs, columns = brands, type prices directly; ↑/↓ and Enter move vertically, Tab moves right; paste a whole column/block copied from Excel into the starting cell. Empty = not quoted, 0 is a real price; saving replaces each brand column as a whole',
@@ -3004,9 +3000,6 @@ export const enUS = {
       importDone:
         'Imported from supplier price list: added {{added}}, repriced {{updated}}, cleared {{cleared}}',
       selectionCount: '{{count}} cell(s) selected',
-      clearSelection: 'Clear selection (Delete)',
-      fillDown: 'Fill down (Ctrl+D)',
-      fillRight: 'Fill right (Ctrl+R)',
       fillApplied: 'Filled {{count}} cell(s)',
       fillSkipped:
         '{{count}} cell(s) skipped: the material data has no such combination',
@@ -3024,16 +3017,6 @@ export const enUS = {
         'A leading + - * / adjusts the current price; otherwise every filled cell is set to that price (blank cells are skipped)',
       batchAdjustApplied: 'Adjusted {{count}} cell(s)',
       batchAdjustNothing: 'No prices to adjust in the selection',
-
-      resizeColumn: 'Resize the "{{name}}" column',
-      resizeColumnHint:
-        'Drag to resize; when focused, use the left/right arrow keys; Home restores the default',
-      shortcuts: 'Keyboard shortcuts',
-      shortcutTab: 'Tab / Shift+Tab: move to the next cell / previous cell',
-      shortcutFill:
-        'Ctrl+D / Ctrl+R: fill the selection down from the first row / right from the first column',
-      shortcutDelete: 'Delete: clear existing prices in the selection',
-      shortcutClear: 'Esc: discard the formula being typed in this cell',
     },
     view: {
       title: 'Order Price Comparison',

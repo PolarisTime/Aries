@@ -573,26 +573,6 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     ).toBeTruthy()
   })
 
-  it('搜索按材质/规格/定尺过滤行', async () => {
-    await render()
-
-    const search = container.querySelector<HTMLInputElement>(
-      `input[aria-label="${i18n.t('priceCompare.supplierPrice.searchSpecs')}"]`,
-    )
-    expect(search).not.toBeNull()
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        'value',
-      )?.set?.call(search, '14')
-      search?.dispatchEvent(new Event('input', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
-    await flush()
-
-    expect(rows()).toHaveLength(1)
-  })
-
   it('清空某一格后保存：该条目从载荷里消失（服务端据此删除）', async () => {
     await render()
     await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')

@@ -1,9 +1,3 @@
-import {
-  RedoOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  UndoOutlined,
-} from '@ant-design/icons'
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Alert,
@@ -458,7 +452,6 @@ export function SupplierQuoteBoard() {
   )
   const [saveState, setSaveState] = useState<Record<string, SaveState>>({})
   const [history, setHistory] = useState<DraftHistory>(EMPTY_HISTORY)
-  const [keyword, setKeyword] = useState('')
   const [onlyUnpriced, setOnlyUnpriced] = useState(false)
   /** 本次进页是否从 localStorage 恢复了上次未保存的草稿（恢复后提示「已恢复 / 放弃」）。 */
   const [restoredDrafts, setRestoredDrafts] = useState(false)
@@ -669,7 +662,6 @@ export function SupplierQuoteBoard() {
       if (!orderedCategories.has(categoryName)) order.push(categoryName)
     }
 
-    const needle = keyword.trim().toLowerCase()
     return order.map((categoryName) => {
       const category = catalog.get(categoryName)
       const cellColumns = cellColumnsOf(category, brandNames)
@@ -711,14 +703,6 @@ export function SupplierQuoteBoard() {
           }
           specs = [...specSet].sort((left, right) => left - right)
         }
-        if (needle) {
-          const lengthHit = materialColumns.some((column) =>
-            column.length.toLowerCase().includes(needle),
-          )
-          specs = specs.filter(
-            (spec) => lengthHit || String(spec).includes(needle),
-          )
-        }
         let rows: SpecRow[] = specs.map((spec) => ({ spec }))
         if (onlyUnpriced) {
           rows = rows.filter((row) => {
@@ -754,7 +738,7 @@ export function SupplierQuoteBoard() {
         sheets,
       }
     })
-  }, [brandNames, catalog, keyword, onlyUnpriced, savedValues, serverPriceOf])
+  }, [brandNames, catalog, onlyUnpriced, savedValues, serverPriceOf])
 
   /** 一张类别表 / 一张材质表的类型别名：选区、列宽与批量操作都以它们为单位。 */
   type CategoryGroup = (typeof categoryGroups)[number]
@@ -1020,14 +1004,13 @@ export function SupplierQuoteBoard() {
     flushDirtyBrands()
   }
 
-  /** 切到某个供应商前先清空这一屏的临时状态（草稿、历史、搜索、选区、新建列缓存）。 */
+  /** 切到某个供应商前先清空这一屏的临时状态（草稿、历史、选区、新建列缓存）。 */
   const resetBoardState = () => {
     commitDrafts({})
     setHistory(EMPTY_HISTORY)
     setSavedValues({})
     setColumns({})
     setSaveState({})
-    setKeyword('')
     setOnlyUnpriced(false)
     // 选区坐标只对上一家供应商的表有意义
     setSelection(null)
@@ -2021,8 +2004,8 @@ export function SupplierQuoteBoard() {
     <Flex vertical gap={12} className="supplier-price-page">
       {supplierTabs}
       {/*
-       * 工具栏压成一行：最后编辑 / 撤销重做 / 刷新 / 搜索 / 只看未填 / 状态。
-       * 只读提示与「快捷键」靠右，不与筛选控件混在一起。
+       * 工具栏：只保留「最后编辑 + 只看未填 + 保存状态」。
+       * 搜索 / 刷新 / 撤销重做按钮、快捷键入口都已移除（撤销重做保留 Ctrl+Z / Ctrl+Y）。
        */}
       <Flex align="center" className="supplier-price-toolbar" gap={8} wrap>
         <Tooltip title={t('priceCompare.supplierPrice.lastEditedHint')}>
@@ -2035,50 +2018,11 @@ export function SupplierQuoteBoard() {
               t('priceCompare.supplierPrice.neverEdited')}
           </Typography.Text>
         </Tooltip>
-        <Button
-          aria-label={t('priceCompare.supplierPrice.undo')}
-          disabled={history.past.length === 0}
-          icon={<UndoOutlined />}
-          onClick={undo}
-          title={t('priceCompare.supplierPrice.undo')}
-        />
-        <Button
-          aria-label={t('priceCompare.supplierPrice.redo')}
-          disabled={history.future.length === 0}
-          icon={<RedoOutlined />}
-          onClick={redo}
-          title={t('priceCompare.supplierPrice.redo')}
-        />
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={() => {
-            for (const brandName of brandNames) {
-              void queryClient.invalidateQueries({
-                queryKey: gridQueryKey(brandName),
-              })
-            }
-          }}
-        >
-          {t('priceCompare.supplierPrice.refresh')}
-        </Button>
-        <Input
-          allowClear
-          aria-label={t('priceCompare.supplierPrice.searchSpecs')}
-          placeholder={t('priceCompare.supplierPrice.searchSpecs')}
-          prefix={<SearchOutlined />}
-          style={{ width: 240 }}
-          value={keyword}
-          onChange={(event) => {
-            setKeyword(event.target.value)
-            // 改了搜索词，可见行整批换掉：按行下标记的选区随之失效
-            setSelection(null)
-          }}
-        />
         <Checkbox
           checked={onlyUnpriced}
           onChange={(event) => {
             setOnlyUnpriced(event.target.checked)
-            // 「只看未填」同样会换掉可见行：按行下标记的选区随之失效
+            // 「只看未填」会换掉可见行：按行下标记的选区随之失效
             setSelection(null)
           }}
         >
@@ -2111,28 +2055,14 @@ export function SupplierQuoteBoard() {
               {t('priceCompare.supplierPrice.readOnlyHint')}
             </Typography.Text>
           ) : null}
-          <Tooltip
-            title={
-              <Flex gap={2} vertical>
-                <span>{t('priceCompare.supplierPrice.shortcutTab')}</span>
-                <span>{t('priceCompare.supplierPrice.shortcutFill')}</span>
-                <span>{t('priceCompare.supplierPrice.shortcutDelete')}</span>
-                <span>{t('priceCompare.supplierPrice.shortcutClear')}</span>
-              </Flex>
-            }
-          >
-            <Button size="small" type="text">
-              {t('priceCompare.supplierPrice.shortcuts')}
-            </Button>
-          </Tooltip>
         </Flex>
       </Flex>
 
       {/*
-       * 选区工具栏：**只有真的选中了格子才出现**（否则整行灰按钮常驻，页面显得很空）。
+       * 选区工具栏：只有选中格子才出现，只保留「已选 N 格 + 批量调价」。
        *
-       * 键盘路径（Ctrl+D / Ctrl+R / Delete）是主路径，但按钮不能省：鼠标用户、触屏用户
-       * 和读屏用户都要有可点的等价入口；按钮文案里同时带着快捷键，等于一处可见的说明。
+       * 填充（Ctrl+D / Ctrl+R）与清空（Delete）仍可用键盘完成，不再放按钮；
+       * 撤销 / 重做同样只保留 Ctrl+Z / Ctrl+Y。
        */}
       {selection ? (
         <Flex
@@ -2147,20 +2077,6 @@ export function SupplierQuoteBoard() {
             })}
           </Typography.Text>
           <Button
-            disabled={!canUpdate || selectionWritableCount <= 1}
-            onClick={() => fillSelectedCells('down')}
-            size="small"
-          >
-            {t('priceCompare.supplierPrice.fillDown')}
-          </Button>
-          <Button
-            disabled={!canUpdate || selectionWritableCount <= 1}
-            onClick={() => fillSelectedCells('right')}
-            size="small"
-          >
-            {t('priceCompare.supplierPrice.fillRight')}
-          </Button>
-          <Button
             disabled={!canUpdate}
             onClick={() => {
               setBatchText('')
@@ -2169,13 +2085,6 @@ export function SupplierQuoteBoard() {
             size="small"
           >
             {t('priceCompare.supplierPrice.batchAdjust')}
-          </Button>
-          <Button
-            disabled={!canUpdate}
-            onClick={clearSelectedCells}
-            size="small"
-          >
-            {t('priceCompare.supplierPrice.clearSelection')}
           </Button>
         </Flex>
       ) : null}

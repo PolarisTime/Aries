@@ -2893,7 +2893,6 @@ export const zhCN = {
       categoryScale: '{{materials}} 个材质 · {{filled}}/{{total}} 格已填',
       lengthColumns: '定尺列',
       notApplicable: '该规格没有这个定尺',
-      refresh: '刷新',
       saveAll: '保存（{{count}} 处）',
       savedBrands: '已保存 {{count}} 个品牌列',
       saveFailedRetry: '{{names}} 保存失败，点击重试',
@@ -2947,8 +2946,6 @@ export const zhCN = {
       clearColumnContent:
         '会把该列已填价格全部标记为未报价，点「保存」后才会真正落库。',
       clearColumnOk: '清空',
-      undo: '撤销（Ctrl+Z）',
-      redo: '重做（Ctrl+Y）',
       readOnlyHint: '当前账号没有报价维护权限，本页为只读',
       pasteConfirmTitle: '确认粘贴？',
       pasteConfirmContent:
@@ -2959,7 +2956,6 @@ export const zhCN = {
         '将保存 {{brands}} 个品牌列：新增 {{added}} 条、改价 {{changed}} 条、取消 {{removed}} 条。',
       draftsRestored: '已恢复上次未保存的草稿；保存或点「放弃草稿」后提示消失',
       discardDrafts: '放弃草稿',
-      searchSpecs: '搜索规格（材质/直径/定尺）',
       onlyUnpriced: '只看未填',
       entryHint:
         'Excel 式录入：行=规格、列=品牌，直接敲价；↑/↓ 与回车上下移动，Tab 向右；从 Excel 复制的整列/整块可直接粘贴到起始格。空 = 不报价，0 是真实价格；保存按品牌列整组替换',
@@ -2990,9 +2986,6 @@ export const zhCN = {
        * 快捷键文案统一为「按键：行为」，与 entryHint 里的按键说明保持同一写法。
        */
       selectionCount: '已选 {{count}} 格',
-      clearSelection: '清空选区（Delete）',
-      fillDown: '向下填充（Ctrl+D）',
-      fillRight: '向右填充（Ctrl+R）',
       fillApplied: '已填充 {{count}} 格',
       fillSkipped: '{{count}} 格因商品资料里没有该组合被跳过',
       clearApplied: '已清空 {{count}} 格',
@@ -3008,14 +3001,6 @@ export const zhCN = {
         '以 + - * / 开头表示在当前价上调整；否则把所有已填格子设为该价（空格跳过）',
       batchAdjustApplied: '已调整 {{count}} 格',
       batchAdjustNothing: '选区内没有可调整的价格',
-
-      resizeColumn: '调整「{{name}}」列宽',
-      resizeColumnHint: '拖动调整列宽；聚焦后按左右方向键调整，Home 恢复默认',
-      shortcuts: '快捷键',
-      shortcutTab: 'Tab / Shift+Tab：横向移动到下一格 / 上一格',
-      shortcutFill: 'Ctrl+D / Ctrl+R：把选区首行向下 / 首列向右填满',
-      shortcutDelete: 'Delete：清空选区内已有价格',
-      shortcutClear: 'Esc：放弃本格正在输入的算式',
     },
     view: {
       title: '报单比价',
