@@ -1763,75 +1763,97 @@ export function SupplierQuoteBoard() {
     const lastEdit = formatLastEdit(
       column?.updatedAt ?? column?.quotedOn ?? null,
     )
+    /*
+     * 品牌列头只有一行：品牌名 +（未报价时）一个琥珀色状态点 + ⋯ 菜单。
+     *
+     * 最后编辑时间不再占一行文字（品牌 → 日期 → 定尺 会变成三行表头），
+     * 改为挂在品牌名的 tooltip 与 ⋯ 菜单首项里；定尺单独占第二行。
+     */
     return (
-      <span className="supplier-price-brand-head">
-        <span className="supplier-price-brand-head-title">{brandName}</span>
-        <span className="supplier-price-brand-head-line">
-          <span
-            className="supplier-price-brand-head-meta"
-            title={
-              lastEdit
-                ? t('priceCompare.supplierPrice.lastEditedHint')
-                : t('priceCompare.supplierPrice.notQuotedHint')
-            }
-          >
-            {lastEdit ?? t('priceCompare.supplierPrice.notQuoted')}
-          </span>
-          <span className="supplier-price-brand-head-tools">
-            {saveState[brandName] === 'saving' ? (
-              <span aria-hidden="true" style={dotStyle('#faad14')} />
-            ) : null}
-            {saveState[brandName] === 'error' ? (
-              <Tooltip
-                title={t('priceCompare.supplierPrice.saveFailed', {
-                  names: brandName,
-                })}
-              >
-                <Button
-                  aria-label={t('priceCompare.supplierPrice.saveFailed', {
-                    names: brandName,
-                  })}
-                  size="small"
-                  type="text"
-                  onClick={() => void saveBrand(brandName)}
-                >
-                  <span style={dotStyle('#ff4d4f')} />
-                </Button>
-              </Tooltip>
-            ) : null}
-            <Dropdown
-              trigger={['click']}
-              menu={{
-                items: [
-                  {
-                    key: 'clear',
-                    icon: <DeleteOutlined />,
-                    label: t('priceCompare.supplierPrice.clearColumn'),
-                    disabled: !canUpdate,
-                  },
-                  {
-                    key: 'remove',
-                    danger: true,
-                    label: t('priceCompare.supplierPrice.removeColumn'),
-                    disabled: !canDelete,
-                  },
-                ],
-                onClick: ({ key }) => {
-                  if (key === 'clear') clearBrand(brandName)
-                  if (key === 'remove') removeBrand(brandName)
-                },
-              }}
+      <span
+        className="supplier-price-brand-head"
+        data-brand-status={lastEdit ? 'saved' : 'not-quoted'}
+      >
+        <span
+          className="supplier-price-brand-head-title"
+          title={
+            lastEdit
+              ? `${t('priceCompare.supplierPrice.lastEdited')} ${lastEdit}`
+              : t('priceCompare.supplierPrice.notQuotedHint')
+          }
+        >
+          {lastEdit ? null : (
+            <span
+              aria-label={t('priceCompare.supplierPrice.notQuoted')}
+              className="supplier-price-brand-head-flag"
+              role="img"
+              title={t('priceCompare.supplierPrice.notQuotedHint')}
+            />
+          )}
+          {brandName}
+        </span>
+        <span className="supplier-price-brand-head-tools">
+          {saveState[brandName] === 'saving' ? (
+            <span aria-hidden="true" style={dotStyle('#faad14')} />
+          ) : null}
+          {saveState[brandName] === 'error' ? (
+            <Tooltip
+              title={t('priceCompare.supplierPrice.saveFailed', {
+                names: brandName,
+              })}
             >
               <Button
-                aria-label={t('priceCompare.supplierPrice.removeColumnA11y', {
-                  name: brandName,
+                aria-label={t('priceCompare.supplierPrice.saveFailed', {
+                  names: brandName,
                 })}
-                icon={<EllipsisOutlined />}
                 size="small"
                 type="text"
-              />
-            </Dropdown>
-          </span>
+                onClick={() => void saveBrand(brandName)}
+              >
+                <span style={dotStyle('#ff4d4f')} />
+              </Button>
+            </Tooltip>
+          ) : null}
+          <Dropdown
+            trigger={['click']}
+            menu={{
+              items: [
+                {
+                  key: 'status',
+                  disabled: true,
+                  label: lastEdit
+                    ? `${t('priceCompare.supplierPrice.lastEdited')} ${lastEdit}`
+                    : t('priceCompare.supplierPrice.notQuoted'),
+                },
+                { type: 'divider' },
+                {
+                  key: 'clear',
+                  icon: <DeleteOutlined />,
+                  label: t('priceCompare.supplierPrice.clearColumn'),
+                  disabled: !canUpdate,
+                },
+                {
+                  key: 'remove',
+                  danger: true,
+                  label: t('priceCompare.supplierPrice.removeColumn'),
+                  disabled: !canDelete,
+                },
+              ],
+              onClick: ({ key }) => {
+                if (key === 'clear') clearBrand(brandName)
+                if (key === 'remove') removeBrand(brandName)
+              },
+            }}
+          >
+            <Button
+              aria-label={t('priceCompare.supplierPrice.removeColumnA11y', {
+                name: brandName,
+              })}
+              icon={<EllipsisOutlined />}
+              size="small"
+              type="text"
+            />
+          </Dropdown>
         </span>
       </span>
     )

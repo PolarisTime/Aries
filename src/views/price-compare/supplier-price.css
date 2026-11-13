@@ -436,57 +436,50 @@
 }
 
 /*
- * 品牌列头：品牌名独立水平居中，状态点与「更多」图标贴右侧，不参与居中计算。
+ * 品牌列头：**只有一行**（品牌名 + 未报价状态点 + ⋯）。
  *
- * 三段式：标题绝对定位铺满整格 + text-align:center；工具条绝对定位靠右。
- * 这样「保存中」「保存失败」「⋯」出现或消失都不会把品牌文字挤向左。
+ * 表头总行数：多定尺 = 品牌行 + 定尺行（2 行），单定尺 = 品牌行（1 行）。
+ * 最后编辑时间不进表头文字（否则会变成「品牌 / 日期 / 定尺」三行），
+ * 改为品牌名 tooltip 与 ⋯ 菜单首项。⋯ 绝对定位靠右，不挤占品牌名的居中位置。
  */
 .supplier-price-brand-head {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  gap: 4px;
   width: 100%;
-  min-height: 30px;
+  min-height: 24px;
 }
 
 .supplier-price-brand-head-title {
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100% - 18px);
+  padding-inline-end: 18px;
   white-space: nowrap;
-  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/*
- * 品牌列头第二行：最后编辑 / 未报价 + 更多菜单。
- *
- * 两者同一行，⋯ 不再绝对定位覆盖日期（此前 ⋯ 压在「11-03 11:48」右侧，
- * 窄列里直接挡住文字）。尺寸压到 16px，保持表头只有两行。
- */
-.supplier-price-brand-head-line {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  max-width: 100%;
-}
-
-.supplier-price-brand-head-meta {
-  font-size: 11px;
-  line-height: 16px;
-  font-weight: 400;
-  color: var(--ant-color-text-tertiary);
-  white-space: nowrap;
+/* 未报价状态点：颜色之外还有 aria-label / title，不单靠颜色传达状态（WCAG 1.4.1） */
+.supplier-price-brand-head-flag {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ant-color-warning, #faad14);
 }
 
 .supplier-price-brand-head-tools {
-  position: static;
+  position: absolute;
+  inset-inline-end: 0;
+  top: 50%;
   display: inline-flex;
   align-items: center;
   gap: 1px;
-  transform: none;
+  transform: translateY(-50%);
 }
 
 .supplier-price-brand-head-tools .ant-btn {

@@ -525,7 +525,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     )
   })
 
-  it('没有价格表的品牌列头标「未报价」，有价格表的显示最后编辑时间', async () => {
+  it('列头单行：未报价只显示状态点，最后编辑时间挂在 title 上', async () => {
     // 中天有价格表；永钢是经营品牌且商品资料里有货，但还没建价格表
     priceApi.fetchSpecRows.mockResolvedValue([
       ROW_A,
@@ -546,14 +546,26 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     await render()
 
     await waitFor(() => cellInput('永钢 HRB400E 12 9米') !== null)
-    // 等中天的价格表回来（列头时间来自价格表列，不是商品资料）
+    // 等中天的价格表回来（列头状态来自价格表列，不是商品资料）
     await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
-    // 中天：列头显示 quotedOn 的 MM-DD（updatedAt 为空时回退到报价日期）
-    expect(container.textContent).toContain('10-29')
-    // 永钢：还没有价格表 → 「未报价」
-    expect(container.textContent).toContain(
-      i18n.t('priceCompare.supplierPrice.notQuoted'),
+
+    /*
+     * 表头只有一行：最后编辑/未报价不再占一行文字，改为
+     * 品牌名 title（悬停可读）与状态点（未报价时显示）。
+     */
+    const saved = container.querySelector('[data-brand-status="saved"]')
+    const notQuoted = container.querySelector(
+      '[data-brand-status="not-quoted"]',
     )
+    expect(
+      saved
+        ?.querySelector('.supplier-price-brand-head-title')
+        ?.getAttribute('title'),
+    ).toContain('10-29')
+    expect(notQuoted).not.toBeNull()
+    expect(
+      notQuoted?.querySelector('.supplier-price-brand-head-flag'),
+    ).not.toBeNull()
   })
 
   it('搜索按材质/规格/定尺过滤行', async () => {
