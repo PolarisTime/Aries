@@ -113,7 +113,7 @@ describe('供应商报价表：Excel 式数字排版', () => {
     expect(block).toMatch(/border-top:\s*2px/)
   })
 
-  it('框线加深一档：改写 antd 的表格边框变量，而不是和它的规则抢优先级', () => {
+  it('框线统一为报价表设计稿色：改写 antd 的表格边框变量', () => {
     const block = blockOf('.supplier-price-sheet .ant-table-css-var')
     expect(block).toContain('--ant-table-border-color')
     expect(block).toContain('var(--ant-color-border')
@@ -137,7 +137,7 @@ describe('供应商报价表：Excel 式数字排版', () => {
    * 不可填格子必须在视觉上「看得见」：斜纹 + 横杠，且原因写在 title/aria-label（组件侧），
    * 不靠颜色单独承载语义。表头对「整列不可填」的定尺划线，与格子表达同一件事。
    */
-  it('不可填格子用斜纹 + 表头划线表达，颜色走主题 token', () => {
+  it('不可填格子用斜纹 + 表头划线表达，配色走表内局部变量', () => {
     const na = blockOf('.supplier-price-cell-na')
     expect(na).toContain('repeating-linear-gradient')
     expect(na).toContain('text-align: center')

@@ -80,7 +80,7 @@
  *
  * 之前写死 `height: 30px` + antd 默认 `padding: 8px`，一行 49px，一屏放不下几行；
  * 而写死 px 还有个隐患：字号调大后单元格还是那么高，数字会被挤（或反过来留一片空白）。
- * 现在行高 = 字号 × 1.8（14px 字号约 25px，整行约 28px），字号调到 20px 时整行自动变 40px。
+ * 现在行高 = 字号 × 2（14px 字号约 28px，整行约 30px），字号调到 20px 时整行自动变 40px。
  *
  * 内边距必须带 `!important`：antd 6 的表格内边距是 css-in-js 注入的，与本节选择器同特异性时
  * 它后注入会赢（实测 padding 一直是 8px，旧规则从未生效）。这里只覆盖 padding，不用它改颜色字体。
@@ -88,7 +88,7 @@
 .supplier-price-sheet,
 .supplier-price-transposed {
   --supplier-price-em: var(--app-font-size, 14px);
-  --supplier-price-row-height: calc(var(--supplier-price-em) * 1.8);
+  --supplier-price-row-height: calc(var(--supplier-price-em) * 2);
   --supplier-price-cell-pad-block: calc(var(--supplier-price-em) * 0.1);
   --supplier-price-cell-pad-inline: calc(var(--supplier-price-em) * 0.3);
 }
@@ -105,17 +105,19 @@
 }
 
 /*
- * 框线加深一档。
+ * 框线统一为报价表设计稿的浅灰（#e3e7ee，见 `.supplier-price-board` 里的局部变量）。
  *
  * antd 6 的表格边框读的是组件级 CSS 变量 `--ant-table-border-color`（默认取
- * `colorBorderSecondary` = #f0f0f0），在这种"几百行 × 多品牌列"的报价网格里几乎看不见行列分界。
- * 直接在单元格上写 `border-color` 抢不过 antd 的规则，所以把**变量本身**在这个表格实例上
- * 改写成 `--ant-color-border`(#d9d9d9)：格子边界清晰，又不会像深色边框那样抢过价格数字。
+ * `colorBorderSecondary` = #f0f0f0），几乎看不见行列分界；直接在单元格上写 `border-color`
+ * 又抢不过 antd 的规则，所以把**变量本身**在这个表格实例上改写。
  * 变量声明在 `.ant-table-css-var` 上（antd 就是在这里注入 token 的），因此需要同元素选择器。
  */
 .supplier-price-sheet .ant-table-css-var,
 .supplier-price-transposed .ant-table-css-var {
-  --ant-table-border-color: var(--ant-color-border, #d9d9d9);
+  --ant-table-border-color: var(
+    --supplier-price-grid,
+    var(--ant-color-border, #d9d9d9)
+  );
 }
 
 .supplier-price-sheet .ant-input-number,
@@ -298,14 +300,15 @@
   justify-content: center;
   width: 100%;
   height: var(--supplier-price-row-height, 25px);
-  color: var(--ant-color-text-quaternary, rgb(0 0 0 / 25%));
+  color: var(--supplier-price-na-text, #cbd3df);
+  font-size: 11px;
   text-align: center;
   background: repeating-linear-gradient(
     135deg,
-    transparent,
-    transparent 5px,
-    var(--ant-color-fill-quaternary, #f5f5f5) 5px,
-    var(--ant-color-fill-quaternary, #f5f5f5) 10px
+    var(--supplier-price-na-bg-a, #fbfcfe),
+    var(--supplier-price-na-bg-a, #fbfcfe) 5px,
+    var(--supplier-price-na-bg-b, #f3f6fa) 5px,
+    var(--supplier-price-na-bg-b, #f3f6fa) 10px
   );
   cursor: not-allowed;
 }
@@ -370,24 +373,24 @@
  * 品类标题（盘螺 / 直条）：名称 + 该品类的「已填 / 可填」计数。
  *
  * 与材质标题构成两级信息层级：品类是分区，材质是分区里的表。
+ * 视觉对齐报价表设计稿：不加色条，只靠字重与字号分层（标题 14px/650，计数 11.5px 浅灰）。
  */
 .supplier-price-sheet-category-head {
   display: flex;
   align-items: baseline;
   gap: var(--space-xs, 8px);
-  margin: 0 0 var(--space-xs, 8px);
-  padding-inline-start: var(--space-xs, 8px);
-  border-inline-start: 3px solid var(--ant-color-primary);
+  margin: 0 0 var(--space-xs, 8px) 2px;
 }
 
 .supplier-price-sheet-category-name {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 650;
+  letter-spacing: 0.3px;
   color: var(--ant-color-text);
 }
 
 .supplier-price-sheet-category-meta {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--ant-color-text-tertiary);
 }
 
@@ -450,13 +453,90 @@
 }
 
 /*
- * 材质分区（HRB400 / HRB400E / HRB500E …）：不再是二级 tab，而是一屏内顺序堆叠。
- *
- * <p>材质名不单独占一行标题，而是收进表格左上角（第一行第一列），
- * 表格之间只留固定间距，避免每张表上方多一条横带。</p>
+ * 报价表配色（对齐报价表设计稿）：浅灰表头、极浅蓝斜纹、细网格线。
+ * 集中成局部变量，避免色值散落；带回退值，变量缺失时仍是可读的中性色。
  */
+.supplier-price-board {
+  --supplier-price-grid: #e3e7ee;
+  --supplier-price-grid-strong: #d3d9e3;
+  --supplier-price-header-bg: #f8fafc;
+  --supplier-price-corner-bg: #f4f7fb;
+  --supplier-price-spec-bg: #fbfcfe;
+  --supplier-price-row-hover: #f1f5fb;
+  --supplier-price-head-text: #2b3444;
+  --supplier-price-head-muted: #6b7482;
+  --supplier-price-spec-text: #3c4553;
+  --supplier-price-na-bg-a: #fbfcfe;
+  --supplier-price-na-bg-b: #f3f6fa;
+  --supplier-price-na-text: #cbd3df;
+  --supplier-price-sel-bg: #e8f2ff;
+  --supplier-price-sel-border: #7cb0ff;
+}
+
+/*
+ * 材质卡片：材质名收在左上角，整张表做成一张白卡（圆角 + 细边 + 轻投影）。
+ * 表格自带的外框去掉，避免卡片边框与表格边框叠成双线。
+ */
+.supplier-price-sheet-material {
+  display: inline-flex;
+  flex-direction: column;
+  /* 卡片贴合表格宽度（像设计稿）；列多时由 max-width + 表体横向滚动兜底 */
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--supplier-price-grid, #e3e7ee);
+  border-radius: 8px;
+  box-shadow:
+    0 1px 2px rgb(16 24 40 / 4%),
+    0 4px 14px rgb(16 24 40 / 5%);
+}
+
 .supplier-price-sheet-material + .supplier-price-sheet-material {
   margin-top: var(--space-sm, 12px);
+}
+
+/* 材质卡片是 inline-flex（贴合表格宽度），品类容器负责让多张卡片纵向排列 */
+.supplier-price-sheet-category {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.supplier-price-sheet-material .ant-table-container {
+  border: 0;
+}
+
+/* 表头：浅灰底 + 深色品牌名；第一列（材质/规格）再浅一档 */
+.supplier-price-board .ant-table-thead > tr > th {
+  background: var(--supplier-price-header-bg, #f8fafc);
+  color: #48505e;
+  font-weight: 600;
+  border-color: var(--supplier-price-grid, #e3e7ee);
+}
+
+.supplier-price-board .ant-table-thead > tr > th:first-child {
+  background: var(--supplier-price-corner-bg, #f4f7fb);
+}
+
+/* 组表头第二行（定尺）：比品牌名弱一级 */
+.supplier-price-board .ant-table-thead > tr:nth-child(2) > th {
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--supplier-price-head-muted, #6b7482);
+}
+
+/* 规格列（第一列）：浅底 + 加粗数字，像表格软件的行号列 */
+.supplier-price-board .ant-table-tbody > tr > td:first-child {
+  background: var(--supplier-price-spec-bg, #fbfcfe);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--supplier-price-spec-text, #3c4553);
+  border-inline-end-color: var(--supplier-price-grid-strong, #d3d9e3);
+}
+
+.supplier-price-board .ant-table-tbody > tr:hover > td:first-child {
+  background: var(--supplier-price-row-hover, #f1f5fb);
 }
 
 /*
@@ -474,24 +554,21 @@
 }
 
 .supplier-price-corner-material {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ant-color-text);
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--supplier-price-head-text, #2b3444);
   white-space: nowrap;
 }
 
 .supplier-price-corner-spec {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 400;
   color: var(--ant-color-text-tertiary);
 }
 
 /*
- * 品牌列头：**只有一行**（品牌名 + 未报价状态点 + ⋯）。
- *
+ * 品牌列头：只有一行品牌名（状态点、⋯ 菜单、列宽把手都已移除）。
  * 表头总行数：多定尺 = 品牌行 + 定尺行（2 行），单定尺 = 品牌行（1 行）。
- * 最后编辑时间不进表头文字（否则会变成「品牌 / 日期 / 定尺」三行），
- * 改为品牌名 tooltip 与 ⋯ 菜单首项。⋯ 绝对定位靠右，不挤占品牌名的居中位置。
  */
 .supplier-price-brand-head {
   position: relative;
@@ -503,14 +580,13 @@
   min-height: 24px;
 }
 
-/*
- * 品牌名居中单行。⋯ 菜单已移除，不再给它预留右侧空间；
- * 单定尺列只有 96px，多留 18px 会把「武钢汉钢」这类四字品牌裁掉最后一个字。
- */
 .supplier-price-brand-head-title {
   display: block;
   max-width: 100%;
   padding-inline: 0;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--supplier-price-head-text, #2b3444);
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -520,9 +596,9 @@
 /*
  * 价格格：Excel 式**文本输入**（可以直接敲算式 `3200+50`），因此不再是 antd 的 InputNumber。
  *
- * 宽度跟随列宽（`width: 100%`）：列宽可被用户拖动 / 方向键调整，输入框若固定 64px 就会出现
- * 「列拉宽了、数字还挤在中间一小块」的割裂感。高度与内边距共用表格自己的行高变量，
- * 字号变化时一起长；数字用等宽数字并对齐列头中轴。
+ * 视觉对齐报价表设计稿：**扁平无边框**，只有聚焦/选中才出现描边。
+ * 每格都画一个输入框边框会让整张表像表单而不是表格软件；空格与可填格子的区别
+ * 由「能否输入 + 悬停浅底」表达，不靠常驻边框。
  */
 .supplier-price-board .ant-input.supplier-price-sheet-input {
   width: 100%;
@@ -532,6 +608,19 @@
   font-size: inherit;
   font-variant-numeric: tabular-nums;
   text-align: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.supplier-price-board .ant-input.supplier-price-sheet-input:hover {
+  background: var(--supplier-price-row-hover, #f1f5fb);
+}
+
+.supplier-price-board .ant-input.supplier-price-sheet-input:focus {
+  background: var(--ant-color-bg-container, #fff);
+  box-shadow: inset 0 0 0 2px var(--ant-color-primary, #1677ff);
 }
 
 /*
@@ -540,28 +629,25 @@
  * 用 primary 的浅色底 + 主题色描边，而不是半透明遮罩：报价表里每个格子都是一个输入框，
  * 遮罩会挡住数字本身。声明在价格格基础样式之后：选中态颜色覆盖基础底色。
  */
-.supplier-price-board .ant-input.supplier-price-cell-selected {
-  border-color: var(--ant-color-primary, #1677ff);
-  background: var(--ant-color-primary-bg, #e6f4ff);
+.supplier-price-board
+.ant-input.supplier-price-sheet-input.supplier-price-cell-selected {
+  background: var(--supplier-price-sel-bg, #e8f2ff);
+  box-shadow: inset 0 0 0 1px var(--supplier-price-sel-border, #7cb0ff);
 }
 
-/*
- * 列宽把手：表头叶子格右侧的可拖动 / 可聚焦竖条。
- *
- * 命中区必须 ≥24×24（WCAG 2.2 SC 2.5.8 Target Size Minimum）：只画 2px 的话鼠标根本
- * 抓不住，触屏与手抖用户更按不到。视觉上只留一条 2px 竖线（::after），命中区是透明的，
- * 所以不会真的挡住表头文字。把手在**叶子表头行**，而 ⋯ 按钮在品牌表头行（上一行），
- * 两者不在同一行，不会互相遮挡。
- */
+/* 选中且正在编辑的格子：聚焦描边优先，避免两层描边叠在一起 */
+.supplier-price-board
+.ant-input.supplier-price-sheet-input.supplier-price-cell-selected:focus {
+  box-shadow: inset 0 0 0 2px var(--ant-color-primary, #1677ff);
+}
+
+/* 叶子表头（定尺）：单行居中，文字超宽省略 */
 .supplier-price-col-head {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* 给把手留出右侧空间，文字仍然居中在剩下的区域里 */
-  padding-inline-end: 20px;
-  /* 与把手命中区同高：24px 的把手必须放得进这一格（WCAG 2.5.8） */
-  min-height: 24px;
+  min-height: 22px;
 }
 
 .supplier-price-col-head-label {
