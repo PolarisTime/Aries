@@ -476,6 +476,15 @@ export function SupplierQuoteBoard() {
   const [openSupplierIds, setOpenSupplierIds] = useState<string[]>([])
   /** 当前激活的供应商标签页。 */
   const [activeSupplierId, setActiveSupplierId] = useState<string>()
+  /**
+   * 每个品类当前选中的材质 tab（直条 → HRB400 / HRB400E / HRB500E，盘螺 → HRB400 / HRB400E）。
+   *
+   * <p>材质表用 tab 承载：一屏只显示一个材质，避免同屏堆叠时把页面拉得很长。
+   * 品类之间互相独立（直条的材质选择不影响盘螺）。</p>
+   */
+  const [activeMaterialByCategory, setActiveMaterialByCategory] = useState<
+    Record<string, string>
+  >({})
   /** 未落库的改动：品牌 →（行键 → 价格；null = 明确清空）。 */
   const [drafts, setDrafts] = useState<Record<string, BrandDraft>>({})
   /** 已保存但缓存可能尚未刷新的值：让「敲完即显示」不依赖一次网络往返。 */
@@ -1093,6 +1102,8 @@ export function SupplierQuoteBoard() {
     setColumns({})
     setSaveState({})
     setOnlyUnpriced(false)
+    // 材质 tab 是上一个供应商的数据形状（有的供应商直条只有 HRB400E），不能带过去
+    setActiveMaterialByCategory({})
     // 选区坐标只对上一家供应商的表有意义
     setSelection(null)
     setBatchOpen(false)
@@ -2108,6 +2119,72 @@ export function SupplierQuoteBoard() {
   )
 
   /*
+   * 一张材质表（材质卡片 + antd Table）。
+   *
+   * 列定义与 `scroll.x` 取自**同一处**：叶列宽由固定常量算出，两处各算一遍就会
+   * 变成「列和横向滚动范围不一致」。材质 tab 与单材质直出共用这一个渲染出口。
+   */
+  const sheetViewOf = (group: CategoryGroup, sheet: CategorySheet) => {
+    const { columns: sheetColumns, totalWidth } = columnsOfSheet(group, sheet)
+    return (
+      <section className="supplier-price-sheet-material" key={sheet.material}>
+        <Table<SpecRow>
+          bordered
+          columns={sheetColumns}
+          dataSource={sheet.rows}
+          pagination={false}
+          rowKey={(row) => row.spec}
+          /*
+           * 始终给 `scroll.x`：表格宽度 = 各列宽之和，**不随容器拉伸**。
+           * 之前不传 scroll 时表格会撑满 100%，价格列被摊到几百像素宽
+           * （用户反馈「怎么变成自动拉伸了」）。
+           */
+          scroll={{ x: totalWidth }}
+          size="small"
+          tableLayout="fixed"
+        />
+      </section>
+    )
+  }
+
+  /**
+   * 一个品类下的材质区：材质 ≥2 时用 tab 承载（直条 HRB400 / HRB400E / HRB500E），
+   * 只有一种材质时直接出表（只有一个 tab 没有切换意义）。
+   *
+   * <p>`destroyOnHidden`：只挂载当前材质的表，切走即卸载 —— 否则几张表都留在 DOM 里，
+   * 键盘 Tab 顺序与 `data-grid-cell` 定位都会跨到隐藏表上。</p>
+   */
+  const materialTabsOf = (group: CategoryGroup) => {
+    if (group.sheets.length === 0) return null
+    if (group.sheets.length === 1) return sheetViewOf(group, group.sheets[0])
+    const active = activeMaterialByCategory[group.categoryName]
+    const activeKey = group.sheets.some((sheet) => sheet.material === active)
+      ? active
+      : group.sheets[0].material
+    return (
+      <Tabs
+        activeKey={activeKey}
+        className="supplier-price-material-tabs"
+        destroyOnHidden
+        items={group.sheets.map((sheet) => ({
+          key: sheet.material,
+          label: sheet.material,
+          children: sheetViewOf(group, sheet),
+        }))}
+        onChange={(key) => {
+          setActiveMaterialByCategory((current) => ({
+            ...current,
+            [group.categoryName]: key,
+          }))
+          // 选区坐标绑定「品类 + 材质」：换材质后之前的行列不再指向同一批格子
+          setSelection(null)
+        }}
+        size="small"
+      />
+    )
+  }
+
+  /*
    * 表格内容整体作为 Tabs 的 `items[].children`：这是 antd 的原生结构 ——
    * 页签与内容面板连成一体（editable-card 的选中页签不会再像浮空胶囊），
    * 切换供应商时由 antd 负责卸载/挂载面板。
@@ -2254,38 +2331,7 @@ export function SupplierQuoteBoard() {
                  * 三张表一屏就能看完；做成 tab 反而要多点两次才能看全同一批规格。
                  * 表格仍是「行 = 规格，列 = 品牌 × 定尺」，互不干扰。</p>
                  */}
-                {group.sheets.map((sheet) => {
-                  /*
-                   * 列定义与 `scroll.x` 取自**同一处**：叶列宽可被用户拖动 / 方向键调整，
-                   * 两处各算一遍就会变成「列变宽了、横向滚动范围还是老宽度」。
-                   */
-                  const { columns: sheetColumns, totalWidth } = columnsOfSheet(
-                    group,
-                    sheet,
-                  )
-                  return (
-                    <section
-                      className="supplier-price-sheet-material"
-                      key={sheet.material}
-                    >
-                      <Table<SpecRow>
-                        bordered
-                        columns={sheetColumns}
-                        dataSource={sheet.rows}
-                        pagination={false}
-                        rowKey={(row) => row.spec}
-                        /*
-                         * 始终给 `scroll.x`：表格宽度 = 各列宽之和，**不随容器拉伸**。
-                         * 之前不传 scroll 时表格会撑满 100%，价格列被摊到几百像素宽
-                         * （用户反馈「怎么变成自动拉伸了」）。
-                         */
-                        scroll={{ x: totalWidth }}
-                        size="small"
-                        tableLayout="fixed"
-                      />
-                    </section>
-                  )
-                })}
+                {materialTabsOf(group)}
               </div>
             ))}
           </div>
@@ -2308,6 +2354,7 @@ export function SupplierQuoteBoard() {
   const supplierTabs = (
     <Tabs
       activeKey={supplierId}
+      className="supplier-price-supplier-tabs"
       hideAdd
       items={openSupplierIds.map((id) => ({
         key: id,

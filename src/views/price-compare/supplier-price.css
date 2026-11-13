@@ -36,6 +36,9 @@
 
 .supplier-price-page > .ant-tabs > .ant-tabs-body-holder > .ant-tabs-body {
   display: flex;
+  /* 必须纵向：每个供应商页签各有一个 `.ant-tabs-content`，横向排会把非激活页签
+     （空内容）挤在左边、把当前表格推到右侧（实测开两家供应商时表格整体右移 592px）。 */
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
 }
@@ -500,11 +503,36 @@
   margin-top: var(--space-sm, 12px);
 }
 
-/* 材质卡片是 inline-flex（贴合表格宽度），品类容器负责让多张卡片纵向排列 */
+/* 材质卡片是 inline-flex（贴合表格宽度），品类容器负责让卡片纵向排列 */
 .supplier-price-sheet-category {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+}
+
+/*
+ * 材质 tab（直条 HRB400 / HRB400E / HRB500E，盘螺 HRB400 / HRB400E）。
+ *
+ * 一个品类下只显示当前材质的表；tab 用 line 型（供应商页签已是 card 型，
+ * 再套一层 card 会变成"盒子里套盒子"）。选中态靠主色文字 + 下划线表达。
+ */
+.supplier-price-material-tabs {
+  width: 100%;
+}
+
+.supplier-price-material-tabs .ant-tabs-nav {
+  margin-bottom: var(--space-xs, 8px);
+}
+
+.supplier-price-material-tabs .ant-tabs-tab {
+  padding-block: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--supplier-price-head-muted, #6b7482);
+}
+
+.supplier-price-material-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--ant-color-primary, #1677ff);
 }
 
 .supplier-price-sheet-material .ant-table-container {

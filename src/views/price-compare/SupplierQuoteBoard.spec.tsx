@@ -348,7 +348,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
    * 列不是预设的，而是按**每个品牌在商品资料里真实经营**的「材质 × 定尺」生成 ——
    * 萍钢没有 HRB400E、没有 12米，就不该给它这些列；中天有就出现。
    */
-  it('材质分区堆叠，定尺列固定模板：缺该定尺的品牌整列保留但不可填', async () => {
+  it('材质用 tab 切换，定尺列固定模板：缺该定尺的品牌整列保留但不可填', async () => {
     priceApi.fetchSpecRows.mockResolvedValue([
       // 中天：HRB400E 的 9米 与 12米 都有
       {
@@ -380,21 +380,26 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     await render()
 
-    // 材质不再是 tab，而是同屏堆叠：两张表都直接渲染，不需要点击切换
-    const materials = Array.from(
-      document.querySelectorAll(
-        '.ant-table-thead .supplier-price-corner-material',
-      ),
-    ).map((node) => node.textContent?.trim())
-    expect(materials).toEqual(['HRB400', 'HRB400E'])
-    // 材质 tab 已移除；页面上唯一的 tab 栏是供应商页签
-    expect(
-      document.querySelector('.supplier-price-page .ant-tabs-tab'),
-    ).not.toBeNull()
-
-    // 中天的 9米 / 12米 都可填（商品资料里两种定尺都有）
-    expect(cellInput('中天 HRB400E 12 9米')).not.toBeNull()
-    expect(cellInput('中天 HRB400E 12 12米')).not.toBeNull()
+    // 材质用 tab 承载：HRB400 / HRB400E（按材质顺序）
+    const materialTabs = () =>
+      Array.from(
+        document.querySelectorAll(
+          '.supplier-price-material-tabs .ant-tabs-tab',
+        ),
+      )
+    const materials = () =>
+      Array.from(
+        document.querySelectorAll(
+          '.ant-table-thead .supplier-price-corner-material',
+        ),
+      ).map((node) => node.textContent?.trim())
+    expect(materialTabs().map((node) => node.textContent)).toEqual([
+      'HRB400',
+      'HRB400E',
+    ])
+    // 默认选中排第一的 HRB400：DOM 里只挂这一张材质的表
+    expect(materials()).toEqual(['HRB400'])
+    expect(cellInput('中天 HRB400E 12 9米')).toBeNull()
 
     // 萍钢只有 9米：9米可填，12米列**保留但整列不可填**（没有输入框，只有斜纹占位）
     expect(cellInput('萍钢 HRB400 12 9米')).not.toBeNull()
@@ -403,6 +408,17 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     expect(
       document.querySelectorAll('.supplier-price-col-head-na').length,
     ).toBeGreaterThan(0)
+
+    // 切到 HRB400E：只剩这张表，中天两种定尺都可填，萍钢的 HRB400 表被卸载
+    act(() => {
+      materialTabs()[1]?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+    })
+    await waitFor(() => cellInput('中天 HRB400E 12 9米') !== null)
+    expect(materials()).toEqual(['HRB400E'])
+    expect(cellInput('中天 HRB400E 12 12米')).not.toBeNull()
+    expect(cellInput('萍钢 HRB400 12 9米')).toBeNull()
   })
 
   /**
@@ -419,12 +435,12 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     await render()
 
     const tab = () =>
-      document.querySelector('.supplier-price-page .ant-tabs-tab')
+      document.querySelector('.supplier-price-supplier-tabs .ant-tabs-tab')
     expect(tab()?.textContent).toContain('浙江铁都钢材有限公司')
     expect(tab()?.querySelector('.ant-tabs-tab-remove')).not.toBeNull()
     // 添加是 Select（可搜索），不是把四十多家铺成菜单
     expect(
-      document.querySelector('.supplier-price-page .ant-select'),
+      document.querySelector('.supplier-price-supplier-tabs .ant-select'),
     ).not.toBeNull()
     expect(container.textContent).not.toContain('杭州中金钢铁有限公司')
   })
