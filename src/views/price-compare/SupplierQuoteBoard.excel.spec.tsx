@@ -442,31 +442,6 @@ describe('供应商报价表：Excel 式网格操作', () => {
     expect(feedback.message.success).toHaveBeenCalled()
   })
 
-  it('列宽可用键盘调整并写入本地记忆（拖动之外的等价路径）', async () => {
-    await render()
-
-    const handle = container.querySelector<HTMLElement>(
-      '.supplier-price-col-resize',
-    )
-    expect(handle, '表头没有列宽把手').not.toBeNull()
-    // 默认 64px（4 位数字）
-    expect(handle?.getAttribute('aria-valuenow')).toBe('64')
-
-    await keyDown(handle, 'ArrowRight')
-
-    expect(handle?.getAttribute('aria-valuenow')).toBe('72')
-    const stored = JSON.parse(
-      window.localStorage.getItem('aries:supplier-quote-widths:s1') ?? '{}',
-    ) as Record<string, Record<string, number>>
-    expect(
-      Object.values(stored).flatMap((columns) => Object.values(columns)),
-    ).toContain(72)
-
-    // Home 恢复默认
-    await keyDown(handle, 'Home')
-    expect(handle?.getAttribute('aria-valuenow')).toBe('64')
-  })
-
   /*
    * 离开格子前统一收尾算式（blur / Tab / ↑↓）。
    *

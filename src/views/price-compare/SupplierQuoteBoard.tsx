@@ -1,6 +1,4 @@
 import {
-  DeleteOutlined,
-  EllipsisOutlined,
   RedoOutlined,
   ReloadOutlined,
   SearchOutlined,
@@ -11,7 +9,6 @@ import {
   Alert,
   Button,
   Checkbox,
-  Dropdown,
   Empty,
   Flex,
   Input,
@@ -25,7 +22,6 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import {
-  type CSSProperties,
   type ChangeEvent as ReactChangeEvent,
   type ClipboardEvent as ReactClipboardEvent,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -42,7 +38,6 @@ import {
   addSupplierPriceColumn,
   fetchSpecRows,
   fetchSupplierPriceGrid,
-  removeSupplierPriceColumn,
   type SupplierPriceCellInput,
   type SupplierPriceColumn,
   type SupplierPriceGrid,
@@ -67,17 +62,6 @@ import {
   serverCellsOf,
   setDraftPrice,
 } from './supplier-price-list-model'
-import { ColumnResizeHandle } from './supplier-quote-column-resize'
-import {
-  type ColumnWidthPrefs,
-  columnKeyOf,
-  readColumnWidths,
-  resetColumnWidth,
-  setColumnWidth,
-  sheetKeyOf,
-  widthOf,
-  writeColumnWidths,
-} from './supplier-quote-column-widths'
 import {
   type DraftHistory,
   EMPTY_HISTORY,
@@ -243,14 +227,6 @@ const formatLastEdit = (value: string | null): string | null => {
     ? parsed.format('MM-DD HH:mm')
     : parsed.format('MM-DD')
 }
-
-const dotStyle = (color: string): CSSProperties => ({
-  width: 6,
-  height: 6,
-  borderRadius: '50%',
-  background: color,
-  display: 'inline-block',
-})
 
 type SheetCellProps = {
   ariaLabel: string
@@ -465,7 +441,6 @@ export function SupplierQuoteBoard() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const canUpdate = useHasPermission('supplier-price-lists:update')
-  const canDelete = useHasPermission('supplier-price-lists:delete')
 
   /** 已打开的供应商标签页（key = supplierId）；按需打开、可关闭。 */
   const [openSupplierIds, setOpenSupplierIds] = useState<string[]>([])
@@ -496,8 +471,6 @@ export function SupplierQuoteBoard() {
    * 选区只在同一「类别 + 材质」表内扩展 —— 跨表框选没有意义（行/列下标在两表间不可比）。</p>
    */
   const [selection, setSelection] = useState<GridSelection | null>(null)
-  /** 列宽偏好（视图偏好，不落库）：按供应商从 localStorage 读回，调整后写回。 */
-  const [columnWidths, setColumnWidths] = useState<ColumnWidthPrefs>({})
   /** 批量调价弹窗。 */
   const [batchOpen, setBatchOpen] = useState(false)
   const [batchText, setBatchText] = useState('')
@@ -523,14 +496,6 @@ export function SupplierQuoteBoard() {
   const suppliers = suppliersQuery.data ?? []
 
   const supplierId = activeSupplierId
-
-  /*
-   * 列宽按供应商记忆：换供应商必须重新读，否则上一家的宽度会被带到下一家的表上
-   * （同一个品牌在两家供应商下的列需求不同）。读失败返回空偏好，页面照常打开。
-   */
-  useEffect(() => {
-    setColumnWidths(supplierId ? readColumnWidths(supplierId) : {})
-  }, [supplierId])
 
   /*
    * 拖拽框选只在表格内用 pointerenter 扩展焦点，但指针可能在表格外松开 —— 收尾必须挂在
@@ -1118,55 +1083,6 @@ export function SupplierQuoteBoard() {
     else close()
   }
 
-  const removeBrand = (brandName: string) => {
-    const column = byBrandRef.current.columns.get(brandName) ?? null
-    if (!column) {
-      setColumns((current) => {
-        const next = { ...current }
-        delete next[brandName]
-        return next
-      })
-      // 少了一列，列下标整体前移：按列下标记的选区失效
-      setSelection(null)
-      return
-    }
-    modal.confirm({
-      title: t('priceCompare.supplierPrice.removeTitle', { name: brandName }),
-      content: t('priceCompare.supplierPrice.removeContent'),
-      okText: t('common.delete'),
-      okButtonProps: { danger: true },
-      cancelText: t('common.cancel'),
-      onOk: async () => {
-        await removeSupplierPriceColumn(column.listId)
-        setColumns((current) => {
-          const next = { ...current }
-          delete next[brandName]
-          return next
-        })
-        if (draftsRef.current[brandName]) {
-          const nextDrafts = { ...draftsRef.current }
-          delete nextDrafts[brandName]
-          commitDrafts(nextDrafts)
-        }
-        // 与其它会改变列集合的操作一致：列少了，选区的列下标不再指向同一批格子
-        setSelection(null)
-        await queryClient.invalidateQueries({
-          queryKey: gridQueryKey(brandName),
-        })
-      },
-    })
-  }
-
-  /** 清空本列：把该品牌已有报价全部标成「不报价」，随后自动落库。 */
-  const clearBrand = (brandName: string) => {
-    const cells = byBrandRef.current.cells.get(brandName)
-    if (!cells || cells.size === 0) return
-    const nextDraft: BrandDraft = { ...(draftsRef.current[brandName] ?? {}) }
-    for (const key of cells.keys()) nextDraft[key] = null
-    applyDrafts({ ...draftsRef.current, [brandName]: nextDraft })
-    scheduleSave(brandName)
-  }
-
   /* ------------------------------------------------------------ Excel 式选区操作 */
 
   /**
@@ -1511,33 +1427,6 @@ export function SupplierQuoteBoard() {
     )
   }
 
-  /**
-   * 调整列宽并写回本地记忆。
-   *
-   * <p>用函数式更新：键盘连按方向键时不会读到上一帧的偏好。写在更新函数里是安全的 ——
-   * `writeColumnWidths` 用同一份偏好整体覆盖，重复调用结果一样（幂等），不会写出半份数据。</p>
-   */
-  const resizeSheetColumn = (
-    sheetKey: string,
-    columnKey: string,
-    next: number,
-  ) => {
-    setColumnWidths((current) => {
-      const updated = setColumnWidth(current, sheetKey, columnKey, next)
-      if (supplierId) writeColumnWidths(supplierId, updated)
-      return updated
-    })
-  }
-
-  /** 恢复某列默认宽度（Home / 双击把手），同样写回本地记忆。 */
-  const resetSheetColumn = (sheetKey: string, columnKey: string) => {
-    setColumnWidths((current) => {
-      const updated = resetColumnWidth(current, sheetKey, columnKey)
-      if (supplierId) writeColumnWidths(supplierId, updated)
-      return updated
-    })
-  }
-
   /* ---------------------------------------------------------------- 粘贴与撤销 */
 
   /**
@@ -1688,6 +1577,11 @@ export function SupplierQuoteBoard() {
 
   /* ---------------------------------------------------------------- 渲染 */
 
+  /** 保存失败的品牌：表头不再有红点，失败提示统一放在工具栏（只在失败时出现）。 */
+  const failedBrands = Object.keys(saveState).filter(
+    (brandName) => saveState[brandName] === 'error',
+  )
+
   const pendingCount = Object.values(drafts).reduce(
     (sum, draft) => sum + draftCount(draft),
     0,
@@ -1765,10 +1659,8 @@ export function SupplierQuoteBoard() {
       column?.updatedAt ?? column?.quotedOn ?? null,
     )
     /*
-     * 品牌列头只有一行：品牌名 +（未报价时）一个琥珀色状态点 + ⋯ 菜单。
-     *
-     * 最后编辑时间不再占一行文字（品牌 → 日期 → 定尺 会变成三行表头），
-     * 改为挂在品牌名的 tooltip 与 ⋯ 菜单首项里；定尺单独占第二行。
+     * 品牌列头只有品牌名：状态点、⋯ 菜单、列宽把手全部移除（列宽固定）。
+     * 最后编辑 / 未报价仍可通过品牌名 tooltip 读到，不占表头空间。
      */
     return (
       <span
@@ -1783,78 +1675,7 @@ export function SupplierQuoteBoard() {
               : t('priceCompare.supplierPrice.notQuotedHint')
           }
         >
-          {lastEdit ? null : (
-            <span
-              aria-label={t('priceCompare.supplierPrice.notQuoted')}
-              className="supplier-price-brand-head-flag"
-              role="img"
-              title={t('priceCompare.supplierPrice.notQuotedHint')}
-            />
-          )}
           {brandName}
-        </span>
-        <span className="supplier-price-brand-head-tools">
-          {saveState[brandName] === 'saving' ? (
-            <span aria-hidden="true" style={dotStyle('#faad14')} />
-          ) : null}
-          {saveState[brandName] === 'error' ? (
-            <Tooltip
-              title={t('priceCompare.supplierPrice.saveFailed', {
-                names: brandName,
-              })}
-            >
-              <Button
-                aria-label={t('priceCompare.supplierPrice.saveFailed', {
-                  names: brandName,
-                })}
-                size="small"
-                type="text"
-                onClick={() => void saveBrand(brandName)}
-              >
-                <span style={dotStyle('#ff4d4f')} />
-              </Button>
-            </Tooltip>
-          ) : null}
-          <Dropdown
-            trigger={['click']}
-            menu={{
-              items: [
-                {
-                  key: 'status',
-                  disabled: true,
-                  label: lastEdit
-                    ? `${t('priceCompare.supplierPrice.lastEdited')} ${lastEdit}`
-                    : t('priceCompare.supplierPrice.notQuoted'),
-                },
-                { type: 'divider' },
-                {
-                  key: 'clear',
-                  icon: <DeleteOutlined />,
-                  label: t('priceCompare.supplierPrice.clearColumn'),
-                  disabled: !canUpdate,
-                },
-                {
-                  key: 'remove',
-                  danger: true,
-                  label: t('priceCompare.supplierPrice.removeColumn'),
-                  disabled: !canDelete,
-                },
-              ],
-              onClick: ({ key }) => {
-                if (key === 'clear') clearBrand(brandName)
-                if (key === 'remove') removeBrand(brandName)
-              },
-            }}
-          >
-            <Button
-              aria-label={t('priceCompare.supplierPrice.removeColumnA11y', {
-                name: brandName,
-              })}
-              icon={<EllipsisOutlined />}
-              size="small"
-              type="text"
-            />
-          </Dropdown>
         </span>
       </span>
     )
@@ -1874,8 +1695,6 @@ export function SupplierQuoteBoard() {
     group: CategoryGroup,
     sheet: CategorySheet,
   ): { columns: ColumnsType<SpecRow>; totalWidth: number } => {
-    /** 表身份（类别 + 材质）：列宽偏好按它分组，同一品牌在不同材质下各记各的宽度。 */
-    const sheetKey = sheetKeyOf(group.categoryName, sheet.material)
     /*
      * 左上角单元格：材质 + 规格。
      *
@@ -1943,17 +1762,12 @@ export function SupplierQuoteBoard() {
             columnIndexOf.get(`${brandName}\u0000${material}\u0000${length}`) ??
             -1
           const column = sheet.cellColumns[columnIndex]
-          const columnKey = columnKeyOf(brandName, length)
           /*
-           * 叶子列宽：默认刚好装下 4 位数字；盘螺（定尺 '-'）单定尺列的品牌表头直接坐在价格列上，
-           * 所以默认 96px。用户拖动 / 方向键调整后按 localStorage 的记忆值（按供应商隔离）。
+           * 列宽固定（不做拖拽 / 记忆）：单定尺（盘螺）的品牌表头直接坐在价格列上，
+           * 用 96px；多定尺用 64px，刚好装下 4 位数字。
            */
-          const leafWidth = widthOf(
-            columnWidths,
-            sheetKey,
-            columnKey,
-            length === '-' ? BRAND_FLAT_COLUMN_WIDTH : BRAND_COLUMN_WIDTH,
-          )
+          const leafWidth =
+            length === '-' ? BRAND_FLAT_COLUMN_WIDTH : BRAND_COLUMN_WIDTH
           totalWidth += leafWidth
           /*
            * 「整列不可填」：该品牌在商品资料里没有任何这个定尺的规格。
@@ -1986,18 +1800,6 @@ export function SupplierQuoteBoard() {
                     {label}
                   </span>
                 )}
-                <ColumnResizeHandle
-                  label={
-                    length === '-'
-                      ? `${brandName} ${material}`
-                      : `${brandName} ${material} ${length}`
-                  }
-                  width={leafWidth}
-                  onReset={() => resetSheetColumn(sheetKey, columnKey)}
-                  onResize={(next) =>
-                    resizeSheetColumn(sheetKey, columnKey, next)
-                  }
-                />
               </span>
             ),
             key: `${brandName}\u0000${material}\u0000${length}`,
@@ -2288,6 +2090,22 @@ export function SupplierQuoteBoard() {
           </Typography.Text>
         ) : null}
         <Flex align="center" className="supplier-price-toolbar-tail" gap={8}>
+          {failedBrands.length > 0 ? (
+            <Button
+              danger
+              onClick={() => {
+                for (const brandName of failedBrands) {
+                  void saveBrand(brandName)
+                }
+              }}
+              size="small"
+              type="link"
+            >
+              {t('priceCompare.supplierPrice.saveFailedRetry', {
+                names: failedBrands.join('、'),
+              })}
+            </Button>
+          ) : null}
           {!canUpdate ? (
             <Typography.Text type="warning">
               {t('priceCompare.supplierPrice.readOnlyHint')}

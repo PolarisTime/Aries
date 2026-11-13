@@ -2895,7 +2895,6 @@ export const enUS = {
       lastEditedHint:
         'Recorded automatically when a (supplier, brand) price list is saved as a whole; no manual date entry',
       neverEdited: 'Not saved yet',
-      notQuoted: 'Not quoted',
       notQuotedHint:
         'This supplier has no price list for this brand yet; it is created on the first save',
       lengthUnavailable:
@@ -2909,7 +2908,7 @@ export const enUS = {
       refresh: 'Refresh',
       saveAll: 'Save ({{count}})',
       savedBrands: 'Saved {{count}} brand column(s)',
-      saveFailed: 'Failed to save: {{names}}; your changes are kept',
+      saveFailedRetry: '{{names}} failed to save — click to retry',
       saveNothing: 'Nothing to save',
       material: 'Material',
       specNo: 'Size',
@@ -2957,7 +2956,6 @@ export const enUS = {
       moveLeft: 'Move left',
       moveRight: 'Move right',
       hideColumn: 'Hide this column',
-      clearColumn: 'Clear this column (save to apply)',
       clearColumnTitle: 'Clear column "{{name}}"?',
       clearColumnContent:
         'All entered prices in this column will be marked as not quoted; it takes effect after you click Save.',
@@ -2997,11 +2995,6 @@ export const enUS = {
       discardContent:
         'Switching supplier discards unsaved quote edits on this page.',
       discardOk: 'Discard and switch',
-      removeTitle: 'Remove quotes under brand "{{name}}"?',
-      removeContent:
-        'All quotes of this supplier under this brand will be removed; other brands are untouched',
-      removeColumn: 'Remove this column',
-      removeColumnA11y: 'Remove the quote column of brand {{name}}',
       importFromPriceList: 'Import from supplier price list',
       importConfirmTitle: 'Import from supplier price list?',
       importConfirmContent:

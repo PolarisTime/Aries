@@ -145,14 +145,7 @@ describe('供应商报价表：Excel 式数字排版', () => {
     expect(blockOf('.supplier-price-col-head-na')).toContain('line-through')
   })
 
-  it('列宽把手命中区 ≥24×24（WCAG 2.5.8），聚焦时有可见焦点框', () => {
-    const handle = css.indexOf('.supplier-price-col-resize {')
-    expect(handle).toBeGreaterThan(-1)
-    const block = css.slice(handle, css.indexOf('}', handle))
-    expect(block).toMatch(/min-width:\s*24px/)
-    expect(block).toMatch(/min-height:\s*24px/)
-    const focus = css.indexOf('.supplier-price-col-resize:focus-visible {')
-    expect(focus).toBeGreaterThan(-1)
-    expect(css.slice(focus, css.indexOf('}', focus))).toContain('outline')
+  it('列宽固定：不再提供列宽把手样式', () => {
+    expect(css).not.toContain('.supplier-price-col-resize')
   })
 })

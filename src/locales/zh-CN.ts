@@ -2887,7 +2887,6 @@ export const zhCN = {
       lastEditedHint:
         '价格表按（供应商, 品牌）整列保存时自动记录最后编辑时间，不需要手工选日期',
       neverEdited: '尚未保存',
-      notQuoted: '未报价',
       notQuotedHint: '该供应商这个品牌还没有价格表，首次录入并保存后自动创建',
       lengthUnavailable: '商品资料里该品牌没有 {{length}} 定尺，这一列不能填',
       specUnavailable: '商品资料里该品牌没有 {{spec}} 规格，这一格不能填',
@@ -2897,7 +2896,7 @@ export const zhCN = {
       refresh: '刷新',
       saveAll: '保存（{{count}} 处）',
       savedBrands: '已保存 {{count}} 个品牌列',
-      saveFailed: '{{names}} 保存失败，改动已保留',
+      saveFailedRetry: '{{names}} 保存失败，点击重试',
       saveNothing: '没有需要保存的改动',
       material: '材质',
       specNo: '规格',
@@ -2944,7 +2943,6 @@ export const zhCN = {
       moveLeft: '左移',
       moveRight: '右移',
       hideColumn: '隐藏该列',
-      clearColumn: '清空本列（需保存）',
       clearColumnTitle: '清空「{{name}}」这一列？',
       clearColumnContent:
         '会把该列已填价格全部标记为未报价，点「保存」后才会真正落库。',
@@ -2979,10 +2977,6 @@ export const zhCN = {
       discardTitle: '放弃未保存的报价？',
       discardContent: '切换供应商会丢弃当前页尚未保存的报价改动。',
       discardOk: '放弃并切换',
-      removeTitle: '移除品牌「{{name}}」下的报价？',
-      removeContent: '该供应商在此品牌下的全部报价将一并移除，其它品牌不受影响',
-      removeColumn: '移除这一列',
-      removeColumnA11y: '移除品牌 {{name}} 的报价列',
       importFromPriceList: '从供应商价格表导入',
       importConfirmTitle: '从供应商价格表导入？',
       importConfirmContent:

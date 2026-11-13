@@ -529,7 +529,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     )
   })
 
-  it('列头单行：未报价只显示状态点，最后编辑时间挂在 title 上', async () => {
+  it('列头只显示品牌名：最后编辑时间挂在 title 上', async () => {
     // 中天有价格表；永钢是经营品牌且商品资料里有货，但还没建价格表
     priceApi.fetchSpecRows.mockResolvedValue([
       ROW_A,
@@ -549,14 +549,14 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     await render()
 
-    await waitFor(() => cellInput('永钢 HRB400E 12 9米') !== null)
-    // 等中天的价格表回来（列头状态来自价格表列，不是商品资料）
     await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
 
-    /*
-     * 表头只有一行：最后编辑/未报价不再占一行文字，改为
-     * 品牌名 title（悬停可读）与状态点（未报价时显示）。
-     */
+    // 状态点、⋯ 菜单、列宽把手都已移除，列头只剩品牌名
+    expect(
+      container.querySelector('.supplier-price-brand-head-flag'),
+    ).toBeNull()
+    expect(container.querySelector('.supplier-price-col-resize')).toBeNull()
+
     const saved = container.querySelector('[data-brand-status="saved"]')
     const notQuoted = container.querySelector(
       '[data-brand-status="not-quoted"]',
@@ -566,10 +566,11 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
         ?.querySelector('.supplier-price-brand-head-title')
         ?.getAttribute('title'),
     ).toContain('10-29')
-    expect(notQuoted).not.toBeNull()
     expect(
-      notQuoted?.querySelector('.supplier-price-brand-head-flag'),
-    ).not.toBeNull()
+      notQuoted
+        ?.querySelector('.supplier-price-brand-head-title')
+        ?.getAttribute('title'),
+    ).toBeTruthy()
   })
 
   it('搜索按材质/规格/定尺过滤行', async () => {

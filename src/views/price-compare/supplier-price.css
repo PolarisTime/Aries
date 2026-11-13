@@ -461,42 +461,18 @@
   min-height: 24px;
 }
 
+/*
+ * 品牌名居中单行。⋯ 菜单已移除，不再给它预留右侧空间；
+ * 单定尺列只有 96px，多留 18px 会把「武钢汉钢」这类四字品牌裁掉最后一个字。
+ */
 .supplier-price-brand-head-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  max-width: calc(100% - 18px);
-  padding-inline-end: 18px;
+  display: block;
+  max-width: 100%;
+  padding-inline: 0;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* 未报价状态点：颜色之外还有 aria-label / title，不单靠颜色传达状态（WCAG 1.4.1） */
-.supplier-price-brand-head-flag {
-  width: 6px;
-  height: 6px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--ant-color-warning, #faad14);
-}
-
-.supplier-price-brand-head-tools {
-  position: absolute;
-  inset-inline-end: 0;
-  top: 50%;
-  display: inline-flex;
-  align-items: center;
-  gap: 1px;
-  transform: translateY(-50%);
-}
-
-.supplier-price-brand-head-tools .ant-btn {
-  min-width: 16px;
-  height: 16px;
-  padding-inline: 0;
-  font-size: 12px;
-  line-height: 16px;
 }
 
 /*
@@ -553,37 +529,6 @@
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.supplier-price-col-resize {
-  position: absolute;
-  inset-block: 0;
-  inset-inline-end: 0;
-  width: 24px;
-  min-width: 24px;
-  min-height: 24px;
-  cursor: col-resize;
-}
-
-.supplier-price-col-resize::after {
-  content: "";
-  position: absolute;
-  inset-block: 20%;
-  inset-inline-end: 0;
-  width: 2px;
-  border-radius: 1px;
-  background: var(--ant-color-border, #d9d9d9);
-}
-
-.supplier-price-col-resize:hover::after,
-.supplier-price-col-resize:focus-visible::after {
-  background: var(--ant-color-primary, #1677ff);
-}
-
-/* 键盘聚焦要有可见焦点框，否则「Tab 到这里了」完全看不出来 */
-.supplier-price-col-resize:focus-visible {
-  outline: 2px solid var(--ant-color-primary, #1677ff);
-  outline-offset: -2px;
 }
 
 /*
