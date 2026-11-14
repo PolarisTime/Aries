@@ -778,10 +778,3 @@
   white-space: nowrap;
   font-size: 12px;
 }
-
-.supplier-price-selection-bar {
-  padding: var(--space-xxs, 4px) var(--space-md, 16px);
-  background: var(--ant-color-primary-bg, #e6f4ff);
-  border: 1px solid var(--ant-color-primary-border, #91caff);
-  border-radius: var(--ant-border-radius-lg, 8px);
-}

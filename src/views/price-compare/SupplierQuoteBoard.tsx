@@ -2209,55 +2209,92 @@ export function SupplierQuoteBoard() {
    * 键盘 Tab 顺序与 `data-grid-cell` 定位都会跨到隐藏表上。</p>
    */
   /**
-   * 品类名挂在 tab 栏**左侧**、最后编辑挂在**右侧**（`tabBarExtraContent`）。
+   * 品类名挂在 tab 栏**左侧**，右侧放「已选 N 格 + 批量调价」与最后编辑
+   * （antd `tabBarExtraContent`）。
    *
    * <p>为什么用 extra content 而不是自己拼一行 flex：antd 的 tab 栏本身就是
    * 「一行 + 下划线」，把两侧内容交给它，品类名/时间与 tab 文字天然同基线，
    * 不需要靠 padding 去凑；表格仍然只属于 tab 内容区，不会被 flex 布局拉进那一行。</p>
+   *
+   * <p>选区动作也放这里：选区天然只属于**一个品类**（`selection.category`），
+   * 独立蓝条会平白多占一行，而且不在选区所属品类的行上，用户得来回看。</p>
    */
-  const materialTabExtras = (group: CategoryGroup, groupIndex: number) => ({
-    left: (
-      <span
-        className="supplier-price-sheet-category-name"
-        title={t('priceCompare.supplierPrice.categoryScale', {
-          materials: group.sheets.length,
-          ...categoryProgress(group),
-        })}
-      >
-        {group.categoryName}
-      </span>
-    ),
-    /*
-     * 最后编辑是**全局**状态，只在第一行（页面最上方的品类行）出现；
-     * 每行都重复同一个时间只是噪声。
-     */
-    ...(groupIndex === 0
-      ? {
-          right: (
-            <Flex align="center" className="supplier-price-tabs-extras" gap={8}>
-              <Tooltip title={t('priceCompare.supplierPrice.lastEditedHint')}>
-                <Typography.Text
-                  className="supplier-price-last-edited"
-                  type="secondary"
-                >
-                  {t('priceCompare.supplierPrice.lastEdited')}：
-                  {formatLastEdit(lastEdited) ??
-                    t('priceCompare.supplierPrice.neverEdited')}
-                </Typography.Text>
-              </Tooltip>
-              {savedFlash ? (
-                <Typography.Text
-                  className="supplier-price-saved-hint"
-                  type="success"
-                >
-                  {t('priceCompare.supplierPrice.saved')}
-                </Typography.Text>
-              ) : null}
-            </Flex>
-          ),
-        }
-      : {}),
-  })
+  const materialTabExtrasOf = (group: CategoryGroup, groupIndex: number) => {
+    /** 选区只属于一个品类：动作只出现在该品类的 tab 栏上。 */
+    const selectionHere = selection?.category === group.categoryName
+    return {
+      left: (
+        <span
+          className="supplier-price-sheet-category-name"
+          title={t('priceCompare.supplierPrice.categoryScale', {
+            materials: group.sheets.length,
+            ...categoryProgress(group),
+          })}
+        >
+          {group.categoryName}
+        </span>
+      ),
+      /*
+       * 右侧：选区动作（只在选区所属品类）+ 最后编辑（只在第一行）。
+       * 两者都没有时整个 right 不传，tab 栏不会留空位。
+       */
+      ...(selectionHere || groupIndex === 0
+        ? {
+            right: (
+              <Flex
+                align="center"
+                className="supplier-price-tabs-extras"
+                gap={8}
+              >
+                {selectionHere ? (
+                  <>
+                    <Typography.Text type="secondary">
+                      {t('priceCompare.supplierPrice.selectionCount', {
+                        count: selectionWritableCount,
+                      })}
+                    </Typography.Text>
+                    <Button
+                      disabled={!canUpdate}
+                      onClick={() => {
+                        setBatchText('')
+                        setBatchOpen(true)
+                      }}
+                      size="small"
+                    >
+                      {t('priceCompare.supplierPrice.batchAdjust')}
+                    </Button>
+                  </>
+                ) : null}
+                {groupIndex === 0 ? (
+                  <>
+                    <Tooltip
+                      title={t('priceCompare.supplierPrice.lastEditedHint')}
+                    >
+                      <Typography.Text
+                        className="supplier-price-last-edited"
+                        type="secondary"
+                      >
+                        {t('priceCompare.supplierPrice.lastEdited')}：
+                        {formatLastEdit(lastEdited) ??
+                          t('priceCompare.supplierPrice.neverEdited')}
+                      </Typography.Text>
+                    </Tooltip>
+                    {savedFlash ? (
+                      <Typography.Text
+                        className="supplier-price-saved-hint"
+                        type="success"
+                      >
+                        {t('priceCompare.supplierPrice.saved')}
+                      </Typography.Text>
+                    ) : null}
+                  </>
+                ) : null}
+              </Flex>
+            ),
+          }
+        : {}),
+    }
+  }
 
   const materialTabsOf = (group: CategoryGroup, groupIndex: number) => {
     if (group.sheets.length === 0) return null
@@ -2270,7 +2307,7 @@ export function SupplierQuoteBoard() {
         activeKey={activeKey}
         className="supplier-price-material-tabs"
         destroyOnHidden
-        tabBarExtraContent={materialTabExtras(group, groupIndex)}
+        tabBarExtraContent={materialTabExtrasOf(group, groupIndex)}
         items={group.sheets.map((sheet) => ({
           key: sheet.material,
           label: sheet.material,
@@ -2296,37 +2333,6 @@ export function SupplierQuoteBoard() {
    */
   const boardContent = (
     <>
-      {/*
-       * 选区工具栏：只有选中格子才出现，只保留「已选 N 格 + 批量调价」。
-       *
-       * 填充（Ctrl+D / Ctrl+R）与清空（Delete）仍可用键盘完成，不再放按钮；
-       * 撤销 / 重做同样只保留 Ctrl+Z / Ctrl+Y。
-       */}
-      {selection ? (
-        <Flex
-          align="center"
-          className="supplier-price-selection-bar"
-          gap={8}
-          wrap
-        >
-          <Typography.Text type="secondary">
-            {t('priceCompare.supplierPrice.selectionCount', {
-              count: selectionWritableCount,
-            })}
-          </Typography.Text>
-          <Button
-            disabled={!canUpdate}
-            onClick={() => {
-              setBatchText('')
-              setBatchOpen(true)
-            }}
-            size="small"
-          >
-            {t('priceCompare.supplierPrice.batchAdjust')}
-          </Button>
-        </Flex>
-      ) : null}
-
       {/*
        * 批量调价：一个输入框，两套语义（以运算符开头 = 相对调整，否则 = 设为该价）。
        * 不合法时**不关弹窗**，让用户就地改；调完/没可调的格子才关。
