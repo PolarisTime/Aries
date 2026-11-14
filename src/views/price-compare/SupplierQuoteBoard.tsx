@@ -2199,15 +2199,17 @@ export function SupplierQuoteBoard() {
   }
 
   /**
-   * 一个品类下的材质区：材质 ≥2 时用 tab 承载（直条 HRB400 / HRB400E / HRB500E），
-   * 只有一种材质时直接出表（只有一个 tab 没有切换意义）。
+   * 一个品类下的材质区：材质**一律**用 tab 承载（直条 HRB400 / HRB400E / HRB500E）。
+   *
+   * <p>即使该品类只有一种材质也保留 tab 行 —— 各品类版式因此完全一致（标题 / 材质行 /
+   * 表格三段式），扫读时不会出现"有的品类多一行、有的少一行"的错位感。单材质时那个
+   * tab 只是当前状态的展示，没有可切换项。</p>
    *
    * <p>`destroyOnHidden`：只挂载当前材质的表，切走即卸载 —— 否则几张表都留在 DOM 里，
    * 键盘 Tab 顺序与 `data-grid-cell` 定位都会跨到隐藏表上。</p>
    */
   const materialTabsOf = (group: CategoryGroup) => {
     if (group.sheets.length === 0) return null
-    if (group.sheets.length === 1) return sheetViewOf(group, group.sheets[0])
     const active = activeMaterialByCategory[group.categoryName]
     const activeKey = group.sheets.some((sheet) => sheet.material === active)
       ? active

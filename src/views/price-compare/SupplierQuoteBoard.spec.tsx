@@ -422,6 +422,42 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
   })
 
   /**
+   * 版式一致（用户 2026-11-14 明确）：即使某品类当前只有一种材质，也要保留材质 tab 行，
+   * 不能"多材质有 tab 行、单材质少一行"，否则两个品类上下叠在一起时表格起点对不齐。
+   */
+  it('单材质品类也保留材质 tab 行', async () => {
+    await render()
+
+    const categoryBlock = (name: string) =>
+      Array.from(
+        document.querySelectorAll('.supplier-price-sheet-category'),
+      ).find((block) =>
+        block
+          .querySelector('.supplier-price-sheet-category-name')
+          ?.textContent?.includes(name),
+      )
+
+    // 直条只有 HRB400E 一种材质：tab 行仍要出现，且只有这一项
+    const zhitiao = categoryBlock('直条')
+    expect(
+      zhitiao?.querySelector('.supplier-price-material-tabs'),
+    ).not.toBeNull()
+    expect(
+      Array.from(
+        zhitiao?.querySelectorAll(
+          '.supplier-price-material-tabs .ant-tabs-tab',
+        ) ?? [],
+      ).map((node) => node.textContent?.trim()),
+    ).toEqual(['HRB400E'])
+    // 表格照常挂在这唯一一个材质页签下
+    expect(
+      zhitiao?.querySelectorAll(
+        '.ant-table-tbody tr:not(.ant-table-measure-row)',
+      ).length,
+    ).toBe(12)
+  })
+
+  /**
    * 盘螺不分定尺、直条分 9米/12米。混在一张表里时盘螺行在 9米/12米 上永远是空格，
    * 表头宽度还要按两类定尺的并集算。拆成两张表后，每张表只保留自己用得到的定尺列。
    */
