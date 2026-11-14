@@ -377,8 +377,9 @@
 /* 紧凑表格: 减小单元格留白与行高 */
 .price-compare-table .ant-table-small .ant-table-tbody > tr > td,
 .price-compare-table .ant-table-small .ant-table-thead > tr > th {
-  padding: var(--space-2) var(--space-6) !important;
-  line-height: 22px;
+  /* 与供应商报价表一致：行高 = 字号 × 2、内边距 0.1em / 0.3em，整体约 28px 一行 */
+  padding: 0.1em 0.3em !important;
+  line-height: 1.45;
 }
 
 .price-compare-table .ant-table-small .ant-select-single,
@@ -433,8 +434,8 @@
 }
 
 .price-compare-table .ant-table-tbody > tr > td {
-  height: 30px;
-  line-height: 20px;
+  height: 28px;
+  line-height: 1.45;
 }
 
 .price-compare-table .ant-table-thead > tr > th {
@@ -444,20 +445,26 @@
 }
 
 /*
- * 两级表头: 品牌分组行读作「分组标签」, 子列行才是列名。
- *
- * 两级同款(同底色、同字重)时, 左侧那排跨两行的列名(th[rowspan])会在分组行里留出一条
- * 空带, 表头因此比数据行还重、左上角一片空白。NN/g 对数据表的建议是让分组行更轻、
- * 把最高对比度留给「列名」这一层(见 Data Tables: Four Major User Tasks 的定位与比较章节)。
- * scope="colgroup" 是 antd 给分组表头单元格写死的属性, 用它精确选中分组行, 不误伤跨行单元格。
+ * 两级表头：与供应商报价表保持同一层级关系 —— 品牌名（分组行）是主角，深色加粗；
+ * 「网价 / 现货 / 差价 / 简称」是子列，弱化成 11px 灰色。报价表里正是
+ * 「武钢汉钢（粗黑）/ 9米（小灰）」这样的父子关系，反过来会让表头比数据还花。
  */
 .price-compare-table .ant-table-thead > tr > th[scope="colgroup"] {
-  padding-block: 1px !important;
-  background: var(--price-compare-corner-bg, #f4f7fb) !important;
+  padding-block: 1.4px !important;
+  background: var(--price-compare-header-bg, #f8fafc) !important;
+  color: var(--price-compare-head-text, #48505e);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20.3px;
+}
+
+.price-compare-table .ant-table-thead > tr:nth-child(2) > th {
+  /* 子列表头：11px 灰色 + 比品牌行略松的上下留白，与报价表的定尺行同高（约 24px） */
+  padding-block: 4px !important;
   color: var(--price-compare-head-muted, #6b7482);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-  line-height: 18px;
+  line-height: 15.95px;
 }
 
 /* 整行可拖: 行上给出抓取光标作为提示; 落在输入控件上时恢复常规光标,
@@ -511,7 +518,7 @@
 }
 
 .price-compare-table .ant-table-thead > tr > th {
-  border-bottom: 1px solid var(--price-compare-grid-strong, #d3d9e3) !important;
+  border-bottom: 1px solid var(--price-compare-grid, #e3e7ee) !important;
 }
 
 /*
@@ -1034,8 +1041,7 @@
   background: var(--price-compare-corner-bg, #f4f7fb) !important;
 }
 
-/* 行标签列（类别 / 材质·规格·长度）：极浅底色，像表格软件的行头 */
-.price-compare-table .ant-table-tbody > tr > td:has(.price-compare-category),
+/* 行标签列（材质·规格·长度）：极浅底色，像报价表的规格列 */
 .price-compare-table
   .ant-table-tbody
   > tr
@@ -1047,8 +1053,49 @@
 .price-compare-table .price-compare-category,
 .price-compare-table .price-compare-variety-cell {
   color: var(--price-compare-spec-text, #3c4553);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
+}
+
+/* 规格下拉里的文字与报价表规格列同款：12px / 600 / 深色 / 居中 */
+.price-compare-table .price-compare-variety-cell .ant-select-content,
+.price-compare-table .price-compare-variety-cell .ant-select-content > span {
+  color: var(--price-compare-spec-text, #3c4553);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.price-compare-table .price-compare-variety-cell .ant-select-content {
+  justify-content: center;
+  text-align: center;
+}
+
+/* antd 6 的 Select 文本在 `.ant-select-content`（v5 的 selection-item 已不存在） */
+.price-compare-table .ant-table-cell .ant-select-content {
+  font-size: 12px;
+}
+
+/*
+ * 数值与列头统一居中：报价表的价格格是居中的，比价表若右对齐会显得是另一种表格。
+ * 保留 tabular-nums 便于纵向对齐。
+ */
+.price-compare-table .ant-table-thead > tr > th {
+  text-align: center;
+}
+
+.price-compare-table .price-compare-num,
+.price-compare-table .price-compare-net,
+.price-compare-table .price-compare-spot,
+.price-compare-table .price-compare-diff,
+.price-compare-table .price-compare-supplier {
+  text-align: center;
+}
+
+.price-compare-table .ant-table-tbody > tr > td:has(.price-compare-num),
+.price-compare-table .ant-table-tbody > tr > td:has(.price-compare-spot),
+.price-compare-table .ant-table-tbody > tr > td:has(.price-compare-diff),
+.price-compare-table .ant-table-tbody > tr > td:has(.price-compare-supplier) {
+  text-align: center;
 }
 
 /* 表尾的合计行：与表头同色，合计值加粗 */
