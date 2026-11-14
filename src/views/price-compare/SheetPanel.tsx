@@ -1277,7 +1277,11 @@ export function SheetPanel(props: Props) {
 
   if (!chrome) return content
   return (
-    <Card size="small" styles={{ body: { padding: 12 } }}>
+    <Card
+      className="price-compare-sheet-card"
+      size="small"
+      styles={{ body: { padding: 12 } }}
+    >
       {content}
     </Card>
   )

@@ -20,6 +20,19 @@
 
 .price-compare-page {
   padding: var(--space-sm);
+  /*
+   * 表格配色对齐「供应商报价表」的工作台风格（浅灰表头、细网格、浅色行标签列）。
+   * 集中成局部变量，避免色值散落；带回退值，变量缺失时仍是可读的中性色。
+   */
+  --price-compare-grid: #e3e7ee;
+  --price-compare-grid-strong: #d3d9e3;
+  --price-compare-header-bg: #f8fafc;
+  --price-compare-corner-bg: #f4f7fb;
+  --price-compare-spec-bg: #fbfcfe;
+  --price-compare-row-hover: #f1f5fb;
+  --price-compare-head-text: #48505e;
+  --price-compare-head-muted: #6b7482;
+  --price-compare-spec-text: #3c4553;
 }
 
 .price-compare-head {
@@ -155,17 +168,14 @@
 }
 
 .price-compare-diff.is-pos {
-  background: var(--color-success-bg, #f6ffed);
   color: var(--color-success-active, #389e0d);
 }
 
 .price-compare-diff.is-neg {
-  background: var(--color-danger-bg, #fff1f0);
   color: var(--color-danger-active, #cf1322);
 }
 
 .price-compare-diff.is-zero {
-  background: var(--ant-color-fill-tertiary, rgba(0, 0, 0, 0.04));
   color: var(--text-secondary);
 }
 
@@ -349,7 +359,7 @@
 .price-compare-table .ant-table-tbody > tr.price-compare-separator-row > td {
   height: 14px;
   padding: 0 var(--space-6) !important;
-  background: var(--theme-table-header-bg, #fafafa) !important;
+  background: var(--price-compare-corner-bg, #f4f7fb) !important;
 }
 
 .price-compare-separator-label {
@@ -423,14 +433,14 @@
 }
 
 .price-compare-table .ant-table-tbody > tr > td {
-  height: 32px;
+  height: 30px;
   line-height: 20px;
 }
 
 .price-compare-table .ant-table-thead > tr > th {
-  background: var(--theme-table-header-bg) !important;
-  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.62));
-  font-weight: 500;
+  background: var(--price-compare-header-bg, #f8fafc) !important;
+  color: var(--price-compare-head-text, #48505e);
+  font-weight: 600;
 }
 
 /*
@@ -443,10 +453,10 @@
  */
 .price-compare-table .ant-table-thead > tr > th[scope="colgroup"] {
   padding-block: 1px !important;
-  background: var(--ant-color-fill-quaternary, rgb(0 0 0 / 2%)) !important;
-  color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
+  background: var(--price-compare-corner-bg, #f4f7fb) !important;
+  color: var(--price-compare-head-muted, #6b7482);
   font-size: 12px;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 18px;
 }
 
@@ -471,13 +481,13 @@
 }
 
 .price-compare-table .ant-table-tbody > tr:hover > td {
-  background: var(--theme-surface-hover) !important;
+  background: var(--price-compare-row-hover, #f1f5fb) !important;
 }
 
-/* 表格框线: 清晰的纵横实线网格(统一 1px) */
+/* 表格框线: 清晰的纵横实线网格(统一 1px, 对齐报价表的浅灰网格) */
 .price-compare-table .ant-table.ant-table-bordered > .ant-table-container {
-  border-inline-start: 1px solid var(--ant-color-border, #d9d9d9);
-  border-top: 1px solid var(--ant-color-border, #d9d9d9);
+  border-inline-start: 1px solid var(--price-compare-grid-strong, #d3d9e3);
+  border-top: 1px solid var(--price-compare-grid-strong, #d3d9e3);
 }
 
 .price-compare-table
@@ -496,12 +506,12 @@
   > tbody
   > tr
   > td {
-  border-inline-end: 1px solid var(--ant-color-border, #d9d9d9) !important;
-  border-bottom: 1px solid var(--ant-color-border, #d9d9d9) !important;
+  border-inline-end: 1px solid var(--price-compare-grid, #e3e7ee) !important;
+  border-bottom: 1px solid var(--price-compare-grid, #e3e7ee) !important;
 }
 
 .price-compare-table .ant-table-thead > tr > th {
-  border-bottom: 1px solid var(--ant-color-border, #d9d9d9) !important;
+  border-bottom: 1px solid var(--price-compare-grid-strong, #d3d9e3) !important;
 }
 
 /*
@@ -1006,4 +1016,67 @@
  */
 .price-compare-row-actions--locked.aries-sr-only:focus-visible {
   color: var(--ant-color-primary, #1677ff);
+}
+
+/*
+ * 表格观感对齐「供应商报价表」工作台（2026-11-14 用户要求：报价表样式很好看，替换掉报单比价）。
+ *
+ * 复用的设计语言：浅灰表头 / 极浅行标签列 / 细网格 / 紧凑行高 / 卡片化外框。
+ * 只作用于报单比价表格，不改其它页面。
+ */
+.price-compare-table .ant-table-css-var {
+  --ant-table-border-color: var(--price-compare-grid, #e3e7ee);
+}
+
+/* 勾选列与拖拽列在表头里相当于报价表的「左上角」，用比表头再浅一档的底色 */
+.price-compare-table .ant-table-thead > tr:first-child > th:first-child,
+.price-compare-table .ant-table-thead > tr:first-child > th:nth-child(2) {
+  background: var(--price-compare-corner-bg, #f4f7fb) !important;
+}
+
+/* 行标签列（类别 / 材质·规格·长度）：极浅底色，像表格软件的行头 */
+.price-compare-table .ant-table-tbody > tr > td:has(.price-compare-category),
+.price-compare-table
+  .ant-table-tbody
+  > tr
+  > td:has(.price-compare-variety-cell) {
+  background: var(--price-compare-spec-bg, #fbfcfe);
+}
+
+/* 行标签文字跟报价表规格列一致：小一号、加粗、深色 */
+.price-compare-table .price-compare-category,
+.price-compare-table .price-compare-variety-cell {
+  color: var(--price-compare-spec-text, #3c4553);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* 表尾的合计行：与表头同色，合计值加粗 */
+.price-compare-table .ant-table-summary > tr.price-compare-ton-total-row > td {
+  background: var(--price-compare-header-bg, #f8fafc);
+  color: var(--price-compare-head-text, #48505e);
+  font-weight: 600;
+}
+
+/* 固定列分隔阴影在浅色网格里显得脏，去掉（边框已足够表达固定边界） */
+.price-compare-table .ant-table-cell-fix-start::after,
+.price-compare-table .ant-table-cell-fix-end::after {
+  box-shadow: none;
+}
+
+/* 表格卡片：对齐报价表的圆角 + 细边 + 轻投影；表格自带外框归零，避免双线 */
+.price-compare-sheet-card {
+  overflow: hidden;
+  border-color: var(--price-compare-grid, #e3e7ee);
+  border-radius: 8px;
+  box-shadow:
+    0 1px 2px rgb(16 24 40 / 4%),
+    0 4px 14px rgb(16 24 40 / 5%);
+}
+
+.price-compare-sheet-card
+  .price-compare-table
+  .ant-table.ant-table-bordered
+  > .ant-table-container {
+  border: 0;
 }

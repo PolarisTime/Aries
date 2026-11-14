@@ -217,3 +217,46 @@ describe('比价页样式无障碍契约', () => {
     }
   })
 })
+
+/**
+ * 表格观感契约：报单比价复用「供应商报价表」的工作台表格皮肤。
+ *
+ * <p>用户要求把报价表的表格样式替换到比价页；这组断言锁住"浅灰表头 / 细网格 /
+ * 极浅行标签列 / 卡片化外框"的关键声明，避免以后被回退成默认 antd 表格。</p>
+ */
+describe('报单比价表格皮肤契约', () => {
+  it('配色收敛到页面级局部变量，不散落色值', () => {
+    const vars = blockOf(pageCss, '.price-compare-page {')
+    for (const name of [
+      '--price-compare-grid: #e3e7ee',
+      '--price-compare-grid-strong: #d3d9e3',
+      '--price-compare-header-bg: #f8fafc',
+      '--price-compare-corner-bg: #f4f7fb',
+      '--price-compare-spec-bg: #fbfcfe',
+      '--price-compare-row-hover: #f1f5fb',
+    ]) {
+      expect(vars, `缺少表格皮肤变量 ${name}`).toContain(name)
+    }
+  })
+
+  it('表头 / 行标签列 / 悬停底色都走局部变量', () => {
+    expect(
+      blockOf(pageCss, '.price-compare-table .ant-table-thead > tr > th {'),
+    ).toMatch(/background:\s*var\(--price-compare-header-bg/)
+    expect(
+      blockOf(pageCss, '.price-compare-table .ant-table-tbody > tr:hover > td'),
+    ).toContain('var(--price-compare-row-hover')
+    expect(
+      blockOf(pageCss, '.price-compare-table .price-compare-category,'),
+    ).toContain('var(--price-compare-spec-text')
+  })
+
+  it('网格线用比 antd 默认更清晰的浅灰，表格外框由卡片承担', () => {
+    expect(
+      blockOf(pageCss, '.price-compare-table .ant-table-css-var'),
+    ).toContain('--ant-table-border-color: var(--price-compare-grid')
+    const card = blockOf(pageCss, '.price-compare-sheet-card {')
+    expect(card).toMatch(/border-radius:\s*8px/)
+    expect(card).toContain('box-shadow')
+  })
+})
