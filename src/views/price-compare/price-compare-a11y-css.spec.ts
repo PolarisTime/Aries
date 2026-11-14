@@ -252,4 +252,27 @@ describe('报单比价表格皮肤契约', () => {
     expect(card).toMatch(/border-radius:\s*8px/)
     expect(card).toContain('box-shadow')
   })
+
+  it('规格列下拉箭头默认隐藏，只在悬停 / 聚焦 / 展开时显示', () => {
+    const hidden = blockOf(
+      pageCss,
+      '.price-compare-table .price-compare-variety-cell .ant-select-suffix {',
+    )
+    expect(hidden).toMatch(/opacity:\s*0/)
+    // 只改 opacity、保留占位：箭头出现/消失时不会把规格文字挤动
+    expect(hidden).toContain('transition: opacity')
+
+    // 显示规则是「状态 + .ant-select-suffix」分组，按带后缀的完整选择器定位，
+    // 避免命中前面只做颜色继承的同名状态块。
+    for (const state of [
+      '.ant-select:hover\n  .ant-select-suffix',
+      '.ant-select-focused\n  .ant-select-suffix',
+      '.ant-select-open\n  .ant-select-suffix',
+      '.ant-select:focus-within\n  .ant-select-suffix',
+    ]) {
+      expect(blockOf(pageCss, state), `缺少 ${state} 的显示规则`).toMatch(
+        /opacity:\s*1/,
+      )
+    }
+  })
 })

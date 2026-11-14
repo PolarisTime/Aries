@@ -1071,6 +1071,43 @@
 }
 
 /*
+ * 规格列的下拉箭头默认隐藏，只在悬停 / 聚焦 / 展开时出现。
+ *
+ * 每行都挂一个灰色箭头会让整列显得全是"按钮"；但箭头占位保留（只改 opacity），
+ * 出现/消失时不会把规格文字挤动。键盘用户聚焦输入框或展开下拉时同样能看到。
+ */
+.price-compare-table .price-compare-variety-cell .ant-select-suffix {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.price-compare-table .price-compare-variety-cell .ant-select:hover,
+.price-compare-table .price-compare-variety-cell .ant-select-focused,
+.price-compare-table .price-compare-variety-cell .ant-select-open,
+.price-compare-table .price-compare-variety-cell .ant-select:focus-within {
+  color: inherit;
+}
+
+.price-compare-table
+  .price-compare-variety-cell
+  .ant-select:hover
+  .ant-select-suffix,
+.price-compare-table
+  .price-compare-variety-cell
+  .ant-select-focused
+  .ant-select-suffix,
+.price-compare-table
+  .price-compare-variety-cell
+  .ant-select-open
+  .ant-select-suffix,
+.price-compare-table
+  .price-compare-variety-cell
+  .ant-select:focus-within
+  .ant-select-suffix {
+  opacity: 1;
+}
+
+/*
  * 数值与列头统一居中：报价表的价格格是居中的，比价表若右对齐会显得是另一种表格。
  * 保留 tabular-nums 便于纵向对齐。
  */
