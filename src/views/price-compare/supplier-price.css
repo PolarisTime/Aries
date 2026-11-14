@@ -401,6 +401,18 @@
   margin-inline-start: var(--space-sm, 12px);
 }
 
+/*
+ * tab 栏右侧内容（已选 N 格 / 批量调价 / 最后编辑）改为**紧跟 tab 之后左对齐**。
+ *
+ * <p>antd 默认让 `.ant-tabs-nav-wrap` 撑满剩余宽度，右侧 extra content 就被顶到页面最右端 ——
+ * 表格只有 570px 宽时，这些状态离表格一千多像素，读起来像另一块区域的东西。
+ * 把 wrap 收回成「按需宽度」后，extra content 紧贴最后一个 tab，整行从左侧排起。</p>
+ */
+.supplier-price-page .supplier-price-material-tabs .ant-tabs-nav-wrap {
+  /* 三个类压过 antd 自己的 `.ant-tabs-top > .ant-tabs-nav .ant-tabs-nav-wrap` */
+  flex: 0 1 auto;
+}
+
 .supplier-price-sheet-category-name {
   font-size: 14px;
   font-weight: 650;
