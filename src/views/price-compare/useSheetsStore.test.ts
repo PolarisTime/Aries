@@ -253,103 +253,6 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(payload.items).toBeUndefined()
   })
 
-  it('供应商随现货价一并走行级保存', async () => {
-    const store = renderStore()
-    await hydrate(store)
-
-    const inputKey = `中天:${store.current.rows[0].id}`
-    act(() => {
-      store.current.patchSheet(store.current.activeId, {
-        inputs: {
-          [inputKey]: {
-            spot: 3200,
-            supplierId: '5002',
-            supplierName: '沙钢贸易',
-          },
-        },
-      })
-    })
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(900)
-    })
-
-    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
-    const [, itemId, payload] = api.updateQuoteSheetItem.mock.calls[0] as [
-      string,
-      string,
-      { prices: { supplierId?: string }[] },
-    ]
-    expect(itemId).toBe('7001')
-    expect(payload.prices[0].supplierId).toBe('5002')
-  })
-
-  /*
-   * 落库闭环的**唯一**前端证据：代取来源必须进保存载荷。
-   *
-   * 此前 buildItemPayload 只带 brandName/spotPrice/supplierId，把
-   * spotSourceMaterial 丢在本地 —— 于是保存成功、刷新后服务端只回 null，
-   * 角标必然消失（"按抗震牌号代取"在纸面上不可追溯）。
-   * 这条用例锁的是**载荷**而不是 UI，避免只靠 e2e 覆盖。
-   */
-  it('抗震牌号代取的来源材质随行级保存一并下发', async () => {
-    const store = renderStore()
-    await hydrate(store)
-
-    const inputKey = `中天:${store.current.rows[0].id}`
-    act(() => {
-      store.current.patchSheet(store.current.activeId, {
-        inputs: {
-          [inputKey]: { spot: 3420, spotSourceMaterial: 'HRB400E' },
-        },
-      })
-    })
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(900)
-    })
-
-    expect(api.updateQuoteSheetItem).toHaveBeenCalledTimes(1)
-    const [, itemId, payload] = api.updateQuoteSheetItem.mock.calls[0] as [
-      string,
-      string,
-      { prices: { sourceMaterial?: string | null; spotPrice?: number }[] },
-    ]
-    expect(itemId).toBe('7001')
-    expect(payload.prices[0].spotPrice).toBe(3420)
-    // 写请求的字段名是 sourceMaterial（响应才叫 spotSourceMaterial）
-    expect(payload.prices[0].sourceMaterial).toBe('HRB400E')
-  })
-
-  it('手工覆盖代取价后来源以显式 null 下发(服务端据此清空)', async () => {
-    const store = renderStore()
-    await hydrate(store)
-
-    const inputKey = `中天:${store.current.rows[0].id}`
-    act(() => {
-      store.current.patchSheet(store.current.activeId, {
-        inputs: {
-          [inputKey]: { spot: 3420, spotSourceMaterial: null },
-        },
-      })
-    })
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(900)
-    })
-
-    const [, , payload] = api.updateQuoteSheetItem.mock.calls[0] as [
-      string,
-      string,
-      { prices: Record<string, unknown>[] },
-    ]
-    // null 必须真的"在"载荷里：被省略时服务端会保留旧来源，角标就清不掉
-    expect('sourceMaterial' in payload.prices[0]).toBe(true)
-    expect(payload.prices[0].sourceMaterial).toBeNull()
-  })
-
-  /*
-   * 读回方向也要闭环：响应字段名是 `spotSourceMaterial`，必须映射进本地 inputs。
-   * 只修写入方向的话价格能回来、来源却在 `toPriceSheet` 丢掉 ——
-   * 重开单据后角标依旧消失（实测过：接口里有值、页面上没有角标）。
-   */
   it('读回时把 spotSourceMaterial 映射进本地 inputs', async () => {
     api.fetchQuoteSheets.mockResolvedValue([
       sheetRecord({
@@ -656,7 +559,6 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(api.addQuoteSheetItem).toHaveBeenCalledTimes(1)
     expect(api.addQuoteSheetItem.mock.calls[0][1]).toEqual({
       rowType: 'SEPARATOR',
-      prices: [],
     })
   })
 
@@ -711,11 +613,10 @@ describe('useSheetsStore 服务端数据源', () => {
     await hydrate(store)
     expect(store.current.active.version).toBe('0')
 
-    const inputKey = `中天:${store.current.rows[0].id}`
     act(() => {
-      store.current.patchSheet(store.current.activeId, {
-        inputs: { [inputKey]: { spot: 3300 } },
-      })
+      store.current.setRows((list) =>
+        list.map((row, index) => (index === 0 ? { ...row, ton: 5 } : row)),
+      )
     })
     await act(async () => {
       await vi.advanceTimersByTimeAsync(900)
@@ -762,11 +663,10 @@ describe('useSheetsStore 服务端数据源', () => {
     await hydrate(store)
     expect(store.current.active.savedAt).toBeUndefined()
 
-    const inputKey = `中天:${store.current.rows[0].id}`
     act(() => {
-      store.current.patchSheet(store.current.activeId, {
-        inputs: { [inputKey]: { spot: 3300 } },
-      })
+      store.current.setRows((list) =>
+        list.map((row, index) => (index === 0 ? { ...row, ton: 5 } : row)),
+      )
     })
     await act(async () => {
       await vi.advanceTimersByTimeAsync(900)
@@ -1057,9 +957,9 @@ describe('useSheetsStore 服务端数据源', () => {
 
     // 再改这一行的现货价触发行级写: itemId 必须是服务端 id
     act(() => {
-      store.current.patchSheet(store.current.activeId, {
-        inputs: { '中天:9999': { spot: 3300 } },
-      })
+      store.current.setRows((list) =>
+        list.map((row) => (row.id === '9999' ? { ...row, ton: 3 } : row)),
+      )
     })
     await act(async () => {
       await vi.advanceTimersByTimeAsync(900)
@@ -1510,11 +1410,10 @@ describe('useSheetsStore 服务端数据源', () => {
     api.updateQuoteSheetItem.mockClear()
     api.updateQuoteSheetHeader.mockClear()
 
-    const inputKey = `中天:${store.current.rows[0].id}`
     act(() => {
-      store.current.patchSheet(store.current.activeId, {
-        inputs: { [inputKey]: { spot: 3350, supplierId: '5001' } },
-      })
+      store.current.setRows((list) =>
+        list.map((row, index) => (index === 0 ? { ...row, ton: 5 } : row)),
+      )
     })
     await act(async () => {
       await vi.advanceTimersByTimeAsync(900)
@@ -1534,14 +1433,11 @@ describe('useSheetsStore 服务端数据源', () => {
     const [, itemId, payload] = api.updateQuoteSheetItem.mock.calls[0] as [
       string,
       string,
-      {
-        prices: { brandName: string; spotPrice?: number; supplierId?: string }[]
-      },
+      { ton?: number },
     ]
     expect(itemId).toBe('7001')
-    expect(payload.prices).toEqual([
-      { brandName: '中天', spotPrice: 3350, supplierId: '5001' },
-    ])
+    // 现货价不再随保存下发；触发行级写的是吨位
+    expect(payload.ton).toBe(5)
   })
 
   /*
@@ -1999,11 +1895,10 @@ describe('useSheetsStore 服务端数据源', () => {
     api.updateQuoteSheetItem.mockClear()
     api.fetchQuoteSheets.mockClear()
 
-    const inputKey = `中天:${store.current.rows[0].id}`
     act(() => {
-      store.current.patchSheet(store.current.activeId, {
-        inputs: { [inputKey]: { spot: 3350, supplierId: '5001' } },
-      })
+      store.current.setRows((list) =>
+        list.map((row, index) => (index === 0 ? { ...row, ton: 5 } : row)),
+      )
     })
     await act(async () => {
       await vi.advanceTimersByTimeAsync(900)
@@ -2017,10 +1912,8 @@ describe('useSheetsStore 服务端数据源', () => {
     })
 
     expect(api.fetchQuoteSheets).not.toHaveBeenCalled()
-    expect(store.current.active.inputs[inputKey]).toEqual({
-      spot: 3350,
-      supplierId: '5001',
-    })
+    // 本地编辑（吨位）在配置未加载期间保留，不丢
+    expect(store.current.rows[0].ton).toBe(5)
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(900)
@@ -2029,11 +1922,9 @@ describe('useSheetsStore 服务端数据源', () => {
     const [, , payload] = api.updateQuoteSheetItem.mock.calls[0] as [
       string,
       string,
-      { prices: { brandName: string; spotPrice?: number }[] },
+      { ton?: number },
     ]
-    expect(payload.prices).toEqual([
-      { brandName: '中天', spotPrice: 3350, supplierId: '5001' },
-    ])
+    expect(payload.ton).toBe(5)
   })
 
   it('刷新重建列表时 activeId 跟随本地→服务端映射, 不回跳', async () => {
@@ -2142,11 +2033,10 @@ describe('useSheetsStore 服务端数据源', () => {
     await hydrate(store)
     api.updateQuoteSheetItem.mockRejectedValueOnce(new Error('boom'))
 
-    const inputKey = `中天:${store.current.rows[0].id}`
     act(() => {
-      store.current.patchSheet(store.current.activeId, {
-        inputs: { [inputKey]: { spot: 3400, supplierId: '5001' } },
-      })
+      store.current.setRows((list) =>
+        list.map((row, index) => (index === 0 ? { ...row, ton: 5 } : row)),
+      )
     })
     await act(async () => {
       await vi.advanceTimersByTimeAsync(900)
@@ -2162,10 +2052,7 @@ describe('useSheetsStore 服务端数据源', () => {
 
     // 存在保存失败的脏编辑: 不覆盖本地
     expect(api.fetchQuoteSheets).not.toHaveBeenCalled()
-    expect(store.current.active.inputs[inputKey]).toEqual({
-      spot: 3400,
-      supplierId: '5001',
-    })
+    expect(store.current.rows[0].ton).toBe(5)
 
     // 聚焦触发的重试保存
     await act(async () => {
@@ -2269,11 +2156,10 @@ describe('useSheetsStore 服务端数据源', () => {
         settleItem = resolve
       }),
     )
-    const inputKey = `中天:${store.current.rows[0].id}`
     act(() => {
-      store.current.patchSheet(store.current.activeId, {
-        inputs: { [inputKey]: { spot: 3500, supplierId: '5001' } },
-      })
+      store.current.setRows((list) =>
+        list.map((row, index) => (index === 0 ? { ...row, ton: 5 } : row)),
+      )
     })
     await act(async () => {
       await vi.advanceTimersByTimeAsync(900)

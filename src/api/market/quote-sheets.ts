@@ -172,7 +172,11 @@ export type QuoteSheetPayload = {
     ton?: number
     remark?: string
     locked?: boolean
-    prices: {
+    /**
+     * 现货价。**实时派生后不再下发**（报价单只保存规格与吨位）；缺省时后端保留原价格行。
+     * 保留字段是为了旧客户端/导入工具仍能整组替换。
+     */
+    prices?: {
       brandName: string
       spotPrice?: number
       supplierId?: EntityId
@@ -190,7 +194,11 @@ export type QuoteSheetItemPayload = {
   ton?: number
   remark?: string
   locked?: boolean
-  prices: {
+  /**
+   * 现货价。**实时派生后不再下发**（报价单只保存规格与吨位），字段仅保留给
+   * 旧客户端/导入工具；缺省时后端保留库里已有价格行。
+   */
+  prices?: {
     brandName: string
     spotPrice?: number
     supplierId?: EntityId

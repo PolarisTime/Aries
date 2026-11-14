@@ -78,6 +78,13 @@ export type PriceRow = {
 export type SheetInput = {
   ton?: number
   spot?: number
+  /**
+   * 该现货价最后一次修改时间（来自供应商价格表条目）。
+   *
+   * <p>现货价改为**实时派生**后不再落库，这个时间只用于界面提示
+   * 「这个价是供应商什么时候报的」，不参与保存。</p>
+   */
+  spotUpdatedAt?: string
   /** 现货价来源供应商(主数据) */
   supplierId?: string
   supplierName?: string

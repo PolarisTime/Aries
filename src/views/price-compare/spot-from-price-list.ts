@@ -117,7 +117,7 @@ export function importLowestQuotes(
         }
       }
 
-      // 未匹配：整格清空（价 + 供应商 + 代取来源），不留"价格表里已不存在"的残值。
+      // 未匹配：整格清空（价 + 供应商 + 代取来源 + 改价时间），不留"价格表里已不存在"的残值。
       if (!quote) {
         if (prev === undefined) continue
         if (prev.spot !== undefined) stats.cleared += 1
@@ -140,6 +140,12 @@ export function importLowestQuotes(
       // 精确命中必须删掉旧的代取来源，否则旧 E 角标会残留；代取命中则重新写。
       delete next.spotSourceMaterial
       next.spot = quote.price
+      /*
+       * 改价时间随价一起刷新：界面要显示"这个价是供应商什么时候改的"。
+       * 价格表条目缺省时间时删掉旧值，避免显示上一轮的时间造成误导。
+       */
+      if (quote.updatedAt) next.spotUpdatedAt = quote.updatedAt
+      else delete next.spotUpdatedAt
       if (quote.supplierId) next.supplierId = quote.supplierId
       else delete next.supplierId
       if (quote.supplierName) next.supplierName = quote.supplierName

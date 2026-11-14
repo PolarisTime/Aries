@@ -1120,28 +1120,15 @@ describe('SheetPanel 差价最优并列高亮', () => {
 })
 
 /**
- * 「从供应商价格表导入」的交互契约。
+ * 现货价**实时派生**的契约（2026-11-14 重构）。
  *
- * <p>覆盖式导入前必须让用户看见影响面（新增/改价（涨跌）/清空/不变/代取，并明确
- * 「未匹配的格子会被清空」）；取消时**不落库**，确认后才 `patchSheet`。价格表里没有任何
- * 报价时文案改成"会清空全部价格"，不让用户以为只是"没东西可导"。</p>
- *
- * <p>数据源用 mock 的 `fetchLowestBrandQuotes`，确认弹窗用假的 `modal.confirm` 捕获，
- * 不去碰真实网络与真实弹层。</p>
+ * <p>报单比价只填规格与吨位，价格全部只读：现货价由「供应商价格表 → lowest-quotes」实时算出，
+ * 界面不再有「从供应商价格表导入」按钮；每格悬停能看到供应商与该价的**最后修改时间**。</p>
  */
-describe('SheetPanel 从供应商价格表导入', () => {
+describe('SheetPanel 现货价实时派生', () => {
   let container: HTMLDivElement
   let root: Root
   let queryClient: QueryClient
-
-  type ConfirmOptions = {
-    title?: string
-    content?: React.ReactNode
-    okText?: string
-    onOk?: () => void
-  }
-  let confirmOptions: ConfirmOptions | null = null
-  let successMock: ReturnType<typeof vi.fn>
 
   const quote = (
     brandName: string,
@@ -1158,6 +1145,7 @@ describe('SheetPanel 从供应商价格表导入', () => {
     priceListId: '900',
     supplierId: 's2',
     supplierName: '河钢',
+    updatedAt: '2026-11-14T03:20:00Z',
     ...overrides,
   })
 
@@ -1177,17 +1165,6 @@ describe('SheetPanel 从供应商价格表导入', () => {
     await i18n.changeLanguage('zh-CN')
     lowestQuotesMock.mockReset()
     lowestQuotesMock.mockResolvedValue([])
-    confirmOptions = null
-    successMock = vi.fn()
-    bindAntdAppApi({
-      modal: {
-        confirm: (options: ConfirmOptions) => {
-          confirmOptions = options
-          return { destroy: () => {}, update: () => {} }
-        },
-      },
-      message: { success: successMock },
-    } as unknown as Parameters<typeof bindAntdAppApi>[0])
     if (!window.matchMedia) {
       window.matchMedia = (query: string) => ({
         matches: false,
@@ -1216,10 +1193,10 @@ describe('SheetPanel 从供应商价格表导入', () => {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
+    bindAntdAppApi(null)
   })
 
   afterEach(async () => {
-    bindAntdAppApi(null)
     act(() => root.unmount())
     await act(async () => {
       await new Promise((resolve) => {
@@ -1227,160 +1204,84 @@ describe('SheetPanel 从供应商价格表导入', () => {
       })
     })
     container.remove()
-    document
-      .querySelectorAll(
-        '.ant-dropdown, .ant-popover, .ant-tooltip, .ant-select-dropdown, .ant-modal-root',
-      )
-      .forEach((node) => {
-        node.remove()
-      })
+    bindAntdAppApi(null)
   })
 
-  function renderPanel(
-    initialSheet: PriceSheet,
-    rows: PriceRow[],
-    readOnly = false,
-  ) {
-    const observed: { sheet: PriceSheet } = { sheet: initialSheet }
-    function Harness() {
-      const [sheet, setSheet] = useState(initialSheet)
-      // 回写放在 effect 里: 渲染期改外层变量会被 React Compiler 判为 immutability 违规
-      useEffect(() => {
-        observed.sheet = sheet
-      }, [sheet])
-      return createElement(SheetPanel, {
-        sheet,
-        data: null,
-        varieties: [variety],
-        brands: [{ name: '中天', freight: 30 }],
-        rows,
-        density: 'small',
-        lengthPremium: 30,
-        patchSheet: (_id, patch) => setSheet((prev) => ({ ...prev, ...patch })),
-        setRows: () => {},
-        onReorderBrands: () => {},
-        periods: [],
-        onRefresh: () => {},
-        chrome: false,
-        spotRef: { current: null },
-        readOnly,
-      })
-    }
+  function renderPanel(initialSheet: PriceSheet, rows: PriceRow[]) {
     act(() => {
       root.render(
         createElement(
           QueryClientProvider,
           { client: queryClient },
-          createElement(Harness),
+          createElement(SheetPanel, {
+            sheet: initialSheet,
+            data: null,
+            varieties: [variety],
+            brands: [{ name: '中天', freight: 30 }],
+            rows,
+            density: 'small',
+            lengthPremium: 30,
+            patchSheet: () => {},
+            setRows: () => {},
+            onReorderBrands: () => {},
+            periods: [],
+            onRefresh: () => {},
+            chrome: false,
+            spotRef: { current: null },
+          }),
         ),
       )
     })
-    return observed
   }
 
-  const importButton = () =>
-    Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('从供应商价格表导入'),
-    )
+  const spotOf = (rowId: string) =>
+    container.querySelector<HTMLElement>(`[data-spot="中天:${rowId}"]`)
 
-  async function clickImport() {
-    const button = importButton()
-    expect(button, '未找到「从供应商价格表导入」按钮').toBeTruthy()
-    await act(async () => {
-      button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-      await new Promise((resolve) => setTimeout(resolve, 0))
-    })
+  async function waitFor(predicate: () => boolean, timeout = 2000) {
+    const startedAt = Date.now()
+    while (Date.now() - startedAt < timeout) {
+      if (predicate()) return
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20))
+      })
+    }
   }
 
-  it('覆盖已有价 + 清空未匹配格: 先预览确认, 确认后才落库', async () => {
+  it('现货价与供应商来自供应商价格表，且悬停显示修改时间', async () => {
     lowestQuotesMock.mockResolvedValue([quote('中天', 12, 3420)])
-    const observed = renderPanel(
-      {
-        ...makeSheet(),
-        inputs: {
-          '中天:r1': { spot: 3200, supplierId: 's1', supplierName: '沙钢' },
-          '中天:r2': { spot: 3300, supplierId: 's1', supplierName: '沙钢' },
-        },
-      },
-      [rowAt('r1', 12), rowAt('r2', 16)],
-    )
+    renderPanel(makeSheet(), [rowAt('r1', 12)])
 
-    await clickImport()
-    expect(lowestQuotesMock).toHaveBeenCalledTimes(1)
-    expect(confirmOptions?.title).toBe('从供应商价格表导入？')
-    const content = String(confirmOptions?.content ?? '')
-    // 影响面逐项可见, 且明确会清空
-    expect(content).toContain('改价 1 处')
-    expect(content).toContain('清空 1 处')
-    expect(content).toContain('未匹配的格子会被清空')
-    // 仅"预览": 未点确定前 inputs 原样
-    expect(observed.sheet.inputs['中天:r1']?.spot).toBe(3200)
-
-    act(() => confirmOptions?.onOk?.())
-
-    // 覆盖: 价格与供应商一起按价格表刷新
-    expect(observed.sheet.inputs['中天:r1']?.spot).toBe(3420)
-    expect(observed.sheet.inputs['中天:r1']?.supplierName).toBe('河钢')
-    // 清空: 价格表里没有 r2 的报价 → 整格删除
-    expect(observed.sheet.inputs['中天:r2']).toBeUndefined()
-    // 成功提示含新增/改价/清空
-    expect(successMock).toHaveBeenCalledTimes(1)
-    const successText = String(successMock.mock.calls[0]?.[0] ?? '')
-    expect(successText).toContain('改价 1 处')
-    expect(successText).toContain('清空 1 处')
+    await waitFor(() => (spotOf('r1')?.textContent ?? '').includes('3420'))
+    const spot = spotOf('r1')
+    expect(spot?.textContent).toContain('3420')
+    const title = spot?.getAttribute('title') ?? ''
+    expect(title).toContain('河钢')
+    // 实时派生后价格不再是"导入时的快照"，必须能看出这个价是什么时候的
+    expect(title).toContain('现货价更新于')
   })
 
-  it('取消确认时不修改任何输入', async () => {
+  it('未匹配的格子显示「—」而不是残留旧价', async () => {
     lowestQuotesMock.mockResolvedValue([quote('中天', 12, 3420)])
-    const observed = renderPanel(
-      { ...makeSheet(), inputs: { '中天:r1': { spot: 3200 } } },
-      [rowAt('r1', 12)],
-    )
-
-    await clickImport()
-    expect(confirmOptions).not.toBeNull()
-    // 不调用 onOk（等价于点「取消」）
-    expect(observed.sheet.inputs['中天:r1']?.spot).toBe(3200)
-    expect(successMock).not.toHaveBeenCalled()
-  })
-
-  it('价格表没有任何报价时, 确认文案明确会清空全部价格', async () => {
-    lowestQuotesMock.mockResolvedValue([])
-    const observed = renderPanel(
-      { ...makeSheet(), inputs: { '中天:r1': { spot: 3200 } } },
-      [rowAt('r1', 12)],
-    )
-
-    await clickImport()
-    const content = String(confirmOptions?.content ?? '')
-    expect(content).toContain('没有任何报价')
-    expect(content).toContain('清空全部 1 处')
-    expect(content).toContain('未匹配的格子会被清空')
-
-    act(() => confirmOptions?.onOk?.())
-    expect(observed.sheet.inputs).toEqual({})
-  })
-
-  it('导入后现货格渲染刷新后的只读价格', async () => {
-    lowestQuotesMock.mockResolvedValue([quote('中天', 12, 3420)])
-    renderPanel({ ...makeSheet(), inputs: { '中天:r1': { spot: 3200 } } }, [
+    renderPanel({ ...makeSheet(), inputs: { '中天:r2': { spot: 3300 } } }, [
       rowAt('r1', 12),
+      rowAt('r2', 16),
     ])
 
-    await clickImport()
-    act(() => confirmOptions?.onOk?.())
+    await waitFor(() => (spotOf('r1')?.textContent ?? '').includes('3420'))
+    // 价格表里没有 r2 的报价 → 界面不显示派生前的历史值
+    expect(spotOf('r2')?.textContent).toContain('—')
+  })
+
+  it('不再提供「从供应商价格表导入」按钮（改为实时派生 + 刷新）', async () => {
+    renderPanel(makeSheet(), [rowAt('r1', 12)])
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
-
-    const spotCell = container.querySelector('[data-spot="中天:r1"]')
-    expect(spotCell?.textContent).toContain('3420')
-    expect(container.querySelector('input[data-spot]')).toBeNull()
-  })
-
-  it('只读态下导入按钮禁用', () => {
-    renderPanel(makeSheet(), [rowAt('r1', 12)], true)
-    expect(importButton()?.disabled).toBe(true)
+    const buttons = Array.from(container.querySelectorAll('button')).map(
+      (button) => button.textContent ?? '',
+    )
+    expect(buttons.some((text) => text.includes('从供应商价格表导入'))).toBe(
+      false,
+    )
   })
 })

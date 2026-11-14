@@ -2980,14 +2980,6 @@ export const enUS = {
       discardContent:
         'Switching supplier discards unsaved quote edits on this page.',
       discardOk: 'Discard and switch',
-      importFromPriceList: 'Import from supplier price list',
-      importConfirmTitle: 'Import from supplier price list?',
-      importConfirmContent:
-        'Add {{added}}, reprice {{updated}} (up {{up}}, down {{down}}), clear {{cleared}}, unchanged {{unchanged}}, substituted {{substituted}}; unmatched cells will be cleared.',
-      importEmptyQuotes:
-        'The price list has no quotes. Importing will clear all {{cleared}} spot prices; unmatched cells will be cleared.',
-      importDone:
-        'Imported from supplier price list: added {{added}}, repriced {{updated}}, cleared {{cleared}}',
       selectionCount: '{{count}} cell(s) selected',
       fillApplied: 'Filled {{count}} cell(s)',
       fillSkipped:
@@ -3155,6 +3147,8 @@ export const enUS = {
       spotSubstitutedLabel: 'Priced as {{material}} (source {{supplier}})',
       bestDiff: 'Best Difference',
       refreshPrice: 'Refresh Prices',
+      refreshSpotPrices: 'Refresh spot prices',
+      spotUpdatedAt: 'Spot prices updated {{time}}',
       config: 'Settings',
       lockRef: 'Lock Reference',
       unlockRef: 'Unlock Reference',

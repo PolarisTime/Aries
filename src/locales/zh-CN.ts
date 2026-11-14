@@ -2961,14 +2961,6 @@ export const zhCN = {
       discardTitle: '放弃未保存的报价？',
       discardContent: '切换供应商会丢弃当前页尚未保存的报价改动。',
       discardOk: '放弃并切换',
-      importFromPriceList: '从供应商价格表导入',
-      importConfirmTitle: '从供应商价格表导入？',
-      importConfirmContent:
-        '新增 {{added}} 处、改价 {{updated}} 处（涨 {{up}}、跌 {{down}}）、清空 {{cleared}} 处、不变 {{unchanged}} 处、代取 {{substituted}} 处；未匹配的格子会被清空。',
-      importEmptyQuotes:
-        '价格表里没有任何报价，导入会清空全部 {{cleared}} 处现货价；未匹配的格子会被清空。',
-      importDone:
-        '已从供应商价格表导入：新增 {{added}} 处、改价 {{updated}} 处、清空 {{cleared}} 处',
       /*
        * 以下为 Excel 式网格操作（区域选择、填充、算式、异常价、批量调价、列宽）。
        * 快捷键文案统一为「按键：行为」，与 entryHint 里的按键说明保持同一写法。
@@ -3136,6 +3128,8 @@ export const zhCN = {
       spotSubstitutedLabel: '按 {{material}} 代取（来源 {{supplier}}）',
       bestDiff: '差价最优',
       refreshPrice: '刷新价格',
+      refreshSpotPrices: '刷新现货价',
+      spotUpdatedAt: '现货价更新于 {{time}}',
       config: '配置',
       lockRef: '锁定参照',
       unlockRef: '解锁参照',

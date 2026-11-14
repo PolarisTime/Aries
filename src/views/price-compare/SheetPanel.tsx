@@ -6,10 +6,10 @@ import {
   PlusOutlined,
   ReloadOutlined,
   SettingOutlined,
-  TagsOutlined,
   TrophyOutlined,
   UnlockOutlined,
 } from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
 import {
   Badge,
   Button,
@@ -33,7 +33,6 @@ import { useTranslation } from 'react-i18next'
 import { fetchLowestBrandQuotes } from '@/api/market/supplier-price-lists'
 import { isEditableFieldTarget } from '@/components/row-context-menu'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
-import { message, modal } from '@/utils/antd-app'
 import {
   EMPTY_LENGTH_PREMIUMS,
   filterVarieties,
@@ -668,9 +667,10 @@ function SheetHeader({
   designatedBrands,
   allowHrb400eFallback = false,
   readOnly = false,
-  rows,
-  brands,
   columnSettingsSlot,
+  spotUpdatedAt,
+  refreshingSpotPrices,
+  onRefreshSpotPrices,
 }: {
   sheet: PriceSheet
   refDate: string
@@ -688,12 +688,12 @@ function SheetHeader({
   designatedBrands?: string[]
   allowHrb400eFallback?: boolean
   readOnly?: boolean
-  /** 当前展示的行(导入按它遍历, 与表格同一数据源)。 */
-  rows: PriceRow[]
-  /** 当前参与比价的品牌(导入按它逐列匹配; `sheet.brands` 只是服务端快照, 可能缺省)。 */
-  brands: Brand[]
   /** 列显示设置按钮: 由 SheetPanel 构造后作为节点下传(不再逐层透传 5 个 props)。 */
   columnSettingsSlot: React.ReactNode
+  /** 现货价实时派生：最新修改时间 + 刷新入口（替代原来的手动「导入」）。 */
+  spotUpdatedAt?: string
+  refreshingSpotPrices: boolean
+  onRefreshSpotPrices: () => void
 }) {
   return (
     <Flex vertical gap={8} className="price-compare-toolbar">
@@ -711,7 +711,6 @@ function SheetHeader({
       <SheetMetaRow designatedBrands={designatedBrands} />
 
       <SheetActionRow
-        allowHrb400eFallback={allowHrb400eFallback}
         sheet={sheet}
         readOnly={readOnly}
         patchSheet={patchSheet}
@@ -719,12 +718,13 @@ function SheetHeader({
         onToggleBest={onToggleBest}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        rows={rows}
-        brands={brands}
         columnSettingsSlot={columnSettingsSlot}
         onOpenConfig={onOpenConfig}
         selectedCount={selectedCount}
         onRemoveSelected={onRemoveSelected}
+        spotUpdatedAt={spotUpdatedAt}
+        refreshingSpotPrices={refreshingSpotPrices}
+        onRefreshSpotPrices={onRefreshSpotPrices}
       />
     </Flex>
   )
@@ -898,16 +898,14 @@ function SheetActionRow({
   onToggleBest,
   refreshing,
   onRefresh,
-  rows,
-  brands,
   columnSettingsSlot,
   onOpenConfig,
   selectedCount,
   onRemoveSelected,
-  allowHrb400eFallback,
+  spotUpdatedAt,
+  refreshingSpotPrices,
+  onRefreshSpotPrices,
 }: {
-  /** 单据头「允许按 HRB400E 代取」开关：从 PriceCompareView 一路串下来，是代取唯一授权来源。 */
-  allowHrb400eFallback: boolean
   sheet: PriceSheet
   readOnly: boolean
   patchSheet: (id: string, patch: Partial<PriceSheet>) => void
@@ -915,69 +913,17 @@ function SheetActionRow({
   onToggleBest: () => void
   refreshing: boolean
   onRefresh: () => void
-  /** 当前展示的行: 导入必须遍历实际渲染的行, 而不是可能过期的 sheet.rows。 */
-  rows: PriceRow[]
-  /** 当前参与比价的品牌: `sheet.brands` 只是服务端快照, 可能缺省。 */
-  brands: Brand[]
   columnSettingsSlot: React.ReactNode
   onOpenConfig?: () => void
   selectedCount: number
   onRemoveSelected: () => void
+  /** 本批现货价里最新的修改时间（供应商价格表条目时间）；缺省表示还没取到。 */
+  spotUpdatedAt?: string
+  refreshingSpotPrices: boolean
+  onRefreshSpotPrices: () => void
 }) {
   const { t } = useTranslation()
 
-  /**
-   * 从供应商价格表导入：**覆盖式**刷新本批次的现货价与供应商，未匹配的格子会被清空
-   * （见 `importLowestQuotes`）。锁定行的价格照常刷新 —— 行锁只冻结规格/吨位。
-   *
-   * <p>先算预览（纯函数、不落库）再让用户确认，确认后才 `patchSheet`：让"会清空几格、
-   * 涨跌各几处"在点确定之前就看得见，而不是先改完再报。没有任何报价时确认文案改成
-   * `importEmptyQuotes`，明确会清空全部价格。</p>
-   */
-  const [importing, setImporting] = useState(false)
-  const importFromPriceList = async () => {
-    setImporting(true)
-    try {
-      const quotes = await fetchLowestBrandQuotes()
-      // 用当前展示的行与品牌构造快照: 行/品牌是表格的真正数据源,
-      // sheet.rows 与 sheet.brands 可能只是打开时的旧值/服务端快照
-      const { inputs, stats } = importLowestQuotes(
-        { ...sheet, rows, brands },
-        quotes,
-        { allowHrb400eFallback },
-      )
-      const variables = {
-        added: stats.added,
-        updated: stats.updated,
-        up: stats.priceUp,
-        down: stats.priceDown,
-        cleared: stats.cleared,
-        unchanged: stats.unchanged,
-        substituted: stats.substituted,
-      }
-      modal.confirm({
-        title: t('priceCompare.supplierPrice.importConfirmTitle'),
-        content:
-          quotes.length === 0
-            ? t('priceCompare.supplierPrice.importEmptyQuotes', variables)
-            : t('priceCompare.supplierPrice.importConfirmContent', variables),
-        okText: t('common.confirm'),
-        cancelText: t('common.cancel'),
-        onOk: () => {
-          patchSheet(sheet.id, { inputs })
-          message.success(
-            t('priceCompare.supplierPrice.importDone', {
-              added: stats.added,
-              updated: stats.updated,
-              cleared: stats.cleared,
-            }),
-          )
-        },
-      })
-    } finally {
-      setImporting(false)
-    }
-  }
   return (
     <Space size={4} wrap className="price-compare-action-row">
       <LockRefButton
@@ -1004,14 +950,24 @@ function SheetActionRow({
       >
         {t('priceCompare.sheet.refreshPrice')}
       </Button>
+      {/*
+       * 现货价改为实时派生后不再需要「导入」这个手动动作：价格随查询自动带出。
+       * 保留一个刷新入口 + 更新时间，让用户知道屏幕上这个价是什么时候的。
+       */}
       <Button
-        disabled={readOnly}
-        icon={<TagsOutlined />}
-        loading={importing}
-        onClick={() => void importFromPriceList()}
+        icon={<ReloadOutlined />}
+        loading={refreshingSpotPrices}
+        onClick={onRefreshSpotPrices}
       >
-        {t('priceCompare.supplierPrice.importFromPriceList')}
+        {t('priceCompare.sheet.refreshSpotPrices')}
       </Button>
+      {spotUpdatedAt ? (
+        <Text type="secondary" className="price-compare-spot-updated-at">
+          {t('priceCompare.sheet.spotUpdatedAt', {
+            time: dayjs(spotUpdatedAt).format('MM-DD HH:mm'),
+          })}
+        </Text>
+      ) : null}
       {columnSettingsSlot}
       {onOpenConfig ? (
         <Button icon={<SettingOutlined />} onClick={onOpenConfig}>
@@ -1145,11 +1101,54 @@ export function SheetPanel(props: Props) {
     [varieties],
   )
 
+  /*
+   * 现货价改为**实时派生**（2026-11-14）：报单比价只填规格与吨位，价格全部只读。
+   *
+   * <p>数据流：供应商价格表 → `lowest-quotes`（服务端按品牌+商品取最低一家）→
+   * `importLowestQuotes`（纯函数，沿用原有匹配/代取规则）→ 渲染用的 inputs。</p>
+   *
+   * <p>**不落库**：派生结果只参与渲染与合计，保存时不再携带 prices（见 sheet-snapshot）。
+   * 因此供应商改价后刷新页面即可看到最新价，不再需要"导入"这个手动动作。</p>
+   */
+  const lowestQuotesQuery = useQuery({
+    queryKey: ['supplier-price-lowest-quotes'],
+    queryFn: ({ signal }) => fetchLowestBrandQuotes(undefined, signal),
+    staleTime: 30_000,
+  })
+  const liveInputs = useMemo(() => {
+    if (!lowestQuotesQuery.data) return sheet.inputs
+    return importLowestQuotes(
+      { ...sheet, rows, brands },
+      lowestQuotesQuery.data,
+      { allowHrb400eFallback },
+    ).inputs
+  }, [allowHrb400eFallback, brands, lowestQuotesQuery.data, rows, sheet])
+  /** 渲染用快照：价格来自派生结果，其余字段与 sheet 一致。 */
+  const sheetWithLivePrices = useMemo(
+    () => ({ ...sheet, inputs: liveInputs }),
+    [liveInputs, sheet],
+  )
+  /**
+   * 「现货价修改时间」：取本次派生用到的报价里最新的那个时间。
+   *
+   * <p>供应商价格表按条目记 updated_at（V217）；一格一个时间太碎，这里聚合到"整批价
+   * 最新是什么时候改的"，用户据此判断要不要让供应商重新报价。</p>
+   */
+  const spotUpdatedAt = useMemo(() => {
+    let latest: string | undefined
+    for (const quote of lowestQuotesQuery.data ?? []) {
+      if (quote.updatedAt && (!latest || quote.updatedAt > latest)) {
+        latest = quote.updatedAt
+      }
+    }
+    return latest
+  }, [lowestQuotesQuery.data])
+
   // 单元格只读取数与行级写入动作抽到 use-sheet-panel-inputs.ts:
-  // 现货价/供应商不再有手工写入动作(唯一来源是供应商价格表导入)。
+  // 现货价/供应商不再有手工写入动作(唯一来源是供应商价格表实时派生)。
   const { getSpot, patchRow, getInput } = useSheetPanelInputActions({
     setRows,
-    sheet,
+    sheet: sheetWithLivePrices,
   })
 
   const toggleSelect = (rowId: string, checked: boolean) =>
@@ -1183,7 +1182,7 @@ export function SheetPanel(props: Props) {
   const columnWidths = useSheetColumnWidths()
 
   const base = {
-    sheet,
+    sheet: sheetWithLivePrices,
     t,
     // 列宽随个人设置字号等比缩放: 字号调大后不再把「材质 / 规格 / 长度」等列裁断
     widths: columnWidths,
@@ -1241,8 +1240,9 @@ export function SheetPanel(props: Props) {
         designatedBrands={designatedBrands}
         allowHrb400eFallback={allowHrb400eFallback}
         readOnly={readOnly}
-        rows={rows}
-        brands={brands}
+        spotUpdatedAt={spotUpdatedAt}
+        refreshingSpotPrices={lowestQuotesQuery.isFetching}
+        onRefreshSpotPrices={() => void lowestQuotesQuery.refetch()}
         columnSettingsSlot={
           <ColumnSettingsButton
             hideRemark={hideRemark}

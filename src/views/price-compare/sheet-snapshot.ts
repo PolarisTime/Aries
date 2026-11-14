@@ -95,22 +95,13 @@ export function buildPayload(
       freight: brand.freight,
       sortOrder: index,
     })),
+    /*
+     * 不再下发 prices（2026-11-14 重构口径）：现货价改为从供应商价格表**实时派生**，
+     * 报价单只保存规格与吨位。缺省 prices 时后端保留库里已有价格行，不会误清。
+     */
     items: sheet.rows.flatMap<QuoteSheetPayload['items'][number]>((row) => {
       if (!isPersistableRow(row)) return []
-      if (isSeparatorRow(row)) return [{ rowType: 'SEPARATOR', prices: [] }]
-      const prices = brands.flatMap<
-        QuoteSheetPayload['items'][number]['prices'][number]
-      >((brand) => {
-        const input = sheet.inputs[`${brand.name}:${row.id}`]
-        if (!input || (input.spot === undefined && !input.supplierId)) return []
-        return [
-          {
-            brandName: brand.name,
-            ...(input.spot !== undefined ? { spotPrice: input.spot } : {}),
-            ...(input.supplierId ? { supplierId: input.supplierId } : {}),
-          },
-        ]
-      })
+      if (isSeparatorRow(row)) return [{ rowType: 'SEPARATOR' }]
       return [
         {
           rowType: 'PRODUCT',
@@ -121,7 +112,6 @@ export function buildPayload(
           ...(row.ton !== undefined ? { ton: row.ton } : {}),
           ...(row.remark ? { remark: row.remark } : {}),
           locked: Boolean(row.locked),
-          prices,
         },
       ]
     }),
@@ -151,32 +141,13 @@ export function buildHeaderPayload(sheet: PriceSheet): QuoteSheetHeaderPayload {
  * <p>导出供行级关联载荷的用例直接断言(纯函数, 无副作用)。</p>
  */
 export function buildItemPayload(
-  sheet: PriceSheet,
+  _sheet: PriceSheet,
   row: PriceRow,
-  brands: Brand[],
+  _brands: Brand[],
 ): QuoteSheetItemPayload | null {
-  if (isSeparatorRow(row)) return { rowType: 'SEPARATOR', prices: [] }
+  // 隔断行不带价格（也不下发空数组：空数组会被后端当成"整组替换为空"而清掉历史价）
+  if (isSeparatorRow(row)) return { rowType: 'SEPARATOR' }
   if (!isCompleteRow(row)) return null
-  const prices = brands.flatMap((brand) => {
-    const input = sheet.inputs[`${brand.name}:${row.id}`]
-    if (!input || (input.spot === undefined && !input.supplierId)) return []
-    return [
-      {
-        brandName: brand.name,
-        ...(input.spot !== undefined ? { spotPrice: input.spot } : {}),
-        ...(input.supplierId ? { supplierId: input.supplierId } : {}),
-        /*
-         * 「按抗震牌号代取」的来源必须随保存一起下发，否则刷新后角标无从判定
-         * （服务端只会回 null）。判据是**字段是否存在**而不是真假值：
-         * `null` 是"曾经代取、已被手工覆盖"的有效载荷，必须原样带给服务端去清空；
-         * 字段不存在才表示这一格从未涉及代取，继续省略。
-         */
-        ...(input.spotSourceMaterial !== undefined
-          ? { sourceMaterial: input.spotSourceMaterial }
-          : {}),
-      },
-    ]
-  })
   return {
     rowType: 'PRODUCT',
     category: row.category,
@@ -186,7 +157,6 @@ export function buildItemPayload(
     ...(row.ton !== undefined ? { ton: row.ton } : {}),
     ...(row.remark ? { remark: row.remark } : {}),
     locked: Boolean(row.locked),
-    prices,
   }
 }
 
@@ -200,12 +170,12 @@ export function headerSignature(sheet: PriceSheet): string {
  *
  * <p>导出供脏检查用例直接断言(纯函数, 无副作用)。</p>
  */
-export function itemSignature(row: PriceRow, inputs: SheetInputs): string {
-  const suffix = `:${row.id}`
-  const prices = Object.keys(inputs)
-    .filter((key) => key.endsWith(suffix))
-    .sort()
-    .map((key) => [key, inputs[key] ?? {}])
+export function itemSignature(row: PriceRow, _inputs?: SheetInputs): string {
+  /*
+   * 不再把现货价/供应商算进指纹（2026-11-14 重构）：现货价改为实时派生、不落库，
+   * 若仍参与指纹，界面上每次派生出来的价都会与基线不同 → 每张单据一打开就是"未保存"。
+   * 只有**会落库**的字段参与指纹：行类型、商品字段、吨位、备注、锁定。
+   */
   return JSON.stringify({
     rowType: row.rowType ?? 'PRODUCT',
     category: row.category,
@@ -215,7 +185,6 @@ export function itemSignature(row: PriceRow, inputs: SheetInputs): string {
     ton: row.ton ?? null,
     remark: row.remark ?? '',
     locked: Boolean(row.locked),
-    prices,
   })
 }
 

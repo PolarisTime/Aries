@@ -96,17 +96,18 @@ describe('服务端快照纯逻辑(sheet-snapshot)', () => {
     expect(merged.map((row) => row.id)).toEqual(['r1', 'local-1', 'r3'])
   })
 
-  it('行指纹感知: 吨位/锁定/关联集合/价格任一变化都会不同, 无关字段不敏感', () => {
+  it('行指纹只覆盖会落库的字段: 吨位/锁定/备注变化不同, 现货价不再参与', () => {
     const row = makeRow()
-    const base = itemSignature(row, { '中天:row-1': { spot: 3200 } })
+    const base = itemSignature(row, {})
 
     expect(itemSignature({ ...row, ton: 10 }, {})).not.toBe(base)
     expect(itemSignature({ ...row, locked: true }, {})).not.toBe(base)
-    expect(itemSignature(row, { '中天:row-1': { spot: 3201 } })).not.toBe(
-      itemSignature(row, { '中天:row-1': { spot: 3200 } }),
-    )
-    // 行 id / 隔断行无关字段(remark 之外)不参与: 同一内容重复计算结果稳定
-    expect(itemSignature(row, { '中天:row-1': { spot: 3200 } })).toBe(base)
+    expect(itemSignature({ ...row, remark: '急' }, {})).not.toBe(base)
+    /*
+     * 现货价改为实时派生、不落库：它若仍参与指纹，界面每次派生出的价都与基线不同，
+     * 每张单据一打开就会被判成"未保存"。
+     */
+    expect(itemSignature(row, { '中天:row-1': { spot: 3201 } })).toBe(base)
   })
 
   it('表头指纹只覆盖头字段, 行/品牌改动不影响', () => {
@@ -169,9 +170,8 @@ describe('服务端快照纯逻辑(sheet-snapshot)', () => {
       { brandName: '中天', freight: 30, sortOrder: 0 },
     ])
     expect(payload?.items).toHaveLength(1)
-    expect(payload?.items[0].prices).toEqual([
-      { brandName: '中天', spotPrice: 3200, supplierId: '77' },
-    ])
+    // 现货价实时派生、不落库：载荷里不应再出现 prices
+    expect(payload?.items[0]).not.toHaveProperty('prices')
   })
 
   it('行载荷: 隔断行/不完整行语义不变, 且不含任何采购字段', () => {
@@ -181,7 +181,7 @@ describe('服务端快照纯逻辑(sheet-snapshot)', () => {
         { ...makeRow(), rowType: 'SEPARATOR' },
         brands,
       ),
-    ).toEqual({ rowType: 'SEPARATOR', prices: [] })
+    ).toEqual({ rowType: 'SEPARATOR' })
     expect(
       buildItemPayload(makeSheet(), makeRow({ category: '' }), brands),
     ).toBeNull()
@@ -199,7 +199,6 @@ describe('服务端快照纯逻辑(sheet-snapshot)', () => {
       'length',
       'locked',
       'material',
-      'prices',
       'rowType',
       'spec',
       'ton',
