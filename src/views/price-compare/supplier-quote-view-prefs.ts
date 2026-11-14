@@ -58,6 +58,70 @@ export const readPriceMode = (supplierId: string): PriceEntryMode =>
     ? 'base'
     : 'manual'
 
+/**
+ * 已打开的供应商页签 + 当前激活页签的本地存储键。
+ *
+ * <p>为什么要有：标签页是**按需打开**的内存状态（`useState<string[]>([])`），刷新后只剩
+ * 默认的第一个供应商 —— 用户加进去的第二、第三个供应商连同它们的激活位置一起消失，
+ * 每次回来都要重新挑一遍。与草稿/列偏好同属本页的本地视图偏好，因此放在同一个模块。</p>
+ */
+export const supplierTabsKey = 'aries:supplier-quote-tabs'
+
+export interface StoredSupplierTabs {
+  openSupplierIds: string[]
+  activeSupplierId?: string
+}
+
+/**
+ * 读取上次打开的供应商页签。
+ *
+ * <p>只做形状校验（字符串数组 + 可选字符串），**不校验 id 是否还存在** —— 供应商主数据
+ * 是异步加载的，调用方拿到列表后再用 `filter(validIds.has)` 收敛。解析失败一律当作没有存档。</p>
+ */
+export function readSupplierTabs(): StoredSupplierTabs | null {
+  try {
+    const raw = window.localStorage.getItem(supplierTabsKey)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return null
+    const candidate = parsed as {
+      openSupplierIds?: unknown
+      activeSupplierId?: unknown
+    }
+    const openSupplierIds = Array.isArray(candidate.openSupplierIds)
+      ? candidate.openSupplierIds.filter(
+          (id): id is string => typeof id === 'string' && id.length > 0,
+        )
+      : []
+    if (openSupplierIds.length === 0) return null
+    return {
+      openSupplierIds,
+      ...(typeof candidate.activeSupplierId === 'string' &&
+      candidate.activeSupplierId
+        ? { activeSupplierId: candidate.activeSupplierId }
+        : {}),
+    }
+  } catch {
+    return null
+  }
+}
+
+export function writeSupplierTabs(tabs: StoredSupplierTabs): void {
+  try {
+    window.localStorage.setItem(
+      supplierTabsKey,
+      JSON.stringify({
+        openSupplierIds: tabs.openSupplierIds,
+        ...(tabs.activeSupplierId
+          ? { activeSupplierId: tabs.activeSupplierId }
+          : {}),
+      }),
+    )
+  } catch {
+    // 隐私模式 / 配额满：标签页恢复是辅助能力，写不进去不影响本次使用
+  }
+}
+
 /** 未保存草稿的本地存储键：刷新/误关页后能恢复，避免一次报价白录。 */
 export const draftsKey = (supplierId: string) =>
   `aries:supplier-quote-drafts:${supplierId}`

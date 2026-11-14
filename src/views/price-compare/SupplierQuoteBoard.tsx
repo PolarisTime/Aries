@@ -92,7 +92,9 @@ import {
 import {
   gridQueryKey,
   readDrafts,
+  readSupplierTabs,
   writeDrafts,
+  writeSupplierTabs,
 } from './supplier-quote-view-prefs'
 import './supplier-price.css'
 
@@ -472,8 +474,17 @@ export function SupplierQuoteBoard() {
   const queryClient = useQueryClient()
   const canUpdate = useHasPermission('supplier-price-lists:update')
 
-  /** 已打开的供应商标签页（key = supplierId）；按需打开、可关闭。 */
+  /** 已打开的供应商标签页（key = supplierId）；按需打开、可关闭，并持久化到本地。 */
   const [openSupplierIds, setOpenSupplierIds] = useState<string[]>([])
+  /**
+   * 是否已完成「页签恢复判断」。
+   *
+   * <p>供应商列表是异步加载的，恢复必须在列表就绪后进行，且**只能做一次**：
+   * 否则用户手动关掉所有页签后，这个 effect 又会把第一个供应商塞回来
+   * （用户会以为"关不掉"）。同理，写回本地也只在恢复完成后才开始，
+   * 避免首帧的空数组把上次的存档覆盖成空。</p>
+   */
+  const [supplierTabsHydrated, setSupplierTabsHydrated] = useState(false)
   /** 当前激活的供应商标签页。 */
   const [activeSupplierId, setActiveSupplierId] = useState<string>()
   /**
@@ -585,15 +596,47 @@ export function SupplierQuoteBoard() {
   }, [])
 
   /*
-   * 默认把第一个供应商开成标签页：标签是按需打开/关闭的（antd 规范：只有 card 类型支持
-   * 添加与关闭），但不能让用户一进来面对空白页。
+   * 页签恢复：供应商列表就绪后，优先恢复上次打开的供应商页签与激活项；
+   * 没有存档（或存档里的供应商都已不存在）才退回「打开第一个供应商」。
+   *
+   * <p>标签是按需打开/关闭的（antd 规范：只有 card 类型支持添加与关闭）。
+   * 恢复必须**只做一次**：否则用户手动关掉全部页签后会被立即塞回第一个供应商。</p>
    */
   useEffect(() => {
-    if (suppliers.length === 0 || openSupplierIds.length > 0) return
-    const first = suppliers[0].value
-    setOpenSupplierIds([first])
-    setActiveSupplierId(first)
-  }, [openSupplierIds.length, suppliers])
+    if (suppliers.length === 0 || supplierTabsHydrated) return
+    const validIds = new Set(suppliers.map((option) => option.value))
+    const stored = readSupplierTabs()
+    const restored = (stored?.openSupplierIds ?? []).filter((id) =>
+      validIds.has(id),
+    )
+    if (restored.length > 0) {
+      setOpenSupplierIds(restored)
+      const storedActive = stored?.activeSupplierId
+      setActiveSupplierId(
+        storedActive && restored.includes(storedActive)
+          ? storedActive
+          : restored[0],
+      )
+    } else {
+      // 没有存档，或存档里的供应商全被删除/停用：回到「默认第一个」
+      const first = suppliers[0].value
+      setOpenSupplierIds([first])
+      setActiveSupplierId(first)
+    }
+    setSupplierTabsHydrated(true)
+  }, [supplierTabsHydrated, suppliers])
+
+  /*
+   * 页签变化写回本地。只在恢复完成后生效 —— 首帧 `openSupplierIds` 还是空数组，
+   * 提前写会把上次的存档冲掉。
+   */
+  useEffect(() => {
+    if (!supplierTabsHydrated) return
+    writeSupplierTabs({
+      openSupplierIds,
+      ...(activeSupplierId ? { activeSupplierId } : {}),
+    })
+  }, [activeSupplierId, openSupplierIds, supplierTabsHydrated])
 
   const supplier = useMemo(
     () => suppliers.find((option) => option.value === supplierId),

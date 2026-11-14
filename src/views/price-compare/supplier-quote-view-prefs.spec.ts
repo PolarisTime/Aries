@@ -8,8 +8,11 @@ import {
   gridQueryKey,
   priceModeKey,
   readPriceMode,
+  readSupplierTabs,
   readViewMode,
+  supplierTabsKey,
   viewModeKey,
+  writeSupplierTabs,
 } from './supplier-quote-view-prefs'
 
 afterEach(() => {
@@ -56,5 +59,46 @@ describe('供应商报价视图偏好(supplier-quote-view-prefs)', () => {
   it('网格查询键由品牌名组成, 不同品牌互不命中', () => {
     expect(gridQueryKey('甲')).toEqual(['supplier-price-grid', '甲'])
     expect(gridQueryKey('甲')).not.toEqual(gridQueryKey('乙'))
+  })
+})
+
+/*
+ * 供应商页签的持久化：刷新后必须还能看到之前打开的第二个/第三个供应商。
+ * 组件里的「恢复判断」只做一次，这里锁存储层的读写与坏数据兜底。
+ */
+describe('供应商页签持久化', () => {
+  it('写进去能原样读回来（页签顺序 + 激活项）', () => {
+    writeSupplierTabs({
+      openSupplierIds: ['sup-1', 'sup-2'],
+      activeSupplierId: 'sup-2',
+    })
+    expect(readSupplierTabs()).toEqual({
+      openSupplierIds: ['sup-1', 'sup-2'],
+      activeSupplierId: 'sup-2',
+    })
+  })
+
+  it('没有存档时返回 null（调用方回落到"打开第一个供应商"）', () => {
+    expect(readSupplierTabs()).toBeNull()
+  })
+
+  it('空页签列表不当作存档：避免用户关光页签后刷新又冒出来', () => {
+    writeSupplierTabs({ openSupplierIds: [] })
+    expect(readSupplierTabs()).toBeNull()
+  })
+
+  it('坏数据一律当作没有存档，不让页面打不开', () => {
+    window.localStorage.setItem(supplierTabsKey, '{not json')
+    expect(readSupplierTabs()).toBeNull()
+
+    window.localStorage.setItem(supplierTabsKey, JSON.stringify([1, 2, 3]))
+    expect(readSupplierTabs()).toBeNull()
+
+    window.localStorage.setItem(
+      supplierTabsKey,
+      JSON.stringify({ openSupplierIds: ['ok', 42, '', null] }),
+    )
+    // 非法元素被过滤，合法的保留
+    expect(readSupplierTabs()).toEqual({ openSupplierIds: ['ok'] })
   })
 })
