@@ -1,6 +1,5 @@
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Breadcrumb,
   Button,
   Checkbox,
   Empty,
@@ -473,13 +472,10 @@ export function SupplierQuoteBoard() {
   const queryClient = useQueryClient()
   const canUpdate = useHasPermission('supplier-price-lists:update')
 
-  /**
-   * 当前供应商（单一选择，不再多开页签）。
-   *
-   * <p>面包屑「供应商报价表 / 当前供应商」+ 右侧可搜索切换器代替原来的第二行带 × 的页签条：
-   * 一屏只维护一家供应商的报价，切换前若有未保存草稿先确认。</p>
-   */
-  const [supplierId, setSupplierId] = useState<string>()
+  /** 已打开的供应商标签页（key = supplierId）；按需打开、可关闭。 */
+  const [openSupplierIds, setOpenSupplierIds] = useState<string[]>([])
+  /** 当前激活的供应商标签页。 */
+  const [activeSupplierId, setActiveSupplierId] = useState<string>()
   /**
    * 每个品类当前选中的材质 tab（直条 → HRB400 / HRB400E / HRB500E，盘螺 → HRB400 / HRB400E）。
    *
@@ -569,6 +565,8 @@ export function SupplierQuoteBoard() {
 
   const suppliers = suppliersQuery.data ?? []
 
+  const supplierId = activeSupplierId
+
   /*
    * 拖拽框选只在表格内用 pointerenter 扩展焦点，但指针可能在表格外松开 —— 收尾必须挂在
    * window 上，否则「按下后拖到表外松手」会让之后每次划过的格子都继续扩展选区。
@@ -587,13 +585,15 @@ export function SupplierQuoteBoard() {
   }, [])
 
   /*
-   * 默认选中第一家供应商：只有一家供应商时不用手动选，进来直接就是这个供应商的报价表；
-   * 之后由面包屑右侧的切换器换。不能让用户一进来面对空白页。
+   * 默认把第一个供应商开成标签页：标签是按需打开/关闭的（antd 规范：只有 card 类型支持
+   * 添加与关闭），但不能让用户一进来面对空白页。
    */
   useEffect(() => {
-    if (supplierId || suppliers.length === 0) return
-    setSupplierId(suppliers[0].value)
-  }, [supplierId, suppliers])
+    if (suppliers.length === 0 || openSupplierIds.length > 0) return
+    const first = suppliers[0].value
+    setOpenSupplierIds([first])
+    setActiveSupplierId(first)
+  }, [openSupplierIds.length, suppliers])
 
   const supplier = useMemo(
     () => suppliers.find((option) => option.value === supplierId),
@@ -1126,13 +1126,36 @@ export function SupplierQuoteBoard() {
     })
   }
 
-  /** 切换供应商（面包屑右侧切换器）：有未保存草稿时先确认（切走会丢弃草稿）。 */
-  const switchSupplier = (nextSupplierId: string) => {
+  /** 切换供应商标签：有未保存草稿时先确认（切页会丢弃草稿）。 */
+  const switchSupplierTab = (nextSupplierId: string) => {
     if (nextSupplierId === supplierId) return
     confirmDiscardIfDirty(() => {
       resetBoardState()
-      setSupplierId(nextSupplierId)
+      setActiveSupplierId(nextSupplierId)
     })
+  }
+
+  /** 打开（或激活）某个供应商的标签页。 */
+  const openSupplierTab = (nextSupplierId: string) => {
+    setOpenSupplierIds((current) =>
+      current.includes(nextSupplierId) ? current : [...current, nextSupplierId],
+    )
+    switchSupplierTab(nextSupplierId)
+  }
+
+  /** 关闭标签页：关掉当前页时按 antd 示例切到左邻，没有左邻就切第一个。 */
+  const closeSupplierTab = (closingId: string) => {
+    const close = () => {
+      const remaining = openSupplierIds.filter((id) => id !== closingId)
+      setOpenSupplierIds(remaining)
+      if (closingId !== activeSupplierId) return
+      const closedIndex = openSupplierIds.indexOf(closingId)
+      const nextActive = remaining[Math.max(0, closedIndex - 1)] ?? remaining[0]
+      resetBoardState()
+      setActiveSupplierId(nextActive)
+    }
+    if (closingId === activeSupplierId) confirmDiscardIfDirty(close)
+    else close()
   }
 
   /* ------------------------------------------------------------ Excel 式选区操作 */
@@ -2089,6 +2112,12 @@ export function SupplierQuoteBoard() {
     return { columns, totalWidth }
   }
 
+  /** 还没打开的供应商（「添加」下拉的候选）。 */
+  const openedSupplierIds = new Set(openSupplierIds)
+  const unopenedSuppliers = suppliers.filter(
+    (option) => !openedSupplierIds.has(option.value),
+  )
+
   /*
    * 一张材质表（材质卡片 + antd Table）。
    *
@@ -2312,53 +2341,76 @@ export function SupplierQuoteBoard() {
   )
 
   /*
-   * 面包屑：一级固定「供应商报价表」，二级是当前供应商；右侧是可搜索的供应商切换器。
+   * 标签页管理按 antd 规范来：**只有 `editable-card` 类型支持添加与关闭**，
+   * 溢出由内置的 `more`（省略号）自动折叠，不用自己算宽度。
    *
-   * 不再多开页签（原来第二行带 × 的标签条已删除）：一屏只维护一家供应商的报价，
-   * 切换前若有未保存草稿，由 switchSupplier 弹确认，不会静默丢弃。
+   * 「添加」不用 `onEdit('add')` 弹菜单：供应商四十多家，菜单会铺成一整屏（用户已反馈过）。
+   * 改成标签栏右侧一个**可搜索的 Select**，输入公司名即时过滤，选中即打开标签。
+   *
+   * 内容通过 `items[].children` 交给 Tabs（只有当前供应商对应的页签有内容）：
+   * 这是 antd 的原生结构，页签与内容面板连成一体；切换供应商时 antd 会卸载上一家、
+   * 挂载下一家，与「切换供应商即重置本屏临时状态」的行为一致。
    */
-  const supplierBreadcrumb = (
-    <Flex
-      align="center"
-      className="supplier-price-breadcrumb-bar"
-      gap={12}
-      wrap
-    >
-      <Breadcrumb
-        items={[
-          { title: t('priceCompare.supplierPrice.breadcrumbRoot') },
-          {
-            title:
-              supplier?.label ?? t('priceCompare.supplierPrice.pickSupplier'),
-          },
-        ]}
-      />
-      <Select
-        aria-label={t('priceCompare.supplierPrice.switchSupplier')}
-        className="supplier-price-supplier-switch"
-        loading={suppliersQuery.isPending}
-        onChange={(value: string) => switchSupplier(value)}
-        options={suppliers.map((option) => ({
-          value: option.value,
-          label: option.label,
-        }))}
-        placeholder={t('priceCompare.supplierPrice.switchSupplier')}
-        showSearch={{ optionFilterProp: 'label' }}
-        value={null}
-      />
-    </Flex>
+  const supplierTabs = (
+    <Tabs
+      activeKey={supplierId}
+      className="supplier-price-supplier-tabs"
+      hideAdd
+      items={openSupplierIds.map((id) => ({
+        key: id,
+        label: suppliers.find((option) => option.value === id)?.label ?? id,
+        children: id === supplierId ? boardContent : null,
+      }))}
+      onChange={switchSupplierTab}
+      onEdit={(
+        targetKey: React.MouseEvent | React.KeyboardEvent | string,
+        action: 'add' | 'remove',
+      ) => {
+        if (action === 'remove' && typeof targetKey === 'string') {
+          closeSupplierTab(targetKey)
+        }
+      }}
+      style={{ width: '100%' }}
+      tabBarExtraContent={{
+        right: (
+          <Select
+            aria-label={t('priceCompare.supplierPrice.addSupplierTab')}
+            loading={suppliersQuery.isPending}
+            notFoundContent={
+              unopenedSuppliers.length
+                ? undefined
+                : t('priceCompare.supplierPrice.allSuppliersOpened')
+            }
+            onChange={(value: string) => openSupplierTab(value)}
+            options={unopenedSuppliers.map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+            placeholder={t('priceCompare.supplierPrice.addSupplierTab')}
+            showSearch={{ optionFilterProp: 'label' }}
+            style={{ width: 220 }}
+            value={null}
+          />
+        ),
+      }}
+      type="editable-card"
+    />
   )
 
-  return (
-    <Flex vertical gap={12} className="supplier-price-page">
-      {supplierBreadcrumb}
-      {supplierId ? (
-        boardContent
-      ) : (
+  if (!supplierId) {
+    return (
+      <Flex vertical gap={12} className="supplier-price-page">
+        {supplierTabs}
         <Typography.Text type="secondary">
           {t('priceCompare.supplierPrice.pickSupplier')}
         </Typography.Text>
-      )}
+      </Flex>
+    )
+  }
+
+  return (
+    <Flex vertical gap={12} className="supplier-price-page">
+      {supplierTabs}
     </Flex>
   )
 }
