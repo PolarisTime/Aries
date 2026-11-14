@@ -382,16 +382,23 @@
 }
 
 /*
- * 品类标题（盘螺 / 直条）：名称 + 该品类的「已填 / 可填」计数。
+ * 品类名与最后编辑并进材质 tab 栏的两侧（antd `tabBarExtraContent`）。
  *
- * 与材质标题构成两级信息层级：品类是分区，材质是分区里的表。
- * 视觉对齐报价表设计稿：不加色条，只靠字重与字号分层（标题 14px/650，计数 11.5px 浅灰）。
+ * <p>原来品类名独占一行（还带「N 个材质 · x/y 格已填」计数），最后一个编辑时间再占
+ * 一条常驻工具栏 —— 一屏因此少看两三行报价。现在：品类名在 tab 栏左侧、最后编辑在右侧，
+ * 三项同处一行，计数降级为品类名的 `title`（悬停可见），信息不丢但不占版面。</p>
+ *
+ * <p>交接给 antd 而不是自己拼 flex：tab 栏本身就是「一行 + 下划线」，extra content 与
+ * tab 文字天然同基线；自己拼一行会把 tab 内容区的表格也卷进那一行。</p>
  */
-.supplier-price-sheet-category-head {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-xs, 8px);
-  margin: 0 0 var(--space-xs, 8px) 2px;
+.supplier-price-material-tabs .supplier-price-sheet-category-name {
+  /* 与 tab 文字之间留一点距离，避免和第一个 tab 贴在一起 */
+  margin-inline-end: var(--space-sm, 12px);
+}
+
+.supplier-price-tabs-extras {
+  /* 与最后一个 tab 之间的距离 */
+  margin-inline-start: var(--space-sm, 12px);
 }
 
 .supplier-price-sheet-category-name {
@@ -399,11 +406,6 @@
   font-weight: 650;
   letter-spacing: 0.3px;
   color: var(--ant-color-text);
-}
-
-.supplier-price-sheet-category-meta {
-  font-size: 11.5px;
-  color: var(--ant-color-text-tertiary);
 }
 
 .supplier-price-transposed-empty {
@@ -772,26 +774,9 @@
   white-space: nowrap;
 }
 
-/*
- * 工具栏：所有全局动作收进一行（面板化）。
- *
- * <p>此前是三个各自独立的 Flex 行（最后一排还是常驻的灰色选区按钮），视觉上像三块
- * 互不相关的控件。现在：第一行放全局动作与筛选；选区动作只在真的选中格子时出现，
- * 用主色浅底区分「这是针对选区的临时操作」。</p>
- */
-.supplier-price-toolbar {
-  padding: var(--space-xs, 8px) var(--space-md, 16px);
-  background: var(--ant-color-bg-container, #fff);
-  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
-  border-radius: var(--ant-border-radius-lg, 8px);
-}
-
-.supplier-price-toolbar-tail {
-  margin-inline-start: auto;
-}
-
 .supplier-price-last-edited {
   white-space: nowrap;
+  font-size: 12px;
 }
 
 .supplier-price-selection-bar {

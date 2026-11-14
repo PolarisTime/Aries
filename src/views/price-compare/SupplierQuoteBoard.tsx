@@ -2208,7 +2208,58 @@ export function SupplierQuoteBoard() {
    * <p>`destroyOnHidden`：只挂载当前材质的表，切走即卸载 —— 否则几张表都留在 DOM 里，
    * 键盘 Tab 顺序与 `data-grid-cell` 定位都会跨到隐藏表上。</p>
    */
-  const materialTabsOf = (group: CategoryGroup) => {
+  /**
+   * 品类名挂在 tab 栏**左侧**、最后编辑挂在**右侧**（`tabBarExtraContent`）。
+   *
+   * <p>为什么用 extra content 而不是自己拼一行 flex：antd 的 tab 栏本身就是
+   * 「一行 + 下划线」，把两侧内容交给它，品类名/时间与 tab 文字天然同基线，
+   * 不需要靠 padding 去凑；表格仍然只属于 tab 内容区，不会被 flex 布局拉进那一行。</p>
+   */
+  const materialTabExtras = (group: CategoryGroup, groupIndex: number) => ({
+    left: (
+      <span
+        className="supplier-price-sheet-category-name"
+        title={t('priceCompare.supplierPrice.categoryScale', {
+          materials: group.sheets.length,
+          ...categoryProgress(group),
+        })}
+      >
+        {group.categoryName}
+      </span>
+    ),
+    /*
+     * 最后编辑是**全局**状态，只在第一行（页面最上方的品类行）出现；
+     * 每行都重复同一个时间只是噪声。
+     */
+    ...(groupIndex === 0
+      ? {
+          right: (
+            <Flex align="center" className="supplier-price-tabs-extras" gap={8}>
+              <Tooltip title={t('priceCompare.supplierPrice.lastEditedHint')}>
+                <Typography.Text
+                  className="supplier-price-last-edited"
+                  type="secondary"
+                >
+                  {t('priceCompare.supplierPrice.lastEdited')}：
+                  {formatLastEdit(lastEdited) ??
+                    t('priceCompare.supplierPrice.neverEdited')}
+                </Typography.Text>
+              </Tooltip>
+              {savedFlash ? (
+                <Typography.Text
+                  className="supplier-price-saved-hint"
+                  type="success"
+                >
+                  {t('priceCompare.supplierPrice.saved')}
+                </Typography.Text>
+              ) : null}
+            </Flex>
+          ),
+        }
+      : {}),
+  })
+
+  const materialTabsOf = (group: CategoryGroup, groupIndex: number) => {
     if (group.sheets.length === 0) return null
     const active = activeMaterialByCategory[group.categoryName]
     const activeKey = group.sheets.some((sheet) => sheet.material === active)
@@ -2219,6 +2270,7 @@ export function SupplierQuoteBoard() {
         activeKey={activeKey}
         className="supplier-price-material-tabs"
         destroyOnHidden
+        tabBarExtraContent={materialTabExtras(group, groupIndex)}
         items={group.sheets.map((sheet) => ({
           key: sheet.material,
           label: sheet.material,
@@ -2244,29 +2296,6 @@ export function SupplierQuoteBoard() {
    */
   const boardContent = (
     <>
-      {/*
-       * 工具栏只保留「最后编辑 / 已保存」提示。
-       * 搜索 / 刷新 / 撤销重做按钮、快捷键入口都已移除（撤销重做保留 Ctrl+Z / Ctrl+Y）；
-       * 只读、保存失败、草稿恢复、规格加载失败全部改走 message / notification。
-       */}
-      <Flex align="center" className="supplier-price-toolbar" gap={8} wrap>
-        <Tooltip title={t('priceCompare.supplierPrice.lastEditedHint')}>
-          <Typography.Text
-            className="supplier-price-last-edited"
-            type="secondary"
-          >
-            {t('priceCompare.supplierPrice.lastEdited')}：
-            {formatLastEdit(lastEdited) ??
-              t('priceCompare.supplierPrice.neverEdited')}
-          </Typography.Text>
-        </Tooltip>
-        {savedFlash ? (
-          <Typography.Text className="supplier-price-saved-hint" type="success">
-            {t('priceCompare.supplierPrice.saved')}
-          </Typography.Text>
-        ) : null}
-      </Flex>
-
       {/*
        * 选区工具栏：只有选中格子才出现，只保留「已选 N 格 + 批量调价」。
        *
@@ -2351,30 +2380,16 @@ export function SupplierQuoteBoard() {
           onPaste={handlePaste}
         >
           <div className="supplier-price-sheet-body supplier-price-board-columns">
-            {categoryGroups.map((group) => (
+            {categoryGroups.map((group, groupIndex) => (
               <div
                 className="supplier-price-sheet-category"
                 key={group.categoryName}
               >
-                <div className="supplier-price-sheet-category-head">
-                  <span className="supplier-price-sheet-category-name">
-                    {group.categoryName}
-                  </span>
-                  <span className="supplier-price-sheet-category-meta">
-                    {t('priceCompare.supplierPrice.categoryScale', {
-                      materials: group.sheets.length,
-                      ...categoryProgress(group),
-                    })}
-                  </span>
-                </div>
                 {/*
-                 * 材质**分区堆叠**（不再是二级 tab）：每个材质一张小表，一次全展开。
-                 *
-                 * <p>实测每个材质只有 3–14 行、列 ≤ 6（一家供应商 1–3 个经营品牌），
-                 * 三张表一屏就能看完；做成 tab 反而要多点两次才能看全同一批规格。
-                 * 表格仍是「行 = 规格，列 = 品牌 × 定尺」，互不干扰。</p>
+                 * 品类名与最后编辑已经并进材质 tab 栏的两侧（见 `materialTabExtras`），
+                 * 这里只渲染 tabs 本体：不再是「品类标题行 + tab 行」两行占位。
                  */}
-                {materialTabsOf(group)}
+                {materialTabsOf(group, groupIndex)}
               </div>
             ))}
           </div>
