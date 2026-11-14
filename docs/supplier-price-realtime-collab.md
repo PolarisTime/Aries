@@ -3,6 +3,9 @@
 > 状态：**设计评审稿**，评审通过后开工。本文对应两条需求：
 > 1. 多端编辑同一份数据，**不能丢任何一次改动**；
 > 2. 实时协作：多人同时改同一张表，**能看到对方光标**。
+>
+> 配套文档：界面偏好 / 页签等**本地状态跨设备同步**见
+> [client-state-sync.md](./client-state-sync.md)（两者互不替代）。
 
 ---
 
@@ -11,7 +14,7 @@
 | 项 | 决定 |
 | --- | --- |
 | 冲突模型 | **Yjs CRDT**（`Y.Map` 格级文档），客户端离线可编辑、重连自动合并 |
-| 服务端 | **Node 边车**（`y-websocket` + 自定义持久化/物化），**不能纯 Java**（见 §2.2） |
+| 服务端 | **Node 边车运行 Hocuspocus**（Yjs 官方生态框架，基于 `y-websocket` 协议），**不能纯 Java**（见 §2.2） |
 | 真相源 | 协作期间 **Y.Doc 是编辑真相源**，Postgres 由物化器单向写入（供报单比价/导入/报表消费） |
 | 房间粒度 | `supplier-price:<supplierId>`（一个报价工作台 = 一个房间） |
 | 光标 | Yjs Awareness 协议（`y-protocols/awareness`） |
@@ -80,10 +83,26 @@ GET https://search.maven.org/solrsearch/select?q=yjs
 | 方案 | 可行性 | 结论 |
 | --- | --- | --- |
 | Java 实现 Yjs 同步协议 | 需自研 CRDT 编码/解码与状态向量，工程量与正确性风险都高 | ❌ |
-| **Node 边车跑 `y-websocket`** | 官方维护、协议现成、Awareness 现成 | ✅ **采用** |
+| **Node 边车跑 Hocuspocus** | Tiptap 团队维护的 Yjs 服务端框架：同步协议、`onAuthenticate` 鉴权钩子、`onStoreDocument` 持久化钩子、Redis 水平扩展、Throttle 限流全部现成 | ✅ **采用** |
 | 纯前端 P2P（WebRTC） | 无中心持久化，服务端拿不到数据，物化不了 SQL | ❌ |
 
 > 边车只做三件事：同步、持久化文档、物化到 SQL。**不含业务规则**，业务规则仍留 Java（票据签发、权限、结构变更）。
+>
+> 直接用 `y-websocket` 也能跑，但鉴权、持久化、多实例扇出、限流都要自己接一遍；
+> Hocuspocus 把这些做成扩展点，边车代码从「协议实现」降级为「几个钩子函数」。
+
+### 2.4 业内框架对比（选型依据）
+
+| 方案 | 形态 | 提供什么 | 结论 |
+| --- | --- | --- | --- |
+| **Hocuspocus** | 自托管 Node | Yjs 同步、鉴权钩子、持久化钩子、Redis 扩展、限流、Awareness | ✅ 采用 |
+| y-sweet | 自托管单二进制（Rust）+ TS 客户端 | CRDT 存储 + S3 持久化 + token | 备选：我们仍要把文档物化进 Postgres，S3 用不上 |
+| Fluid Framework（Microsoft） | 框架 + Azure Fluid Relay | DDS，Excel 的协作底座 | ❌ 绑定 Microsoft 生态，自托管重 |
+| Liveblocks | SaaS | storage + presence + React hooks | ❌ 价格数据出内网 |
+| ElectricSQL / PowerSync / Replicache | 数据同步引擎 | Postgres ↔ 客户端同步 | ❌ 没有光标/在线，且解决不了同格并发 |
+| Supabase Realtime / Ably / Pusher | 消息 + presence | 广播、在线状态 | ❌ 合并逻辑仍要自己写 |
+
+> 框架只省"通信层"，**不省业务层**：Yjs 文档结构、物化到 SQL、光标 UI 渲染、权限模型、审计仍需自己实现。
 
 ### 2.3 与「自研格级操作日志」方案的关系
 
@@ -104,7 +123,7 @@ GET https://search.maven.org/solrsearch/select?q=yjs
                       ▼
         ┌──────────────────────────────┐
         │ price-collab（Node 边车）     │   :11212
-        │  y-websocket + Awareness      │
+        │  Hocuspocus + Awareness       │
         │  ├ 文档持久化（快照+增量）    │
         │  ├ 物化器（Yjs → SQL）        │
         │  └ JWT 校验 / 房间 ACL        │
@@ -174,7 +193,7 @@ const cellKey = (c: {category, material, spec, length}) =>
 
 ## 5. 持久化
 
-### 5.1 表结构（`leo/src/main/resources/db/migration/V217__supplier_price_collab.sql`）
+### 5.1 表结构（`leo/src/main/resources/db/migration/V218__supplier_price_collab.sql`）
 
 ```sql
 -- 增量更新（append-only）
@@ -451,15 +470,29 @@ Java addColumn/removeColumn → 写 SQL → PUBLISH collab:structure <supplierId
 
 | 里程碑 | 内容 | 预估 |
 | --- | --- | --- |
-| **M1 边车骨架** | y-websocket + JWT + 持久化 + 健康检查 | 1.5d |
+| **M1 边车骨架** | Hocuspocus + 鉴权钩子 + 持久化钩子 + 健康检查 | 0.5d |
 | **M2 物化器** | 差异写 SQL + 审计 + 失败重试 + 影子比对脚本 | 1.5d |
 | **M3 前端接入** | Y.Doc 替换草稿/自动保存 + UndoManager + 降级 | 2d |
 | **M4 协作体验** | Awareness 光标/选区 + 在线名单 + 冲突提示 | 1d |
-| **M5 Java 侧** | 票据接口 + 409 + 结构变更通知 + V217 迁移 | 0.5d |
+| **M5 Java 侧** | 票据接口 + 409 + 结构变更通知 + V218 迁移 | 0.5d |
 | **M6 回归** | 双端 E2E + 故障注入 + 影子比对验收 | 1d |
-| 合计 | | **≈7.5 人日**（不含评审与灰度观察） |
+| 合计 | | **≈6.5 人日**（不含评审与灰度观察；采用框架后 M1 省约 1 人日） |
 
 ---
+
+## 14.1 与「报单比价」协作的关系（范围更小）
+
+报单比价已按「实时价格」重构（网价=行情同步、现货价=供应商价格表实时派生，报价单只存规格与吨位，
+见 `aries` 提交 `b0053d8f` / `leo` 提交 `045e4151`）。因此它的协作范围比供应商价格表**小得多**：
+
+| 维度 | 供应商价格表 | 报单比价 |
+| --- | --- | --- |
+| 可编辑内容 | 价格 / 状态 / 备注（格级） | **规格、吨位、行结构**（价格全只读） |
+| 文档模型 | `lists → cells` 两层 Y.Map | `items: Y.Array` + `ton` |
+| 冲突面 | 任意两格可能并发 | 只有吨位与行结构 |
+| 预估工期 | 6.5 人日 | **≈4 人日**（复用同一 Hocuspocus 边车与物化框架） |
+
+排期建议：先做供应商价格表（把平台跑稳），再复制到报单比价；反过来会把平台问题与业务问题混在一起排查。
 
 ## 15. 风险与对策
 
