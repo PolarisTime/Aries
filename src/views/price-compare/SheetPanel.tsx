@@ -65,14 +65,14 @@ import './price-compare.css'
 const { Text } = Typography
 
 /**
- * 选择框(32) / 拖拽手柄(24) 两列的总宽。
- * 这两列只放 icon-only 控件, 尺寸由命中区下限(WCAG 2.5.8)决定, 不随字号变化,
+ * 选择框 + 拖拽手柄合并成的一列宽度(40px)。
+ * 这一列只放 icon-only 控件, 尺寸由命中区下限(WCAG 2.5.8)决定, 不随字号变化,
  * 因此不参与 core.sheetColumnWidths 的等比换算。
  *
  * <p>「行操作」列(锁定/更多按钮)已移除: 行级锁定与行操作统一走右键菜单与工具栏入口,
  * 单独的一列只在窄屏挤占宽度。</p>
  */
-const SHEET_FIXED_CHROME_WIDTH = 32 + 24
+const SHEET_FIXED_CHROME_WIDTH = 40
 
 /* ------------------------------------------------------------- 单据表格 */
 
@@ -1110,10 +1110,10 @@ export function SheetPanel(props: Props) {
   const columnSettings = useColumnSettingsSupport(
     PRICE_COMPARE_COLUMN_SETTINGS_KEY,
     [],
-    /* 分母是表格的**总列数**(勾选/行操作/备注/类别/规格/报单吨位 + 每个品牌 4 列) ——
+    /* 分母是表格的**总列数**(勾选+拖拽/备注/类别/规格/报单吨位 + 每个品牌 4 列) ——
        它是 hook 判定「隐藏比例异常」的基数。传「可显隐列数」会把正常操作误判成脏数据:
-       例如 3 个品牌时隐藏备注与两个品牌组就是 3/6, 直接触发静默重置。 */
-    6 + brands.length * 4,
+       例如 3 个品牌时隐藏备注与两个品牌组就是 3/5, 直接触发静默重置。 */
+    5 + brands.length * 4,
   )
   const columnVisibility = columnSettings.columnVisibility
   const setColumnVisible = (key: string, visible: boolean) =>
@@ -1271,7 +1271,11 @@ export function SheetPanel(props: Props) {
     <Card
       className="price-compare-sheet-card"
       size="small"
-      styles={{ body: { padding: 12 } }}
+      /*
+       * 卡片不再给整块内容统一内边距：工具区单独留白，表格直接贴到卡片左右边缘
+       * （与供应商报价表的「表格即卡片」一致）；否则表格四周一圈白边会显得像后台里的嵌入表格。
+       */
+      styles={{ body: { padding: 0 } }}
     >
       {content}
     </Card>
