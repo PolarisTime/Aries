@@ -2,10 +2,10 @@ import { RouterProvider } from '@tanstack/react-router'
 import { Layout } from 'antd'
 import { Activity, Suspense, useEffect, useMemo, useRef } from 'react'
 import { AppErrorBoundary } from '@/components/AppErrorBoundary'
+import { AppBreadcrumb } from '@/layouts/AppBreadcrumb'
 import { EditorSessionScopeProvider } from '@/layouts/editor-session/EditorSessionGuard'
 import { editorSessionStore } from '@/layouts/editor-session/editor-session-store'
-import { LayoutTabBar } from '@/layouts/tabs/LayoutTabBar'
-import { tabLabelDomId, tabPanelDomId } from '@/layouts/tabs/tab-aria-ids'
+import { tabPanelDomId } from '@/layouts/tabs/tab-aria-ids'
 import {
   attachTabRouter,
   detachTabRouter,
@@ -40,25 +40,19 @@ function TabPanelRouter({ tab }: { tab: LayoutTab }) {
 }
 
 /**
- * 多标签页内容容器：替代原 <Outlet key={openPageKey}> 强制重挂载方案。
- * 已挂载过的 Tab 常驻 DOM（非激活时隐藏），实现表单/筛选/滚动位置保留；
- * 当前激活的 Tab 无论是否挂载过都立即渲染（激活即挂载），
- * 其余恢复自持久化的 Tab 保持惰性，首次激活才创建子 Router。
+ * 页面内容容器：顶部渲染面包屑，下方渲染当前页面。
  *
- * <p><b>非激活面板已由 React 19 的 `Activity` 收口</b>（开关见
- * {@link TAB_PANEL_ACTIVITY_ENABLED}）。此前记录的「已知瑕疵」——Activity 会销毁子树 effect，
- * 把面板套进 `<Activity mode="hidden">` 后 tests/e2e/navigation.spec.ts 的 P2-25 在
- * 「切回后草稿仍在」变红——已经定位为**真 bug 而非 Activity 的副作用**：编辑器初始化写成
- * 「挂载即初始化」（setup 里 `form.resetFields()` + 灌默认值），任何 effect 重入
- * （StrictMode 双调用、Activity 隐藏→恢复、父级重渲染换 config 身份）都会把用户已改的值重置。
- * 收口方式：初始化按会话 key（`moduleKey:实体 id:open`，见
- * use-module-editor-workspace.ts 的 `initializeEditor`）幂等，重置移到「会话结束（open 收回 false）」
- * 的清理侧。因此 Activity 带来的语义变化只有一条：**state/DOM 保留、effect 销毁重跑**，
- * 凡是挂在 effect 上的初始化都必须幂等，不要再写「挂载即初始化」。</p>
+ * <p><b>导航已从「多开页签」改为面包屑 + 单页</b>：原来这里上方是
+ * {@link LayoutTabBar}（带 × 的页签条），现在换成「业务中心 / 分组 / 页面」面包屑，
+ * 菜单点击在当前页直接打开（见 `useTabOpen` 的单页替换逻辑），不再堆叠多个页签。</p>
  *
- * <p>隐藏态的两个附带要求同样由 Activity 的语义满足：面板内的 Modal/Dropdown（portal 到 body）
- * 随子树一起被 `display:none` 隐藏，视觉、指针与键盘都不可达；面板的焦点陷阱
- * （useFocusTrap）随 effect 销毁而摘掉监听，不会在别的标签里抢 Tab 键，恢复时才重新武装。</p>
+ * <p>底层仍保留 `layoutTabsStore` 与面板挂载机制：单页替换复用同一套子 Router 与编辑器会话
+ * 生命周期，确保「有未保存编辑时切换页面先确认」的行为与原来关闭页签一致，而不是把多标签
+ * 架构推倒重来。</p>
+ *
+ * <p><b>非激活面板由 React 19 的 `Activity` 收口</b>（开关见
+ * {@link TAB_PANEL_ACTIVITY_ENABLED}）。Activity 隐藏时会销毁子树 effect，因此所有初始化
+ * 必须幂等（编辑器初始化已按会话 key 收口，见 use-module-editor-workspace.ts）。</p>
  */
 export function AppTabContainer() {
   const tabs = useLayoutTabsStore((state) => state.tabs)
@@ -113,24 +107,20 @@ export function AppTabContainer() {
      * 否则键盘用户按「跳到主要内容」后焦点仍停在页眉，等于没跳。
      */
     <Content id="main-content" tabIndex={-1} className="leo-content">
-      <LayoutTabBar />
-      {/* 面包屑已移除: 标签条下方直接是业务内容, 不再有第三层"层级说明"带子 */}
+      <AppBreadcrumb />
       <div className="leo-content-inner leo-tab-viewport">
         {tabs.map((tab) => {
           const mounted = tab.mountedOnce || tab.id === activeTabId
           const isActive = tab.id === activeTabId
-          /* 面板外壳始终存在, 内容仍按需挂载(恢复自持久化的标签保持惰性)。
-             若外壳也惰性渲染, 非激活标签的 aria-controls 会指向不存在的元素,
-             形成悬空引用 —— 实测 Playwright 可复现。 */
+          /* 面板外壳始终存在, 内容仍按需挂载(恢复自持久化的标签保持惰性)。 */
           const content = mounted ? (
             <AppErrorBoundary resetKey={`${tab.id}:${tab.reloadKey}`}>
               <EditorSessionScopeProvider tabId={tab.id}>
                 {/*
                  * 必须给面板兜一个 Suspense fallback：路由的 `component` 是
-                 * `lazy(viewLoaders[...])`，首次点开一个还没挂载过的标签时，页面 chunk 要
+                 * `lazy(viewLoaders[...])`，首次打开一个还没挂载过的页面时，页面 chunk 要
                  * 现下载（dev 下实测 200~300ms），React 在 chunk 到位前渲染 null ——
-                 * 整个内容区**一片空白**，随后才出现页面内容。配合紧邻的「标签数已达上限」
-                 * 提示，观感就是"点一下标签页把整个 SPA 重载了"。
+                 * 整个内容区**一片空白**，随后才出现页面内容。
                  *
                  * fallback 复用路由 pending 用的同一个页面骨架，保证「空白 → 骨架 → 内容」
                  * 收敛为「骨架 → 内容」：加载中始终有明确的版面占位，不再有无内容的空窗。
@@ -147,13 +137,9 @@ export function AppTabContainer() {
           return (
             <div
               key={tab.id}
-              /* 真实内容面板才是 tab 的 panel：rc-tabs 自己渲染的面板是空的,
-                 且被 CSS 整体隐藏(见 layout-shell.css 的 .ant-tabs-body-holder)。
-                 刻意不加 tabIndex —— APG 只在面板内无可聚焦元素时才要求 tabindex="0",
-                 而本项目面板内有表单与表格, Tab 键会自然落到其中。 */
+              /* 面包屑模式下没有 tablist，因此不再声明 role="tabpanel"/aria-labelledby
+                 （指向不存在的 tab 会形成悬空引用）。id/data-tab-active 保留给样式与测试定位。 */
               id={tabPanelDomId(tab.id)}
-              role="tabpanel"
-              aria-labelledby={tabLabelDomId(tab.id)}
               /* 走 Activity 时显隐交给 Activity 的内联 display:none !important，这里**不能**
                  再设 hidden 属性：Activity 恢复只清内联 display，属性还留着的话恢复后依旧不可见；
                  关掉开关时退回属性显隐。另给出「哪个面板是激活的」稳定锚点：

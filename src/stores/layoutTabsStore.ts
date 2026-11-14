@@ -624,6 +624,16 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
       activeTabId = ensured.activeTabId
     }
 
+    /*
+     * 单页 + 面包屑模型：只恢复「钉选标签 + 当前激活页」。
+     *
+     * <p>页签条删除后，历史遗留的多开标签（升级前持久化下来的清单）已没有切换入口，
+     * 全部恢复只会让它们在后台挂载、占内存且不可达。这里保留工作台与当前激活页，
+     * 其余历史标签在下次持久化时自然清理。hydration 阶段没有编辑器会话，不涉及未保存内容。</p>
+     */
+    const activeTab = tabs.find((tab) => tab.id === activeTabId)
+    tabs = tabs.filter((tab) => isTabPinned(tab) || tab.id === activeTab?.id)
+
     set({ tabs, activeTabId })
   },
 

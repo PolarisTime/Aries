@@ -14,10 +14,9 @@ import {
   useLayoutTabsStore,
 } from '@/stores/layoutTabsStore'
 
-// 本用例只验证兜底资源回收 effect, 与标签栏/面包屑/路由协调无关:
-// 后三者各自要连主 Router(或 antd Tabs 的 ResizeObserver), 在 jsdom 里是纯噪音。
+// 本用例只验证兜底资源回收 effect, 与面包屑/路由协调无关:
+// 后两者各自要连主 Router 或 antd Breadcrumb 上下文, 在 jsdom 里是纯噪音。
 vi.mock('@/layouts/AppBreadcrumb', () => ({ AppBreadcrumb: () => null }))
-vi.mock('@/layouts/tabs/LayoutTabBar', () => ({ LayoutTabBar: () => null }))
 vi.mock('@/layouts/tabs/useTabRouteReconciliation', () => ({
   useTabRouteReconciliation: () => {},
 }))

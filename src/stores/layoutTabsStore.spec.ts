@@ -640,7 +640,7 @@ describe('受保护标签的重载恢复', () => {
     }
   })
 
-  it('候选全受保护而超限保存后, 重载恢复仍保留受保护标签且不超上限', () => {
+  it('刷新后只恢复「工作台 + 当前激活页」：多开页签不再恢复（单页模型）', () => {
     const values = new Map<string, string>()
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => values.get(key) ?? null,
@@ -699,13 +699,11 @@ describe('受保护标签的重载恢复', () => {
       useLayoutTabsStore.getState().hydrateForUser('anonymous')
       const restored = useLayoutTabsStore.getState().tabs
 
-      // 重载后还剩几条
-      expect(restored).toHaveLength(MAX_LAYOUT_TABS)
-      // 保留的是哪些: 尾部那个刚被保护的 p9 不能消失（旧实现按顺序截断会丢掉它）
-      expect(restored.map((tab) => tab.id)).toContain('p9')
-      expect(restored.map((tab) => tab.id)).not.toContain('p0')
-      expect(restored.some((tab) => tab.pathname === knownPath(11))).toBe(false)
+      // 单页 + 面包屑模型：多开页签刷新后不再恢复，只剩工作台（保底进入点）
+      expect(restored).toHaveLength(1)
       expect(restored[0]?.pathname).toBe(DASHBOARD_TAB_PATH)
+      expect(restored.map((tab) => tab.id)).not.toContain('p0')
+      expect(restored.map((tab) => tab.id)).not.toContain('p9')
     } finally {
       vi.useRealTimers()
       vi.unstubAllGlobals()

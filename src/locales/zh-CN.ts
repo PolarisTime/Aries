@@ -2355,6 +2355,9 @@ export const zhCN = {
         topDesc: '采用顶部菜单栏，整体风格与当前 Vue 版保持一致。',
       },
     },
+    breadcrumb: {
+      ariaLabel: '面包屑导航',
+    },
     sideNav: {
       root: '业务中心',
       /** 侧栏折叠按钮的可访问名：随折叠状态切换，图标按钮必须有文案。 */
@@ -2376,21 +2379,7 @@ export const zhCN = {
       businessPageNotFound: '未找到对应业务页面',
     },
     tabs: {
-      refresh: '刷新页面',
-      close: '关闭标签页',
-      closeOthers: '关闭其他',
-      closeLeft: '关闭左侧',
-      closeRight: '关闭右侧',
-      closeAll: '全部关闭',
-      pin: '固定标签页',
-      unpin: '取消固定',
-      pinDashboard: '工作台固定展示',
-      contextMenuLabel: '「{{name}}」标签操作菜单',
       evicted: '标签数已达上限，已自动关闭最早的 {{n}} 个标签',
-      tablistLabel: '已打开的页面标签',
-      closeTab: '关闭「{{name}}」标签',
-      overLimitHint:
-        '标签数已超出上限（{{current}}/{{max}}）。含未保存内容的标签不会被自动关闭，请手动关闭部分标签',
     },
   },
   system: {

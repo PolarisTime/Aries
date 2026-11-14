@@ -782,6 +782,35 @@
   overflow: hidden;
 }
 
+/*
+ * 全局导航面包屑（替代原来的多标签页签条）。
+ *
+ * 页签条删除后，面包屑就是页面级唯一页眉：一条 28px 的浅灰说明带，
+ * 左缘与内容卡对齐，末项加粗深色表示当前位置。
+ */
+.leo-breadcrumb {
+  flex: 0 0 auto;
+  padding: var(--space-xxs) var(--space-md);
+  font-size: 12px;
+  line-height: 20px;
+  background: transparent;
+}
+
+.leo-breadcrumb .ant-breadcrumb-link {
+  color: var(--theme-text-muted);
+  font-size: 12px;
+}
+
+.leo-breadcrumb li:last-child .ant-breadcrumb-link {
+  color: var(--theme-text);
+  font-weight: 600;
+}
+
+.leo-breadcrumb .ant-breadcrumb-separator {
+  color: var(--theme-text-muted);
+  opacity: 0.6;
+}
+
 /* ===== 全局多标签页导航条（Header 正下方、内容区正上方，常规流内布局） ===== */
 
 /* 标签栏宿主：Tabs 与超限指示器并排。指示器必须在 tablist 之外（见 LayoutTabBar 注释）。 */
@@ -2555,7 +2584,6 @@
     flex-direction: column;
     align-items: stretch;
   }
-
 }
 
 .module-table-toolbar {

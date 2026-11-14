@@ -26,18 +26,19 @@ const blockOf = (selector: string) => {
  * </ol>
  */
 /**
- * 面包屑移除后的顶部对齐。
+ * 导航从「多标签页签条」改为「面包屑」后的顶部契约。
  *
- * <p>面包屑曾是标签条与页面卡片之间的一行"层级说明"，为此内容区顶部留了
- * 4px(内容区) + 8px(页面容器)。移除后标签条就是唯一页眉，这两层留白必须在 CSS 里
- * **同时**归零，否则标签条与卡片之间会留一条无内容的灰带，像页面没加载完。</p>
+ * <p>页签条带 × 的多开标签已删除，顶部只剩一条 28px 的面包屑说明带；
+ * 内容区四边内边距仍归零，面包屑与内容卡之间不额外拉空灰带。</p>
  */
-describe('面包屑移除后的顶部对齐', () => {
-  it('面包屑样式已从样式表移除', () => {
-    expect(css.includes('.leo-breadcrumb')).toBe(false)
+describe('面包屑替代页签条后的顶部对齐', () => {
+  it('面包屑样式存在，末项加粗深色表示当前位置', () => {
+    const block = blockOf('.leo-breadcrumb')
+    expect(block).toContain('font-size: 12px')
+    expect(css).toContain('.leo-breadcrumb li:last-child .ant-breadcrumb-link')
   })
 
-  it('内容区四边内边距归零（顶部贴住标签条，左右不额外留白）', () => {
+  it('内容区四边内边距归零（面包屑下方直接是页面内容）', () => {
     const block = blockOf('.leo-content-inner')
     expect(block).toMatch(/padding:\s*0;/)
   })

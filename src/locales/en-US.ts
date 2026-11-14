@@ -2355,6 +2355,9 @@ export const enUS = {
           'Uses a top menu bar, consistent with the current Vue version layout.',
       },
     },
+    breadcrumb: {
+      ariaLabel: 'Breadcrumb',
+    },
     sideNav: {
       root: 'Business Center',
       /** Accessible name of the sidebar collapse toggle; flips with the state. */
@@ -2376,22 +2379,8 @@ export const enUS = {
       businessPageNotFound: 'Business page not found',
     },
     tabs: {
-      refresh: 'Refresh page',
-      close: 'Close tab',
-      closeOthers: 'Close other tabs',
-      closeLeft: 'Close tabs to the left',
-      closeRight: 'Close tabs to the right',
-      closeAll: 'Close all tabs',
-      pin: 'Pin tab',
-      unpin: 'Unpin tab',
-      pinDashboard: 'Dashboard is pinned',
-      contextMenuLabel: 'Actions for the {{name}} tab',
       evicted:
         'Tab limit reached; automatically closed the earliest {{n}} tab(s)',
-      tablistLabel: 'Open page tabs',
-      closeTab: 'Close the {{name}} tab',
-      overLimitHint:
-        'Over the tab limit ({{current}}/{{max}}). Tabs with unsaved changes are never closed automatically — please close some tabs manually',
     },
   },
   system: {

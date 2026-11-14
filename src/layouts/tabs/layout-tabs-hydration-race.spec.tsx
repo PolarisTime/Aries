@@ -12,7 +12,6 @@ import { getLayoutTabsStorageKey } from '@/utils/storage'
 // 与 AppLayout 同构：Harness 是父组件（负责 hydrate 的布局阶段），
 // AppTabContainer 是子组件（负责定位 effect）。顺序敏感，不能压平。
 vi.mock('@/layouts/AppBreadcrumb', () => ({ AppBreadcrumb: () => null }))
-vi.mock('@/layouts/tabs/LayoutTabBar', () => ({ LayoutTabBar: () => null }))
 // 真实 RouterProvider 会渲染整棵业务路由树；面板内容与本用例无关，
 // 但 attachTabRouter/detachTabRouter 仍走真实实现，面板是否挂载可观测。
 vi.mock('@tanstack/react-router', async (importOriginal) => {

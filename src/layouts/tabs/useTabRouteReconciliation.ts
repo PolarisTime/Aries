@@ -11,6 +11,7 @@ import { router as mainRouter } from '@/router'
 import {
   buildTabHref,
   isRegisteredPagePath,
+  isTabPinned,
   normalizeSearch,
   normalizeTabPathname,
   useLayoutTabsStore,
@@ -111,6 +112,16 @@ export function useTabRouteReconciliation(): void {
       },
     )
     notifyEvictedTabs(evictedIds, tRef.current)
+    /*
+     * 单页 + 面包屑模型：本次是「地址栏直达/前进后退」等外部入口新建的页面，
+     * 关闭其它未固定的内容标签，保证始终只有一个内容页（工作台与受保护标签除外）。
+     * 受保护标签（有未保存编辑）不静默关闭，宁可暂时留在后台。
+     */
+    for (const tab of useLayoutTabsStore.getState().tabs) {
+      if (tab.id === tabId || isTabPinned(tab)) continue
+      if (editorSessionStore.requiresConfirmation(tab.id)) continue
+      useLayoutTabsStore.getState().removeTab(tab.id)
+    }
     store.markTabMounted(tabId)
     // href 已涵盖 pathname+searchStr，显式列出以满足依赖完整性检查
   }, [location.href, location.pathname, location.searchStr])
