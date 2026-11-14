@@ -1048,8 +1048,6 @@ type Props = {
    * 页面层用 `useLengthPremiumOptions()` 读一次传下来，避免逐行请求。</p>
    */
   lengthPremiums?: Readonly<Record<string, number>>
-  /** 定尺名称 → 排序号（来自定尺主数据），决定长度互切候选的确定性顺序。 */
-  lengthSortOrders?: Readonly<Record<string, number>>
   patchSheet: (
     id: string,
     patch: Partial<PriceSheet>,
@@ -1082,7 +1080,6 @@ export function SheetPanel(props: Props) {
     density,
     lengthPremium,
     lengthPremiums = EMPTY_LENGTH_PREMIUMS,
-    lengthSortOrders = EMPTY_LENGTH_PREMIUMS,
     patchSheet,
     setRows,
     onReorderBrands,
@@ -1194,7 +1191,6 @@ export function SheetPanel(props: Props) {
     refPeriod,
     lengthPremium,
     lengthPremiums,
-    lengthSortOrders,
     varietyByLabel,
     data,
     varieties,

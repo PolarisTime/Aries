@@ -666,41 +666,6 @@ export function lengthRank(
 }
 
 /**
- * 在给定商品清单中查找指定行的「另一个定尺」对应商品（长度互切）。
- *
- * <p>**不再写死 9米/12米**：候选来自商品清单里**实际存在**的其它长度 ——
- * 同类别/材质/规格下、长度不同于当前行的项；多个候选时按 {@link lengthRank} 确定性排序
- * 取第一个（定尺主数据 sortOrder 优先 → 名称里的米数 → `''`/`'-'` 最后），
- * 与报价单定尺列顺序一致，不依赖数组里的偶然顺序。</p>
- *
- * <p>找不到其它长度（如盘螺只有 `'-'`、Φ25 只有 9米）或规格为空时返回 undefined。</p>
- */
-export function findAlternateLengthVariety(
-  varieties: Variety[],
-  row: Pick<PriceRow, 'category' | 'material' | 'spec' | 'length'>,
-  sortOrderOf?: Readonly<Record<string, number>>,
-): Variety | undefined {
-  if (row.spec === null) return undefined
-  const candidates = varieties.filter(
-    (item) =>
-      item.category === row.category &&
-      item.material === row.material &&
-      item.spec === row.spec &&
-      item.length !== row.length,
-  )
-  if (candidates.length === 0) return undefined
-  return candidates.reduce((best, item) => {
-    const bestRank = lengthRank(best.length, sortOrderOf)
-    const itemRank = lengthRank(item.length, sortOrderOf)
-    if (itemRank !== bestRank) return itemRank < bestRank ? item : best
-    // 同档位时按名称定序，避免结果随数组顺序漂移。
-    return item.length.localeCompare(best.length, 'zh-Hans-CN') < 0
-      ? item
-      : best
-  })
-}
-
-/**
  * 切换行级锁定。
  *
  * <p>行锁是**纯编辑保护**: 只冻结该行的规格与吨位, 防止误改。它不再与任何采购/销售

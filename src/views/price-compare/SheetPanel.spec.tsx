@@ -859,67 +859,6 @@ describe('SheetPanel 指定品牌展示', () => {
     expect(headerRow.match(/简称/g)?.length).toBe(1)
     expect(thead).toContain('基准价')
   })
-  it('同规格有双长度时显示长度切换按钮(与采购无关)', () => {
-    const twoLengths: Variety[] = [
-      {
-        category: '螺纹钢',
-        material: 'HRB400E',
-        spec: 12,
-        length: '9米',
-        label: 'a',
-      },
-      {
-        category: '螺纹钢',
-        material: 'HRB400E',
-        spec: 12,
-        length: '12米',
-        label: 'b',
-      },
-    ]
-    renderStateful(makeSheet(), [{ ...baseRow }], undefined, false, twoLengths)
-    const switchButton = container.querySelector(
-      '.price-compare-variety-switch',
-    )
-    expect(switchButton).toBeTruthy()
-  })
-
-  it('同规格仅一种长度时不显示长度切换按钮', () => {
-    renderStateful(makeSheet(), [{ ...baseRow }])
-    expect(container.querySelector('.price-compare-variety-switch')).toBeNull()
-  })
-
-  it('点击长度切换按钮把该行切到 12米', () => {
-    const twoLengths: Variety[] = [
-      {
-        category: '螺纹钢',
-        material: 'HRB400E',
-        spec: 12,
-        length: '9米',
-        label: 'a',
-      },
-      {
-        category: '螺纹钢',
-        material: 'HRB400E',
-        spec: 12,
-        length: '12米',
-        label: 'b',
-      },
-    ]
-    const observed = renderStateful(
-      makeSheet(),
-      [{ ...baseRow }],
-      undefined,
-      false,
-      twoLengths,
-    )
-    const switchButton = container.querySelector(
-      '.price-compare-variety-switch',
-    ) as HTMLButtonElement
-    act(() => {
-      switchButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(observed.rows[0].length).toBe('12米')
-  })
   /** 打开某行的「更多操作」菜单并点击指定项(antd 弹层挂在 document.body 上)。 */
   async function clickRowAction(label: string) {
     const trigger = container.querySelector<HTMLButtonElement>(

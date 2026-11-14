@@ -56,7 +56,6 @@ function makeContext(overrides: Partial<ColumnContext> = {}): ColumnContext {
     refPeriod: '上午',
     lengthPremium: 30,
     lengthPremiums: {},
-    lengthSortOrders: {},
     varietyByLabel: new Map(),
     data: null,
     varieties: [],

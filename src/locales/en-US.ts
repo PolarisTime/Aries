@@ -3112,7 +3112,6 @@ export const enUS = {
         moveBrandLast: 'Move to last',
       },
       selectProduct: 'Select product',
-      switchLength: 'Switch to {{length}}',
       /** Row-level lock is the same concept as the toolbar "lock spec & quantity", scoped to one row. */
       lockRow: 'Lock row spec & quantity',
       unlockRow: 'Unlock row spec & quantity',

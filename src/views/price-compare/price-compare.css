@@ -998,11 +998,6 @@
   width: 100%;
 }
 
-.price-compare-variety-switch {
-  flex: 0 0 auto;
-  color: var(--color-info-active, #0958d9);
-}
-
 /*
  * 未聚焦的 sr-only 行操作触发器不得画任何背景/投影。
  *

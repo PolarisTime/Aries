@@ -14,7 +14,6 @@ import {
   InsertRowBelowOutlined,
   LockOutlined,
   MoreOutlined,
-  SwapOutlined,
   UnlockOutlined,
 } from '@ant-design/icons'
 import { Button, Checkbox, Input, Select, Tooltip } from 'antd'
@@ -30,7 +29,6 @@ import {
   buildVarietyOptions,
   fallbackBadgeMaterial,
   filterVarieties,
-  findAlternateLengthVariety,
   isSeparatorRow,
   LOCK_REASON_KEYS,
   netPriceWithFallback,
@@ -98,8 +96,6 @@ export type ColumnContext = {
   lengthPremium: number
   /** 定尺名称 → 每吨加价（来自定尺主数据）；空表时走迁移兜底。 */
   lengthPremiums: Readonly<Record<string, number>>
-  /** 定尺名称 → 排序号（来自定尺主数据），决定长度互切候选的确定性顺序。 */
-  lengthSortOrders: Readonly<Record<string, number>>
   varietyByLabel: Map<string, Variety>
   data: PriceData | null
   varieties: Variety[]
@@ -427,7 +423,6 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     refPeriod,
     lengthPremium,
     lengthPremiums,
-    lengthSortOrders,
     varietyByLabel,
     data,
     brands,
@@ -708,12 +703,6 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           current && current.material
             ? `${current.category}|${current.material}|${current.spec}|${current.length}`
             : undefined
-        // 同规格存在另一长度时可切换(与采购/销售无关, 只受锁定层级约束)。
-        const alternate = findAlternateLengthVariety(
-          varietyOptionsFlat,
-          current,
-          lengthSortOrders,
-        )
         // 锁定层级 单据 > 行 > 单元格: 行级锁同样冻结本行规格(行锁 = 规格与吨位定稿)。
         const specLock = resolveLock({
           sheet: quantityLocked,
@@ -737,7 +726,7 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 )}
                 className={quantityLockClass}
                 disabled={selectDisabled}
-                style={{ width: widths.spec - 36 }}
+                style={{ width: widths.spec }}
                 placeholder={t('priceCompare.sheet.selectProduct')}
                 /*
                  * 下拉不能与选择器同宽: 选择器宽度受「规格」列宽约束(60~160px 量级),
@@ -770,32 +759,6 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                   })
                 }}
               />
-              {alternate ? (
-                <Tooltip
-                  title={t('priceCompare.sheet.switchLength', {
-                    length: alternate.length,
-                  })}
-                >
-                  <Button
-                    aria-label={t('priceCompare.sheet.switchLength', {
-                      length: alternate.length,
-                    })}
-                    className="price-compare-variety-switch"
-                    disabled={selectDisabled}
-                    icon={<SwapOutlined />}
-                    size="small"
-                    type="text"
-                    onClick={() =>
-                      patchRow(row.rowId, {
-                        category: alternate.category,
-                        material: alternate.material,
-                        spec: alternate.spec,
-                        length: alternate.length,
-                      })
-                    }
-                  />
-                </Tooltip>
-              ) : null}
             </div>
           </LockReason>
         )

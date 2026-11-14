@@ -194,13 +194,6 @@ describe('比价页样式无障碍契约', () => {
     expect(opacity).toBeGreaterThanOrEqual(0.62)
   })
 
-  it('语义色文字使用满足 4.5:1 的深色令牌', () => {
-    // antd 默认 primary(#1677ff, 4.1:1) 与 error(#ff4d4f, 3.27:1) 对 11–12px 小字偏低
-    expect(blockOf(pageCss, '.price-compare-variety-switch')).toContain(
-      'var(--color-info-active',
-    )
-  })
-
   it('说明性文字不再使用 placeholder 级灰度', () => {
     for (const selector of [
       '.price-compare-head .price-compare-desc',

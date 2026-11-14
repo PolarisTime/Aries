@@ -83,7 +83,7 @@ export function PriceCompareView() {
    * 定尺主数据只在这里读一次，往下传两张派生表（加价/排序号）：
    * 逐行/逐格各查一次会产生 N 次缓存读与 N 份派生对象，也没法保证同一页口径一致。
    */
-  const { premiumByLength, sortOrderByLength } = useLengthPremiumOptions()
+  const { premiumByLength } = useLengthPremiumOptions()
 
   const [configOpen, setConfigOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
@@ -337,7 +337,6 @@ export function PriceCompareView() {
         rows={rows}
         lengthPremium={lengthPremium}
         lengthPremiums={premiumByLength}
-        lengthSortOrders={sortOrderByLength}
         patchSheet={patchSheet}
         setRows={setRows}
         onReorderBrands={(from, to) =>
@@ -380,7 +379,6 @@ function PriceCompareSheetArea({
   rows,
   lengthPremium,
   lengthPremiums,
-  lengthSortOrders,
   patchSheet,
   setRows,
   onReorderBrands,
@@ -402,7 +400,6 @@ function PriceCompareSheetArea({
   rows: React.ComponentProps<typeof SheetPanel>['rows']
   lengthPremium: number
   lengthPremiums: React.ComponentProps<typeof SheetPanel>['lengthPremiums']
-  lengthSortOrders: React.ComponentProps<typeof SheetPanel>['lengthSortOrders']
   patchSheet: React.ComponentProps<typeof SheetPanel>['patchSheet']
   setRows: React.ComponentProps<typeof SheetPanel>['setRows']
   onReorderBrands: React.ComponentProps<typeof SheetPanel>['onReorderBrands']
@@ -438,7 +435,6 @@ function PriceCompareSheetArea({
         density="small"
         lengthPremium={lengthPremium}
         lengthPremiums={lengthPremiums}
-        lengthSortOrders={lengthSortOrders}
         patchSheet={patchSheet}
         setRows={setRows}
         onReorderBrands={onReorderBrands}

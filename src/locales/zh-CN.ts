@@ -3099,7 +3099,6 @@ export const zhCN = {
       columnPanelFixed: '固定列',
       columnPanelBrands: '品牌列',
       selectProduct: '选择商品',
-      switchLength: '切换为{{length}}',
       /** 行级锁与工具栏「锁定规格和数量」是同一件事, 只是范围 = 一行, 文案保持同词根。 */
       lockRow: '锁定该行规格和数量',
       unlockRow: '解锁该行规格和数量',
