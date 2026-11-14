@@ -215,18 +215,23 @@ describe('用户设置同步引擎', () => {
     await bootstrapUserSettings()
     await settle()
     saveUserAccountSettingsMock.mockClear()
+    /*
+     * 真实后端（leo UserSettingsConflictException）的 409 形状：
+     * `sections` 是冲突分片**列表**，分片值在 `serverValue` 映射里。
+     * 这里用真形状钉住解析（旧用例用的是 `sections` 对象映射，与后端不一致）。
+     */
     saveUserAccountSettingsMock.mockRejectedValue({
       response: {
         status: 409,
         data: {
-          version: 2,
-          sections: {
+          status: 409,
+          sections: ['ui'],
+          serverValue: {
             ui: {
               value: { fontSize: 20, themeMode: 'light' },
               clientUpdatedAt: '2026-11-12T00:00:00Z',
             },
           },
-          pages: {},
         },
       },
     })

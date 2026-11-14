@@ -441,9 +441,22 @@ function errorResponseSections(
 ): { sections?: Record<string, UserAccountSettingsSectionInput> } | null {
   const data = (error as { response?: { data?: unknown } } | null)?.response
     ?.data
-  if (!isPlainObject(data) || !isPlainObject(data.sections)) return null
+  if (!isPlainObject(data)) return null
+  /*
+   * 后端（leo `UserSettingsConflictException`）真实 409 形状：
+   * `{ sections: ['ui'], serverValue: { ui: { value, clientUpdatedAt, serverUpdatedAt } } }`
+   * —— `sections` 只是"哪些分片冲突"的**列表**（ProblemDetail 扩展字段），分片值在
+   * `serverValue` 里。这里优先读 `serverValue`，同时兼容 `sections` 为对象映射的旧形状；
+   * 两者都不匹配才放弃（放弃只清 dirty、不覆盖本地，不会误伤）。
+   */
+  const source = isPlainObject(data.serverValue)
+    ? data.serverValue
+    : isPlainObject(data.sections)
+      ? data.sections
+      : null
+  if (!source) return null
   const sections: Record<string, UserAccountSettingsSectionInput> = {}
-  for (const [section, entry] of Object.entries(data.sections)) {
+  for (const [section, entry] of Object.entries(source)) {
     if (!section || !isPlainObject(entry)) continue
     sections[section] = {
       value: entry.value,
