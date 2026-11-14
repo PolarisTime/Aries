@@ -1,6 +1,7 @@
 # 供应商价格表：实时协作设计（Yjs CRDT）
 
-> 状态：**设计评审稿**，评审通过后开工。本文对应两条需求：
+> 状态：**M1–M4 已实现**（边车 `leo c09bb3a0`、前端 `aries 7e5dd259`；Java 票据与 V218 在建）。
+> 本文对应两条需求：
 > 1. 多端编辑同一份数据，**不能丢任何一次改动**；
 > 2. 实时协作：多人同时改同一张表，**能看到对方光标**。
 >
@@ -16,7 +17,7 @@
 | 冲突模型 | **Yjs CRDT**（`Y.Map` 格级文档），客户端离线可编辑、重连自动合并 |
 | 服务端 | **Node 边车运行 Hocuspocus**（Yjs 官方生态框架，基于 `y-websocket` 协议），**不能纯 Java**（见 §2.2） |
 | 真相源 | 协作期间 **Y.Doc 是编辑真相源**，Postgres 由物化器单向写入（供报单比价/导入/报表消费） |
-| 房间粒度 | `supplier-price:<supplierId>`（一个报价工作台 = 一个房间） |
+| 房间粒度 | `supplier-price-list:<listId>`（**一张价格表 = 一个房间**；报价页每个品牌列各一个 session） |
 | 光标 | Yjs Awareness 协议（`y-protocols/awareness`） |
 | 迁移 | 影子同步 → 双写 → 切换，三阶段，带开关可回退 |
 
@@ -131,7 +132,7 @@ GET https://search.maven.org/solrsearch/select?q=yjs
                 │              │
          Redis pub/sub     Postgres（leo 库）
         （多实例扇出）      ├ mk_supplier_price_collab_update
-                            ├ mk_supplier_price_collab_snapshot
+                            ├ mk_supplier_price_collab_update / _cell_op
                             ├ mk_supplier_price_item   （物化值）
                             └ mk_supplier_price_cell_op（审计）
                       ▲
@@ -143,8 +144,8 @@ GET https://search.maven.org/solrsearch/select?q=yjs
 
 **数据流**
 
-1. 前端 `POST /api/v2/supplier-price-lists/{listId}/collab-session` 拿短票据（Java 签发）；
-2. 前端连 `wss://<host>/collab?room=supplier-price:<supplierId>&token=…`；
+1. 前端 `POST /api/v2/supplier-price-lists/{listId}/collab-sessions` 拿短票据（Java 签发，201）；
+2. 前端连 `wss://<host>/collab?room=supplier-price-list:<listId>&token=…`；
 3. 边车校验票据 → 加入房间 → 同步 Y.Doc（快照 + 增量）；
 4. 用户改格 → 本地 Y.Doc 立即生效 → 增量广播给房间内其他客户端；
 5. 边车 debounce 500ms → 物化器把**差异**写入 `mk_supplier_price_item` 与审计表；
@@ -157,12 +158,9 @@ GET https://search.maven.org/solrsearch/select?q=yjs
 ### 4.1 Y.Doc 结构
 
 ```ts
-// room = `supplier-price:${supplierId}`
-doc.getMap<unknown>('meta')            // { updatedAt }
-doc.getMap<Y.Map<unknown>>('lists')    // key = listId（= 供应商 × 品牌的表头 id）
-  └ list: Y.Map
-      ├ 'quotedOn': string             // 报价日期
-      └ 'cells': Y.Map<CellValue>      // key = cellKey
+// room = `supplier-price-list:${listId}`（一张价格表 = 一个房间）
+doc.getMap<unknown>('meta')          // { listId, supplierId, brandName, quotedOn, warehouse, version }
+doc.getMap<Y.Map<unknown>>('cells')  // key = cellKey，值 = CellValue（整格对象）
 ```
 
 ```ts
@@ -179,11 +177,16 @@ const cellKey = (c: {category, material, spec, length}) =>
 
 **为什么一格是一个对象、而不是把三个字段拆成三个 Y.Map**：一次输入代表"这一格现在的完整状态"，拆字段会造出"价格更新了、状态没更新"的中间态；整格替换在 UI 上只有一个输入框，语义更贴合。
 
-### 4.2 房间与列的关系
+### 4.2 房间与列的关系（实现口径）
 
-- 一个房间 = 一个供应商（UI 的一个 Tab）；
-- 房间内含该供应商的所有品牌列（`lists` 的多个 key）；
-- 列的新增/删除属于**结构变更**，不通过 CRDT 自由写，而是走 Java 接口 + Redis 通知边车重建文档（§10.3）。
+- **一个房间 = 一张价格表（`listId`）**；供应商报价页上一列品牌 = 一张价格表 = 一个 session，
+  前端按 listId 逐表建连，某张表拿不到票据时该表继续走 REST，其余表照常协作；
+- 表头元数据（listId/supplierId/brandName/quotedOn/warehouse/version）放 `meta`，格子只放
+  `cells[cellKey]`；
+- 品牌列的新增/删除、行的增删、规格变更都属于**结构变更**，不通过 CRDT 自由写：仍走 Java REST，
+  写成功后由前端重建/刷新该表文档（避免两个写者）；
+- 历史设计里的「一个供应商一个房间 + `lists → cells` 两层结构」**未采用**：两层结构让物化要
+  遍历多张表、也让"某品牌列不可写"的权限粒度变粗；一张表一个房间与现有 REST 资源一一对应。
 
 ### 4.3 文档规模估算
 
@@ -195,45 +198,48 @@ const cellKey = (c: {category, material, spec, length}) =>
 
 ### 5.1 表结构（`leo/src/main/resources/db/migration/V218__supplier_price_collab.sql`）
 
+边车（`leo/collab-server`）启动时按 `REQUIRED_COLUMNS` 做 strict 自检，列名必须与下面一致：
+
 ```sql
--- 增量更新（append-only）
+-- 文档快照：一行一个房间（边车 upsert）
+CREATE TABLE mk_supplier_price_collab_doc (
+  room       TEXT PRIMARY KEY,              -- 例：supplier-price-list:374015303912259584
+  state      BYTEA NOT NULL,                -- Y.encodeStateAsUpdate 的完整文档
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 增量更新（append-only，审计/补放用）
 CREATE TABLE mk_supplier_price_collab_update (
   id          BIGSERIAL PRIMARY KEY,
-  room        VARCHAR(64) NOT NULL,
-  update_blob BYTEA       NOT NULL,
+  room        TEXT NOT NULL,
+  update_blob BYTEA NOT NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX ix_sp_collab_update_room_id ON mk_supplier_price_collab_update (room, id);
 
--- 快照（压缩用）
-CREATE TABLE mk_supplier_price_collab_snapshot (
-  room           VARCHAR(64) PRIMARY KEY,
-  doc_blob       BYTEA       NOT NULL,
-  last_update_id BIGINT      NOT NULL,
-  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- 格级审计：谁、何时、把哪一格改成了什么（"每一次改动"的凭证）
+-- 格级审计（谁在什么时候把哪一格改成了什么）
 CREATE TABLE mk_supplier_price_cell_op (
-  id          BIGINT PRIMARY KEY,          -- 雪花
-  list_id     BIGINT      NOT NULL,
-  cell_key    VARCHAR(128) NOT NULL,
-  price       NUMERIC(12,2),
-  price_status VARCHAR(16),
-  remark      VARCHAR(255),
-  actor_id    BIGINT      NOT NULL,
-  list_revision BIGINT    NOT NULL,        -- 物化后 mk_supplier_price_list.version
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  id            BIGINT PRIMARY KEY,         -- 边车雪花，无默认值
+  list_id       BIGINT NOT NULL,
+  cell_key      TEXT NOT NULL,
+  price         NUMERIC(12,2),
+  price_status  VARCHAR(16),
+  remark        VARCHAR(255),
+  actor_id      BIGINT,
+  list_revision BIGINT NOT NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX ix_sp_cell_op_list ON mk_supplier_price_cell_op (list_id, created_at DESC);
+CREATE INDEX ix_sp_cell_op_list ON mk_supplier_price_cell_op (list_id, created_at);
+CREATE INDEX ix_sp_cell_op_cell ON mk_supplier_price_cell_op (cell_key);
 ```
 
-> 只新增表，不改 `mk_supplier_price_item` 结构（物化直接 upsert 价格/状态/备注）。
+> 边车默认 `COLLAB_SCHEMA_CHECK=strict`：缺表/缺列直接启动失败并打印缺什么，避免"跑起来但读不到数据"。
+> 边车雪花机器号（`COLLAB_SNOWFLAKE_WORKER_ID`，默认 7）必须与 Java `leo.id.machine-id`（默认 0）错开。
 
 ### 5.2 加载与压缩
 
 ```text
-加载：snapshot(doc_blob, last_update_id) + SELECT update_blob FROM ... WHERE room=? AND id>?
+加载：SELECT state FROM mk_supplier_price_collab_doc WHERE room=?（无快照时按 §6 从 SQL 价格表生成初始文档）
 压缩：每 24h（或增量 > 500 条）时 Y.encodeStateAsUpdate(doc) → 写快照 → 删除 id<=last_update_id 的增量
 ```
 
@@ -287,7 +293,7 @@ onDocUpdate(room):
 ### 7.1 短票据（Java 签发）
 
 ```
-POST /api/v2/supplier-price-lists/{listId}/collab-session
+POST /api/v2/supplier-price-lists/{listId}/collab-sessions
 → 200 {
     "room": "supplier-price:333229108731322368",
     "url": "wss://host/collab",
@@ -300,7 +306,8 @@ POST /api/v2/supplier-price-lists/{listId}/collab-session
 JWT claims：
 
 ```json
-{ "sub": "<userId>", "name": "张三", "perms": ["supplier-price-lists:update"],
+{ "sub": "<userId>", "name": "张三", "room": "supplier-price-list:<listId>",
+  "writable": true, "color": "#1677ff", "exp": 1794647, "perms": ["supplier-price-lists:update"],
   "rooms": ["supplier-price:333229108731322368"], "exp": 1731000000 }
 ```
 
@@ -369,13 +376,13 @@ src/views/price-compare/collab/
 - **在线名单**：工具栏显示「在线：张三、李四」，无人时显示「仅你」；
 - **冲突提示**：收到远端对"当前正在输入格"的更新时，不覆盖输入框，标 `conflict` 角标，失焦后再决定采用值并提示；
 - **断线**：输入继续写本地 Y.Doc + `y-indexeddb`；顶部条显示「离线，改动将在重连后同步」；
-- **降级**：`collab-session` 返回 404（功能未开）→ 自动回退到现有 REST 自动保存，用户无感。
+- **降级**：`collab-sessions` 返回 404/405/501（功能未开）→ 自动回退到现有 REST 自动保存，用户无感。
 
 ### 9.4 初始化顺序
 
 ```
 mount → GET /grid（现有只读接口，先渲染骨架）
-      → POST /collab-session（拿票据）
+      → POST /collab-sessions（拿票据，201）
       → new Y.Doc() + IndexeddbPersistence + WebsocketProvider
       → provider.on('synced') → 用 Y.Doc 覆盖渲染（以文档为准）
 ```
@@ -390,7 +397,7 @@ mount → GET /grid（现有只读接口，先渲染骨架）
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| `POST` | `/api/v2/supplier-price-lists/{listId}/collab-session` | 签发房间票据（`@RequirePermission(SUPPLIER_PRICE_LISTS_READ)`） |
+| `POST` | `/api/v2/supplier-price-lists/{listId}/collab-sessions` | 签发房间票据（`@RequirePermission(SUPPLIER_PRICE_LISTS_READ)`，返回 201） |
 
 ### 10.2 写接口开关
 
@@ -515,7 +522,7 @@ Java addColumn/removeColumn → 写 SQL → PUBLISH collab:structure <supplierId
 Yjs 使用 `y-protocols/sync` 与 `y-protocols/awareness` 的标准二进制消息；业务层不自定义消息，房间参数通过握手 URL 传递：
 
 ```
-wss://host/collab?room=supplier-price:<supplierId>&token=<jwt>
+wss://host/collab?room=supplier-price-list:<listId>&token=<jwt>
 ```
 
 ### 16.2 配置项

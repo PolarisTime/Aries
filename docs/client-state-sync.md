@@ -1,6 +1,7 @@
 # 客户端本地状态同步方案（localStorage → 服务器）
 
-> 状态：设计稿（P0/P1 未开工）。本文只覆盖**「界面偏好 / 本地状态」的跨设备同步**；
+> 状态：**P0/P1 已实现**（后端 `leo 82fa4590`、前端 `aries 4f19caa1` / `413285bc`），等待联调验收。
+> 本文只覆盖**「界面偏好 / 本地状态」的跨设备同步**；
 > 多人实时协作（Yjs / CRDT）另见 [supplier-price-realtime-collab.md](./supplier-price-realtime-collab.md)。
 
 ---
@@ -11,7 +12,7 @@
 | --- | --- |
 | 同步什么 | 个人设置、页签、供应商报价页视图偏好、语言/引导标记、列设置（已同步） |
 | 不同步什么 | 登录凭据、业务数据缓存、**草稿**（见 §6.5） |
-| 存哪里 | 复用 `user_account.preferences_json`（JSONB），**无需 DDL** |
+| 存哪里 | 复用 `sys_user.preferences_json`（JSONB），**无需 DDL** |
 | 接口 | `GET/PUT /api/v2/account/settings`，按 section 分片；`/account/preferences` 保留为弃用别名 |
 | 冲突 | 覆盖型按时间戳 LWW；合并型（按 supplierId）深度合并 |
 | 客户端 | 本地先写（离线可用），远端防抖异步，失败退避重试，409 以服务端为准 |
@@ -76,7 +77,7 @@ Google Docs / Excel Online（草稿即服务端自动保存，本地不留可同
 
 ## 4. 服务端模型与 API
 
-### 4.1 存哪里：复用 `preferences_json`
+### 4.1 存哪里：复用 `sys_user.preferences_json`
 
 ```java
 // UserAccount
