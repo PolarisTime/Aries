@@ -1080,3 +1080,61 @@
   > .ant-table-container {
   border: 0;
 }
+
+/*
+ * 表尾操作条：添加行 / 添加隔断不再作为表格 summary 行，改为卡片底栏。
+ *
+ * 放在表格下方既不会长得像一条数据行，也不会挤占「合计」行的位置；
+ * 两个动作仍然常驻可见（键盘/触屏都能点），只把低频的「添加隔断」在配色上弱化。
+ */
+.price-compare-table-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--price-compare-grid, #e3e7ee);
+  margin-top: var(--space-xs);
+}
+
+.price-compare-table-footer .price-compare-add-row,
+.price-compare-table-footer .price-compare-add-separator {
+  padding-inline: var(--space-xs);
+  font-size: 13px;
+}
+
+/* 列显示设置面板：分组 + 品牌两列网格 + 一键全部显示 */
+.price-compare-column-settings {
+  width: 272px;
+}
+
+.price-compare-column-panel-head .ant-btn {
+  padding-inline: 0;
+  height: auto;
+}
+
+.price-compare-column-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+}
+
+.price-compare-column-panel-title {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.price-compare-column-panel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xxs) var(--space-md);
+}
+
+.price-compare-column-panel-grid .ant-checkbox-wrapper {
+  margin: 0;
+}
+
+.price-compare-column-panel-divider {
+  margin: var(--space-xxs) 0;
+}

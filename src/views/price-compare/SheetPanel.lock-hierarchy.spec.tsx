@@ -104,7 +104,7 @@ describe('SheetPanel 锁定层级与优先级', () => {
   function renderPanel(
     initialSheet: PriceSheet,
     initialRows: PriceRow[],
-    options: { readOnly?: boolean; remark?: string } = {},
+    options: { readOnly?: boolean } = {},
   ) {
     const observed = { rows: initialRows, sheet: initialSheet }
     function Harness() {
@@ -128,8 +128,6 @@ describe('SheetPanel 锁定层级与优先级', () => {
         chrome: false,
         spotRef: { current: null },
         readOnly: options.readOnly,
-        remark: options.remark,
-        onRemarkChange: () => {},
       })
     }
     act(() => {
@@ -236,36 +234,6 @@ describe('SheetPanel 锁定层级与优先级', () => {
     expect(rowActionButton('r1')?.disabled).toBe(false)
     // 仅行锁不产生单据级常驻原因
     expect(container.querySelector('#price-compare-lock-reason')).toBeNull()
-  })
-
-  it('组合四: 仅单元格锁(备注有值) → 该字段只读且可解锁, 规格/吨位不受影响', () => {
-    renderPanel(makeSheet(), [{ ...rowA }], { remark: '含运费' })
-
-    const remark = container.querySelector<HTMLInputElement>(
-      '.price-compare-meta-input',
-    )
-    expect(remark?.readOnly).toBe(true)
-    // 只读语义要显式声明, 否则读屏用户只以为"没反应"
-    expect(remark?.getAttribute('aria-readonly')).toBe('true')
-    // 解锁入口的可访问名必须带字段名(同页多个可锁定字段时读屏才分得清)
-    const unlock = Array.from(
-      container.querySelectorAll<HTMLButtonElement>(
-        '.price-compare-meta-field button',
-      ),
-    ).find((button) => button.textContent === '解锁')
-    expect(unlock?.getAttribute('aria-label')).toBe('解锁「备注信息」')
-
-    // 单元格锁与单据/行锁作用域不重叠: 规格与吨位保持可编辑
-    expect(specSelect('r1')?.classList.contains('ant-select-disabled')).toBe(
-      false,
-    )
-    expect(tonInput('r1')?.disabled).toBe(false)
-    expect(container.querySelector('#price-compare-lock-reason')).toBeNull()
-
-    act(() => {
-      unlock?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(remark?.readOnly).toBe(false)
   })
 
   it('全局锁 + 行锁叠加: 原因取最高层级(单据), 行锁状态仍可见', () => {

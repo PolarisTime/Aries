@@ -158,17 +158,14 @@ export function PriceCompareBatchBar({
   /** 当前批次。重命名要带出"原名"作弹层初始值，找不到时菜单项禁用。 */
   const activeSheet = sheets.find((sheet) => sheet.id === activeId)
   /**
-   * 批次切换条。
+   * 批次切换条：一整行 antd 卡片页签（`type="card"`），右侧是「新建批次」与「更多」。
    *
-   * <p>形态依据（saasui.design 的 tabs/segmented 指南、NN/g「Tabs, Used Right」）：
-   * ① 一个对象下的**平级分面**才用 tabs —— 批次是同一项目下各自独立的报价单，符合；
-   * ② 活动项要有**两个以上**识别信号（下划线 + 字重/颜色对比），不能只靠颜色；
-   * ③ 溢出要显式处理，且活动项必须始终可见（antd line tabs 自带折叠与滚动进视野）；
-   * ④ **不要给页签再套一层卡片或灰底容器** —— 卡片式页签落在浅灰底上就是「框套框」，
-   *    一排小卡片会显得很吵（上一版正是这个毛病）。</p>
+   * <p>形态依据：批次是同一项目下各自独立的报价单，属于平级分面，适合 tabs；
+   * 用卡片型而不是下划线型，是因为批次是**单据级上下文**（像打开的多个单据页签），
+   * 卡片页签自带边界，切走哪一张一眼可见；下划线型更适合同一表单内的轻量分面。</p>
    *
-   * <p>于是：页签用 line 型（下划线指示器），新建放在页签行右侧直接可见，删除收进行尾的
-   * 「更多」菜单 —— 把 × 挂在每个页签上会让整行都是删除入口，低频动作占了高频位置。</p>
+   * <p>删除/重命名仍收在「更多」菜单里（低频且危险），不挂在每个页签的 × 上；
+   * 溢出由 antd 自带的 more 折叠，活动页签始终可见。</p>
    */
   useLayoutEffect(() => {
     /* tablist 自身没有可访问名（rc-tabs 只写 role 与 aria-orientation），落到 DOM 上补，
@@ -197,18 +194,10 @@ export function PriceCompareBatchBar({
   const canDelete = sheets.length > 1 && Boolean(activeId)
 
   return (
-    <Flex
-      className="price-compare-context-row"
-      gap={8}
-      align="center"
-      wrap="wrap"
-    >
-      <span className="price-compare-context-label">
-        {t('priceCompare.picker.batch')}
-      </span>
+    <Flex className="price-compare-batch-bar" gap={8} align="center">
       <div className="price-compare-batch-tabs" ref={hostRef}>
         <Tabs
-          type="line"
+          type="card"
           size="small"
           activeKey={activeId}
           onChange={(key) => onSelectSheet(key)}

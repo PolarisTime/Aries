@@ -254,15 +254,9 @@ export function PriceCompareView() {
         </span>
       </div>
 
-      {/* 项目 / 批次是同一个上下文的两级, 合成一行工具条:
-          项目用下拉、批次用下划线页签, 页签行右侧是新建与更多(删除)。
-          不再给这一行套卡片/灰底容器 —— 卡片式页签落在浅底上就是「框套框」。 */}
-      <Flex
-        className="price-compare-context-bar"
-        align="center"
-        gap={16}
-        wrap="wrap"
-      >
+      {/* 项目 / 批次是同一个上下文的两级：项目一行（低频切换），批次一行（高频切换）。
+          批次行本身是一排页签，不再额外套卡片或灰底容器。 */}
+      <Flex className="price-compare-context-bar" vertical gap={8}>
         <PriceCompareProjectPicker
           projects={projects}
           projectsLoading={projectsLoading}
@@ -320,7 +314,11 @@ export function PriceCompareView() {
         </div>
       ) : null}
 
-      {active && (editLock || lockConflict) ? (
+      {/*
+       * 锁横幅只在「他人占用」或「保存冲突」时出现：
+       * 自己正常编辑时不需要一条常驻的「你正在编辑该批次」提示带，白占一行高度。
+       */}
+      {active && (lockConflict || (editLock && !editLock.mine)) ? (
         <PriceCompareEditLockBanner
           conflict={Boolean(lockConflict)}
           lock={editLock}
@@ -352,7 +350,6 @@ export function PriceCompareView() {
         onOpenConfig={() => setConfigOpen(true)}
         availability={availability}
         spotRef={spotRef}
-        onSaveConfig={(next) => setConfig(next)}
         readOnly={readOnly}
       />
 
@@ -394,7 +391,6 @@ function PriceCompareSheetArea({
   onOpenConfig,
   availability,
   spotRef,
-  onSaveConfig,
   readOnly,
 }: {
   active: ReturnType<typeof useSheetsStore>['active']
@@ -417,7 +413,6 @@ function PriceCompareSheetArea({
   onOpenConfig: () => void
   availability: React.ComponentProps<typeof SheetPanel>['availability']
   spotRef: React.ComponentProps<typeof SheetPanel>['spotRef']
-  onSaveConfig: (next: ReturnType<typeof useSheetsStore>['config']) => void
   readOnly: boolean
 }) {
   if (!active) {
@@ -458,8 +453,6 @@ function PriceCompareSheetArea({
         availability={availability}
         spotRef={spotRef}
         designatedBrands={config.designatedBrands}
-        remark={config.remark}
-        onRemarkChange={(value) => onSaveConfig({ ...config, remark: value })}
         readOnly={readOnly}
       />
     </Watermark>

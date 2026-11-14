@@ -171,14 +171,14 @@ describe('报单比价 项目/批次选择控件契约', () => {
     )
   })
 
-  it('批次行是一排下划线页签, 一个批次一个页签且可访问名可区分', () => {
+  it('批次行是一排卡片页签, 一个批次一个页签且可访问名可区分', () => {
     renderBatchBar(projectGroups[0].sheets, 's1')
 
     expect(container.querySelectorAll('.ant-tabs-tab')).toHaveLength(2)
     expect(
       container.querySelector('[role="tablist"]')?.getAttribute('aria-label'),
     ).toBe('批次页签')
-    // line 型页签: 活动项靠「下划线 + 字重」两个信号辨认, 不渲染关闭按钮
+    // 卡片型页签: 活动项靠「卡片边界 + 主色文字」辨认, 不渲染关闭按钮（删除收在「更多」里）
     expect(container.querySelectorAll('.ant-tabs-tab-remove')).toHaveLength(0)
     // 新建与删除是两个独立入口: 新建直接可见, 删除收进「更多」
     expect(

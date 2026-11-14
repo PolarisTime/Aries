@@ -689,11 +689,7 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
       fixed: 'left',
       align: 'center',
       render: (_, row) =>
-        isSeparatorRow(row.row) ? (
-          <span className="price-compare-separator-label">
-            {t('priceCompare.sheet.separator')}
-          </span>
-        ) : (
+        isSeparatorRow(row.row) ? null : (
           <span className="price-compare-category" title={row.row.category}>
             {row.row.category}
           </span>

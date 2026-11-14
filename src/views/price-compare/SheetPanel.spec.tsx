@@ -291,7 +291,8 @@ describe('SheetPanel 指定品牌展示', () => {
 
     const separatorRow = container.querySelector('.price-compare-separator-row')
     expect(separatorRow).not.toBeNull()
-    expect(separatorRow?.textContent).toContain('隔断')
+    // 用户要求去掉隔断行的「隔断」文字：保留一条视觉分隔带即可
+    expect(separatorRow?.textContent?.trim()).toBe('')
     expect(separatorRow?.querySelector('input[data-ton]')).toBeNull()
     expect(separatorRow?.querySelector('[data-spot]')).toBeNull()
     expect(separatorRow?.querySelector('.ant-select')).toBeNull()

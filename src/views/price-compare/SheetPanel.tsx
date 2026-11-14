@@ -3,6 +3,7 @@ import {
   InfoCircleOutlined,
   LockOutlined,
   MinusOutlined,
+  PlusOutlined,
   ReloadOutlined,
   SettingOutlined,
   TagsOutlined,
@@ -41,7 +42,6 @@ import {
   resolveRef,
   SHEET_HIDEABLE_COLUMN,
 } from './core'
-import { LockableField } from './LockableField'
 import {
   buildSheetColumns,
   type ColumnContext,
@@ -245,69 +245,24 @@ function SheetTable(props: SheetTableProps) {
   )
 
   return (
-    <Table<GridRow>
-      className="price-compare-table"
-      // 表格没有可见标题: 用 aria-label 给 <table> 一个可访问名称(rc-table 会透传 aria-*)
-      aria-label={t('priceCompare.sheet.a11y.table', {
-        name: base.sheet.name,
-      })}
-      size={base.density}
-      bordered
-      tableLayout="fixed"
-      rowKey="key"
-      columns={columns}
-      dataSource={dataSource}
-      pagination={false}
-      summary={() => (
-        <>
-          <Table.Summary.Row>
-            <Table.Summary.Cell
-              index={0}
-              /* 跨列数必须等于这一行左侧的全部列: 固定列(选择/行操作/备注/类别/规格) + 报单吨位列。
-                 原式漏算吨位列, 于是这一格的背景只铺到「材质/规格」列就在吨位处断掉,
-                 整行像被切了一刀(有了浅底之后尤其明显)。 */
-              colSpan={(base.hideRemark ? 4 : 5) + base.visibleBrandCount * 4}
-            >
-              <Flex gap="small" align="center">
-                {/* 不用 block: 两个入口平分整行宽度会把「添加隔断」推到表格中间,
-                    与「添加一行」之间隔着半张表。改为相邻左对齐。 */}
-                <Button
-                  type="text"
-                  size="small"
-                  className="price-compare-add-row"
-                  disabled={rowLocked}
-                  // 原因同时给到可见文案与 AT: 只读时不静默禁用
-                  aria-describedby={rowLocked ? LOCK_REASON_ID : undefined}
-                  onClick={onAddRow}
-                >
-                  {t('priceCompare.sheet.addRow')}
-                </Button>
-                <Button
-                  type="text"
-                  size="small"
-                  className="price-compare-add-separator"
-                  icon={<MinusOutlined />}
-                  disabled={rowLocked}
-                  aria-describedby={rowLocked ? LOCK_REASON_ID : undefined}
-                  onClick={onAddSeparator}
-                >
-                  {t('priceCompare.sheet.addSeparator')}
-                </Button>
-                {/* 锁定原因常驻可见(不依赖 hover): 禁用按钮不派发鼠标事件, 仅靠 Tooltip 会静默 */}
-                {rowLocked ? (
-                  <Text
-                    id={LOCK_REASON_ID}
-                    type="secondary"
-                    className="price-compare-lock-reason-text"
-                  >
-                    {rowLockedReason}
-                  </Text>
-                ) : null}
-              </Flex>
-            </Table.Summary.Cell>
-          </Table.Summary.Row>
-          {/* 合计行: 报单吨位合计原先挤在列头里(「报单吨位 合计 260」会把列名截断),
-            现在移到表格最下面单独成行, 只填在吨位列下, 其余列留空。 */}
+    <>
+      <Table<GridRow>
+        className="price-compare-table"
+        // 表格没有可见标题: 用 aria-label 给 <table> 一个可访问名称(rc-table 会透传 aria-*)
+        aria-label={t('priceCompare.sheet.a11y.table', {
+          name: base.sheet.name,
+        })}
+        size={base.density}
+        bordered
+        tableLayout="fixed"
+        rowKey="key"
+        columns={columns}
+        dataSource={dataSource}
+        pagination={false}
+        /* 合计行: 报单吨位合计原先挤在列头里(「报单吨位 合计 260」会把列名截断),
+         现在移到表格最下面单独成行, 只填在吨位列下, 其余列留空。
+         「添加一行 / 添加隔断」不再占表格行, 移到表格下方的操作条(见 Table 之后)。 */
+        summary={() => (
           <Table.Summary.Row className="price-compare-ton-total-row">
             {columns.map((column, index) => (
               <Table.Summary.Cell
@@ -321,106 +276,148 @@ function SheetTable(props: SheetTableProps) {
               </Table.Summary.Cell>
             ))}
           </Table.Summary.Row>
-        </>
-      )}
-      rowClassName={(row) => {
-        const classes: string[] = []
-        if (isSeparatorRow(row.row)) classes.push('price-compare-separator-row')
-        if (row.rowId === dragId) classes.push('price-compare-dragging')
-        if (dragId && row.rowId === dropId && row.rowId !== dragId)
-          classes.push(
-            dropAfter
-              ? 'price-compare-drop-after'
-              : 'price-compare-drop-before',
-          )
-        return classes.join(' ')
-      }}
-      onRow={(row) => ({
-        /*
-         * 行容器上的右键入口: 右键行内任意位置等同于点该行的「更多」按钮。
-         *
-         * 只有**正在编辑**的文本/数字输入控件或下拉才放行原生菜单(粘贴/全选,
-         * 见 docs/antd-conventions.md「不在输入控件内劫持右键」); 只读展示格、
-         * 已禁用/只读的控件、选择框、拖拽列等一律走行菜单 —— 否则整行铺满输入控件时
-         * 右键几乎无处可点(实测只有拖拽列与非输入格能弹菜单)。
-         *
-         * 「更多」按钮自身已绑定 contextMenu 触发器, 交给它处理避免重复开合。
-         */
-        onContextMenuCapture: (event) => {
+        )}
+        rowClassName={(row) => {
+          const classes: string[] = []
+          if (isSeparatorRow(row.row))
+            classes.push('price-compare-separator-row')
+          if (row.rowId === dragId) classes.push('price-compare-dragging')
+          if (dragId && row.rowId === dropId && row.rowId !== dragId)
+            classes.push(
+              dropAfter
+                ? 'price-compare-drop-after'
+                : 'price-compare-drop-before',
+            )
+          return classes.join(' ')
+        }}
+        onRow={(row) => ({
           /*
-           * 分隔行没有操作列(不渲染「更多」), 右键必须完全放行:
-           * 否则原生菜单被 preventDefault 抑制, 又没有任何自定义菜单, 用户以为卡住了。
+           * 行容器上的右键入口: 右键行内任意位置等同于点该行的「更多」按钮。
+           *
+           * 只有**正在编辑**的文本/数字输入控件或下拉才放行原生菜单(粘贴/全选,
+           * 见 docs/antd-conventions.md「不在输入控件内劫持右键」); 只读展示格、
+           * 已禁用/只读的控件、选择框、拖拽列等一律走行菜单 —— 否则整行铺满输入控件时
+           * 右键几乎无处可点(实测只有拖拽列与非输入格能弹菜单)。
+           *
+           * 「更多」按钮自身已绑定 contextMenu 触发器, 交给它处理避免重复开合。
            */
-          if (isSeparatorRow(row.row)) return
-          const target = event.target as HTMLElement
-          if (target.closest('.price-compare-row-actions')) return
-          if (isEditableFieldTarget(event.target)) return
-          /*
-           * 只读(他人签出)时整表不可写, 行菜单全部不可用: 放行原生菜单,
-           * 原因由可见的「行操作」按钮与摘要行的说明文案给出, 不静默拦截。
-           */
-          if (base.readOnly) return
-          event.preventDefault()
-          base.onContextMenuRowChange(row.rowId)
-        },
-        /*
-         * 整行可拖: 拖拽由 <tr> 承载, 不要求用户先找到那个 24px 的手柄。
-         * 唯一的例外是「按下点落在输入控件上」—— 那里应该拖选文本, 见 ref 的注释。
-         */
-        draggable: !rowLocked,
-        onMouseDown: (event) => {
-          dragFromEditableRef.current = isEditableFieldTarget(event.target)
-        },
-        onDragStart: (event) => {
-          if (rowLocked || dragFromEditableRef.current) {
+          onContextMenuCapture: (event) => {
+            /*
+             * 分隔行没有操作列(不渲染「更多」), 右键必须完全放行:
+             * 否则原生菜单被 preventDefault 抑制, 又没有任何自定义菜单, 用户以为卡住了。
+             */
+            if (isSeparatorRow(row.row)) return
+            const target = event.target as HTMLElement
+            if (target.closest('.price-compare-row-actions')) return
+            if (isEditableFieldTarget(event.target)) return
+            /*
+             * 只读(他人签出)时整表不可写, 行菜单全部不可用: 放行原生菜单,
+             * 原因由可见的「行操作」按钮与摘要行的说明文案给出, 不静默拦截。
+             */
+            if (base.readOnly) return
             event.preventDefault()
-            return
-          }
-          onRowDragStart(row.rowId, event)
-        },
-        onDragEnd: onRowDragEnd,
-        onTouchStart: (event) => onRowTouchStart(row.rowId, event),
-        onTouchMove: onRowTouchMove,
-        onTouchCancel: cancelLongPress,
-        onTouchEnd: cancelLongPress,
-        onDragOver: (event) => {
-          if (!dragId || rowLocked) return
-          event.preventDefault()
-          event.dataTransfer.dropEffect = 'move'
-          const rect = event.currentTarget.getBoundingClientRect()
-          const after = event.clientY > rect.top + rect.height / 2
-          if (dropId !== row.rowId || dropAfter !== after) {
-            setDropId(row.rowId)
-            setDropAfter(after)
-          }
-        },
-        onDrop: (event) => {
-          event.preventDefault()
-          if (rowLocked) {
+            base.onContextMenuRowChange(row.rowId)
+          },
+          /*
+           * 整行可拖: 拖拽由 <tr> 承载, 不要求用户先找到那个 24px 的手柄。
+           * 唯一的例外是「按下点落在输入控件上」—— 那里应该拖选文本, 见 ref 的注释。
+           */
+          draggable: !rowLocked,
+          onMouseDown: (event) => {
+            dragFromEditableRef.current = isEditableFieldTarget(event.target)
+          },
+          onDragStart: (event) => {
+            if (rowLocked || dragFromEditableRef.current) {
+              event.preventDefault()
+              return
+            }
+            onRowDragStart(row.rowId, event)
+          },
+          onDragEnd: onRowDragEnd,
+          onTouchStart: (event) => onRowTouchStart(row.rowId, event),
+          onTouchMove: onRowTouchMove,
+          onTouchCancel: cancelLongPress,
+          onTouchEnd: cancelLongPress,
+          onDragOver: (event) => {
+            if (!dragId || rowLocked) return
+            event.preventDefault()
+            event.dataTransfer.dropEffect = 'move'
+            const rect = event.currentTarget.getBoundingClientRect()
+            const after = event.clientY > rect.top + rect.height / 2
+            if (dropId !== row.rowId || dropAfter !== after) {
+              setDropId(row.rowId)
+              setDropAfter(after)
+            }
+          },
+          onDrop: (event) => {
+            event.preventDefault()
+            if (rowLocked) {
+              resetDragState()
+              return
+            }
+            const fromId = event.dataTransfer.getData('text/row-id')
+            if (fromId) onReorderRow(fromId, row.rowId, dropAfter)
             resetDragState()
-            return
-          }
-          const fromId = event.dataTransfer.getData('text/row-id')
-          if (fromId) onReorderRow(fromId, row.rowId, dropAfter)
-          resetDragState()
-        },
-      })}
-      scroll={{
-        // 列宽随字号缩放, 因此 scroll.x 必须用同一份 widths 求和, 否则字号调大后
-        // 表格仍按旧总宽布局, 固定列与内容会错位。
-        x:
-          SHEET_FIXED_CHROME_WIDTH +
-          (base.hideRemark ? 0 : base.widths.remark) +
-          base.widths.category +
-          base.widths.spec +
-          base.widths.ton +
-          base.visibleBrandCount *
-            (base.widths.net +
-              base.widths.spot +
-              base.widths.diff +
-              base.widths.supplier),
-      }}
-    />
+          },
+        })}
+        scroll={{
+          // 列宽随字号缩放, 因此 scroll.x 必须用同一份 widths 求和, 否则字号调大后
+          // 表格仍按旧总宽布局, 固定列与内容会错位。
+          x:
+            SHEET_FIXED_CHROME_WIDTH +
+            (base.hideRemark ? 0 : base.widths.remark) +
+            base.widths.category +
+            base.widths.spec +
+            base.widths.ton +
+            base.visibleBrandCount *
+              (base.widths.net +
+                base.widths.spot +
+                base.widths.diff +
+                base.widths.supplier),
+        }}
+      />
+
+      {/*
+       * 表尾操作条：添加行/隔断从表格 summary 里移出来，贴着卡片底边放。
+       * 放进表格行会让它长得像一条数据行、也吃掉了合计行的视觉位置；
+       * 作为卡片底栏，低频的「添加隔断」可以弱化，但仍保持可见可点（不用 Tooltip 藏起来）。
+       */}
+      <div className="price-compare-table-footer">
+        <Button
+          type="text"
+          size="small"
+          className="price-compare-add-row"
+          icon={<PlusOutlined />}
+          disabled={rowLocked}
+          // 原因同时给到可见文案与 AT: 只读时不静默禁用
+          aria-describedby={rowLocked ? LOCK_REASON_ID : undefined}
+          onClick={onAddRow}
+        >
+          {t('priceCompare.sheet.addRow')}
+        </Button>
+        <Button
+          type="text"
+          size="small"
+          className="price-compare-add-separator"
+          icon={<MinusOutlined />}
+          disabled={rowLocked}
+          aria-describedby={rowLocked ? LOCK_REASON_ID : undefined}
+          onClick={onAddSeparator}
+        >
+          {t('priceCompare.sheet.addSeparator')}
+        </Button>
+        {/* 锁定原因常驻可见(不依赖 hover): 禁用按钮不派发鼠标事件, 仅靠 Tooltip 会静默 */}
+        {rowLocked ? (
+          <Text
+            id={LOCK_REASON_ID}
+            type="secondary"
+            className="price-compare-lock-reason-text"
+          >
+            {rowLockedReason}
+          </Text>
+        ) : null}
+      </div>
+    </>
   )
 }
 
@@ -452,6 +449,7 @@ function ColumnSettingsButton({
     hiddenCount > 0
       ? t('priceCompare.sheet.columnSettingsHidden', { n: hiddenCount })
       : t('priceCompare.sheet.columnSettings')
+  const visibleBrandCount = brands.length - hiddenBrands.length
   const checkbox = (checked: boolean, label: string, key: string) => (
     <Checkbox
       key={key}
@@ -461,30 +459,67 @@ function ColumnSettingsButton({
       {label}
     </Checkbox>
   )
+  /** 一键恢复全部列：比在网格里逐个勾回来快得多。 */
+  const showAll = () => {
+    if (hideRemark) {
+      onToggle(SHEET_HIDEABLE_COLUMN.remark, true)
+    }
+    for (const brandName of hiddenBrands) {
+      onToggle(SHEET_HIDEABLE_COLUMN.brand(brandName), true)
+    }
+  }
   return (
     <Popover
       trigger="click"
       placement="bottomRight"
       content={
-        <Flex vertical gap={4} className="price-compare-column-settings">
-          {checkbox(
-            !hideRemark,
-            t('priceCompare.sheet.columns.remark'),
-            SHEET_HIDEABLE_COLUMN.remark,
-          )}
+        <Flex vertical gap={10} className="price-compare-column-settings">
+          <Flex
+            align="center"
+            justify="space-between"
+            className="price-compare-column-panel-head"
+          >
+            <Text strong>{t('priceCompare.sheet.columnSettings')}</Text>
+            {hiddenCount > 0 ? (
+              <Button type="link" size="small" onClick={showAll}>
+                {t('priceCompare.sheet.columnPanelShowAll')}
+              </Button>
+            ) : null}
+          </Flex>
+
+          <div className="price-compare-column-panel">
+            <span className="price-compare-column-panel-title">
+              {t('priceCompare.sheet.columnPanelFixed')}
+            </span>
+            {checkbox(
+              !hideRemark,
+              t('priceCompare.sheet.columns.remark'),
+              SHEET_HIDEABLE_COLUMN.remark,
+            )}
+          </div>
+
           {brands.length ? (
             <>
-              <Divider className="my-4" />
-              <Text type="secondary" className="price-compare-sub">
-                {t('priceCompare.sheet.columns.brand')}
-              </Text>
-              {brands.map((brand) =>
-                checkbox(
-                  !hiddenBrandSet.has(brand.name),
-                  brand.name,
-                  SHEET_HIDEABLE_COLUMN.brand(brand.name),
-                ),
-              )}
+              <Divider className="price-compare-column-panel-divider" />
+              <div className="price-compare-column-panel">
+                <Flex justify="space-between" align="center">
+                  <span className="price-compare-column-panel-title">
+                    {t('priceCompare.sheet.columnPanelBrands')}
+                  </span>
+                  <Text type="secondary" className="price-compare-sub">
+                    {visibleBrandCount}/{brands.length}
+                  </Text>
+                </Flex>
+                <div className="price-compare-column-panel-grid">
+                  {brands.map((brand) =>
+                    checkbox(
+                      !hiddenBrandSet.has(brand.name),
+                      brand.name,
+                      SHEET_HIDEABLE_COLUMN.brand(brand.name),
+                    ),
+                  )}
+                </div>
+              </div>
             </>
           ) : null}
         </Flex>
@@ -631,8 +666,6 @@ function SheetHeader({
   selectedCount,
   onRemoveSelected,
   designatedBrands,
-  remark,
-  onRemarkChange,
   allowHrb400eFallback = false,
   readOnly = false,
   rows,
@@ -653,8 +686,6 @@ function SheetHeader({
   selectedCount: number
   onRemoveSelected: () => void
   designatedBrands?: string[]
-  remark?: string
-  onRemarkChange?: (value: string) => void
   allowHrb400eFallback?: boolean
   readOnly?: boolean
   /** 当前展示的行(导入按它遍历, 与表格同一数据源)。 */
@@ -677,12 +708,7 @@ function SheetHeader({
         readOnly={readOnly}
       />
 
-      <SheetMetaRow
-        readOnly={readOnly}
-        remark={remark}
-        onRemarkChange={onRemarkChange}
-        designatedBrands={designatedBrands}
-      />
+      <SheetMetaRow designatedBrands={designatedBrands} />
 
       <SheetActionRow
         allowHrb400eFallback={allowHrb400eFallback}
@@ -833,18 +859,8 @@ function SheetDateFields({
   )
 }
 
-/** 表头第二行: 备注(只读态直接展示) + 指定品牌。 */
-function SheetMetaRow({
-  readOnly,
-  remark,
-  onRemarkChange,
-  designatedBrands,
-}: {
-  readOnly: boolean
-  remark?: string
-  onRemarkChange?: (value: string) => void
-  designatedBrands?: string[]
-}) {
+/** 表头第二行: 指定品牌（备注字段已从页面移除，行级备注仍在表格列里）。 */
+function SheetMetaRow({ designatedBrands }: { designatedBrands?: string[] }) {
   const { t } = useTranslation()
   return (
     <Flex
@@ -853,21 +869,6 @@ function SheetMetaRow({
       wrap="wrap"
       className="price-compare-meta-row"
     >
-      {readOnly ? (
-        <Space size={4} align="center" className="price-compare-meta-field">
-          <span className="price-compare-sub">
-            {t('priceCompare.sheet.remark')}
-          </span>
-          <Text type="secondary">{remark || '-'}</Text>
-        </Space>
-      ) : (
-        <LockableField
-          label={t('priceCompare.sheet.remark')}
-          value={remark ?? ''}
-          width={220}
-          onConfirm={(value) => onRemarkChange?.(value)}
-        />
-      )}
       <Space size={4} align="center" className="price-compare-meta-field">
         <span className="price-compare-sub">
           {t('priceCompare.config.designatedBrands')}
@@ -1066,8 +1067,6 @@ type Props = {
   chrome?: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
   designatedBrands?: string[]
-  remark?: string
-  onRemarkChange?: (value: string) => void
   /** 被他人签出编辑时只读(禁用编辑类交互) */
   readOnly?: boolean
 }
@@ -1097,8 +1096,6 @@ export function SheetPanel(props: Props) {
     chrome = true,
     spotRef,
     designatedBrands,
-    remark,
-    onRemarkChange,
     readOnly = false,
   } = props
   const { t } = useTranslation()
@@ -1246,8 +1243,6 @@ export function SheetPanel(props: Props) {
         selectedCount={selectedIds.length}
         onRemoveSelected={removeSelected}
         designatedBrands={designatedBrands}
-        remark={remark}
-        onRemarkChange={onRemarkChange}
         allowHrb400eFallback={allowHrb400eFallback}
         readOnly={readOnly}
         rows={rows}

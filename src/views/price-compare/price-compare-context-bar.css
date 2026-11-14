@@ -1,12 +1,9 @@
 /**
- * 报单比价 · 顶部「项目 / 批次」上下文工具条。
+ * 报单比价 · 顶部「项目 / 批次」上下文。
  *
- * 一行放两级上下文：项目是一个下拉（分组，低频切换），批次是一排下划线页签
- * （同一项目下的平级单据，高频切换）。
- *
- * **不给这一行套卡片或灰底容器** —— 卡片式页签落在浅灰底上就是「框套框」，一排小卡片
- * 会显得很吵，这是上一版杂乱的主因。saasui.design 的 tabs 指南里，活动项靠
- * 「下划线指示器 + 字重/颜色对比」两个信号即可一眼辨认，不需要再叠容器与底色。
+ * 项目一行（下拉，低频切换），批次一行（卡片页签，高频切换）。
+ * 批次是「单据级」上下文，用卡片页签表达「打开了哪几张报价单」；
+ * 删除/重命名收在行尾「更多」里，不挂在每个页签的 × 上。
  *
  * 颜色走 antd 语义变量，字号/间距走 tokens.css 的阶梯，暗色主题自动适配。
  */
@@ -50,16 +47,53 @@
   min-width: 180px;
 }
 
-/* 批次页签: line 型自带下划线指示器; 去掉 antd 默认的导航外边距,
-   让导航底线与右侧的「新建 / 更多」按钮贴在同一基线上。 */
+/* 批次页签整行: 页签吃满剩余宽度, 右侧「新建批次 / 更多」固定宽度 */
+.price-compare-batch-bar {
+  width: 100%;
+  min-width: 0;
+}
+
+.price-compare-batch-tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 页签行去掉 antd 默认外边距，让导航与右侧按钮同一基线 */
 .price-compare-batch-tabs .ant-tabs-nav {
   margin: 0;
 }
 
-/* 活动页签补第二个信号: antd line 型默认只换主题色 + 下划线, 再加一档字重,
-   让「当前在哪个批次」在不依赖颜色的情况下也读得出来(对比度不足/色觉障碍场景)。 */
+/* 导航底线：铺一条浅灰基准线，卡片页签「坐」在线上 */
+.price-compare-batch-tabs .ant-tabs-nav::before {
+  border-bottom: 1px solid var(--price-compare-grid, #e3e7ee);
+}
+
+/*
+ * 卡片页签：显式画边界（不依赖 antd 主题 token，暗色/紧凑主题下同样可辨）。
+ * - 未选中：浅灰底 + 浅灰边，弱化成「可切换的卡片」；
+ * - 选中：白底 + 加粗主色文字 + 顶部 2px 主色条，两个以上识别信号。
+ */
+.price-compare-batch-tabs .ant-tabs-tab {
+  margin: 0 4px 0 0;
+  padding: 3px 12px;
+  border: 1px solid var(--price-compare-grid, #e3e7ee);
+  border-radius: 6px 6px 0 0;
+  background: var(--price-compare-header-bg, #f8fafc);
+  font-size: 13px;
+}
+
+.price-compare-batch-tabs .ant-tabs-tab:last-child {
+  margin-inline-end: 0;
+}
+
+.price-compare-batch-tabs .ant-tabs-tab-active {
+  border-color: var(--price-compare-grid-strong, #d3d9e3);
+  background: var(--ant-color-bg-container, #fff);
+  box-shadow: inset 0 2px 0 var(--ant-color-primary, #1677ff);
+}
+
 .price-compare-batch-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* 新建批次是页签行里的次要动作, 用 text 型按钮(无边框)并收窄留白 */
