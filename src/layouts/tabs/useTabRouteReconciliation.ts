@@ -2,6 +2,7 @@ import { useLocation } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { editorSessionStore } from '@/layouts/editor-session/editor-session-store'
+import { requestEditorSessionClose } from '@/layouts/editor-session/request-close'
 import { notifyEvictedTabs } from '@/layouts/tabs/evicted-tabs'
 import {
   getTabRouterHref,
@@ -69,12 +70,52 @@ export function useTabRouteReconciliation(): void {
     }
     const pathname = normalizeTabPathname(location.pathname)
     const mainHref = location.href
+
+    /** 单页模型：关掉除 `keepId` 以外的内容页签（工作台与受保护页签除外）。 */
+    const pruneOtherContentTabs = (keepId: string | null) => {
+      for (const tab of useLayoutTabsStore.getState().tabs) {
+        if (tab.id === keepId || isTabPinned(tab)) continue
+        if (editorSessionStore.requiresConfirmation(tab.id)) continue
+        useLayoutTabsStore.getState().removeTab(tab.id)
+      }
+    }
+
+    /*
+     * 浏览器前进/后退、手输地址等**绕过 useTabOpen 的导航**同样受未保存编辑保护。
+     *
+     * <p>单页模型下离开当前页会卸载它的编辑器（多标签时代的 keep-alive 已不存在），
+     * 而这里地址栏已经先变了、没有任何确认环节 —— 实测「编辑采购订单 → 浏览器后退」
+     * 会把编辑器连同未保存内容一起销毁。因此检测到「目标页 ≠ 当前激活页且当前页脏」时：</p>
+     * <ol>
+     *   <li>先把地址栏 replace 回当前页（取消这次离开，不产生新历史条目）；</li>
+     *   <li>弹与关闭页签相同的确认框；</li>
+     *   <li>用户放弃修改后，再把地址 push 到原目标，由下面的常规协调逻辑接手续航。</li>
+     * </ol>
+     */
+    const activeTab = store.tabs.find((tab) => tab.id === store.activeTabId)
+    if (
+      activeTab &&
+      !isTabPinned(activeTab) &&
+      normalizeTabPathname(activeTab.pathname) !== pathname &&
+      editorSessionStore.requiresConfirmation(activeTab.id)
+    ) {
+      const stayHref = buildTabHref(activeTab.pathname, activeTab.search)
+      if (mainRouter.state.location.href !== stayHref) {
+        mainRouter.history.replace(stayHref)
+      }
+      requestEditorSessionClose(tRef.current, activeTab.id, () => {
+        mainRouter.history.push(buildTabHref(pathname, location.searchStr))
+      })
+      return
+    }
+
     const existing = store.tabs.find((tab) => tab.pathname === pathname)
 
     if (existing) {
       if (store.activeTabId !== existing.id) {
         store.activateTab(existing.id)
       }
+      pruneOtherContentTabs(existing.id)
       // 已挂载的 Tab 才存在子 Router 同步；未挂载 Tab 在挂载时用 Tab 保存的 href 对齐。
       const subHref = getTabRouterHref(existing.id)
       if (shouldAdoptMainSearchForUnmountedTab(subHref, location.searchStr)) {
@@ -112,16 +153,7 @@ export function useTabRouteReconciliation(): void {
       },
     )
     notifyEvictedTabs(evictedIds, tRef.current)
-    /*
-     * 单页 + 面包屑模型：本次是「地址栏直达/前进后退」等外部入口新建的页面，
-     * 关闭其它未固定的内容标签，保证始终只有一个内容页（工作台与受保护标签除外）。
-     * 受保护标签（有未保存编辑）不静默关闭，宁可暂时留在后台。
-     */
-    for (const tab of useLayoutTabsStore.getState().tabs) {
-      if (tab.id === tabId || isTabPinned(tab)) continue
-      if (editorSessionStore.requiresConfirmation(tab.id)) continue
-      useLayoutTabsStore.getState().removeTab(tab.id)
-    }
+    pruneOtherContentTabs(tabId)
     store.markTabMounted(tabId)
     // href 已涵盖 pathname+searchStr，显式列出以满足依赖完整性检查
   }, [location.href, location.pathname, location.searchStr])

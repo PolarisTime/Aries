@@ -1097,6 +1097,10 @@ export function SupplierQuoteBoard() {
   /** 切到某个供应商前先清空这一屏的临时状态（草稿、历史、选区、新建列缓存）。 */
   const resetBoardState = () => {
     commitDrafts({})
+    // 上一个供应商的自动保存计时器不能跨供应商触发：清空后由当前草稿重新排期，
+    // 否则迟到的一次 saveBrand 会拿新供应商的草稿提前落库（保存提示也会错位）。
+    for (const timer of timersRef.current.values()) clearTimeout(timer)
+    timersRef.current.clear()
     setHistory(EMPTY_HISTORY)
     setSavedValues({})
     setColumns({})

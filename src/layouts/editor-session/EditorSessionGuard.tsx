@@ -27,9 +27,13 @@ const EditorSessionContext = createContext<EditorSessionController | null>(null)
  * 应用级守卫：拦截浏览器刷新/关窗（存在任意未保存会话时），
  * 并在认证会话清除事件后重置全部编辑器会话。
  *
- * 路由层面的离开拦截已随多标签页 keep-alive 移除：
- * 切换 Tab / 打开新页面不再销毁编辑器，唯一丢失路径是「关闭 Tab」，
- * 由 Tab 容器显式调用 requestEditorSessionClose 弹确认框处理。
+ * <p>路由层面的离开拦截分两处收口（面包屑单页模型下离开页面即会卸载编辑器）：</p>
+ * <ul>
+ *   <li>应用内导航（菜单 / 面包屑 / 指标卡等）统一走 `useTabOpen`：离开前先调用
+ *       {@link requestEditorSessionClose} 确认；</li>
+ *   <li>浏览器前进/后退/手输地址绕过了 `useTabOpen`，由 `useTabRouteReconciliation`
+ *       检测「目标页 ≠ 当前激活页且当前页脏」后先取消地址变化、再弹同一个确认框。</li>
+ * </ul>
  */
 export function EditorSessionGuard({ children }: Props) {
   useEffect(() => {
