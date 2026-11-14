@@ -1,0 +1,73 @@
+/*
+ * 实时协作的呈现样式：远端光标描边 / 用户名标签 / 状态徽标。
+ *
+ * 约定：
+ * - 只做“纯视觉”增量，颜色一律由 awareness 里的用户色内联下发（同用户跨端一致）；
+ * - 光标覆盖层 `pointer-events: none`：绝不能挡住输入框的点选与键盘焦点；
+ * - 类名前缀统一 `collab-`，与价格表既有类名（`supplier-price-*`）不交叉。
+ */
+
+/* 单元格锚点：仅在“有远端光标”时由组件包一层，没有光标时 DOM 与改动前一致 */
+.collab-cell-anchor {
+  position: relative;
+  display: block;
+}
+
+/* 远端光标：彩色描边铺满单元格 */
+.collab-cell-cursors {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.collab-cell-cursor {
+  position: absolute;
+  inset: 0;
+  border: 2px solid;
+  border-radius: 2px;
+}
+
+/* 用户名小标签：贴在描边左上角外侧，不遮住输入框里的数字 */
+.collab-cell-cursor-name {
+  position: absolute;
+  top: -18px;
+  left: -1px;
+  padding: 0 4px;
+  font-size: 10px;
+  line-height: 16px;
+  color: #fff;
+  white-space: nowrap;
+  border-radius: 2px;
+}
+
+/* 连接状态徽标 + 在线名单：与 tab 栏文字同基线，不额外撑高 */
+.collab-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.collab-status__badge {
+  margin-inline-end: 0;
+}
+
+.collab-status__online {
+  font-size: 12px;
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+}
+
+.collab-status__peers {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.collab-status__peer {
+  padding: 0 6px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ant-color-text, rgb(0 0 0 / 88%));
+  border: 1px solid;
+  border-radius: 9px;
+}

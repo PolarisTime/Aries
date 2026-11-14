@@ -39,6 +39,20 @@ import { fetchSupplierOptions } from '@/api/master/supplier-options'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useHasPermission } from '@/hooks/usePermission'
 import { message, modal, notification } from '@/utils/antd-app'
+import { CollabStatusBar } from './collab/CollabStatusBar'
+import { isCollabFeatureEnabled } from './collab/collab-config'
+import {
+  type CollabCellValue,
+  collabCellKeyOf,
+  collabCellKeyOfRowKey,
+  collabRowKeyOfCellKey,
+} from './collab/collab-doc'
+import type { CollabPeer } from './collab/collab-presence'
+import { CollabCellCursors } from './collab/RemoteCursors'
+import {
+  type CollabTarget,
+  useSupplierPriceCollab,
+} from './collab/useSupplierPriceCollab'
 import {
   type BrandDraft,
   buildBrandCatalog,
@@ -189,6 +203,14 @@ const cellColumnsOf = (
 /** 类别显示顺序：盘螺在前、直条在后，其余按字典序接在后面（不硬编码业务清单，只定优先级）。 */
 const PREFERRED_CATEGORY_ORDER = ['直条', '盘螺']
 
+/**
+ * 空的远端光标列表（模块级常量）。
+ *
+ * <p>协作未开启或这一格没人停留时复用它，避免每次渲染都造一个新数组 ——
+ * `SheetCell` 是逐格渲染的热点路径。</p>
+ */
+const EMPTY_COLLAB_PEERS: readonly CollabPeer[] = []
+
 /** 一个价格列 = 类别 + 品牌 + 材质 + 定尺；材质与定尺都已经进了表头。 */
 type CellColumn = {
   category: string
@@ -260,6 +282,10 @@ type SheetCellProps = {
    * 会把事件挂丢，气泡永远不出现。</p>
    */
   tooltip?: string
+  /** 远端光标（谁正停在这一格）；空数组 = 没人停留，不渲染覆盖层。 */
+  remoteCursors?: readonly CollabPeer[]
+  /** 离开格子（失焦）时回调：协作模式用它清掉自己的光标。 */
+  onBlurCell?: () => void
 }
 
 /**
@@ -288,6 +314,8 @@ function SheetCell({
   onPointerDownCell,
   onPointerEnterCell,
   tooltip,
+  remoteCursors,
+  onBlurCell,
 }: SheetCellProps) {
   const [text, setText] = useState<string | null>(null)
   const [seenResetToken, setSeenResetToken] = useState(resetToken)
@@ -432,6 +460,7 @@ function SheetCell({
       onBlur={() => {
         commitPendingFormula()
         setText(null)
+        onBlurCell?.()
       }}
       onChange={handleChange}
       onFocus={() => {
@@ -444,7 +473,19 @@ function SheetCell({
       onPointerEnter={onPointerEnterCell}
     />
   )
-  if (!tooltip) return input
+  /*
+   * 远端光标覆盖层只在"真的有人停在这一格"时才包一层锚点：
+   * 没人时 DOM 与未接入协作时完全一致（不占位、不影响输入框尺寸）。
+   */
+  const cell = remoteCursors?.length ? (
+    <span className="collab-cell-anchor">
+      {input}
+      <CollabCellCursors cursors={remoteCursors} />
+    </span>
+  ) : (
+    input
+  )
+  if (!tooltip) return cell
   /*
    * `focus` 也触发：异常价目前还靠底色表达（WCAG 1.4.1 不能只用颜色传递信息），
    * 键盘 / 读屏用户 Tab 到这一格时要能读到"高出本行最低价多少"。
@@ -452,7 +493,7 @@ function SheetCell({
    */
   return (
     <Tooltip title={tooltip} trigger={['hover', 'focus']}>
-      {input}
+      {cell}
     </Tooltip>
   )
 }
@@ -474,6 +515,13 @@ export function SupplierQuoteBoard() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const canUpdate = useHasPermission('supplier-price-lists:update')
+  /**
+   * 实时协作开关（构建期 `VITE_COLLAB_ENABLED` + 运行时 `window._CONFIG.collabEnabled`）。
+   *
+   * <p>关闭时本组件的行为与改动前**逐字一致**：不取票据、不加载 yjs、不建连，
+   * 继续走原有 REST 草稿 + 自动保存（设计文档 §9.3 的降级口径）。</p>
+   */
+  const collabEnabled = isCollabFeatureEnabled()
 
   /** 已打开的供应商标签页（key = supplierId）；按需打开、可关闭，并持久化到本地。 */
   const [openSupplierIds, setOpenSupplierIds] = useState<string[]>([])
@@ -752,6 +800,30 @@ export function SupplierQuoteBoard() {
     byBrandRef.current = byBrand
   }, [byBrand])
 
+  /** listId → 品牌列名：协作写入、光标与冲突提示都要把 listId 换回人能读的列名。 */
+  const brandByListId = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const [brandName, column] of byBrand.columns) {
+      if (column?.listId) map.set(column.listId, brandName)
+    }
+    return map
+  }, [byBrand.columns])
+
+  /**
+   * 需要协作的表 = 已经有价格表头的品牌列。
+   *
+   * <p>没建过列的品牌没有 listId，服务端也无从签票据，它们继续留在 REST 侧；
+   * 拿到票据的那些表才进协作（`isCollabList` 逐表判断）。</p>
+   */
+  const collabTargets: CollabTarget[] = useMemo(
+    () =>
+      brandNames.flatMap((brandName) => {
+        const listId = byBrand.columns.get(brandName)?.listId
+        return listId ? [{ brandName, listId }] : []
+      }),
+    [brandNames, byBrand.columns],
+  )
+
   /** 商品的全部行（只来自商品资料）——保存载荷必须用它，不能用过滤后的行。 */
   const allRows = useMemo(
     () => mergeSpecRows(specsQuery.data ?? []),
@@ -895,6 +967,66 @@ export function SupplierQuoteBoard() {
     commitDrafts(next)
   }
 
+  /**
+   * 协作文档为空时用「REST 快照 + 本地未保存草稿」播种（设计文档 §9.4）。
+   *
+   * <p>只按服务端快照播种会丢掉"WS 连上之前已经敲的那几格"，所以草稿优先：
+   * 草稿里有这一格就用草稿值（含显式清空 `null`），没有才用服务端值。
+   * 播种完成后草稿会被清空（见下方 `collab.mode` effect），不会触发 REST 双写。</p>
+   */
+  const seedCollabFromSnapshot = (
+    listId: string,
+  ): Array<readonly [string, CollabCellValue]> => {
+    const brandName = brandByListId.get(listId)
+    if (!brandName) return []
+    const serverCells = byBrandRef.current.cells.get(brandName)
+    const draft = draftsRef.current[brandName] ?? {}
+    const rowKeys = new Set<string>([
+      ...(serverCells?.keys() ?? []),
+      ...Object.keys(draft),
+    ])
+    const seeded: Array<readonly [string, CollabCellValue]> = []
+    for (const rowKey of rowKeys) {
+      const server = serverCells?.get(rowKey)
+      // `rowKey in draft` 才算"本地改过"：草稿值为 null 表示明确清空，不能回落到服务端价
+      const price =
+        rowKey in draft ? (draft[rowKey] ?? null) : (server?.price ?? null)
+      seeded.push([
+        collabCellKeyOfRowKey(rowKey),
+        {
+          price,
+          priceStatus: server?.priceStatus ?? 'NORMAL',
+          remark: server?.remark ?? '',
+        },
+      ])
+    }
+    return seeded
+  }
+
+  /** 实时协作（M3/M4）。未开启 / 拿不到票据时 `mode` 恒为 `rest`，继续走原有链路。 */
+  const collab = useSupplierPriceCollab({
+    enabled: collabEnabled,
+    seed: seedCollabFromSnapshot,
+    supplierId,
+    targets: collabTargets,
+  })
+
+  /**
+   * 该品牌列此刻是否在协作；是则返回 listId。
+   *
+   * <p>"协作还是 REST"的判断只有这一处：逐格输入、粘贴、批量操作都经过它，
+   * 不要在别处再写一遍 `isCollabList`。</p>
+   */
+  const collabListIdOf = (brandName: string): string | undefined => {
+    const listId = byBrand.columns.get(brandName)?.listId
+    if (!collabEnabled || !listId) return undefined
+    return collab.isCollabList(listId) ? listId : undefined
+  }
+
+  /** 协作只读（票据 writable=false）：所有写入口（输入框、粘贴、批量）都要拦住。 */
+  const collabReadOnly = collab.mode === 'collab' && !collab.writable
+  const canEdit = canUpdate && !collabReadOnly
+
   /*
    * 草稿的本地持久化 —— 自动保存有 800ms 防抖，保存失败还会把改动留在内存；
    * 只要用户在这个窗口内切页或刷新，改动就静默消失。写进 localStorage 后回到页面能恢复。
@@ -994,6 +1126,8 @@ export function SupplierQuoteBoard() {
   const saveBrand = async (brandName: string) => {
     const currentSupplierId = supplierIdRef.current
     if (!currentSupplierId || savingRef.current.has(brandName)) return
+    // 该品牌已进协作：值和落库由边车物化器负责，前端不能再整列 PUT（两写者会互相覆盖）
+    if (collabListIdOf(brandName)) return
     const snapshot = draftsRef.current[brandName]
     if (draftCount(snapshot) === 0) return
 
@@ -1088,6 +1222,8 @@ export function SupplierQuoteBoard() {
   }
 
   const scheduleSave = (brandName: string) => {
+    // 协作表不经 REST 落库：连排期都免了，避免切到协作后还有迟到的整列 PUT
+    if (collabListIdOf(brandName)) return
     const timers = timersRef.current
     const existing = timers.get(brandName)
     if (existing) clearTimeout(existing)
@@ -1113,6 +1249,14 @@ export function SupplierQuoteBoard() {
     rowKey: string,
     value: number | null,
   ) => {
+    const collabListId = collabListIdOf(brandName)
+    if (collabListId) {
+      // 协作表：改的是本地 Y.Doc（离线也即时生效），不再排 REST 自动保存
+      if (collab.writable) {
+        collab.setPrice(collabListId, collabCellKeyOfRowKey(rowKey), value)
+      }
+      return
+    }
     applyDrafts({
       ...draftsRef.current,
       [brandName]: setDraftPrice(draftsRef.current[brandName], rowKey, value),
@@ -1130,12 +1274,21 @@ export function SupplierQuoteBoard() {
   }
 
   const undo = () => {
+    // 协作模式下撤销栈在 Y.Doc 里（设计文档 §8：只撤自己的操作）
+    if (collab.mode === 'collab') {
+      collab.undo()
+      return
+    }
     const next = undoDrafts(history, draftsRef.current)
     setHistory(next.history)
     commitDrafts(next.drafts)
     flushDirtyBrands()
   }
   const redo = () => {
+    if (collab.mode === 'collab') {
+      collab.redo()
+      return
+    }
     const next = redoDrafts(history, draftsRef.current)
     setHistory(next.history)
     commitDrafts(next.drafts)
@@ -1246,11 +1399,28 @@ export function SupplierQuoteBoard() {
    * <p>合并成**一条**撤销记录（`applyDrafts` 只 push 一次历史），并按受影响品牌排队自动保存 ——
    * 逐格写会让 Ctrl+Z 要按十几次才能回到操作前。</p>
    */
-  const applyBulkValues = (cells: readonly GridCellValue[]) => {
+  /**
+   * 批量写格的**唯一分岔点**：协作表写 Y.Doc，其余表落草稿并排队 REST 保存。
+   *
+   * <p>逐格输入之外的写入口（粘贴 / 清空 / 填充 / 批量调价）都走这里，
+   * 避免每处各写一遍"协作还是 REST"的判断（同一口径只在一处）。</p>
+   */
+  const writeCellValues = (cells: readonly GridCellValue[]) => {
     if (!cells.length) return
     const next: Record<string, BrandDraft> = { ...draftsRef.current }
     const touched = new Set<string>()
     for (const cell of cells) {
+      const collabListId = collabListIdOf(cell.brandName)
+      if (collabListId) {
+        if (collab.writable) {
+          collab.setPrice(
+            collabListId,
+            collabCellKeyOfRowKey(cell.rowKey),
+            cell.value,
+          )
+        }
+        continue
+      }
       next[cell.brandName] = setDraftPrice(
         next[cell.brandName],
         cell.rowKey,
@@ -1258,8 +1428,16 @@ export function SupplierQuoteBoard() {
       )
       touched.add(cell.brandName)
     }
-    applyDrafts(next)
-    for (const brandName of touched) scheduleSave(brandName)
+    // 只有真的还有 REST 表被改过才落草稿：全协作时不要凭空造历史记录
+    if (touched.size) {
+      applyDrafts(next)
+      for (const brandName of touched) scheduleSave(brandName)
+    }
+  }
+
+  const applyBulkValues = (cells: readonly GridCellValue[]) => {
+    if (!cells.length) return
+    writeCellValues(cells)
     // 让格子里正在输入的算式文本失效：值已经被批量操作覆盖掉了
     setBulkResetToken((token) => token + 1)
   }
@@ -1300,7 +1478,7 @@ export function SupplierQuoteBoard() {
   /** Delete：清空选区内本来有价的格子（空的不算清空，免得草稿里塞一堆 null）。 */
   const clearSelectedCells = () => {
     const target = selectionTarget()
-    if (!canUpdate || !target) return
+    if (!canEdit || !target) return
     const plan = buildClearPlan({
       bounds: target.bounds,
       lookup: lookupOfSheet(target.group, target.sheet),
@@ -1321,7 +1499,7 @@ export function SupplierQuoteBoard() {
   /** Ctrl+D / Ctrl+R：把选区首行向下 / 首列向右填满。 */
   const fillSelectedCells = (mode: 'down' | 'right') => {
     const target = selectionTarget()
-    if (!canUpdate || !target) return
+    if (!canEdit || !target) return
     const plan = buildFillPlan({
       bounds: target.bounds,
       mode,
@@ -1393,7 +1571,7 @@ export function SupplierQuoteBoard() {
   /** 批量调价：逐格求值后一次落草稿；任何一格不合法都保持弹窗打开让用户改。 */
   const applyBatchAdjust = () => {
     const target = selectionTarget()
-    if (!canUpdate || !target) return
+    if (!canEdit || !target) return
     const text = batchText.trim()
     if (!text) {
       // 空输入不是「什么都不发生」：确认按钮已禁用，但回车仍会走到这里。
@@ -1574,7 +1752,7 @@ export function SupplierQuoteBoard() {
    * 组合（行 × 定尺）上时丢弃该格，不写脏数据。</p>
    */
   const handlePaste = (event: ReactClipboardEvent<HTMLDivElement>) => {
-    if (!canUpdate) return
+    if (!canEdit) return
     const anchor = anchorRef.current
     if (!anchor) return
     const text = event.clipboardData.getData('text/plain')
@@ -1593,8 +1771,7 @@ export function SupplierQuoteBoard() {
     if (startRow < 0 || startColumn < 0) return
     event.preventDefault()
 
-    const next: Record<string, BrandDraft> = { ...draftsRef.current }
-    const touched = new Set<string>()
+    const plan: GridCellValue[] = []
     let filled = 0
     let dropped = 0
     matrix.forEach((values, rowOffset) => {
@@ -1619,12 +1796,11 @@ export function SupplierQuoteBoard() {
           return
         }
         const leaf = leafOfSpec(column, row.spec)
-        const key = quoteRowKey(leaf)
+        const rowKey = quoteRowKey(leaf)
         const brandName = column.brandName
         const trimmed = raw.trim()
         if (trimmed === '') {
-          next[brandName] = setDraftPrice(next[brandName], key, null)
-          touched.add(brandName)
+          plan.push({ brandName, rowKey, value: null })
           filled += 1
           return
         }
@@ -1633,14 +1809,12 @@ export function SupplierQuoteBoard() {
           dropped += 1
           return
         }
-        next[brandName] = setDraftPrice(next[brandName], key, roundPrice(value))
-        touched.add(brandName)
+        plan.push({ brandName, rowKey, value: roundPrice(value) })
         filled += 1
       })
     })
     if (!filled) return
-    applyDrafts(next)
-    for (const brandName of touched) scheduleSave(brandName)
+    writeCellValues(plan)
     message.success(
       t('priceCompare.supplierPrice.pasteApplied', { count: filled }),
     )
@@ -1790,6 +1964,47 @@ export function SupplierQuoteBoard() {
       ),
     })
   }, [specsQuery.isError, specsQuery.refetch, t])
+
+  /*
+   * 进入协作模式后，本地草稿已经被播种进 Y.Doc（见 seedCollabFromSnapshot），
+   * 此时必须清掉草稿与自动保存计时器 —— 否则界面显示协作值、后台还在整列 PUT，
+   * 两个写者会互相覆盖（设计文档 §6.1「唯一写者原则」）。
+   * 在途的那一次保存无法撤回，但它写的是同一批值，物化器随后会以文档为准覆盖回来。
+   */
+  const collabMode = collab.mode
+  useEffect(() => {
+    if (collabMode !== 'collab') return
+    for (const timer of timersRef.current.values()) clearTimeout(timer)
+    timersRef.current.clear()
+    if (Object.keys(draftsRef.current).length) commitDrafts({})
+    setSaveState({})
+    setHistory(EMPTY_HISTORY)
+  }, [collabMode, commitDrafts])
+
+  /*
+   * 同格冲突提示（设计文档 §8）：本地刚改过这一格、紧接着收到别人对同一格的改动时，
+   * 提示「该格刚被他人改为 X」，不静默覆盖用户刚敲的值。窗口期由 hook 判定，
+   * 这里只负责把格键翻译成人能读的列名 + 规格。
+   */
+  const lastPeerEdit = collab.lastPeerEdit
+  useEffect(() => {
+    if (!lastPeerEdit) return
+    const brandName = brandByListId.get(lastPeerEdit.listId) ?? ''
+    const [, material, spec, length] = collabRowKeyOfCellKey(
+      lastPeerEdit.cellKey,
+    ).split('|')
+    const cellLabel = [brandName, material, spec, length]
+      .filter(Boolean)
+      .join(' ')
+    message.warning(
+      lastPeerEdit.price === null
+        ? t('collab.conflict.cleared', { cell: cellLabel })
+        : t('collab.conflict.edited', {
+            cell: cellLabel,
+            price: lastPeerEdit.price,
+          }),
+    )
+  }, [brandByListId, lastPeerEdit, t])
 
   /*
    * 「最后编辑」= 当前供应商所有品牌列里最近一次保存时间（`updatedAt`，历史数据回退 `quotedOn`）。
@@ -2050,12 +2265,35 @@ export function SupplierQuoteBoard() {
               }
               const leaf = leafOfSpec(column, row.spec)
               const rowKey = quoteRowKey(leaf)
-              const value = cellValueOfLeaf(brandName, leaf)
+              /*
+               * 协作表：显示值以 Y.Doc 为准（本地即写即显示，离线也一样）；文档里还没有
+               * 这一格（`undefined`）才回退到原口径：「草稿 → 已保存 → 服务端」。
+               */
+              const collabListId = collabListIdOf(brandName)
+              const collabCell = collabListId
+                ? collabCellKeyOf(leaf)
+                : undefined
+              const collabPrice =
+                collabListId && collabCell
+                  ? collab.priceOf(collabListId, collabCell)
+                  : undefined
+              const value =
+                collabPrice === undefined
+                  ? cellValueOfLeaf(brandName, leaf)
+                  : collabPrice
+              const remoteCursors =
+                collabListId && collabCell
+                  ? collab.peersOfCell(collabListId, collabCell)
+                  : EMPTY_COLLAB_PEERS
               /*
                * 交互反馈：草稿与已落库值不一致 = 这一格有未保存改动（左侧琥珀细条）；
                * 刚保存成功 = 绿色闪一下（`savedFlash` 由 saveBrand 成功后派发）。
+               * 协作表不参与「脏」标记：落库由边车物化决定，前端拿不到可靠对照值，
+               * 标脏只会一直亮着（协作状态由顶部徽标表达）。
                */
-              const dirty = value !== (serverPriceOf(brandName, rowKey) ?? null)
+              const dirty =
+                !collabListId &&
+                value !== (serverPriceOf(brandName, rowKey) ?? null)
               const flashing =
                 savedFlash?.brand === brandName &&
                 savedFlash.keys.includes(rowKey)
@@ -2079,7 +2317,11 @@ export function SupplierQuoteBoard() {
                   ariaLabel={`${brandName} ${material} ${row.spec} ${length}`}
                   cellId={cellKey(columnIndex, rowKey)}
                   className={className}
-                  disabled={!canUpdate}
+                  disabled={!canEdit}
+                  onBlurCell={() => {
+                    // 离开格子：清掉自己的光标，别人的描边随之消失
+                    if (collabListId) collab.setCursor(collabListId, null)
+                  }}
                   onCommit={(next) => updateCell(brandName, rowKey, next)}
                   onSubmitFormula={(text) =>
                     applyCellFormula(brandName, rowKey, text)
@@ -2090,6 +2332,10 @@ export function SupplierQuoteBoard() {
                       material,
                       columnIndex,
                       rowKey: String(row.spec),
+                    }
+                    // 协作表：把光标共享给同房间的人（节流在 hook 内，80ms 一次）
+                    if (collabListId && collabCell) {
+                      collab.setCursor(collabListId, collabCell)
                     }
                   }}
                   onMove={(delta) =>
@@ -2121,6 +2367,7 @@ export function SupplierQuoteBoard() {
                       backward,
                     )
                   }
+                  remoteCursors={remoteCursors}
                   resetToken={bulkResetToken}
                   value={value}
                 />
@@ -2254,7 +2501,7 @@ export function SupplierQuoteBoard() {
                       })}
                     </Typography.Text>
                     <Button
-                      disabled={!canUpdate}
+                      disabled={!canEdit}
                       onClick={() => {
                         setBatchText('')
                         setBatchOpen(true)
@@ -2436,6 +2683,17 @@ export function SupplierQuoteBoard() {
       }}
       style={{ width: '100%' }}
       tabBarExtraContent={{
+        /*
+         * 协作状态与在线名单放 tab 栏左侧：与页签同基线，不额外占一行；
+         * 未开启协作时 `CollabStatusBar` 渲染 null，页面与改动前一致。
+         */
+        left: (
+          <CollabStatusBar
+            peers={collab.peers}
+            state={collab.state}
+            writable={collab.writable}
+          />
+        ),
         right: (
           <Select
             aria-label={t('priceCompare.supplierPrice.addSupplierTab')}
