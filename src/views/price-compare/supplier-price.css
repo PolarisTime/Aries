@@ -46,8 +46,17 @@
 /*
  * 页签内容容器：还原原 `.supplier-price-page` 的纵向间距（工具栏 / 选区栏 / 表格之间 12px），
  * 同时把剩余高度继续传给表格外壳。
+ *
+ * <p><b>只能选激活面板</b>（`.ant-tabs-content-active`）。antd 6 里每个供应商页签各是一个
+ * `.ant-tabs-content`，非激活的那个靠 `.ant-tabs-content-hidden { display: none }` 不占位；
+ * 而 `.supplier-price-page .ant-tabs-content`（两个类）**特异性高于** antd 的那条单类规则，
+ * 会把 display 改回 flex —— 隐藏页签于是照样占高度，把当前页签整块往下推。</p>
+ *
+ * <p>实测症状：只开一个供应商时正常；开第二个后当前报价表整体下移约 340px，
+ * 看起来像"整页内容垂直居中"（其实是隐藏面板占了上半屏）。同款写法见
+ * `master-host-tabs.css`，那里已经把「只拉伸激活面板」写成约定。</p>
  */
-.supplier-price-page .ant-tabs-content {
+.supplier-price-page .ant-tabs-content-active {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
