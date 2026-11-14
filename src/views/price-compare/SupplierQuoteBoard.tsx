@@ -92,8 +92,10 @@ import {
 import {
   gridQueryKey,
   readDrafts,
+  readMaterialTabs,
   readSupplierTabs,
   writeDrafts,
+  writeMaterialTabs,
   writeSupplierTabs,
 } from './supplier-quote-view-prefs'
 import './supplier-price.css'
@@ -546,6 +548,15 @@ export function SupplierQuoteBoard() {
   /** 已完成「恢复判断」的供应商；只有它等于当前供应商时才允许把草稿写回本地。 */
   const [draftsRestoredFor, setDraftsRestoredFor] = useState<string>()
   /**
+   * 已完成材质 tab 恢复的供应商。
+   *
+   * <p>与草稿同一套路：切供应商时 `resetBoardState` 会把材质选择清空（不能把上一家的
+   * 材质带过去），所以「恢复」和「写回」必须分开两拍 —— 先按新供应商读回存档，
+   * 之后才允许把当前选择写回去，否则切页瞬间的空对象会把存档冲掉。</p>
+   */
+  const [materialTabsRestoredFor, setMaterialTabsRestoredFor] =
+    useState<string>()
+  /**
    * 当前选区（Excel 式区域选择）。
    *
    * <p>只记坐标、不记价格；anchor 是按下时的格子，focus 是当前拖到 / Shift 点到的格子。
@@ -637,6 +648,25 @@ export function SupplierQuoteBoard() {
       ...(activeSupplierId ? { activeSupplierId } : {}),
     })
   }, [activeSupplierId, openSupplierIds, supplierTabsHydrated])
+
+  /*
+   * 恢复该供应商上次停留的材质 tab：切供应商后 resetBoardState 已清空，这里读回存档。
+   * 新打开的供应商没有存档 → 空对象，渲染侧回落到第一个材质。
+   */
+  useEffect(() => {
+    if (!supplierId) return
+    setActiveMaterialByCategory(readMaterialTabs(supplierId))
+    setMaterialTabsRestoredFor(supplierId)
+  }, [supplierId])
+
+  /*
+   * 材质 tab 选择写回本地。只在当前供应商已完成恢复后才写 —— 切页那一帧的
+   * `activeMaterialByCategory` 是被清空的，提前写会把上一家的偏好抹掉。
+   */
+  useEffect(() => {
+    if (!supplierId || materialTabsRestoredFor !== supplierId) return
+    writeMaterialTabs(supplierId, activeMaterialByCategory)
+  }, [activeMaterialByCategory, materialTabsRestoredFor, supplierId])
 
   const supplier = useMemo(
     () => suppliers.find((option) => option.value === supplierId),

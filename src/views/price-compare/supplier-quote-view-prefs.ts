@@ -1,62 +1,13 @@
-import type {
-  SupplierPriceColumn,
-  SupplierPriceGrid,
-} from '@/api/market/supplier-price-lists'
-import type { ServerCell } from './supplier-price-list-model'
-
 /**
- * 供应商报价页的本地视图偏好与单元格标识（从 `SupplierQuotePage.tsx` 抽出的独立职责）。
+ * 供应商报价页的本地视图偏好（从 `SupplierQuotePage.tsx` 抽出的独立职责）。
  *
- * <p>只处理「按供应商隔离的 localStorage 键 + 读取 + 单元格 id 拼接」，
- * 不依赖 React；刷新/换供应商后仍能恢复各自顺序、隐藏列与未保存草稿。</p>
+ * <p>只处理「按供应商隔离的 localStorage 键 + 读取」，不依赖 React；
+ * 刷新/换供应商后仍能恢复各自打开的供应商页签、材质 tab 与未保存草稿。</p>
  */
-
-/** 一个品牌列视图：是否已有价格表 + 该列服务端价格索引 + 原始网格。 */
-export type BrandColumnView = {
-  brandName: string
-  grid: SupplierPriceGrid | undefined
-  column: SupplierPriceColumn | null
-  cells: Map<string, ServerCell>
-}
 
 /** 品牌网格的查询键：与「从供应商价格表导入」同源, 保存后统一失效。 */
 export const gridQueryKey = (brandName: string) =>
   ['supplier-price-grid', brandName] as const
-
-/** 列显示偏好的本地存储键：按供应商隔离，换供应商各自记各自的顺序与隐藏列。 */
-export const brandPrefsKey = (supplierId: string) =>
-  `aries:supplier-quote-prefs:${supplierId}`
-
-/** 视图偏好：品牌成列（现状）/ 规格横置（品牌分块，规格作列头，贴近纸质报价单）。 */
-export type QuoteViewMode = 'brands' | 'specs'
-
-/**
- * 价格录入方式。
- *
- * <ul>
- *   <li>{@code base} 基价模式：每个品牌只填「基价」一格，其余规格按「基价 + 加价」自动算好且只读；</li>
- *   <li>{@code manual} 手填模式：逐格录入，系统不会替你算任何价格。</li>
- * </ul>
- *
- * <p>两种方式互斥：手填模式下即使填了基价格子也不联动，否则业务员分不清哪个价是自己填的。</p>
- */
-export type PriceEntryMode = 'base' | 'manual'
-
-export const viewModeKey = (supplierId: string) =>
-  `aries:supplier-quote-view:${supplierId}`
-
-export const readViewMode = (supplierId: string): QuoteViewMode =>
-  window.localStorage.getItem(viewModeKey(supplierId)) === 'specs'
-    ? 'specs'
-    : 'brands'
-
-export const priceModeKey = (supplierId: string) =>
-  `price-compare:supplier-price-mode:${supplierId}`
-
-export const readPriceMode = (supplierId: string): PriceEntryMode =>
-  window.localStorage.getItem(priceModeKey(supplierId)) === 'base'
-    ? 'base'
-    : 'manual'
 
 /**
  * 已打开的供应商页签 + 当前激活页签的本地存储键。
@@ -122,6 +73,62 @@ export function writeSupplierTabs(tabs: StoredSupplierTabs): void {
   }
 }
 
+/**
+ * 「品类 → 当前材质 tab」的本地存储键（按供应商隔离）。
+ *
+ * <p>直条 / 盘螺各有多个材质 tab（HRB400 / HRB400E / …），报价员通常一个材质报完再换下一个。
+ * 这一项原先只在内存里，刷新后总是回到第一个材质 —— 与同页其它偏好（列顺序、视图模式、草稿）
+ * 的行为不一致，也让「刷新后继续从刚才的位置报价」这件事做不到。</p>
+ */
+export const materialTabsKey = (supplierId: string) =>
+  `aries:supplier-quote-material:${supplierId}`
+
+/** 读取该供应商上次停留的材质 tab：品类名 → 材质名。 */
+export function readMaterialTabs(supplierId: string): Record<string, string> {
+  try {
+    const raw = window.localStorage.getItem(materialTabsKey(supplierId))
+    if (!raw) return {}
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+      return {}
+    const result: Record<string, string> = {}
+    for (const [categoryName, material] of Object.entries(
+      parsed as Record<string, unknown>,
+    )) {
+      if (categoryName && typeof material === 'string' && material) {
+        result[categoryName] = material
+      }
+    }
+    return result
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * 写入材质 tab 选择。
+ *
+ * <p>不校验「材质是否仍属于该供应商」—— 渲染侧 `materialTabsOf` 会按当前表集合回落
+ * 到第一个材质，这里多一道校验只会让两处口径分叉。</p>
+ */
+export function writeMaterialTabs(
+  supplierId: string,
+  tabs: Record<string, string>,
+): void {
+  try {
+    if (Object.keys(tabs).length === 0) {
+      window.localStorage.removeItem(materialTabsKey(supplierId))
+      return
+    }
+    window.localStorage.setItem(
+      materialTabsKey(supplierId),
+      JSON.stringify(tabs),
+    )
+  } catch {
+    // 隐私模式 / 配额满：只是恢复偏好，写不进去不影响本次使用
+  }
+}
+
 /** 未保存草稿的本地存储键：刷新/误关页后能恢复，避免一次报价白录。 */
 export const draftsKey = (supplierId: string) =>
   `aries:supplier-quote-drafts:${supplierId}`
@@ -180,7 +187,3 @@ export function writeDrafts(supplierId: string, drafts: StoredDrafts): void {
     // 存不下不影响本次录入：内存里的草稿仍在，自动保存照常跑
   }
 }
-
-/** 单元格标识：品牌 + 行键，用于键盘移动与粘贴定位（用不可见分隔符避免品牌名里的 `:`）。 */
-export const cellIdOf = (brandName: string, rowKey: string) =>
-  `${brandName}\u0000${rowKey}`
