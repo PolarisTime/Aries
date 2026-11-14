@@ -72,8 +72,8 @@ test.describe('页面合并隐藏标签', () => {
    */
   const activeHostPane = (page: Page) =>
     page.locator('.master-host-tabs .ant-tabs-content-active').first()
-  const shellActiveTabLabel = (page: Page) =>
-    page.locator('.leo-tabbar .ant-tabs-tab-active .leo-tabbar-label').first()
+  const breadcrumbCurrent = (page: Page) =>
+    page.locator('.leo-breadcrumb li').last()
 
   /** 等宿主页标签条水合到「完整标签清单」，并断言当前选中标签。 */
   async function expectActiveHostTab(
@@ -105,7 +105,7 @@ test.describe('页面合并隐藏标签', () => {
 
     await expectActiveHostTab(page, MATERIAL_TABS, '定尺加价维护')
     // 外壳标签仍是宿主页「商品资料」：切标签只改 ?tab=，不跨外壳标签。
-    await expect(shellActiveTabLabel(page)).toContainText('商品资料')
+    await expect(breadcrumbCurrent(page)).toContainText('商品资料')
 
     // 业务数据：12米 加价 +30、打印规格后缀 *12（主数据实值）。
     await expectActivePaneContains(page, '12米')
@@ -131,7 +131,7 @@ test.describe('页面合并隐藏标签', () => {
     await gotoRouteE2e(page, '/material?tab=value-alias')
 
     await expectActiveHostTab(page, MATERIAL_TABS, '值映射维护')
-    await expect(shellActiveTabLabel(page)).toContainText('商品资料')
+    await expect(breadcrumbCurrent(page)).toContainText('商品资料')
     // 业务数据：库里现存的类别归一条目「直条 → 螺纹钢」。
     await expectActivePaneContains(page, '直条')
     await expectActivePaneContains(page, '螺纹钢')
@@ -151,7 +151,7 @@ test.describe('页面合并隐藏标签', () => {
     await gotoRouteE2e(page, '/project?tab=quote-region')
 
     await expectActiveHostTab(page, PROJECT_TABS, '取价地区维护')
-    await expect(shellActiveTabLabel(page)).toContainText('项目资料')
+    await expect(breadcrumbCurrent(page)).toContainText('项目资料')
     // 业务数据：上海 / shanghai（西本城市站子域名口径）。
     await expectActivePaneContains(page, '上海')
     await expectActivePaneContains(page, 'shanghai')
@@ -171,7 +171,7 @@ test.describe('页面合并隐藏标签', () => {
     await gotoRouteE2e(page, '/length-premium')
 
     // 路由仍存在：外壳标签用被并页自己的标题，内容渲染在宿主页的对应标签里。
-    await expect(shellActiveTabLabel(page)).toContainText('定尺加价维护')
+    await expect(breadcrumbCurrent(page)).toContainText('定尺加价维护')
     await expectActiveHostTab(page, MATERIAL_TABS, '定尺加价维护')
     await expectActivePaneContains(page, '12米')
 

@@ -402,7 +402,7 @@ test.describe('报单比价编辑锁多角色与极端场景', () => {
       await selectBatch(page, name)
       await waitForLockHeld(request, id)
 
-      // 切到工作台标签: 视图 keep-alive 不卸载, 但仍应归还编辑锁
+      // 切到工作台（顶部菜单，单页导航会卸载比价页）：仍应归还编辑锁
       const released = page.waitForResponse(
         (response) =>
           response.request().method() === 'DELETE' &&
@@ -410,8 +410,7 @@ test.describe('报单比价编辑锁多角色与极端场景', () => {
         { timeout: NAV_TIMEOUT },
       )
       await page
-        .locator('.leo-tabbar-label')
-        .filter({ hasText: '工作台' })
+        .getByRole('menuitem', { name: '工作台', exact: true })
         .first()
         .click()
       expect(
@@ -432,9 +431,9 @@ test.describe('报单比价编辑锁多角色与极端场景', () => {
           response.url().includes(`/quote-sheets/${id}/edit-locks`),
         { timeout: NAV_TIMEOUT },
       )
+      await page.getByRole('menuitem', { name: '比价' }).first().click()
       await page
-        .locator('.leo-tabbar-label')
-        .filter({ hasText: '报单比价' })
+        .getByRole('menuitem', { name: '报单比价', exact: true })
         .first()
         .click()
       expect((await reacquired).status(), '返回路由应重新签出锁').toBeLessThan(

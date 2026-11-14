@@ -45,20 +45,16 @@ test.describe('商品版本历史 / 导入预览 / 批次回滚', () => {
 
     const historyButton = page.getByRole('button', { name: '版本历史' }).first()
     await expect(historyButton).toBeVisible({ timeout: 30_000 })
-    const tabCountBefore = await page
-      .locator('.leo-tabbar .ant-tabs-tab')
-      .count()
     await historyButton.click()
 
-    // 版本历史是弹层对话框，不是右侧抽屉、也不占标签栏的新页签
+    // 版本历史是弹层对话框，不是右侧抽屉、也不新增页面
     const dialog = page.locator('.workspace-overlay-panel--material-history')
     await expect(dialog).toBeVisible({ timeout: 30_000 })
     await expect(dialog).toHaveAttribute('role', 'dialog')
     await expect(page.locator('.ant-drawer')).toHaveCount(0)
-    await expect(page.locator('.leo-tabbar .ant-tabs-tab')).toHaveCount(
-      tabCountBefore,
-      { timeout: 15_000 },
-    )
+    // 页签条已删除（导航改为面包屑）；打开弹层不改变当前路由
+    await expect(page.locator('.leo-tabbar')).toHaveCount(0)
+    await expect(page).toHaveURL(/\/material/)
     await expect(dialog.locator('table').first()).toBeVisible({
       timeout: 30_000,
     })
