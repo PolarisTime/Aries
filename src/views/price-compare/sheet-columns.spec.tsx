@@ -103,28 +103,27 @@ function columnsOf(overrides: Partial<ColumnContext> = {}): AnyColumn[] {
 }
 
 describe('比价表格列定义(sheet-columns)', () => {
-  it('列顺序与列宽由 ctx 驱动: 选择/拖拽/备注/品类/规格/报单吨位/品牌组/填充列', () => {
+  it('列顺序与列宽由 ctx 驱动: 选择+拖拽/备注/品类/规格/报单吨位/品牌组/填充列', () => {
     const ctx = makeContext()
     const columns = columnsOf()
 
-    // 选择列 32 / 拖拽手柄 24, 都固定在左侧
-    expect(columns[0]).toMatchObject({ width: 32, fixed: 'left' })
-    expect(columns[1]).toMatchObject({ width: 24, fixed: 'left' })
+    // 勾选与拖拽手柄共用一列(40), 固定在左侧
+    expect(columns[0]).toMatchObject({ width: 40, fixed: 'left' })
     // 备注列宽度来自宽度表
-    expect(columns[2]).toMatchObject({
+    expect(columns[1]).toMatchObject({
       dataIndex: 'remark',
       width: ctx.widths.remark,
     })
-    expect(columns[3]).toMatchObject({
+    expect(columns[2]).toMatchObject({
       dataIndex: 'category',
       width: ctx.widths.category,
     })
-    expect(columns[4]).toMatchObject({
+    expect(columns[3]).toMatchObject({
       dataIndex: 'base',
       width: ctx.widths.spec,
     })
     // 报单吨位列(唯一的吨位列, 已开/未开两列随采购解耦移除)
-    expect(columns[5]).toMatchObject({ width: ctx.widths.ton })
+    expect(columns[4]).toMatchObject({ width: ctx.widths.ton })
     // 品牌组: 每个品牌一组 4 个子列(网价/现货/差价/简称), 宽度同样取宽度表
     const brandGroups = columns.filter((column) => column.children)
     expect(brandGroups).toHaveLength(brands.length)
@@ -144,8 +143,8 @@ describe('比价表格列定义(sheet-columns)', () => {
     expect(columns.filter((column) => column.width === tonWidth)).toHaveLength(
       1,
     )
-    // 6 个前置列 + 品牌组 + 填充列
-    expect(columns).toHaveLength(6 + brands.length + 1)
+    // 5 个前置列(选择+拖拽/备注/品类/规格/吨位) + 品牌组 + 填充列
+    expect(columns).toHaveLength(5 + brands.length + 1)
   })
 
   it('隐藏备注列只移除备注列, 其余列顺序不变', () => {
@@ -155,8 +154,8 @@ describe('比价表格列定义(sheet-columns)', () => {
     expect(hidden).toHaveLength(shown.length - 1)
     expect(hidden.some((column) => column.dataIndex === 'remark')).toBe(false)
     // 去掉备注列后, 品类/规格列前移一位, 相对顺序不变
-    expect(hidden[2]).toMatchObject({ dataIndex: 'category' })
-    expect(hidden[3]).toMatchObject({ dataIndex: 'base' })
+    expect(hidden[1]).toMatchObject({ dataIndex: 'category' })
+    expect(hidden[2]).toMatchObject({ dataIndex: 'base' })
   })
 
   it('隐藏品牌不再生成该品牌列组, 可见品牌保持原顺序', () => {

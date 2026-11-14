@@ -417,6 +417,19 @@ function LockReason({
   )
 }
 
+/**
+ * 现货价修改时间的展示格式（`MM-DD HH:mm`）。
+ *
+ * <p>只用于 tooltip：同一批价的日期在同一屏里通常相同，显示到分钟足够判断"新不新"，
+ * 也避免把 ISO 串原样丢给用户。解析失败时原样返回，不吞掉信息。</p>
+ */
+function formatSpotUpdatedAt(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  const pad = (input: number) => String(input).padStart(2, '0')
+  return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   const {
     refDate,
@@ -595,9 +608,10 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           onChange={(event) => toggleAll(event.target.checked)}
         />
       ),
-      width: 32,
+      width: 40,
       fixed: 'left',
       align: 'center',
+      className: 'price-compare-select-column',
       render: (_, row) => (
         <span className="price-compare-row-select">
           <Checkbox
@@ -607,31 +621,25 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             checked={selectedIds.includes(row.rowId)}
             onChange={(event) => toggleSelect(row.rowId, event.target.checked)}
           />
+          {/* 拖拽手柄只作为「这行可以拖」的视觉提示: 真正承载拖拽的是 <tr>(整行可拖),
+              两个元素各自 draggable 会让从手柄起拖时触发两遍 dragstart。
+              与勾选共用一列(而不是单独 24px 列): 默认只露勾选，悬停行时才浮出手柄，
+              避免表格最左侧常驻一条「管理控件」空列。 */}
+          <Tooltip title={rowInteractionLocked ? rowLockedHint : undefined}>
+            <span
+              className={`price-compare-row-drag${rowInteractionLocked ? ' price-compare-row-drag-disabled' : ''}`}
+              aria-disabled={rowInteractionLocked}
+              title={
+                rowInteractionLocked
+                  ? rowLockedHint
+                  : t('priceCompare.sheet.dragRow')
+              }
+            >
+              <HolderOutlined />
+            </span>
+          </Tooltip>
           {renderRowMenuHost(row)}
         </span>
-      ),
-    },
-    {
-      title: '',
-      width: 24,
-      fixed: 'left',
-      align: 'center',
-      render: () => (
-        <Tooltip title={rowInteractionLocked ? rowLockedHint : undefined}>
-          {/* 手柄只作为「这行可以拖」的视觉提示: 真正承载拖拽的是 <tr>(整行可拖),
-              两个元素各自 draggable 会让从手柄起拖时触发两遍 dragstart。 */}
-          <span
-            className={`price-compare-row-drag${rowInteractionLocked ? ' price-compare-row-drag-disabled' : ''}`}
-            aria-disabled={rowInteractionLocked}
-            title={
-              rowInteractionLocked
-                ? rowLockedHint
-                : t('priceCompare.sheet.dragRow')
-            }
-          >
-            <HolderOutlined />
-          </span>
-        </Tooltip>
       ),
     },
     ...(hideRemark
@@ -906,15 +914,30 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                           })
                         : ''
                       /*
-                       * 现货价只读：唯一来源是「从供应商价格表导入」，格子里不接受任何
+                       * 现货价只读：唯一来源是**供应商价格表实时派生**，格子里不接受任何
                        * 手工输入（默认禁止手动改价，无例外）。`data-spot` 保留在原位置，
                        * 供 e2e 与测试按「品牌:行」定位；空格子显示「—」。
+                       *
+                       * 悬停提示 = 价格 ｜ 供应商 ｜ 该价最后修改时间：实时派生后价格不再是
+                       * "我导入时的快照"，用户必须能判断这个价是供应商什么时候报的。
                        */
+                      const spotUpdatedLabel = spotInput?.spotUpdatedAt
+                        ? t('priceCompare.sheet.spotUpdatedAt', {
+                            time: formatSpotUpdatedAt(spotInput.spotUpdatedAt),
+                          })
+                        : undefined
+                      const spotTitle = [
+                        spot === undefined ? undefined : String(spot),
+                        spotInput?.supplierName || undefined,
+                        spotUpdatedLabel,
+                      ]
+                        .filter(Boolean)
+                        .join(' ｜ ')
                       const spotNode = (
                         <span
                           className={`price-compare-spot price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
                           data-spot={`${brand.name}:${current.id}`}
-                          title={spot === undefined ? undefined : String(spot)}
+                          title={spotTitle || undefined}
                         >
                           {spot === undefined ? '—' : spot}
                           {spotSource ? (

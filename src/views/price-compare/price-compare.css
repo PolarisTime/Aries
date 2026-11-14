@@ -434,7 +434,8 @@
 }
 
 .price-compare-table .ant-table-tbody > tr > td {
-  height: 28px;
+  /* 与报价表一致：数据行 32px，比默认紧凑表更"展示"一些 */
+  height: 32px;
   line-height: 1.45;
 }
 
@@ -459,8 +460,8 @@
 }
 
 .price-compare-table .ant-table-thead > tr:nth-child(2) > th {
-  /* 子列表头：11px 灰色 + 比品牌行略松的上下留白，与报价表的定尺行同高（约 24px） */
-  padding-block: 4px !important;
+  /* 子列表头：11px 灰色 + 比品牌行略松的上下留白，与报价表的定尺行同高（26px） */
+  padding-block: 5px !important;
   color: var(--price-compare-head-muted, #6b7482);
   font-size: 11px;
   font-weight: 500;
@@ -1153,11 +1154,44 @@
     0 4px 14px rgb(16 24 40 / 5%);
 }
 
+/* 卡片 body 归零内边距：工具区自己留白，表格贴到卡片左右/下边缘（表格即卡片） */
+.price-compare-sheet-card > .ant-card-body {
+  padding: 0;
+}
+
+.price-compare-sheet-card .price-compare-toolbar {
+  padding: var(--space-sm) var(--space-sm) var(--space-xs);
+}
+
 .price-compare-sheet-card
   .price-compare-table
   .ant-table.ant-table-bordered
   > .ant-table-container {
   border: 0;
+}
+
+/*
+ * 勾选与拖拽手柄合并成一列：勾选常驻（批量选择入口要能看见），
+ * 拖拽手柄默认收起，鼠标进入行 / 键盘聚焦行时才浮出 —— 表格首先是一张给人读的报价单，
+ * 常驻的六点手柄会让最左侧显得很"后台管理"。
+ *
+ * 功能没有移除：整行仍可拖动，手柄只是视觉提示；键盘聚焦到行内控件时同样会显示。
+ */
+.price-compare-table .price-compare-row-select {
+  gap: var(--space-xxs);
+}
+
+.price-compare-table .price-compare-row-drag {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.price-compare-table .ant-table-tbody > tr:hover .price-compare-row-drag,
+.price-compare-table
+  .ant-table-tbody
+  > tr:focus-within
+  .price-compare-row-drag {
+  opacity: 1;
 }
 
 /*
@@ -1171,9 +1205,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-xs);
-  padding-top: var(--space-xs);
-  border-top: 1px solid var(--price-compare-grid, #e3e7ee);
-  margin-top: var(--space-xs);
+  /* 表格贴卡片边缘后，底栏自己留白；表格末行的下边框已承担分隔线 */
+  padding: var(--space-xs) var(--space-sm);
 }
 
 .price-compare-table-footer .price-compare-add-row,

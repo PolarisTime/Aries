@@ -154,7 +154,7 @@ describe('比价页样式无障碍契约', () => {
     expect(restore).toMatch(/clip-path:\s*none/)
     expect(restore).toMatch(/outline:\s*2px solid/)
 
-    // 比价页覆盖落位: 勾选列只有 32px, 还原后的按钮必须绝对定位(布局零位移)且 ≥24×24
+    // 比价页覆盖落位: 勾选+拖拽合并列只有 40px, 还原后的按钮必须绝对定位(布局零位移)且 ≥24×24
     const cell = blockOf(pageCss, '.price-compare-row-select')
     expect(cell).toMatch(/position:\s*relative/)
     const overlay = blockOf(
