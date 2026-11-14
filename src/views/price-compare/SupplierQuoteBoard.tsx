@@ -1,7 +1,6 @@
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
-  Checkbox,
   Empty,
   Flex,
   Input,
@@ -542,7 +541,6 @@ export function SupplierQuoteBoard() {
     }
   }, [])
   const [history, setHistory] = useState<DraftHistory>(EMPTY_HISTORY)
-  const [onlyUnpriced, setOnlyUnpriced] = useState(false)
   /** 本次进页是否从 localStorage 恢复了上次未保存的草稿（恢复后提示「已恢复 / 放弃」）。 */
   const [restoredDrafts, setRestoredDrafts] = useState(false)
   /** 已完成「恢复判断」的供应商；只有它等于当前供应商时才允许把草稿写回本地。 */
@@ -799,8 +797,7 @@ export function SupplierQuoteBoard() {
   /**
    * 每个类别的表格数据：行 = 规格，列 = 品牌 × 材质 × 定尺。
    *
-   * <p>行的范围来自该类别商品资料里出现过的全部规格；搜索按规格与材质过滤，
-   * 「只看未填」按已落库值判断（不看草稿，否则边敲边消失）。</p>
+   * <p>行的范围来自该类别商品资料里出现过的全部规格；搜索按规格与材质过滤。</p>
    */
   const categoryGroups = useMemo(() => {
     const order: string[] = []
@@ -853,29 +850,7 @@ export function SupplierQuoteBoard() {
           }
           specs = [...specSet].sort((left, right) => left - right)
         }
-        let rows: SpecRow[] = specs.map((spec) => ({ spec }))
-        if (onlyUnpriced) {
-          rows = rows.filter((row) => {
-            const writable = materialColumns.filter((column) =>
-              catalogHas(
-                category,
-                column.brandName,
-                column.material,
-                row.spec,
-                column.length,
-              ),
-            )
-            // 整行都没有可填格子（模板里有、商品资料里没有任何品牌报）→ 不算「未填」
-            if (writable.length === 0) return false
-            return writable.some((column) => {
-              const key = quoteRowKey(leafOfSpec(column, row.spec))
-              const price =
-                savedValues[column.brandName]?.[key] ??
-                serverPriceOf(column.brandName, key)
-              return price === undefined || price === null
-            })
-          })
-        }
+        const rows: SpecRow[] = specs.map((spec) => ({ spec }))
         const indexBySpec = new Map<number, number>()
         for (const [index, row] of rows.entries()) {
           indexBySpec.set(row.spec, index)
@@ -888,7 +863,7 @@ export function SupplierQuoteBoard() {
         sheets,
       }
     })
-  }, [brandNames, catalog, onlyUnpriced, savedValues, serverPriceOf])
+  }, [brandNames, catalog, savedValues, serverPriceOf])
 
   /** 一张类别表 / 一张材质表的类型别名：选区、列宽与批量操作都以它们为单位。 */
   type CategoryGroup = (typeof categoryGroups)[number]
@@ -1014,7 +989,7 @@ export function SupplierQuoteBoard() {
    *
    * <p>保存接口是 `PUT .../items` 的整列替换，载荷由 {@link buildColumnSavePlan} 生成 ——
    * 「可见行 ∪ 服务端已有条目」，所以商品资料里已停用的历史行不会被清掉；这里传的是
-   * **全部商品行**（不是表格里过滤后的行），否则搜索/只看未填会把其它行的价格删掉。</p>
+   * **全部商品行**（不是搜索过滤后的行），否则搜索会把其它行的价格删掉。</p>
    */
   const saveBrand = async (brandName: string) => {
     const currentSupplierId = supplierIdRef.current
@@ -1178,7 +1153,6 @@ export function SupplierQuoteBoard() {
     setSavedValues({})
     setColumns({})
     setSaveState({})
-    setOnlyUnpriced(false)
     // 材质 tab 是上一个供应商的数据形状（有的供应商直条只有 HRB400E），不能带过去
     setActiveMaterialByCategory({})
     // 选区坐标只对上一家供应商的表有意义
@@ -2269,7 +2243,7 @@ export function SupplierQuoteBoard() {
   const boardContent = (
     <>
       {/*
-       * 工具栏只保留「最后编辑 + 只看未填」。
+       * 工具栏只保留「最后编辑 / 已保存」提示。
        * 搜索 / 刷新 / 撤销重做按钮、快捷键入口都已移除（撤销重做保留 Ctrl+Z / Ctrl+Y）；
        * 只读、保存失败、草稿恢复、规格加载失败全部改走 message / notification。
        */}
@@ -2289,16 +2263,6 @@ export function SupplierQuoteBoard() {
             {t('priceCompare.supplierPrice.saved')}
           </Typography.Text>
         ) : null}
-        <Checkbox
-          checked={onlyUnpriced}
-          onChange={(event) => {
-            setOnlyUnpriced(event.target.checked)
-            // 「只看未填」会换掉可见行：按行下标记的选区随之失效
-            setSelection(null)
-          }}
-        >
-          {t('priceCompare.supplierPrice.onlyUnpriced')}
-        </Checkbox>
       </Flex>
 
       {/*

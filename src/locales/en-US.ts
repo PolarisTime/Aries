@@ -2961,7 +2961,6 @@ export const enUS = {
       draftsRestored:
         'Unsaved drafts from last time were restored; they go away after save or "Discard drafts"',
       discardDrafts: 'Discard drafts',
-      onlyUnpriced: 'Unpriced only',
       entryHint:
         'Spreadsheet-style entry: rows = specs, columns = brands, type prices directly; ↑/↓ and Enter move vertically, Tab moves right; paste a whole column/block copied from Excel into the starting cell. Empty = not quoted, 0 is a real price; saving replaces each brand column as a whole',
       entryHintSpecs:

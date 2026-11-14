@@ -2945,7 +2945,6 @@ export const zhCN = {
         '将保存 {{brands}} 个品牌列：新增 {{added}} 条、改价 {{changed}} 条、取消 {{removed}} 条。',
       draftsRestored: '已恢复上次未保存的草稿；保存或点「放弃草稿」后提示消失',
       discardDrafts: '放弃草稿',
-      onlyUnpriced: '只看未填',
       entryHint:
         'Excel 式录入：行=规格、列=品牌，直接敲价；↑/↓ 与回车上下移动，Tab 向右；从 Excel 复制的整列/整块可直接粘贴到起始格。空 = 不报价，0 是真实价格；保存按品牌列整组替换',
       entryHintSpecs:
