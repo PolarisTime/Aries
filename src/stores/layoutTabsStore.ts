@@ -524,6 +524,26 @@ function readPersistedTabs(userId: string): PersistedTabsPayload | null {
 let currentUserId = 'anonymous'
 let persistTimer: ReturnType<typeof setTimeout> | undefined
 
+/**
+ * 「已同步页签」提供者：跨设备同步引擎把远端 `layoutTabs` 分片注册进来。
+ *
+ * <p>为什么需要它：登录后 {@link hydrateForUser} 从 localStorage 恢复页签，而远端落地
+ * 与本地防抖持久化（300ms）之间存在竞态——新设备首次登录时 localStorage 还是空的，
+ * hydration 会恢复出「仅工作台」的默认清单，把刚应用成功的远端清单覆盖掉，随后又把
+ * 默认清单 PUT 回服务端（实测：另一端打开的页签被清空）。恢复时优先信任引擎镜像
+ * （远端值），能把这条竞态收口；未注册（如单测、未登录）时行为完全不变。</p>
+ */
+let syncedTabsProvider:
+  | (() => { tabs?: unknown; activeTabPath?: unknown } | null)
+  | null = null
+
+/** 注册/注销「已同步页签」提供者（由 user-settings-bindings 调用）。 */
+export function setSyncedTabsProvider(
+  provider: (() => { tabs?: unknown; activeTabPath?: unknown } | null) | null,
+): void {
+  syncedTabsProvider = provider
+}
+
 /** 清除指定用户的持久化标签页，供工作台强制刷新使用。 */
 export function clearPersistedLayoutTabs(userId?: string): void {
   if (typeof window === 'undefined') {
@@ -606,14 +626,28 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
   hydrateForUser: (userId, currentLocation) => {
     currentUserId = String(userId || 'anonymous').trim() || 'anonymous'
     const persisted = readPersistedTabs(currentUserId)
-    let tabs = sanitizePersistedTabs(persisted?.tabs ?? [])
+    /*
+     * 优先用「已同步（远端）页签」而不是 localStorage：新设备首次登录时本地还是空的，
+     * 若先按本地默认清单恢复，会把刚落地的远端清单覆盖掉并反向上传（跨设备丢页签）。
+     * 引擎镜像里有清单时，它与 localStorage 是同一份数据的更新版本。
+     */
+    const synced = syncedTabsProvider?.() ?? null
+    const restored = synced?.tabs ?? persisted?.tabs ?? []
+    const syncedActivePath =
+      typeof synced?.activeTabPath === 'string'
+        ? normalizeTabPathname(synced.activeTabPath)
+        : null
+    let tabs = sanitizePersistedTabs(restored)
     let activeTabId =
-      persisted?.activeTabId &&
+      (syncedActivePath
+        ? tabs.find((tab) => tab.pathname === syncedActivePath)?.id
+        : undefined) ??
+      (persisted?.activeTabId &&
       tabs.some((tab) => tab.id === persisted.activeTabId)
         ? persisted.activeTabId
         : (tabs.find((tab) => tab.pathname === DASHBOARD_TAB_PATH)?.id ??
           tabs[0]?.id ??
-          null)
+          null))
 
     // 首次打开的深链优先于持久化的上次工作区，避免 hydration 将外部意图丢失。
     // 与路由协调层共用 ensureTabIn：已在清单中的路径复用原标签与查询串，不在清单中才新建。
@@ -800,6 +834,9 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
           tabs[0]?.id ??
           null))
     set({ tabs, activeTabId })
+    // 远端落地后**立即**写 localStorage：本地持久化本身是 300ms 防抖，若登录流程的
+    // hydrateForUser 落在窗口内会读到旧清单（见 syncedTabsProvider 注释）。
+    persistTabs()
   },
 }))
 

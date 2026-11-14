@@ -16,7 +16,11 @@ import {
   readSection,
   subscribeUserSection,
 } from '@/services/user-settings-sync'
-import { type PersistedTab, useLayoutTabsStore } from '@/stores/layoutTabsStore'
+import {
+  type PersistedTab,
+  setSyncedTabsProvider,
+  useLayoutTabsStore,
+} from '@/stores/layoutTabsStore'
 import {
   normalizePersonalSettings,
   type PersonalSettings,
@@ -175,6 +179,14 @@ export function installUserSettingsBindings(): void {
   trackTeardown(() => i18next.off('languageChanged', handleLanguageChanged))
 
   // ── layoutTabs：本地页签变更 → 分片；远端分片 → sanitize 后恢复 ──
+  /*
+   * 把引擎镜像注册给页签 store：登录后的 hydrateForUser 优先读它，避免新设备
+   * 「localStorage 还空 → 恢复成默认工作台 → 反向上传覆盖远端」的竞态。
+   */
+  setSyncedTabsProvider(() =>
+    readSection<LayoutTabsSectionValue>(LAYOUT_TABS_SECTION),
+  )
+  trackTeardown(() => setSyncedTabsProvider(null))
   trackTeardown(
     useLayoutTabsStore.subscribe((state, previous) => {
       if (
