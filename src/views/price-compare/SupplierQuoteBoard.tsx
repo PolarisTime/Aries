@@ -863,7 +863,7 @@ export function SupplierQuoteBoard() {
         sheets,
       }
     })
-  }, [brandNames, catalog, savedValues, serverPriceOf])
+  }, [brandNames, catalog])
 
   /** 一张类别表 / 一张材质表的类型别名：选区、列宽与批量操作都以它们为单位。 */
   type CategoryGroup = (typeof categoryGroups)[number]
