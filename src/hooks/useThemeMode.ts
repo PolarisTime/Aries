@@ -43,8 +43,10 @@ export function useThemeMode() {
 
   // Sync from localStorage (when usePersonalSettings saves)
   useEffect(() => {
+    // 个人设置已按账号隔离（`<key>:<userKey>`），这里按前缀匹配，不能再用全等比较。
+    const settingsKeyPrefix = `${STORAGE_KEYS.personalSettings}:`
     const onStorage = (e: StorageEvent) => {
-      if (e.key !== STORAGE_KEYS.personalSettings) return
+      if (!e.key?.startsWith(settingsKeyPrefix)) return
       void useUiSettingsStore.persist.rehydrate()
     }
     window.addEventListener('storage', onStorage)

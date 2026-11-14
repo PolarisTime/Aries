@@ -3682,6 +3682,35 @@ export const enUS = {
     continueSave: 'Continue',
     backToEdit: 'Back to edit',
   },
+  /** Notices of the cross-device user settings sync (docs/client-state-sync.md §4–§6). */
+  settingsSync: {
+    conflict:
+      'Settings were updated on another device; the server values were applied',
+    sectionDisabled:
+      'Some settings exceed the sync size limit and are now saved locally only',
+  },
+  /** Realtime collaboration on supplier price lists (docs/supplier-price-realtime-collab.md §9.3). */
+  collab: {
+    status: {
+      connecting: 'Connecting…',
+      connected: 'Live collaboration',
+      readonly: 'Read-only collaboration',
+      reconnecting: 'Reconnecting…',
+      offline: 'Offline; changes sync after reconnect',
+      authFailed: 'Collaboration auth failed; local saving restored',
+      unavailable: 'Collaboration is off; local saving restored',
+      disabled: 'Collaboration off',
+    },
+    online: {
+      label: '{{count}} online',
+      onlyYou: 'Only you',
+    },
+    conflict: {
+      title: 'This cell was changed by someone else',
+      edited: '{{cell}} was just changed to {{price}} by someone else',
+      cleared: '{{cell}} was just cleared by someone else',
+    },
+  },
   navigation: {
     master: 'Master Data',
     market: 'Price Compare',

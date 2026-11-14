@@ -116,6 +116,14 @@ interface LayoutTabsState {
   removeAllTabs: () => void
   /** 用户固定/取消固定（工作台等结构钉选标签被拒绝，见 {@link isTabPinned}） */
   setTabPinned: (id: string, pinned: boolean) => void
+  /**
+   * 用跨端同步下来的页签清单恢复（docs/client-state-sync.md §6.2）。
+   *
+   * <p>与本地持久化恢复走**同一套清洗规则**（{@link sanitizePersistedTabs}：白名单路径、
+   * 去重、工作台恒在首位、上限与钉选优先），避免"远端数据比本地脏"时绕过守卫。
+   * 传入值来自服务端，形状不可信，因此按 unknown 接收。</p>
+   */
+  applySyncedTabs: (value: unknown) => void
 }
 
 /** 去尾斜杠归一化路径（供 Tab 协调层与守卫复用） */
@@ -770,6 +778,28 @@ export const useLayoutTabsStore = create<LayoutTabsState>()((set, get) => ({
         tab.id === id ? { ...tab, userPinned: pinned } : tab,
       ),
     })
+  },
+
+  applySyncedTabs: (value) => {
+    const candidate =
+      value && typeof value === 'object' && !Array.isArray(value)
+        ? (value as { tabs?: unknown; activeTabPath?: unknown })
+        : {}
+    // 清洗规则与本地持久化恢复完全一致：远端数据同样不可信
+    const tabs = sanitizePersistedTabs(candidate.tabs)
+    const activePath =
+      typeof candidate.activeTabPath === 'string'
+        ? normalizeTabPathname(candidate.activeTabPath)
+        : null
+    const currentActiveId = get().activeTabId
+    const activeTabId =
+      tabs.find((tab) => tab.pathname === activePath)?.id ??
+      (tabs.some((tab) => tab.id === currentActiveId)
+        ? currentActiveId
+        : (tabs.find((tab) => tab.pathname === DASHBOARD_TAB_PATH)?.id ??
+          tabs[0]?.id ??
+          null))
+    set({ tabs, activeTabId })
   },
 }))
 

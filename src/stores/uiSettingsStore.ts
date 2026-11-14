@@ -5,6 +5,11 @@ import {
   CONTEXT_MENU_ACTIONS,
   contextMenuActionKeysByGroup,
 } from '@/layouts/context-menu-actions'
+import {
+  readScopedSettingsItem,
+  removeScopedSettingsItem,
+  writeScopedSettingsItem,
+} from '@/services/user-settings-sync'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 export type LayoutMode = 'sider' | 'top'
@@ -174,11 +179,18 @@ function mergePersistedState(
   }
 }
 
+/**
+ * 个人设置的持久化：按账号隔离（`<key>:<userKey>`）。
+ *
+ * <p>同一浏览器切账号时不能把 A 的字号/主题带给 B —— 这是 docs/client-state-sync.md §5
+ * 「多账号同浏览器串号」的本地侧。首次读取时若新键不存在，会把旧键（未按账号隔离）
+ * 读出来写到新键再删旧键，老用户升级后设置不丢。</p>
+ */
 const personalSettingsStorage: PersistStorage<
   Pick<UiSettingsState, 'settings'>
 > = {
   getItem: (name) => {
-    const raw = localStorage.getItem(name)
+    const raw = readScopedSettingsItem(name)
     if (!raw) {
       return null
     }
@@ -202,15 +214,15 @@ const personalSettingsStorage: PersistStorage<
         version: 1,
       }
     } catch {
-      localStorage.removeItem(name)
+      removeScopedSettingsItem(name)
       return null
     }
   },
   setItem: (name, value) => {
-    localStorage.setItem(name, JSON.stringify(value))
+    writeScopedSettingsItem(name, JSON.stringify(value))
   },
   removeItem: (name) => {
-    localStorage.removeItem(name)
+    removeScopedSettingsItem(name)
   },
 }
 

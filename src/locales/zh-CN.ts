@@ -3639,6 +3639,33 @@ export const zhCN = {
     continueSave: '继续保存',
     backToEdit: '返回修改',
   },
+  /** 个人设置跨端同步（docs/client-state-sync.md §4–§6）的提示文案。 */
+  settingsSync: {
+    conflict: '设置在其它设备上更新过，已采用服务端最新值',
+    sectionDisabled: '部分设置超出同步大小限制，已改为仅在本机保存',
+  },
+  /** 供应商价格表实时协作（docs/supplier-price-realtime-collab.md §9.3）。 */
+  collab: {
+    status: {
+      connecting: '协作连接中…',
+      connected: '实时协作中',
+      readonly: '只读协作',
+      reconnecting: '重连中…',
+      offline: '离线，改动将在重连后同步',
+      authFailed: '协作鉴权失败，已回退本地保存',
+      unavailable: '协作暂未启用，已回退本地保存',
+      disabled: '未启用协作',
+    },
+    online: {
+      label: '在线 {{count}} 人',
+      onlyYou: '仅你在线',
+    },
+    conflict: {
+      title: '该格已被他人修改',
+      edited: '{{cell}} 刚被他人改为 {{price}}',
+      cleared: '{{cell}} 刚被他人清空',
+    },
+  },
   navigation: {
     master: '基础数据',
     market: '比价',

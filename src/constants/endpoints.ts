@@ -23,6 +23,9 @@ export const ENDPOINTS = {
   // Current account (the single authenticated account)
   ACCOUNT: '/account',
   ACCOUNT_PASSWORD: '/account/password',
+  /** 账户设置（v2：sections + pages，见 docs/client-state-sync.md §4.2）。 */
+  ACCOUNT_SETTINGS: '/account/settings',
+  /** 列设置旧端点：保留为弃用别名，后端内部转调同一 service。 */
   ACCOUNT_PREFERENCES: '/account/preferences',
 
   // Company settings (business entity → plural)

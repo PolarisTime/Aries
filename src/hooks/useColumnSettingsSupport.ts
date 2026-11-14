@@ -6,10 +6,11 @@ import type {
 } from '@tanstack/react-table'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { saveUserColumnSettings } from '@/api/system/user-preferences'
 import {
-  getUserColumnSettings,
-  saveUserColumnSettings,
-} from '@/api/system/user-preferences'
+  loadUserAccountSettings,
+  rememberUserAccountSettingsPages,
+} from '@/services/user-settings-sync'
 import { useAuthStore } from '@/stores/authStore'
 import type {
   ListColumnSettings,
@@ -220,6 +221,7 @@ export function useColumnSettingsSupport(
     () => new Set(),
   )
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: columnKeys 以内容签名（columnKeysSignature）参与依赖——调用方多以内联数组传入，直接用数组引用会让每次渲染都重拉一次远端设置；这里只关心内容是否变化
   useEffect(() => {
     let cancelled = false
 
@@ -234,13 +236,17 @@ export function useColumnSettingsSupport(
       }
 
       try {
-        const remote = await getUserColumnSettings()
+        /*
+         * 与个人设置同步共用**同一次** GET `/account/settings`（引擎里的单飞请求）：
+         * 两处各发一次请求时，同一份账户设置会被读两遍、也可能读到不一致的两份快照。
+         */
+        const accountSettings = await loadUserAccountSettings()
         if (cancelled) {
           return
         }
 
-        remotePagesRef.current = remote?.pages || {}
-        const remoteSettings = remote?.pages?.[pageKey] || null
+        remotePagesRef.current = accountSettings?.pages || {}
+        const remoteSettings = accountSettings?.pages?.[pageKey] || null
         if (remoteSettings) {
           /*
            * 远端也可能存着旧列结构下的顺序（同一账号在多台设备/多个版本用过）。
@@ -264,11 +270,11 @@ export function useColumnSettingsSupport(
              * 同步回存：否则每次换设备/清缓存都会重新拉到脏顺序再自愈一遍，
              * 服务端也会一直留着引用已删列的旧数据。失败不影响本次渲染，只记日志。
              */
-            void saveUserColumnSettings({ pages: healedPages }).catch(
-              (error) => {
+            void saveUserColumnSettings({ pages: healedPages })
+              .then(() => rememberUserAccountSettingsPages(healedPages))
+              .catch((error) => {
                 logger.warn('Failed to persist healed column order', error)
-              },
-            )
+              })
             if (!userChangedRef.current) {
               columnOrderRef.current = []
               columnVisibilityRef.current = toVisibilityState(cleaned)
@@ -370,6 +376,8 @@ export function useColumnSettingsSupport(
       try {
         await saveUserColumnSettings(payload)
         remotePagesRef.current = payload.pages
+        // 回填共享快照：同一次会话里其它页面复用这份 GET 结果时不会读到过期的 pages
+        rememberUserAccountSettingsPages(payload.pages)
         syncWarningShownRef.current = false
         return
       } catch (error) {

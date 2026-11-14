@@ -11,9 +11,11 @@ import { AppAntdProvider } from '@/components/AppAntdProvider'
 import { GlobalLoadingIndicator } from '@/components/loading'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { AppUpdatePrompt } from '@/features/app-update'
+import { useUserSettingsSync } from '@/hooks/useUserSettingsSync'
 import { queryClient } from '@/lib/query-client'
 import { initializeErrorMonitoring } from '@/observability/sentry'
 import { router } from '@/router'
+import { activateUserSettingsSync } from '@/services/user-settings-sync'
 import { useAuthStore } from '@/stores/authStore'
 import { useSetupStore } from '@/stores/setupStore'
 import { logger } from '@/utils/logger'
@@ -39,6 +41,8 @@ import '@/styles/layout.css'
 import '@/styles/workspace-overlay.css'
 
 function App() {
+  // 个人设置跨端同步：本地先渲染，远端到达后按分片静默替换（docs/client-state-sync.md §5）。
+  useUserSettingsSync()
   return (
     // 唯一的 antd App 上下文：同时覆盖路由内容与 AppUpdatePrompt，
     // 保证全局 message/modal/notification 始终绑定到同一实例。
@@ -124,6 +128,17 @@ async function bootstrap() {
   if (runtimeConfigResult.status === 'fulfilled') {
     useSetupStore.getState().setStatus(runtimeConfigResult.value.setup)
   }
+
+  /*
+   * 在渲染前按登录账号激活同步引擎：页面组件的 effect 早于 App 的 effect，
+   * 若不先激活，「列设置」等在挂载时就会以匿名身份读设置（拉不到远端值）。
+   */
+  const bootUser = useAuthStore.getState().user
+  activateUserSettingsSync(
+    String(bootUser?.id ?? '').trim() ||
+      String(bootUser?.loginName ?? '').trim() ||
+      null,
+  )
 
   root.render(<App />)
 }

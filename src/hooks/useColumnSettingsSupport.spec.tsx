@@ -5,6 +5,7 @@ import { act, createElement, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
+import { resetUserSettingsSyncForTests } from '@/services/user-settings-sync'
 import type { ListColumnSettings } from '@/types/module-page'
 import { bindAntdAppApi } from '@/utils/antd-app'
 import { getListColumnSettings, setListColumnSettings } from '@/utils/storage'
@@ -22,6 +23,7 @@ vi.mock('@/stores/authStore', () => ({
 
 const apiMock = vi.hoisted(() => ({
   getUserColumnSettings: vi.fn(),
+  getUserAccountSettings: vi.fn(),
   saveUserColumnSettings: vi.fn(),
 }))
 
@@ -48,6 +50,14 @@ describe('useColumnSettingsSupport 列设置异常重置', () => {
     authState.user = null
     apiMock.getUserColumnSettings.mockReset()
     apiMock.getUserColumnSettings.mockResolvedValue({ pages: {} })
+    // 列设置现在与个人设置同步共用同一次 GET `/account/settings`（v2：sections + pages）
+    apiMock.getUserAccountSettings.mockReset()
+    apiMock.getUserAccountSettings.mockResolvedValue({
+      version: 2,
+      sections: {},
+      pages: {},
+    })
+    resetUserSettingsSyncForTests()
     apiMock.saveUserColumnSettings.mockReset()
     apiMock.saveUserColumnSettings.mockResolvedValue(undefined)
     warnings = []
@@ -171,21 +181,25 @@ describe('useColumnSettingsSupport 列设置异常重置', () => {
 
   it('远端设置为异常隐藏比例: 重置并提示一次', async () => {
     authState.user = { id: 'u1' }
-    apiMock.getUserColumnSettings.mockResolvedValue({
+    apiMock.getUserAccountSettings.mockResolvedValue({
+      version: 2,
+      sections: {},
       pages: {
         [PAGE_KEY]: { orderedKeys: [], hiddenKeys: ['a', 'b', 'c'] },
       },
     })
     render(PAGE_KEY, 3)
     await flush()
-    expect(apiMock.getUserColumnSettings).toHaveBeenCalled()
+    expect(apiMock.getUserAccountSettings).toHaveBeenCalled()
     expect(warnings).toEqual([RESET_TIP])
     expect(getListColumnSettings(PAGE_KEY, 'u1')?.hiddenKeys).toEqual([])
   })
 
   it('远端列顺序引用已删列: 清掉顺序并回存服务端, 避免每次加载重复自愈', async () => {
     authState.user = { id: 'u1' }
-    apiMock.getUserColumnSettings.mockResolvedValue({
+    apiMock.getUserAccountSettings.mockResolvedValue({
+      version: 2,
+      sections: {},
       pages: {
         [PAGE_KEY]: {
           orderedKeys: ['gone', 'spec', 'weightTon'],
