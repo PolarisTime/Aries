@@ -91,10 +91,7 @@ const cashLedgerLineSchema = z.looseObject({
   operatorName: z.string().nullish(),
   remark: z.string().nullish(),
 })
-const cashLedgerResponseSchema = z.looseObject({
-  summary: cashLedgerSummarySchema,
-  page: exactPageSchema(cashLedgerLineSchema),
-})
+const cashLedgerPageSchema = exactPageSchema(cashLedgerLineSchema)
 
 function normalizeSummary(raw: RawRecord = {}): CashLedgerSummary {
   return {
@@ -133,19 +130,20 @@ function normalizeLine(raw: RawRecord, index: number): CashLedgerLine {
 }
 
 function normalizeCashLedgerPage(
-  raw: RawRecord | null | undefined,
+  summaryRaw: RawRecord | null | undefined,
+  pageRaw: RawRecord | null | undefined,
 ): CashLedgerPage {
-  const source = raw || {}
-  const rawPage = (source.page || {}) as RawRecord
+  const summary = summaryRaw || {}
+  const page = pageRaw || {}
   return {
-    summary: normalizeSummary((source.summary || {}) as RawRecord),
+    summary: normalizeSummary(summary),
     page: {
-      content: asArray<RawRecord>(rawPage.content).map(normalizeLine),
-      totalElements: asNumber(rawPage.totalElements),
-      totalPages: asNumber(rawPage.totalPages),
-      page: asNumber(rawPage.currentPage),
-      size: asNumber(rawPage.pageSize),
-      hasNext: rawPage.hasMore === true,
+      content: asArray<RawRecord>(page.content).map(normalizeLine),
+      totalElements: asNumber(page.totalElements),
+      totalPages: asNumber(page.totalPages),
+      page: asNumber(page.currentPage),
+      size: asNumber(page.pageSize),
+      hasNext: page.hasMore === true,
     },
   }
 }
@@ -177,19 +175,23 @@ export async function getCashLedger(
   query: CashLedgerQuery,
   signal?: AbortSignal,
 ): Promise<CashLedgerPage> {
-  const response = await apiGet(
-    ENDPOINTS.CASH_LEDGER,
-    cashLedgerResponseSchema,
-    {
+  // 标准分页契约：列表返回 PageResponse，汇总走独立 /summary（同一筛选条件）。
+  const filter = normalizeFilter(query)
+  const [pageResponse, summary] = await Promise.all([
+    apiGet(ENDPOINTS.CASH_LEDGER, cashLedgerPageSchema, {
       params: {
-        ...normalizeFilter(query),
+        ...filter,
         page: Math.max(Math.trunc(query.page), 0),
         size: Math.max(Math.trunc(query.size), 1),
       },
       signal,
-    },
-  )
-  return normalizeCashLedgerPage(response)
+    }),
+    apiGet(ENDPOINTS.CASH_LEDGER_SUMMARY, cashLedgerSummarySchema, {
+      params: filter,
+      signal,
+    }),
+  ])
+  return normalizeCashLedgerPage(summary, pageResponse)
 }
 
 /**

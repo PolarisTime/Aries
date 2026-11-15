@@ -53,6 +53,8 @@ export const ENDPOINTS = {
 
   // Cash ledger (aggregate read model)
   CASH_LEDGER: '/cash-ledger',
+  /** 资金流水汇总（与列表相同筛选条件，独立于分页）。 */
+  CASH_LEDGER_SUMMARY: '/cash-ledger/summary',
   /**
    * 资金流水导出请求资源：POST 创建导出产物（201 + ExportArtifactResponse），
    * 再用 `CASH_LEDGER_EXPORT_REQUEST_CONTENT(id)` 下载 XLSX。产物保留 30 分钟，过期/重启后返回 404。
