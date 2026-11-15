@@ -1,3 +1,72 @@
+# [16.0.0](https://github.com/PolarisTime/Aries/compare/v15.9.0...v16.0.0) (2026-11-15)
+
+
+* feat(api)!: 前端状态词表迁移为英文 code 并保留中文展示 ([8b0e72f](https://github.com/PolarisTime/Aries/commit/8b0e72f92a756af1584fa59e878e2c80a5cff68f))
+* feat(api)!: 前端迁移到 v2.0 资源式端点并删除旧调用 ([30ae4e1](https://github.com/PolarisTime/Aries/commit/30ae4e100922f5ec83de2b1d709792aec02cc384))
+* feat(price-compare)!: 现货价改为只读，唯一来源为供应商价格表导入 ([9222c7a](https://github.com/PolarisTime/Aries/commit/9222c7a1376a0de371703e27a0dce140a8d8dbfe))
+* refactor(price-compare)!: 删除跨批次同步现货价 ([bb54102](https://github.com/PolarisTime/Aries/commit/bb54102ffbdff789e970cb595bd0eb354e5bd311))
+* refactor(price-compare)!: 报单比价移除采购订单入口与已开未开吨位 ([7fa64b8](https://github.com/PolarisTime/Aries/commit/7fa64b82120515a42c0c5e829c9e591e4822d081))
+
+
+### Bug Fixes
+
+* **api:** 提货清单预览端点改为复数名词路径 ([3eb0afc](https://github.com/PolarisTime/Aries/commit/3eb0afcac177290572a8b2e29f4ac0383a64bf91))
+* **api:** 补发票状态 code 的中文展示映射 ([d4c00c7](https://github.com/PolarisTime/Aries/commit/d4c00c7de86eb685e853c3eea2d1b1ff11c5f058))
+* **column-settings:** 列顺序引用了已删除的列时退回默认顺序 ([c900e04](https://github.com/PolarisTime/Aries/commit/c900e045fc6ae175eba40d24b35abbd0dc04a1b7))
+* **columns:** hiddenByDefault 的列不再出现在只读详情面 ([c51903b](https://github.com/PolarisTime/Aries/commit/c51903b80e1b4819aeba7d1e66b12bf1d55ac437))
+* **detail:** 合计行不再输出没有列可对的孤立数字 ([5edd896](https://github.com/PolarisTime/Aries/commit/5edd896c9691d69a4cd72a358771fb10ca2a6793))
+* **freight-bill:** 导入按钮去掉「（可部分）」并改用 i18n 文案 ([2aea8c3](https://github.com/PolarisTime/Aries/commit/2aea8c3742810ca0a0e400a665a202408ce6d560))
+* **layout:** 浏览器前进后退离开脏页面先确认，避免未保存编辑被卸载 ([014a059](https://github.com/PolarisTime/Aries/commit/014a05959408488020cd9bee7af6528becdc0a6d))
+* **pickup-list:** 提货清单短值列不再省略并补足列宽 ([956949e](https://github.com/PolarisTime/Aries/commit/956949efdbf3fd2df6f9bc2090a5a6452f369add))
+* **price-compare:** 供应商价格表不再被隐藏页签顶下去（改为上对齐） ([cdb0503](https://github.com/PolarisTime/Aries/commit/cdb0503c369498efab5bc60eb8c7b27b13245875))
+* **price-compare:** 单定尺材质表头不再多一行空表头 ([de7a6c0](https://github.com/PolarisTime/Aries/commit/de7a6c096b254447e57700f2ff3dd377dea0c04f))
+* **price-compare:** 品牌列头压成一行，去掉三行表头 ([f6e0087](https://github.com/PolarisTime/Aries/commit/f6e008768307576562614d37765a9fe6af830d25))
+* **price-compare:** 已打开的供应商页签刷新后不再丢失 ([c5c698b](https://github.com/PolarisTime/Aries/commit/c5c698bacb6201cc8f45a6a94b467d3a3efa4f32))
+* **price-compare:** 材质 tab 按供应商记住，并清掉报价页已死的视图偏好导出 ([128cd9d](https://github.com/PolarisTime/Aries/commit/128cd9df0720efb3fc23f3636237d6d8cc21e6f5))
+* **price-compare:** 表格表头层级与密度对齐供应商报价表 ([f517a4c](https://github.com/PolarisTime/Aries/commit/f517a4c0e14813c86816b1f8ac16fc5a51c21d1f))
+* **print:** 打印明细短值列不再省略并补足「数量单位」列宽 ([80c5ebf](https://github.com/PolarisTime/Aries/commit/80c5ebf71bea37e72aec5c7d1b1a0f2bf4762286))
+* **sales-order:** 展开行不再重复显示已交付/已退货/净交付 ([1861148](https://github.com/PolarisTime/Aries/commit/18611485c46c8c86e690a491a3eb3aafb1ee72a2))
+* **settings:** 409 冲突按后端真实响应体解析（serverValue 映射） ([413285b](https://github.com/PolarisTime/Aries/commit/413285bc981bfaa05ba4234b7d4329f7b3af81a6))
+* **settings:** 页签恢复优先用同步镜像，避免新设备覆盖远端页签 ([81281b8](https://github.com/PolarisTime/Aries/commit/81281b830a0d0c759e127c756fc1e7d3e331a891))
+* **table:** 列表主表与父单据选择也不再省略短值列 ([449d619](https://github.com/PolarisTime/Aries/commit/449d61934171046f82db9a0f0ac50f0bc4748bf2))
+* **test:** 移除 ESLint 判定的多余类型断言 ([1e15ef2](https://github.com/PolarisTime/Aries/commit/1e15ef27f1d62388023f7a5c1305c650aeb02a13))
+* **test:** 移除 ModuleDetailBody 测试中未使用的类型导出 ([30b40de](https://github.com/PolarisTime/Aries/commit/30b40defef0be8d3b4471f92d75c2ab25db96c32))
+
+
+### Features
+
+* **api:** 资金流水前端适配标准分页与独立汇总端点 ([64cdd7d](https://github.com/PolarisTime/Aries/commit/64cdd7d0f6188a9b52481b11fca442d92fed22ec))
+* **detail:** 详情面明细合计也改成一行文字、右端对齐 ([30fdd5e](https://github.com/PolarisTime/Aries/commit/30fdd5e833d6001d1ef61d4936bf4dda8a903531))
+* **master:** 客户/供应商/物流商/仓库列表用 flex 列吃掉富余 ([7ed1e93](https://github.com/PolarisTime/Aries/commit/7ed1e93b553ee9a1cab1ec28da549532b8a1e10c))
+* **personal-settings:** 新增「单据按钮位置」个人设置（顶部 / 底部） ([c0483bf](https://github.com/PolarisTime/Aries/commit/c0483bfbea8832a85a60ff03c7224489594be71c))
+* **price-compare:** 供应商报价表按品类模板派生并改为分区堆叠 ([37e8605](https://github.com/PolarisTime/Aries/commit/37e8605c9d0e76ca3532da5ecd4eae458ba6c4b6))
+* **price-compare:** 供应商报价页接入实时协作（Yjs 绑定 + Awareness 光标 + 降级） ([7e5dd25](https://github.com/PolarisTime/Aries/commit/7e5dd2593463f3d992d9a5aadb5ff4d487753c6b))
+* **price-compare:** 单材质品类也保留材质 tab 行，各品类版式统一 ([78e0adf](https://github.com/PolarisTime/Aries/commit/78e0adfccc929eae7c1120859a05559dba77cede))
+* **price-compare:** 报价表工具栏、品牌列头与分区标题排版调整 ([17e3076](https://github.com/PolarisTime/Aries/commit/17e30762fe108916cebeb31fa3a6d291ad214541))
+* **price-compare:** 报价表采用设计稿表格风格 ([710441a](https://github.com/PolarisTime/Aries/commit/710441acc3a732e6c1558e5d0eac2dc81bb11be0))
+* **price-compare:** 报单比价表格换用供应商报价表皮肤 ([9fc6f08](https://github.com/PolarisTime/Aries/commit/9fc6f086617b6cb13ceb9ab612233cae656d66d1)), closes [#f8fafc](https://github.com/PolarisTime/Aries/issues/f8fafc) [#f4f7fb](https://github.com/PolarisTime/Aries/issues/f4f7fb) [#f1f5fb](https://github.com/PolarisTime/Aries/issues/f1f5fb)
+* **price-compare:** 材质收进表格左上角，去掉材质标题行 ([100ae14](https://github.com/PolarisTime/Aries/commit/100ae1447eb6d437b92c6f4988d9ab9bbb7008d6))
+* **price-compare:** 材质改用 tab 切换，表格外套一层材质页签 ([d925dc1](https://github.com/PolarisTime/Aries/commit/d925dc14deb5853e10f17d15ffae57e41187d1bb))
+* **price-compare:** 输入价格增加交互反馈 ([a6bf391](https://github.com/PolarisTime/Aries/commit/a6bf39182d5c04b92798e823b45407392acea3d5))
+* **purchase-order:** 总金额与实际货值合并为一列「金额」，按状态显示 ([90bb543](https://github.com/PolarisTime/Aries/commit/90bb543d761afc1591273d697beb81e12e601f53))
+* **purchase-order:** 未入库件数并入入库进度列 ([07ff2b2](https://github.com/PolarisTime/Aries/commit/07ff2b25228137c2143d9b465d994bb12ca9dfd4))
+* **settings:** 个人设置跨端同步引擎与三分片接入 ([4f19caa](https://github.com/PolarisTime/Aries/commit/4f19caa140351c97e368c6fcf3aa9d3f24530a9f))
+* **table:** 列表主表富余宽度支持 flex 列语义 ([5c15fd5](https://github.com/PolarisTime/Aries/commit/5c15fd5092e3edaac61b565d1031a01f5c03983a))
+
+
+### Performance Improvements
+
+* **price-compare:** 收敛 categoryGroups 的无效依赖，打字时不再重建整张网格 ([f74af6f](https://github.com/PolarisTime/Aries/commit/f74af6fbdae8a687b9a3eb10fd764c655dcc8be7))
+
+
+### BREAKING CHANGES
+
+* 前端状态常量与 API 载荷改为英文 code；中文仅通过 STATUS_LABELS/i18n 展示。
+* 移除旧文件端点调用与 /account/preferences；导出改为两步资源协议。
+* 报单比价页不再提供「同步现货价」，现货价只能通过「从供应商价格表导入」写入。
+* 报单比价页不再支持手工录入现货价/手工指定供应商，价格只能通过「从供应商价格表导入」写入；未匹配报价的格子会被清空。
+* 报单比价页不再提供采购订单关联、已开/未开吨位与已开完标记；相关接口与字段已从后端移除。
+
 # [15.9.0](https://github.com/PolarisTime/Aries/compare/v15.8.0...v15.9.0) (2026-11-11)
 
 
