@@ -1,5 +1,6 @@
 import { Tag, Tooltip, Typography } from 'antd'
 import type { RefObject } from 'react'
+import { getStatusText } from '@/constants/document-status'
 import type { DocumentFlowNode } from '@/shared/schemas/document-flow'
 import { formatDate } from '@/utils/formatters'
 import {
@@ -65,7 +66,13 @@ function NodeMetrics({
 }
 
 /** 状态 + 日期行（两者都没有时整段不渲染）。 */
-function NodeMeta({ node }: { node: DocumentFlowNode }) {
+function NodeMeta({
+  node,
+  t,
+}: {
+  node: DocumentFlowNode
+  t: DocumentFlowTranslator
+}) {
   if (!node.status && !node.date) {
     return null
   }
@@ -73,7 +80,8 @@ function NodeMeta({ node }: { node: DocumentFlowNode }) {
     <span className="document-flow-node-meta">
       {node.status ? (
         <Tag className="document-flow-node-status" variant="filled">
-          {node.status}
+          {/* 状态值是 code：展示转中文，与列表/详情共用 getStatusText */}
+          {getStatusText(node.status, t)}
         </Tag>
       ) : null}
       {node.date ? (
@@ -160,7 +168,7 @@ export function DocumentFlowNodeCard({
         <Text className="document-flow-node-no" strong>
           {item.node.no ?? item.node.id}
         </Text>
-        <NodeMeta node={item.node} />
+        <NodeMeta node={item.node} t={t} />
         <NodeMetrics amountText={amountText} t={t} weightText={weightText} />
       </button>
     </Tooltip>

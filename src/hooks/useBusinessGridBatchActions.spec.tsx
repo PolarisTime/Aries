@@ -33,8 +33,8 @@ vi.mock('@/api/business/business-crud', () => ({
 
 const MODULE_KEY = 'sales-order'
 /** 终态保护状态: 不可删除, 用于构造被跳过的行。 */
-const AUDITED = '已审核'
-const DRAFT = '草稿'
+const AUDITED = 'AUDITED'
+const DRAFT = 'DRAFT'
 
 type BatchActions = ReturnType<typeof useBusinessGridBatchActions>
 
@@ -180,8 +180,8 @@ describe('useBusinessGridBatchActions 批量删除确认文案', () => {
  * 该行同时属于多选集合时，也只能改这一条。
  */
 describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
-  const AUDIT_TARGET = { key: 'status', value: '已审核' }
-  const REVERSE_TARGET = { key: 'status', value: '草稿' }
+  const AUDIT_TARGET = { key: 'status', value: 'AUDITED' }
+  const REVERSE_TARGET = { key: 'status', value: 'DRAFT' }
   const updateStatusMock = crudMock.updateBusinessModuleStatus
 
   let container: HTMLDivElement
@@ -249,9 +249,9 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
 
   it('多选集合包含该行时, 行级审核只提交该行', async () => {
     const rows = [
-      record({ id: '1', no: 'SO-1', status: '草稿' }),
-      record({ id: '2', no: 'SO-2', status: '草稿' }),
-      record({ id: '3', no: 'SO-3', status: '草稿' }),
+      record({ id: '1', no: 'SO-1', status: 'DRAFT' }),
+      record({ id: '2', no: 'SO-2', status: 'DRAFT' }),
+      record({ id: '3', no: 'SO-3', status: 'DRAFT' }),
     ]
     const actions = render(rows)
 
@@ -272,16 +272,16 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
       await lastConfirm().onOk?.()
     })
     expect(updateStatusMock).toHaveBeenCalledTimes(1)
-    expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '2', '已审核')
+    expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '2', 'AUDITED')
   })
 
   it('无退回路径的模块: 审核文案不承诺"可反审核退回"', async () => {
     // 模拟 receipt/payment（supportsReverseAudit:false）：没有反审核目标
-    const rows = [record({ id: '1', no: 'SO-1', status: '草稿' })]
+    const rows = [record({ id: '1', no: 'SO-1', status: 'DRAFT' })]
     const actions = render(rows, {
       listReverseAuditTarget: null,
       // 没有反审核目标时，审核放行条件由 auditSourceStatuses 提供（与真实终态模块一致）
-      listAuditSourceStatuses: ['草稿'],
+      listAuditSourceStatuses: ['DRAFT'],
     })
 
     act(() => {
@@ -298,8 +298,8 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
 
   it('行级反审核逐行解析目标状态, 且只提交该行', async () => {
     const rows = [
-      record({ id: '1', no: 'SO-1', status: '已审核' }),
-      record({ id: '2', no: 'SO-2', status: '已审核' }),
+      record({ id: '1', no: 'SO-1', status: 'AUDITED' }),
+      record({ id: '2', no: 'SO-2', status: 'AUDITED' }),
     ]
     const actions = render(rows)
 
@@ -314,14 +314,14 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
       await lastConfirm().onOk?.()
     })
     expect(updateStatusMock).toHaveBeenCalledTimes(1)
-    expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '2', '草稿')
+    expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '2', 'DRAFT')
   })
 
   it('行级审核遇到不允许的状态: 只提示, 不弹确认框', () => {
-    const actions = render([record({ id: '1', no: 'SO-1', status: '已审核' })])
+    const actions = render([record({ id: '1', no: 'SO-1', status: 'AUDITED' })])
 
     act(() => {
-      actions.runAudit([record({ id: '1', no: 'SO-1', status: '已审核' })])
+      actions.runAudit([record({ id: '1', no: 'SO-1', status: 'AUDITED' })])
     })
 
     expect(antdAppMock.modal.confirm).not.toHaveBeenCalled()
@@ -333,9 +333,9 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
 
   it('批量入口仍按选中集提交全部可审核记录', async () => {
     const rows = [
-      record({ id: '1', no: 'SO-1', status: '草稿' }),
-      record({ id: '2', no: 'SO-2', status: '草稿' }),
-      record({ id: '3', no: 'SO-3', status: '已审核' }),
+      record({ id: '1', no: 'SO-1', status: 'DRAFT' }),
+      record({ id: '2', no: 'SO-2', status: 'DRAFT' }),
+      record({ id: '3', no: 'SO-3', status: 'AUDITED' }),
     ]
     const actions = render(rows)
 
@@ -351,7 +351,7 @@ describe('useBusinessGridBatchActions 审核/反审核作用域', () => {
       await lastConfirm().onOk?.()
     })
     expect(updateStatusMock).toHaveBeenCalledTimes(2)
-    expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '1', '已审核')
-    expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '2', '已审核')
+    expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '1', 'AUDITED')
+    expect(updateStatusMock).toHaveBeenCalledWith(MODULE_KEY, '2', 'AUDITED')
   })
 })

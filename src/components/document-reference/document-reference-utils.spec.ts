@@ -18,12 +18,12 @@ describe('normalizeDocumentReferences', () => {
       normalizeDocumentReferences([
         'PO-001, PO-002',
         { orderNo: 'PO-002', id: '2', supplierName: '供应商A' },
-        { documentNo: 'PO-003', totalAmount: 1200, status: '已审核' },
+        { documentNo: 'PO-003', totalAmount: 1200, status: 'AUDITED' },
       ]),
     ).toEqual([
       { no: 'PO-001' },
       { no: 'PO-002', id: '2', counterpartyName: '供应商A' },
-      { no: 'PO-003', amount: 1200, status: '已审核' },
+      { no: 'PO-003', amount: 1200, status: 'AUDITED' },
     ])
   })
 
@@ -43,7 +43,7 @@ describe('formatDocumentReferenceText（单据引用显示的唯一文本出口�
     expect(
       formatDocumentReferenceText([
         { orderNo: 'PO-1', id: '1' },
-        { documentNo: 'PO-2', totalAmount: 1200, status: '已审核' },
+        { documentNo: 'PO-2', totalAmount: 1200, status: 'AUDITED' },
       ]),
     ).toBe('PO-1, PO-2')
   })

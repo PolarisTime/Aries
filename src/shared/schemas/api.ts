@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { DOCUMENT_STATUS, STATUS } from '@/constants/status-constants'
 
 const integerStringSchema = z
   .string()
@@ -96,30 +97,18 @@ export const apiProblemSchema = z.looseObject({
 
 export type ApiProblem = z.output<typeof apiProblemSchema>
 
+/**
+ * 单据/业务状态 code（与后端 `DocumentStatus.code()` 逐字一致）。
+ *
+ * <p>2026-11 起 DB 与 API 统一使用英文 code（Flyway V219）。比较、筛选、提交
+ * 一律用 code；展示必须走 `statusLabel()`（无 t()）或 `getStatusText(status, t)`（组件），
+ * 不要把 code 直接渲染给用户。</p>
+ */
 export type DocumentStatus =
-  | '草稿'
-  | '已审核'
-  | '未审核'
-  | '已完成'
-  | '完成采购'
-  | '完成入库'
-  | '完成销售'
-  | '部分入库'
-  | '部分出库'
-  | '已签署'
-  | '未签署'
-  | '待确认'
-  | '已确认'
-  | '待审核'
-  | '已收款'
-  | '已付款'
-  | '执行中'
-  | '已归档'
-  | '正常'
-  | '禁用'
-  | '部分结清'
+  (typeof DOCUMENT_STATUS)[keyof typeof DOCUMENT_STATUS]
 
-export type EnabledStatus = '正常' | '禁用'
+/** 启用/禁用状态 code。 */
+export type EnabledStatus = typeof STATUS.NORMAL | typeof STATUS.DISABLED
 
 /** 结算主体下拉选项 */
 export interface SettlementCompanyOption {

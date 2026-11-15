@@ -128,7 +128,7 @@ describe('serializeBusinessRecordForSave chargeItems 序列化通道', () => {
       supplierName: '河北钢铁贸易',
       shortName: '河钢',
       contactName: '张伟',
-      status: '正常',
+      status: 'NORMAL',
     })) as Record<string, unknown>
 
     expect(payload.shortName).toBe('河钢')
@@ -143,7 +143,7 @@ describe('serializeBusinessRecordForSave chargeItems 序列化通道', () => {
       customerCode: 'KH001',
       settlementCompanyId: '2001',
       settlementCompanyName: '结算主体甲',
-      status: '正常',
+      status: 'NORMAL',
       allowedBrands: ['沙钢', '永钢'],
       allowedMaterials: ['HRB400'],
     })) as Record<string, unknown>
@@ -159,7 +159,7 @@ describe('serializeBusinessRecordForSave chargeItems 序列化通道', () => {
       projectName: '项目一',
       customerId: '1001',
       customerCode: 'KH001',
-      status: '正常',
+      status: 'NORMAL',
       allowedBrands: [],
       allowedMaterials: [],
     })) as Record<string, unknown>

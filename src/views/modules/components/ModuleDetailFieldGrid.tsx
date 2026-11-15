@@ -5,6 +5,7 @@ import {
   isDocumentReferenceField,
 } from '@/components/document-reference/document-reference-utils'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
+import { statusLabel } from '@/constants/status-constants'
 import { shouldDisplayPieceWeightAsDash } from '@/module-system/presentation/module-line-item-display'
 import type {
   ModuleDetailField,
@@ -79,7 +80,8 @@ export function ModuleRecordDetailFieldValue({
       record,
       statusKey: field.key,
       statusMap: config.statusMap,
-      renderFallback: (status) => formatCellValue(status, fieldType),
+      // 没有 statusMap 时也要给中文：状态值是 code，直接渲染 formatCellValue 会露出 DRAFT
+      renderFallback: (status) => statusLabel(status) || '-',
     })
   }
   if (colDef?.render) {

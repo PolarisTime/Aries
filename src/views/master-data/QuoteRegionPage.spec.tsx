@@ -42,7 +42,7 @@ const EXISTING: QuoteRegionRecord = {
   regionName: '杭州',
   slug: 'hangzhou',
   sortOrder: 1,
-  status: '正常',
+  status: 'NORMAL',
   remark: '原 yml 配置',
   createdAt: '2026-01-02T03:04:05',
   updatedAt: '2026-01-03T04:05:06',
@@ -331,7 +331,7 @@ describe('取价地区维护页', () => {
       regionName: '宁波',
       slug: 'ningbo',
       sortOrder: 2,
-      status: '正常',
+      status: 'NORMAL',
     })
     // 弹窗关闭 + 列表重新拉取
     expect(document.body.querySelector('.workspace-overlay')).toBeNull()
@@ -366,7 +366,7 @@ describe('取价地区维护页', () => {
       regionName: '杭州',
       slug: 'hangzhou',
       sortOrder: 3,
-      status: '禁用',
+      status: 'DISABLED',
       // 编辑时未改动的备注原样保留。
       remark: '原 yml 配置',
     })
@@ -423,7 +423,7 @@ describe('取价地区维护页', () => {
     await clickButton('搜索')
 
     expect(listQuoteRegionsMock).toHaveBeenCalledWith(
-      expect.objectContaining({ status: '禁用', page: 0 }),
+      expect.objectContaining({ status: 'DISABLED', page: 0 }),
       expect.anything(),
     )
   })

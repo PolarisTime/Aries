@@ -38,7 +38,7 @@ const rawRecord = (overrides: Record<string, unknown> = {}) => ({
   regionName: '杭州',
   slug: 'hangzhou',
   sortOrder: 1,
-  status: '正常',
+  status: 'NORMAL',
   remark: null,
   createdAt: '2026-01-02T03:04:05',
   updatedAt: null,
@@ -58,24 +58,24 @@ const validInput = (overrides: Record<string, unknown> = {}) => ({
   regionName: '杭州',
   slug: 'hangzhou',
   sortOrder: 1,
-  status: '正常',
+  status: 'NORMAL',
   ...overrides,
 })
 
-describe('状态白名单解析（正常 / 禁用）', () => {
-  it('忽略首尾空白，合法值原样返回', () => {
-    expect(parseQuoteRegionStatus('正常')).toBe('正常')
-    expect(parseQuoteRegionStatus(' 禁用 ')).toBe('禁用')
+describe('状态白名单解析（NORMAL / DISABLED code）', () => {
+  it('忽略首尾空白，合法 code 原样返回', () => {
+    expect(parseQuoteRegionStatus('NORMAL')).toBe('NORMAL')
+    expect(parseQuoteRegionStatus(' DISABLED ')).toBe('DISABLED')
   })
 
   /**
-   * 后端 `StatusConstants.DISABLED` 取自 `DocumentStatus.DISABLED.label()`，实际文案是
-   * 「禁用」。V187 曾把 CHECK 约束写成「停用」，V188 已修正 —— 这条用例锁住该口径，
-   * 避免下拉里再出现「停用」。
+   * V219 起 DB 与 API 只存英文 code；V187 的历史错误文案「停用」与旧中文 label
+   * 都不再是合法状态 —— 这条用例锁住该口径，避免下拉里再出现中文/停用。
    */
-  it('「停用」不是合法状态（后端与数据库 CHECK 都是「禁用」）', () => {
+  it('中文 label 与「停用」都不再是合法状态（V219 起存 code）', () => {
     expect(parseQuoteRegionStatus('停用')).toBeNull()
-    expect(parseQuoteRegionStatus('DISABLED')).toBeNull()
+    expect(parseQuoteRegionStatus('正常')).toBeNull()
+    expect(parseQuoteRegionStatus('禁用')).toBeNull()
   })
 
   it('非法/空值返回 null（读路径不整页失败）', () => {
@@ -105,7 +105,7 @@ describe('取价地区写入契约（Zod 边界）', () => {
       regionName: '  杭州 ',
       slug: ' hangzhou  ',
       sortOrder: 1,
-      status: ' 正常 ',
+      status: ' NORMAL ',
       remark: '   ',
     })
     expect(result.success).toBe(true)
@@ -113,7 +113,7 @@ describe('取价地区写入契约（Zod 边界）', () => {
       regionName: '杭州',
       slug: 'hangzhou',
       sortOrder: 1,
-      status: '正常',
+      status: 'NORMAL',
     })
     expect(result.data && 'remark' in result.data).toBe(false)
   })
@@ -176,7 +176,7 @@ describe('取价地区写入契约（Zod 边界）', () => {
   })
 
   it('状态白名单拒绝「停用」等非法值', () => {
-    expect(parse(validInput({ status: '禁用' })).success).toBe(true)
+    expect(parse(validInput({ status: 'DISABLED' })).success).toBe(true)
     expect(issuesOf(validInput({ status: '停用' }))).toContainEqual({
       path: 'status',
       message: '状态只能是「正常」或「禁用」',
@@ -304,7 +304,7 @@ describe('取价地区请求函数', () => {
   it('列表默认按 sortOrder 升序，并透传状态与关键字', async () => {
     apiGetMock.mockResolvedValueOnce(rawPage([rawRecord()]))
     const page = await listQuoteRegions({
-      status: '正常',
+      status: 'NORMAL',
       keyword: ' 杭州 ',
       page: 1,
       size: 30,
@@ -316,7 +316,7 @@ describe('取价地区请求函数', () => {
       size: 30,
       sortBy: 'sortOrder',
       direction: 'asc',
-      status: '正常',
+      status: 'NORMAL',
       keyword: '杭州',
     })
     expect(page.content[0].id).toBe(SNOWFLAKE_ID)
@@ -356,7 +356,7 @@ describe('取价地区请求函数', () => {
       regionName: ' 杭州 ',
       slug: ' hangzhou ',
       sortOrder: 1,
-      status: '正常',
+      status: 'NORMAL',
       remark: ' ',
     })
 
@@ -365,7 +365,7 @@ describe('取价地区请求函数', () => {
       regionName: '杭州',
       slug: 'hangzhou',
       sortOrder: 1,
-      status: '正常',
+      status: 'NORMAL',
     })
     expect(
       apiPostMock.mock.calls[0][3].headers['X-Idempotency-Key'],
@@ -378,13 +378,13 @@ describe('取价地区请求函数', () => {
       regionName: '杭州',
       slug: 'hangzhou',
       sortOrder: 2,
-      status: '禁用',
+      status: 'DISABLED',
     })
 
     expect(apiPutMock.mock.calls[0][0]).toBe(`/quote-regions/${SNOWFLAKE_ID}`)
     expect(apiPutMock.mock.calls[0][2]).toMatchObject({
       sortOrder: 2,
-      status: '禁用',
+      status: 'DISABLED',
     })
     expect(
       apiPutMock.mock.calls[0][3].headers['X-Idempotency-Key'],
@@ -409,7 +409,7 @@ describe('取价地区请求函数', () => {
         regionName: '杭州',
         slug: 'Hangzhou',
         sortOrder: 1,
-        status: '正常',
+        status: 'NORMAL',
       }),
     ).rejects.toThrow()
     expect(apiPostMock).not.toHaveBeenCalled()
@@ -421,7 +421,7 @@ describe('取价地区请求函数', () => {
         regionName: '杭州',
         slug: 'hangzhou',
         sortOrder: -1,
-        status: '正常',
+        status: 'NORMAL',
       }),
     ).rejects.toThrow()
     await expect(

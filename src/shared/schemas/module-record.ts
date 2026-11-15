@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { FREIGHT_SETTLEMENT_MODES } from '@/constants/freight-settlement'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type { ModuleKey } from '@/module-system/core/module-key'
 import {
   exactPageSchema,
@@ -95,21 +96,34 @@ const optionalRequestDecimalSchema = requestDecimalSchema.nullish()
 const optionalRequestNonNegativeDecimalSchema =
   requestNonNegativeDecimalSchema.nullish()
 
-export const purchaseOrderStatusSchema = z.enum(['草稿', '已审核', '完成采购'])
+export const purchaseOrderStatusSchema = z.enum([
+  DOCUMENT_STATUS.DRAFT,
+  DOCUMENT_STATUS.AUDITED,
+  DOCUMENT_STATUS.PURCHASE_COMPLETED,
+])
 export const purchaseInboundStatusSchema = z.enum([
-  '草稿',
-  '已审核',
-  '完成入库',
+  DOCUMENT_STATUS.DRAFT,
+  DOCUMENT_STATUS.AUDITED,
+  DOCUMENT_STATUS.INBOUND_COMPLETED,
 ])
 export const salesOrderStatusSchema = z.enum([
-  '草稿',
-  '已审核',
-  '交付核定',
-  '完成销售',
+  DOCUMENT_STATUS.DRAFT,
+  DOCUMENT_STATUS.AUDITED,
+  DOCUMENT_STATUS.DELIVERY_VERIFICATION,
+  DOCUMENT_STATUS.SALES_COMPLETED,
 ])
-export const salesOutboundStatusSchema = z.enum(['草稿', '已审核'])
-export const salesReturnStatusSchema = z.enum(['草稿', '已审核'])
-export const freightBillStatusSchema = z.enum(['草稿', '已审核'])
+export const salesOutboundStatusSchema = z.enum([
+  DOCUMENT_STATUS.DRAFT,
+  DOCUMENT_STATUS.AUDITED,
+])
+export const salesReturnStatusSchema = z.enum([
+  DOCUMENT_STATUS.DRAFT,
+  DOCUMENT_STATUS.AUDITED,
+])
+export const freightBillStatusSchema = z.enum([
+  DOCUMENT_STATUS.DRAFT,
+  DOCUMENT_STATUS.AUDITED,
+])
 
 /** 物流单结算方式：后端字符串枚举，取值必须与 `FREIGHT_SETTLEMENT_MODES` 完全一致。 */
 const freightBillSettlementModeSchema = z.enum(FREIGHT_SETTLEMENT_MODES)

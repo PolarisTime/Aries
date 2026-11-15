@@ -81,7 +81,7 @@ function sheetRecord(overrides: Record<string, unknown> = {}) {
     refPeriod: '上午',
     lengthPremium: 30,
     locked: false,
-    status: '报价',
+    status: 'QUOTING',
     version: '0',
     brands: [{ brandName: '中天', freight: 30, sortOrder: 0 }],
     items: [

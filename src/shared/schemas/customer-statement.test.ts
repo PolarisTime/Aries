@@ -15,7 +15,7 @@ const baseRecord = {
   salesAmount: 1000,
   receiptAmount: 0,
   closingAmount: 1000,
-  status: '待确认',
+  status: 'PENDING_CONFIRM',
 }
 
 describe('statementDirectionSchema', () => {

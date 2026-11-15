@@ -8,6 +8,7 @@ import { createElement, type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DocumentFlowModal } from '@/components/DocumentFlowModal'
 import { renderModuleRecordStatus } from '@/components/ModuleRecordStatus'
+import { statusLabel } from '@/constants/status-constants'
 import { useModuleRecordHelpers } from '@/hooks/useModuleRecordHelpers'
 import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import { message } from '@/utils/antd-app'
@@ -237,8 +238,8 @@ export function ModuleDetailHeader({
                 record,
                 statusKey: 'status',
                 statusMap: config.statusMap,
-                // 没有 statusMap 的模块退回状态原文；空值不渲染（上面已判空）
-                renderFallback: (value) => value || '-',
+                // 没有 statusMap 的模块退回中文表（statusLabel），空值不渲染（上面已判空）
+                renderFallback: (value) => statusLabel(value) || '-',
               })}
             </span>
           ) : null}

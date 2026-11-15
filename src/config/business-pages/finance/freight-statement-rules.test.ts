@@ -72,7 +72,7 @@ describe('freight-statement-rules', () => {
         startDate: '2026-03-01',
         endDate: '2026-03-01',
         paidAmount: 0,
-        status: '草稿',
+        status: 'DRAFT',
       })
     })
   })

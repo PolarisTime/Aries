@@ -1,3 +1,4 @@
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { substituteMaterialOf } from '@/utils/material-grade'
 import type {
   Brand,
@@ -546,7 +547,8 @@ export function isSeparatorRow(row: Pick<PriceRow, 'rowType'>): boolean {
   return row.rowType === 'SEPARATOR'
 }
 
-export const DEFAULT_STATUS = '报价'
+/** 报单比价单据默认状态 code（后端 V219 起存英文 code，中文只在展示层）。 */
+export const DEFAULT_STATUS = DOCUMENT_STATUS.QUOTING
 
 /** 新建单据默认空行数(由用户自行选择商品)。 */
 const DEFAULT_ROW_COUNT = 1

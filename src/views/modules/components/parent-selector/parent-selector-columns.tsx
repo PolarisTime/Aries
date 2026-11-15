@@ -324,9 +324,8 @@ export function buildParentSelectorDataColumns({
     render: (value: unknown, record: ModuleRecord) => {
       if (column.type === 'status') {
         const status = getDisplayStatus(record, column.dataIndex)
-        return (
-          <StatusTag status={status} statusMap={statusMap} fallback={status} />
-        )
+        // 不传 fallback：状态值是 code，StatusTag 会用 statusLabel 兜底成中文
+        return <StatusTag status={status} statusMap={statusMap} />
       }
       if (isDocumentReferenceField(column.dataIndex)) {
         /*

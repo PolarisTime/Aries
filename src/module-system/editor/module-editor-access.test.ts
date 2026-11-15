@@ -182,12 +182,12 @@ describe('第二层：状态锁定只能收窄', () => {
 
 describe('行项目锁定状态判定', () => {
   it('销售订单命中审核锁定状态集合', () => {
-    expect(isModuleLineItemsLocked('sales-order', ['已审核'])).toBe(true)
-    expect(isModuleLineItemsLocked('sales-order', ['草稿'])).toBe(false)
+    expect(isModuleLineItemsLocked('sales-order', ['AUDITED'])).toBe(true)
+    expect(isModuleLineItemsLocked('sales-order', ['DRAFT'])).toBe(false)
   })
 
   it('未配置锁定状态的模块永不锁定', () => {
-    expect(isModuleLineItemsLocked('material', ['已审核'])).toBe(false)
+    expect(isModuleLineItemsLocked('material', ['AUDITED'])).toBe(false)
   })
 })
 

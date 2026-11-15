@@ -64,7 +64,7 @@ describe('销售退货来源候选映射', () => {
     )
 
     expect(payload.returnDate).toBe('2026-09-14')
-    expect(payload.status).toBe('草稿')
+    expect(payload.status).toBe('DRAFT')
     expect(payload.customerId).toBe('3003')
     expect(payload.salesOrderNo).toBe('SO20260914001')
     expect(payload.items).toHaveLength(1)

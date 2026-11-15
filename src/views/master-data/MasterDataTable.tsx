@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { ColumnHeaderMenu } from '@/components/ColumnHeaderMenu'
 import { StatusTag } from '@/components/StatusTag'
 import { statusMap } from '@/config/business-pages/shared/shared-status'
+import { STATUS } from '@/constants/status-constants'
 import { useMeasureRowA11y } from '@/hooks/useMeasureRowA11y'
 import type { LegacyModuleRecord } from '@/types/module-record'
 import { buildSelectionA11yProps } from '@/utils/table-selection-a11y'
@@ -59,7 +60,7 @@ function buildOverview(
     {
       label: t('modules.overview.normalCount'),
       value: String(
-        target.filter((row) => asString(row.status) === '正常').length,
+        target.filter((row) => asString(row.status) === STATUS.NORMAL).length,
       ),
     },
   ]

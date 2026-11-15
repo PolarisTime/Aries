@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { STATUS } from '@/constants/status-constants'
 import {
   exactPageSchema,
   requestEntityIdSchema,
@@ -6,8 +7,8 @@ import {
   responseNonNegativeIntegerSchema,
 } from './api'
 
-/** 角色状态：契约只允许“正常 / 禁用”。 */
-export const roleStatusSchema = z.enum(['正常', '禁用'])
+/** 角色状态：契约只允许 NORMAL / DISABLED（code）。 */
+export const roleStatusSchema = z.enum([STATUS.NORMAL, STATUS.DISABLED])
 export type RoleStatus = z.output<typeof roleStatusSchema>
 
 const roleCodeSchema = z.string().trim().min(1).max(64)

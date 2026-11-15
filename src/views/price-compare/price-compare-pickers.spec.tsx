@@ -21,7 +21,7 @@ function sheetOf(id: string, projectId: string, name: string): PriceSheet {
   return {
     id,
     name,
-    status: '报价',
+    status: 'QUOTING',
     projectId,
     projectName: name,
     orderDate: '2026-10-15',

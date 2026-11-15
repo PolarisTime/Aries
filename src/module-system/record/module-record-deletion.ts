@@ -1,7 +1,9 @@
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { readModuleRecordField } from '@/module-system/record/module-record-fields'
 import { asString } from '@/utils/type-narrowing'
 
-const DELETED_STATUS = '已删除'
+/** 前端合成的「已删除」展示状态 code：后端用 deletedFlag 表达，不落 status 列。 */
+const DELETED_STATUS = DOCUMENT_STATUS.DELETED
 
 export function isDeletedModuleRecord(
   record: object | null | undefined,

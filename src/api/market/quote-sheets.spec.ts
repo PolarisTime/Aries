@@ -58,7 +58,7 @@ const page = {
       lengthPremium: '30.00',
       locked: true,
       specQuantityLocked: true,
-      status: '报价',
+      status: 'QUOTING',
       brands: [{ brandName: '中天', freight: '30.00', sortOrder: 0 }],
       items: [
         {

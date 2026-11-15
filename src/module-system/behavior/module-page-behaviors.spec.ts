@@ -10,7 +10,7 @@ import {
 
 describe('module-page-behaviors', () => {
   it('销售订单注册完成销售命令与交付核定特例', () => {
-    const command = getModuleStatusCommand('sales-order', '完成销售')
+    const command = getModuleStatusCommand('sales-order', 'SALES_COMPLETED')
     expect(command).toBeDefined()
     expect(command?.confirmTitle).toBe('确认完成销售')
     expect(command?.okText).toBe('完成销售')
@@ -18,11 +18,13 @@ describe('module-page-behaviors', () => {
 
     const deliveryVerification = getModuleDeliveryVerification('sales-order')
     expect(deliveryVerification).toEqual({
-      sourceStatus: '交付核定',
-      targetStatus: '完成销售',
+      sourceStatus: 'DELIVERY_VERIFICATION',
+      targetStatus: 'SALES_COMPLETED',
     })
-    expect(isDeliveryVerificationStatus('sales-order', '交付核定')).toBe(true)
-    expect(isDeliveryVerificationStatus('sales-order', '已审核')).toBe(false)
+    expect(
+      isDeliveryVerificationStatus('sales-order', 'DELIVERY_VERIFICATION'),
+    ).toBe(true)
+    expect(isDeliveryVerificationStatus('sales-order', 'AUDITED')).toBe(false)
   })
 
   it('采购入库注册仅称重特性开关与关联刷新模块', () => {
@@ -78,11 +80,13 @@ describe('module-page-behaviors', () => {
 
   it('未知模块 key 回退为 undefined，走默认行为', () => {
     expect(getModulePageBehavior('unknown-module')).toBeUndefined()
-    expect(getModuleStatusCommand('unknown-module', '完成销售')).toBeUndefined()
-    expect(getModuleStatusCommand('sales-order', '已审核')).toBeUndefined()
-    expect(isDeliveryVerificationStatus('unknown-module', '交付核定')).toBe(
-      false,
-    )
+    expect(
+      getModuleStatusCommand('unknown-module', 'SALES_COMPLETED'),
+    ).toBeUndefined()
+    expect(getModuleStatusCommand('sales-order', 'AUDITED')).toBeUndefined()
+    expect(
+      isDeliveryVerificationStatus('unknown-module', 'DELIVERY_VERIFICATION'),
+    ).toBe(false)
     expect(getModuleDeliveryVerification('purchase-order')).toBeUndefined()
   })
 })

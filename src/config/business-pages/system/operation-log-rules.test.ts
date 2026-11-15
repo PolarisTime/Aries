@@ -11,9 +11,9 @@ describe('operation-log-rules', () => {
 
   it('统计总数、成功数与失败数', () => {
     const rows = [
-      { resultStatus: '成功' },
-      { resultStatus: '成功' },
-      { resultStatus: '失败' },
+      { resultStatus: 'SUCCESS' },
+      { resultStatus: 'SUCCESS' },
+      { resultStatus: 'FAILED' },
       {},
     ] as unknown as ModuleRecord[]
     const overview = buildOperationLogOverview(rows)

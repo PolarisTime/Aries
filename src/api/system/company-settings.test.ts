@@ -15,7 +15,7 @@ const companyRow = (id: string, companyName: string) => ({
   id,
   companyName,
   taxNo: '',
-  status: '正常',
+  status: 'NORMAL',
 })
 
 function companyPage(

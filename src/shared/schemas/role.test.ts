@@ -18,7 +18,7 @@ const baseRole = {
   name: '管理员',
   description: null,
   builtin: true,
-  status: '正常',
+  status: 'NORMAL',
   permissionCount: 12,
   userCount: 1,
 }
@@ -123,7 +123,7 @@ describe('角色请求校验', () => {
 
   it('状态仅允许 正常/禁用', () => {
     expect(
-      roleStatusUpdatePayloadSchema.safeParse({ status: '正常' }).success,
+      roleStatusUpdatePayloadSchema.safeParse({ status: 'NORMAL' }).success,
     ).toBe(true)
     expect(
       roleStatusUpdatePayloadSchema.safeParse({ status: '已停用' }).success,

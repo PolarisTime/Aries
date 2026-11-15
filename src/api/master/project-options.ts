@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { apiGet } from '@/api/core/client'
 import { ENDPOINTS } from '@/constants/endpoints'
+import { STATUS } from '@/constants/status-constants'
 import { exactPageSchema } from '@/shared/schemas/api'
 import type { EntityId } from '@/types/entity-id'
 import { parseEntityId, parseOptionalEntityId } from '@/types/entity-id'
@@ -465,7 +466,7 @@ async function fetchAllEnabledProjectRows(
         size: PROJECT_OPTIONS_PAGE_SIZE,
         sortBy: 'projectCode',
         direction: 'asc',
-        status: '正常',
+        status: STATUS.NORMAL,
       },
       signal,
     })

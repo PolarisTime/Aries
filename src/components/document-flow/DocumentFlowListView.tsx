@@ -1,5 +1,6 @@
 import { Empty, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { getStatusText } from '@/constants/document-status'
 import { formatDate } from '@/utils/formatters'
 import type {
   DocumentFlowListGroup,
@@ -94,9 +95,10 @@ export function DocumentFlowListView({
       key: 'status',
       title: t('documentFlow.columnStatus'),
       width: 104,
+      // 状态值是 code（后端 V219 起）：展示必须转中文，不能把 DRAFT 摆给用户
       render: (status: string | null | undefined) =>
         status ? (
-          <Tag variant="filled">{status}</Tag>
+          <Tag variant="filled">{getStatusText(status, t)}</Tag>
         ) : (
           <Text type="secondary">—</Text>
         ),

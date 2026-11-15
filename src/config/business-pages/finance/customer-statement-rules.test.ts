@@ -110,7 +110,7 @@ describe('customer-statement-rules', () => {
         startDate: '2026-01-01',
         endDate: '2026-01-01',
         receiptAmount: 0,
-        status: '待确认',
+        status: 'PENDING_CONFIRM',
         settlementCompanyId: 'sc-1',
         settlementCompanyName: '主体一',
       })

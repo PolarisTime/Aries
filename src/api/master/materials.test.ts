@@ -66,7 +66,7 @@ describe('商品搜索附加费用过滤', () => {
     await fetchMaterialSearch('', 200)
 
     const [, , options] = apiGetMock.mock.calls[0]
-    expect(options.params).toMatchObject({ status: '正常' })
+    expect(options.params).toMatchObject({ status: 'NORMAL' })
   })
 
   it('商品下拉预加载同样只取启用商品', async () => {
@@ -75,7 +75,7 @@ describe('商品搜索附加费用过滤', () => {
     await fetchAllMaterialOptions()
 
     const [, , options] = apiGetMock.mock.calls[0]
-    expect(options.params).toMatchObject({ status: '正常' })
+    expect(options.params).toMatchObject({ status: 'NORMAL' })
   })
 
   it('不传类型时不携带 materialType 参数', async () => {

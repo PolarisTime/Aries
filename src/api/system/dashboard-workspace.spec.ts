@@ -93,26 +93,26 @@ describe('工作台真实业务数据聚合', () => {
     expect(fetchModulePageMock).toHaveBeenNthCalledWith(
       1,
       'purchase-order',
-      { status: '草稿', sortBy: 'orderDate', direction: 'desc' },
+      { status: 'DRAFT', sortBy: 'orderDate', direction: 'desc' },
       0,
       8,
     )
     expect(fetchModulePageMock).toHaveBeenNthCalledWith(
       2,
       'sales-order',
-      { status: '已审核', sortBy: 'deliveryDate', direction: 'desc' },
+      { status: 'AUDITED', sortBy: 'deliveryDate', direction: 'desc' },
       0,
       8,
     )
     expect(fetchModulePageMock).toHaveBeenNthCalledWith(
       3,
       'customer-statement',
-      { status: '待确认', sortBy: 'endDate', direction: 'desc' },
+      { status: 'PENDING_CONFIRM', sortBy: 'endDate', direction: 'desc' },
       0,
       8,
     )
     expect(fetchCustomerStatementSummaryMock).toHaveBeenCalledWith({
-      status: '待确认',
+      status: 'PENDING_CONFIRM',
     })
     expect(workspace.todoItems).toEqual([
       {

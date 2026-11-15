@@ -11,6 +11,7 @@ import type {
   QuoteSheetPayload,
   QuoteSheetRecord,
 } from '@/api/market/quote-sheets'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { isSeparatorRow } from './core'
 import type {
   Brand,
@@ -311,7 +312,7 @@ export function toPriceSheet(record: QuoteSheetRecord): PriceSheet {
     id: record.id,
     serverId: record.id,
     name: record.name,
-    status: record.status ?? '报价',
+    status: record.status ?? DOCUMENT_STATUS.QUOTING,
     projectId: record.projectId ?? '',
     projectName: record.projectName ?? '',
     orderDate: record.orderDate,

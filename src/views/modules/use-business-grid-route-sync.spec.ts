@@ -66,8 +66,8 @@ describe('parseRouteParams', () => {
   })
 
   it('解析待处理筛选意图 status', () => {
-    const params = parseRouteParams('?status=待审核')
-    expect(params.status).toBe('待审核')
+    const params = parseRouteParams('?status=PENDING_AUDIT')
+    expect(params.status).toBe('PENDING_AUDIT')
     expect(params.routeKeyword).toBe('')
     expect(params.shouldOpenDetail).toBe(false)
   })
@@ -132,7 +132,7 @@ describe('parseRouteParams', () => {
   })
 
   it('一次性意图消费不误删持续型筛选参数', () => {
-    const search = '?docNo=SO-1&openDetail=1&create=1&status=已审核'
+    const search = '?docNo=SO-1&openDetail=1&create=1&status=AUDITED'
     const afterDetail = consumeOpenDetailIntentSearch(search)
     expect(afterDetail).toContain('docNo=SO-1')
     expect(afterDetail).toContain('status=')
@@ -171,13 +171,13 @@ describe('route filter synchronization', () => {
         config,
         defaultFilters: { orderDate: ['2026-05-01', '2026-05-31'] },
         routeParams: parseRouteParams(
-          '?customerId=1983421000000000001&status=待审核',
+          '?customerId=1983421000000000001&status=PENDING_AUDIT',
         ),
       }),
     ).toEqual({
       orderDate: ['2026-05-01', '2026-05-31'],
       customerId: '1983421000000000001',
-      status: '待审核',
+      status: 'PENDING_AUDIT',
     })
   })
 
@@ -191,9 +191,9 @@ describe('route filter synchronization', () => {
       buildRouteFilterSyncState({
         config,
         defaultFilters: { pendingOnly: 'true' },
-        routeParams: parseRouteParams('?status=完成采购'),
+        routeParams: parseRouteParams('?status=PURCHASE_COMPLETED'),
       }),
-    ).toEqual({ status: '完成采购' })
+    ).toEqual({ status: 'PURCHASE_COMPLETED' })
   })
 
   it('keeps the synchronization key stable when callback inputs are recreated', () => {
@@ -248,7 +248,7 @@ describe('重置筛选必须同时清 URL —— 否则刷新后筛选静默复�
 
   it('docNo / trackId / customerId / status 全部清掉', () => {
     const search =
-      '?docNo=PO-1&trackId=361443612338167808&customerId=1983421000000000001&status=待审核'
+      '?docNo=PO-1&trackId=361443612338167808&customerId=1983421000000000001&status=PENDING_AUDIT'
     expect(consumeRouteFilterSearch(search)).toBe('')
   })
 
@@ -298,7 +298,7 @@ describe('手动改搜索框必须同步清 URL —— 否则刷新后单号静�
 
   it('只清关键字参数，保留 status/customerId 等用户没动的筛选', () => {
     const search =
-      '?docNo=368855989580988416&status=%E8%8D%89%E7%A8%BF&customerId=1983421000000000001'
+      '?docNo=368855989580988416&status=DRAFT&customerId=1983421000000000001'
     const next = consumeRouteKeywordSearch(search)
     expect(next).not.toContain('docNo')
     expect(next).toContain('status=')

@@ -16,6 +16,7 @@ import { useMemo, useState } from 'react'
 import '@/styles/sales-doc-flow.css'
 import { useTranslation } from 'react-i18next'
 import { getSalesOrderDocumentFlow } from '@/api/sales/sales-order-document-flow'
+import { getStatusText } from '@/constants/document-status'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type {
   SalesOrderDocumentFlow,
@@ -157,7 +158,8 @@ function DocumentFlowNodeGroup({ group }: { group: NodeGroup }) {
               </div>
               <div className="sales-doc-flow-row-desc">{node.date || ''}</div>
             </div>
-            {node.status ? <Tag>{node.status}</Tag> : null}
+            {/* 状态值是 code：展示转中文 */}
+            {node.status ? <Tag>{getStatusText(node.status, t)}</Tag> : null}
             {node.weight != null ? (
               <Typography.Text>{String(node.weight)}</Typography.Text>
             ) : null}

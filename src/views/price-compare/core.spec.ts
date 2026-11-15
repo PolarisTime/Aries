@@ -177,7 +177,7 @@ describe('computeSummary', () => {
     refDate: '2026-09-10',
     refPeriod: '9:30 上午',
     lengthPremium: 30,
-    status: '报价',
+    status: 'QUOTING',
     rows: [],
     inputs,
   })
@@ -345,7 +345,7 @@ describe('countMissing', () => {
       refDate: '2026-09-10',
       refPeriod: '9:30 上午',
       lengthPremium: 30,
-      status: '报价',
+      status: 'QUOTING',
       rows: [],
       inputs: {},
     }

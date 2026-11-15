@@ -1,6 +1,7 @@
 import { Tag } from 'antd'
 import i18next from 'i18next'
 import React from 'react'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { findProjectOption } from '@/module-system/core/module-option-resolvers'
 import { normalizeStatementDirection } from '@/shared/schemas/customer-statement'
 import { parseOptionalEntityId } from '@/types/entity-id'
@@ -119,7 +120,7 @@ export function mapSalesOrderToCustomerStatementDraft(
     startDate: parentRecord.deliveryDate || '',
     endDate: parentRecord.deliveryDate || '',
     receiptAmount: 0,
-    status: '待确认',
+    status: DOCUMENT_STATUS.PENDING_CONFIRM,
   }
 }
 

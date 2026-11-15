@@ -7,6 +7,7 @@ import {
   type DashboardRecentTab,
   fetchDashboardRecentDocuments,
 } from '@/api/system/dashboard-recent'
+import { getStatusText } from '@/constants/document-status'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { useTabOpen } from '@/layouts/tabs/use-tab-open'
@@ -20,17 +21,44 @@ const RECENT_TITLE_KEYS: Record<DashboardRecentTab, string> = {
   'customer-statement': 'dashboard.flow.customerStatement.title',
 }
 
-/** 状态 → 徽标色调：处理类橙色、完结类绿色、其余蓝色 */
+/**
+ * 待处理类状态（徽标橙色）：草稿与各种「待…」。
+ *
+ * <p>状态值已是英文 code（后端 V219），不能再按 `includes('待')` 判中文子串 ——
+ * 那是 code 迁移前的写法，迁移后会静默全部落到 `is-active`。</p>
+ */
+const PENDING_STATUSES: ReadonlySet<string> = new Set([
+  DOCUMENT_STATUS.DRAFT,
+  DOCUMENT_STATUS.UNAUDITED,
+  DOCUMENT_STATUS.UNSIGNED,
+  DOCUMENT_STATUS.PENDING_AUDIT,
+  DOCUMENT_STATUS.PENDING_CONFIRM,
+  DOCUMENT_STATUS.PENDING_APPROVAL,
+  DOCUMENT_STATUS.QUOTING,
+])
+
+/** 完结类状态（徽标绿色）：完成/审核通过/确认/已结算。 */
+const DONE_STATUSES: ReadonlySet<string> = new Set([
+  DOCUMENT_STATUS.AUDITED,
+  DOCUMENT_STATUS.COMPLETED,
+  DOCUMENT_STATUS.PURCHASE_COMPLETED,
+  DOCUMENT_STATUS.SALES_COMPLETED,
+  DOCUMENT_STATUS.INBOUND_COMPLETED,
+  DOCUMENT_STATUS.DELIVERY_VERIFICATION,
+  DOCUMENT_STATUS.CONFIRMED,
+  DOCUMENT_STATUS.SIGNED,
+  DOCUMENT_STATUS.ARCHIVED,
+  DOCUMENT_STATUS.RECEIVED,
+  DOCUMENT_STATUS.PAID,
+  DOCUMENT_STATUS.SUCCESS,
+])
+
+/** 状态 code → 徽标色调：待处理橙色、完结绿色、其余蓝色 */
 function statusBadgeClass(status: string): string {
-  if (status.includes('待') || status.includes(DOCUMENT_STATUS.DRAFT)) {
+  if (PENDING_STATUSES.has(status)) {
     return 'dashboard-recent-badge is-pending'
   }
-  if (
-    status.includes('完成') ||
-    status.includes(DOCUMENT_STATUS.CONFIRMED) ||
-    status.includes('已入库') ||
-    status.includes(DOCUMENT_STATUS.AUDITED)
-  ) {
+  if (DONE_STATUSES.has(status)) {
     return 'dashboard-recent-badge is-done'
   }
   return 'dashboard-recent-badge is-active'
@@ -108,7 +136,8 @@ export function DashboardRecentDocuments() {
                   <small>{formatDate(doc.businessDate)}</small>
                 </span>
                 <span className={statusBadgeClass(doc.status)}>
-                  {doc.status}
+                  {/* 展示必须中文：直接渲染 doc.status 会把 code 摆给用户 */}
+                  {getStatusText(doc.status, t)}
                 </span>
               </button>
             ))

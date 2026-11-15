@@ -4,6 +4,7 @@ import type { TFunction } from 'i18next'
 import i18next from 'i18next'
 import { readRequestError } from '@/api/core/request-errors'
 import type { SalesContractUpsertPayload } from '@/api/sales/sales-contracts'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type {
   SalesContractResponse,
   SalesContractStatus,
@@ -18,15 +19,16 @@ import { asString } from '@/utils/type-narrowing'
 export const SALES_CONTRACT_MODULE_KEY = 'sales-contract'
 
 /**
- * 销售合同状态(后端定稿): 草稿 / 审核 / 签发 / 归档 / 作废。
+ * 销售合同状态 code(后端定稿): DRAFT / CONTRACT_REVIEWED / CONTRACT_ISSUED / ARCHIVED / VOIDED。
  * 流转 草稿 → 审核 → 签发 → 归档; 作废仅自 草稿 / 审核 / 归档, 签发不可作废。
+ * 中文展示由 `SALES_CONTRACT_STATUS_LABEL_KEY` 的 i18n key 提供, 不在此重复登记。
  */
 export const SALES_CONTRACT_STATUS = {
-  DRAFT: '草稿',
-  REVIEWED: '审核',
-  ISSUED: '签发',
-  ARCHIVED: '归档',
-  VOIDED: '作废',
+  DRAFT: DOCUMENT_STATUS.DRAFT,
+  REVIEWED: DOCUMENT_STATUS.CONTRACT_REVIEWED,
+  ISSUED: DOCUMENT_STATUS.CONTRACT_ISSUED,
+  ARCHIVED: DOCUMENT_STATUS.ARCHIVED,
+  VOIDED: DOCUMENT_STATUS.VOIDED,
 } as const
 
 const SALES_CONTRACT_STATUS_LABEL_KEY: Record<SalesContractStatus, string> = {

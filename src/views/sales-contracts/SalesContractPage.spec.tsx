@@ -70,7 +70,7 @@ const contractRows = [
     endDate: '2026-12-31',
     totalAmount: 1000,
     totalTonnage: 100,
-    status: '草稿',
+    status: 'DRAFT',
     remark: '',
     version: '1',
   },
@@ -87,7 +87,7 @@ const contractRows = [
     endDate: '2026-06-30',
     totalAmount: 500,
     totalTonnage: 50,
-    status: '审核',
+    status: 'CONTRACT_REVIEWED',
     remark: '',
     version: '2',
   },
@@ -104,7 +104,7 @@ const contractRows = [
     endDate: '2026-06-30',
     totalAmount: 300,
     totalTonnage: 30,
-    status: '签发',
+    status: 'CONTRACT_ISSUED',
     remark: '',
     version: '1',
   },
@@ -121,7 +121,7 @@ const contractRows = [
     endDate: '2026-06-30',
     totalAmount: 200,
     totalTonnage: 20,
-    status: '归档',
+    status: 'ARCHIVED',
     remark: '',
     version: '1',
   },
@@ -138,7 +138,7 @@ const contractRows = [
     endDate: '2026-06-30',
     totalAmount: 100,
     totalTonnage: 10,
-    status: '作废',
+    status: 'VOIDED',
     remark: '',
     version: '1',
   },
@@ -268,6 +268,7 @@ describe('SalesContractPage 销售合同页', () => {
     expect(container.textContent).toContain('HT-001')
     expect(container.textContent).toContain('年度销售合同')
     expect(container.textContent).toContain('客户甲')
+    // 展示层必须看到中文：状态 code 一律经 getStatusText 转成 i18n 文案
     for (const status of ['草稿', '审核', '签发', '归档', '作废']) {
       expect(container.textContent).toContain(status)
     }
@@ -282,7 +283,7 @@ describe('SalesContractPage 销售合同页', () => {
 
     expect(updateSalesContractStatus).toHaveBeenCalledWith(
       '9000000000000000001',
-      '审核',
+      'CONTRACT_REVIEWED',
     )
   })
 
@@ -319,7 +320,7 @@ describe('SalesContractPage 销售合同页', () => {
     await clickButton('作废')
     expect(updateSalesContractStatus).toHaveBeenCalledWith(
       '9000000000000000004',
-      '作废',
+      'VOIDED',
     )
   })
 

@@ -7,6 +7,7 @@ import {
   operationLogModuleOptions,
   resolveOperationLogActionOptions,
 } from '@/config/business-pages/system/operation-log-options'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 
 export type QuickFilterKey = 'all' | 'failed' | 'today' | 'mine'
 
@@ -99,8 +100,14 @@ export function OperationLogFilters({
             aria-label={t('modules.pages.operationLog.result')}
             className="oplog-filter-select oplog-filter-select--narrow"
             options={[
-              { label: t('modules.pages.operationLog.success'), value: '成功' },
-              { label: t('modules.pages.operationLog.failed'), value: '失败' },
+              {
+                label: t('modules.pages.operationLog.success'),
+                value: DOCUMENT_STATUS.SUCCESS,
+              },
+              {
+                label: t('modules.pages.operationLog.failed'),
+                value: DOCUMENT_STATUS.FAILED,
+              },
             ]}
             placeholder={t('modules.pages.operationLog.result')}
             value={value.resultStatus}

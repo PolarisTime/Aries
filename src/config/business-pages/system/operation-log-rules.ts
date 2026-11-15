@@ -1,4 +1,5 @@
 import i18next from 'i18next'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type { ModuleOverviewItem, ModuleRecord } from '@/types/module-page'
 import { formatInteger } from '../shared/shared'
 
@@ -13,13 +14,15 @@ export function buildOperationLogOverview(
     {
       label: i18next.t('modules.pages.operationLog.successCount'),
       value: formatInteger(
-        rows.filter((row) => row.resultStatus === '成功').length,
+        rows.filter((row) => row.resultStatus === DOCUMENT_STATUS.SUCCESS)
+          .length,
       ),
     },
     {
       label: i18next.t('modules.pages.operationLog.failedCount'),
       value: formatInteger(
-        rows.filter((row) => row.resultStatus === '失败').length,
+        rows.filter((row) => row.resultStatus === DOCUMENT_STATUS.FAILED)
+          .length,
       ),
     },
   ]

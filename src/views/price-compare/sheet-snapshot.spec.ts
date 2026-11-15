@@ -34,7 +34,7 @@ function makeSheet(overrides: Partial<PriceSheet> = {}): PriceSheet {
   return {
     id: 'sheet-1',
     name: '批次 1',
-    status: '报价',
+    status: 'QUOTING',
     projectId: 'project-1',
     projectName: '项目一',
     orderDate: '2026-10-31',
@@ -235,7 +235,7 @@ describe('服务端快照纯逻辑(sheet-snapshot)', () => {
     const record = {
       id: 'sheet-server-1',
       name: '批次 1',
-      status: '报价',
+      status: 'QUOTING',
       projectId: 'project-1',
       projectName: '项目一',
       orderDate: '2026-10-31',

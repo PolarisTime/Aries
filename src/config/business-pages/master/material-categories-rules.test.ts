@@ -11,9 +11,9 @@ describe('material-categories-rules', () => {
 
   it('统计分类总数、启用数与过磅要求数', () => {
     const rows = [
-      { status: '正常', purchaseWeighRequired: true },
-      { status: '正常', purchaseWeighRequired: false },
-      { status: '禁用', purchaseWeighRequired: true },
+      { status: 'NORMAL', purchaseWeighRequired: true },
+      { status: 'NORMAL', purchaseWeighRequired: false },
+      { status: 'DISABLED', purchaseWeighRequired: true },
       {},
     ] as unknown as ModuleRecord[]
     const overview = buildMaterialCategoryOverview(rows)

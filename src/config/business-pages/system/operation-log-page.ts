@@ -1,4 +1,5 @@
 import i18next from 'i18next'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type { ModulePageConfig } from '@/types/module-page'
 import { statusMap } from '../shared/shared'
 import {
@@ -67,11 +68,11 @@ export const operationLogsPageConfig: ModulePageConfig = {
       options: [
         {
           label: i18next.t('modules.pages.operationLog.success'),
-          value: '成功',
+          value: DOCUMENT_STATUS.SUCCESS,
         },
         {
           label: i18next.t('modules.pages.operationLog.failed'),
-          value: '失败',
+          value: DOCUMENT_STATUS.FAILED,
         },
       ],
     },
@@ -224,5 +225,5 @@ export const operationLogsPageConfig: ModulePageConfig = {
   data: [],
   buildOverview: buildOperationLogOverview,
   statusMap,
-  rowHighlightStatuses: ['失败'],
+  rowHighlightStatuses: [DOCUMENT_STATUS.FAILED],
 }

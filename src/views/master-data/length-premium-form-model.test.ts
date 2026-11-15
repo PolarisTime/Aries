@@ -25,7 +25,7 @@ const record = (
   lengthName: '12米',
   premium: 30,
   sortOrder: 1,
-  status: '正常',
+  status: 'NORMAL',
   remark: null,
   specSuffix: '*12',
   createdAt: '2026-01-02T03:04:05',
@@ -72,8 +72,8 @@ describe('状态下拉与标签文案', () => {
   it('只有「正常」与「禁用」两个选项', () => {
     const options = buildLengthPremiumStatusOptions(t)
     expect(options).toEqual([
-      { value: '正常', label: '正常' },
-      { value: '禁用', label: '禁用' },
+      { value: 'NORMAL', label: '正常' },
+      { value: 'DISABLED', label: '禁用' },
     ])
     // 「停用」是 V187 的错误文案（V188 已修正为「禁用」），下拉里不得再出现。
     const values: string[] = options.map((option) => option.value)
@@ -85,8 +85,8 @@ describe('状态下拉与标签文案', () => {
   it('状态标签元数据只覆盖白名单两个值，未知状态不兜底', () => {
     // 整体相等而不是逐项取键：多出「停用」等第三个键会直接失败。
     expect(buildLengthPremiumStatusMap(t)).toEqual({
-      正常: { color: 'green', label: '正常' },
-      禁用: { color: 'default', label: '禁用' },
+      NORMAL: { color: 'green', label: '正常' },
+      DISABLED: { color: 'default', label: '禁用' },
     })
   })
 })
@@ -178,8 +178,8 @@ describe('表单校验提示（与后端 422 业务不变量同源）', () => {
     expect(await runRule(rules.status, '停用')).toBe(
       '状态只能是「正常」或「禁用」',
     )
-    expect(await runRule(rules.status, '正常')).toBeNull()
-    expect(await runRule(rules.status, ' 禁用 ')).toBeNull()
+    expect(await runRule(rules.status, 'NORMAL')).toBeNull()
+    expect(await runRule(rules.status, ' DISABLED ')).toBeNull()
   })
 
   it('备注可空、≤255', async () => {
@@ -220,7 +220,7 @@ describe('表单值与写入载荷互转', () => {
       lengthName: '12米',
       premium: -20,
       sortOrder: 1,
-      status: '正常',
+      status: 'NORMAL',
       remark: '优惠',
       specSuffix: '*12',
     })
@@ -244,7 +244,7 @@ describe('表单值与写入载荷互转', () => {
       lengthName: '',
       premium: null,
       sortOrder: null,
-      status: '正常',
+      status: 'NORMAL',
       remark: '',
       specSuffix: '',
     })
@@ -256,7 +256,7 @@ describe('表单值与写入载荷互转', () => {
         lengthName: ' 12米 ',
         premium: -30,
         sortOrder: 2,
-        status: ' 正常 ',
+        status: ' NORMAL ',
         remark: '   ',
         specSuffix: '  *12  ',
       }),
@@ -264,7 +264,7 @@ describe('表单值与写入载荷互转', () => {
       lengthName: '12米',
       premium: -30,
       sortOrder: 2,
-      status: '正常',
+      status: 'NORMAL',
       specSuffix: '*12',
     })
   })
@@ -292,7 +292,7 @@ describe('表单值与写入载荷互转', () => {
       lengthName: '12米',
       premium: 30,
       sortOrder: 1,
-      status: '正常',
+      status: 'NORMAL',
       specSuffix: '*'.repeat(17),
     })
     expect(result.success).toBe(false)

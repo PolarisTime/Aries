@@ -50,7 +50,7 @@ describe('countActiveFilters —— 筛选生效项数', () => {
         {
           ...DEFAULT_FILTERS,
           keyword: 'admin',
-          status: '待审核',
+          status: 'PENDING_AUDIT',
           pendingOnly: 'false',
         },
         DEFAULT_FILTERS,
@@ -125,7 +125,7 @@ describe('ModuleFilterActiveSummary —— 可见提示', () => {
       submittedFilters: {
         ...DEFAULT_FILTERS,
         keyword: 'admin',
-        status: '待审核',
+        status: 'PENDING_AUDIT',
       },
       defaultFilters: DEFAULT_FILTERS,
       onClear: vi.fn(),

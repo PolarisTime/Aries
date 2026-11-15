@@ -37,7 +37,7 @@ function makeSheet(): PriceSheet {
   return {
     id: 's1',
     name: '批次 1',
-    status: '报价',
+    status: 'QUOTING',
     projectId: 'p1',
     projectName: '项目',
     orderDate: '2026-09-10',

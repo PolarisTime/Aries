@@ -42,7 +42,7 @@ const EXISTING: LengthPremiumRecord = {
   lengthName: '12米',
   premium: 30,
   sortOrder: 1,
-  status: '正常',
+  status: 'NORMAL',
   remark: '原 yml 配置',
   // 打印规格后缀：编辑时若被前端丢掉，后端「null=保持」会把库里旧值留下而页面显示为空，
   // 因此这里刻意带值，用「只改加价」的用例锁定「后缀不丢失」。
@@ -318,7 +318,7 @@ describe('定尺加价维护页', () => {
       lengthName: '9米',
       premium: 30,
       sortOrder: 2,
-      status: '正常',
+      status: 'NORMAL',
       // 规格后缀始终回传：页面显示为空（新增默认 ''），落库就必须是「无后缀」。
       specSuffix: '',
     })
@@ -344,7 +344,7 @@ describe('定尺加价维护页', () => {
       lengthName: '9米',
       premium: -30,
       sortOrder: 2,
-      status: '正常',
+      status: 'NORMAL',
       specSuffix: '',
     })
   })
@@ -371,7 +371,7 @@ describe('定尺加价维护页', () => {
         lengthName: '12米',
         premium: -15,
         sortOrder: 1,
-        status: '禁用',
+        status: 'DISABLED',
         // 编辑时未改动的备注原样保留。
         remark: '原 yml 配置',
         // 未修改的后缀同样原样回传（避免被后端「保持」语义掩盖）。
@@ -472,7 +472,7 @@ describe('定尺加价维护页', () => {
     await clickButton('搜索')
 
     expect(listLengthPremiumsMock).toHaveBeenCalledWith(
-      expect.objectContaining({ status: '禁用', page: 0 }),
+      expect.objectContaining({ status: 'DISABLED', page: 0 }),
       expect.anything(),
     )
   })

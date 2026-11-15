@@ -4,6 +4,7 @@ import type {
   OperationLogRecord,
   OperationLogSummary,
 } from '@/api/system/operation-logs'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 
 /** 时间相对量：由组件用 i18n 组装成「3 分钟前」，便于测试且不绑语言。 */
 export type RelativeTimeParts = { value: number; unit: string }
@@ -40,7 +41,7 @@ export function formatDuration(ms: number | undefined): string | null {
 export function isFailure(
   record: Pick<OperationLogRecord, 'resultStatus'>,
 ): boolean {
-  return record.resultStatus !== '成功'
+  return record.resultStatus !== DOCUMENT_STATUS.SUCCESS
 }
 
 /** 类别：优先用后端字段，历史数据按路径/模块兜底推断。 */
@@ -87,7 +88,7 @@ export function applyQuickFilter(
   delete next.startTime
   delete next.endTime
   delete next.operatorName
-  if (quick === 'failed') next.resultStatus = '失败'
+  if (quick === 'failed') next.resultStatus = DOCUMENT_STATUS.FAILED
   if (quick === 'today') {
     next.startTime = context.today
     next.endTime = context.today

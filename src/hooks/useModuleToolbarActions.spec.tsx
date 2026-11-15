@@ -100,9 +100,9 @@ describe('useModuleToolbarActions 批量审核/反审核入口', () => {
   ) {
     moduleKey = nextModuleKey
     selectedRowCount = statuses.length
-    canUseBulkAuditAction = statuses.includes('草稿')
+    canUseBulkAuditAction = statuses.includes('DRAFT')
     canUseBulkReverseAuditAction = statuses.some(
-      (status) => status === '已审核' || status === '完成入库',
+      (status) => status === 'AUDITED' || status === 'INBOUND_COMPLETED',
     )
     act(() => {
       root.render(createElement(Probe))
@@ -130,7 +130,7 @@ describe('useModuleToolbarActions 批量审核/反审核入口', () => {
     latest.visibleToolbarActions.find((action) => action.key === key)
 
   it('采购订单: 勾选一条草稿记录出现「审核」', () => {
-    renderSelection('purchase-order', ['草稿'])
+    renderSelection('purchase-order', ['DRAFT'])
     const audit = find(AUDIT_KEY)
     expect(audit).toBeDefined()
     expect(audit?.label).toBe('modules.statusActions.audit')
@@ -138,7 +138,7 @@ describe('useModuleToolbarActions 批量审核/反审核入口', () => {
   })
 
   it('采购订单: 勾选一条已审核记录出现「反审核」', () => {
-    renderSelection('purchase-order', ['已审核'])
+    renderSelection('purchase-order', ['AUDITED'])
     const reverse = find(REVERSE_AUDIT_KEY)
     expect(reverse).toBeDefined()
     expect(reverse?.label).toBe('modules.statusActions.reverseAudit')
@@ -147,19 +147,22 @@ describe('useModuleToolbarActions 批量审核/反审核入口', () => {
 
   it('采购订单: 终态「完成采购」记录既不出现审核也不出现反审核', () => {
     // 后端明确拒绝 完成采购 -> 已审核(只能由采购入库反审核自动回退)
-    renderSelection('purchase-order', ['完成采购'])
+    renderSelection('purchase-order', ['PURCHASE_COMPLETED'])
     expect(find(AUDIT_KEY)).toBeUndefined()
     expect(find(REVERSE_AUDIT_KEY)).toBeUndefined()
   })
 
   it('采购入库: 勾选一条「完成入库」记录出现「反审核」', () => {
-    renderSelection('purchase-inbound', ['完成入库'])
+    renderSelection('purchase-inbound', ['INBOUND_COMPLETED'])
     expect(find(REVERSE_AUDIT_KEY)).toBeDefined()
     expect(find(REVERSE_AUDIT_KEY)?.disabled).toBeFalsy()
   })
 
   it('采购入库: 多选时入口保留但置灰, 并给出单选原因的 tooltip', () => {
-    renderSelection('purchase-inbound', ['完成入库', '完成入库'])
+    renderSelection('purchase-inbound', [
+      'INBOUND_COMPLETED',
+      'INBOUND_COMPLETED',
+    ])
     const reverse = find(REVERSE_AUDIT_KEY)
     expect(reverse).toBeDefined()
     expect(reverse?.disabled).toBe(true)
@@ -167,7 +170,7 @@ describe('useModuleToolbarActions 批量审核/反审核入口', () => {
   })
 
   it('采购订单不受单选限制: 多选时审核入口可用', () => {
-    renderSelection('purchase-order', ['草稿', '草稿'])
+    renderSelection('purchase-order', ['DRAFT', 'DRAFT'])
     expect(find(AUDIT_KEY)?.disabled).toBeFalsy()
     expect(find(AUDIT_KEY)?.tooltip).toBeUndefined()
   })
@@ -179,7 +182,7 @@ describe('useModuleToolbarActions 批量审核/反审核入口', () => {
   })
 
   it('点击审核入口分派到批量审核处理器', async () => {
-    renderSelection('purchase-order', ['草稿'])
+    renderSelection('purchase-order', ['DRAFT'])
     await act(async () => {
       await latest.handleAction({
         key: AUDIT_KEY,
@@ -191,7 +194,7 @@ describe('useModuleToolbarActions 批量审核/反审核入口', () => {
   })
 
   it('点击反审核入口分派到批量反审核处理器', async () => {
-    renderSelection('purchase-inbound', ['完成入库'])
+    renderSelection('purchase-inbound', ['INBOUND_COMPLETED'])
     await act(async () => {
       await latest.handleAction({
         key: REVERSE_AUDIT_KEY,

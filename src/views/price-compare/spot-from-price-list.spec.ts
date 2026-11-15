@@ -32,7 +32,7 @@ const row = (id: string, material: string, spec: number): PriceRow => ({
 const sheet = (overrides: Partial<PriceSheet> = {}): PriceSheet => ({
   id: 's1',
   name: '批次 1',
-  status: '报价',
+  status: 'QUOTING',
   projectId: 'p1',
   projectName: '云潮筝鸣府',
   orderDate: '2026-10-22',

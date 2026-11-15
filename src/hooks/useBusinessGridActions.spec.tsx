@@ -237,7 +237,7 @@ describe('useBusinessGridActions', () => {
     moduleKey = 'purchase-order'
     config = createConfig({ key: 'purchase-order', title: '采购订单' })
     selectedRowKeys = ['1']
-    selectedRecords = [{ id: '1', status: '草稿' }]
+    selectedRecords = [{ id: '1', status: 'DRAFT' }]
     renderOnce()
 
     const audit = latest.visibleToolbarActions.find(
@@ -252,7 +252,7 @@ describe('useBusinessGridActions', () => {
     moduleKey = 'purchase-order'
     config = createConfig({ key: 'purchase-order', title: '采购订单' })
     selectedRowKeys = ['1']
-    selectedRecords = [{ id: '1', status: '已审核' }]
+    selectedRecords = [{ id: '1', status: 'AUDITED' }]
     renderOnce()
 
     const reverse = latest.visibleToolbarActions.find(
@@ -266,7 +266,7 @@ describe('useBusinessGridActions', () => {
     moduleKey = 'purchase-order'
     config = createConfig({ key: 'purchase-order', title: '采购订单' })
     selectedRowKeys = ['1']
-    selectedRecords = [{ id: '1', status: '完成采购' }]
+    selectedRecords = [{ id: '1', status: 'PURCHASE_COMPLETED' }]
     renderOnce()
 
     const keys = latest.visibleToolbarActions.map((action) => action.key)
@@ -278,7 +278,7 @@ describe('useBusinessGridActions', () => {
     moduleKey = 'purchase-inbound'
     config = createConfig({ key: 'purchase-inbound', title: '采购入库' })
     selectedRowKeys = ['1']
-    selectedRecords = [{ id: '1', status: '完成入库' }]
+    selectedRecords = [{ id: '1', status: 'INBOUND_COMPLETED' }]
     renderOnce()
     expect(
       latest.visibleToolbarActions.find(
@@ -288,8 +288,8 @@ describe('useBusinessGridActions', () => {
 
     selectedRowKeys = ['1', '2']
     selectedRecords = [
-      { id: '1', status: '完成入库' },
-      { id: '2', status: '完成入库' },
+      { id: '1', status: 'INBOUND_COMPLETED' },
+      { id: '2', status: 'INBOUND_COMPLETED' },
     ]
     renderOnce()
     const reverse = latest.visibleToolbarActions.find(
@@ -370,12 +370,12 @@ describe('useBusinessGridActions', () => {
   it('采购订单: 行级「审核」只把菜单所属行交给 runAudit', () => {
     moduleKey = 'purchase-order'
     config = createConfig({ key: 'purchase-order', title: '采购订单' })
-    const target = { id: '2', status: '草稿' } as ModuleRecord
+    const target = { id: '2', status: 'DRAFT' } as ModuleRecord
     selectedRowKeys = ['1', '2', '3']
     selectedRecords = [
-      { id: '1', status: '草稿' },
+      { id: '1', status: 'DRAFT' },
       target,
-      { id: '3', status: '草稿' },
+      { id: '3', status: 'DRAFT' },
     ]
     renderOnce()
 
@@ -394,9 +394,9 @@ describe('useBusinessGridActions', () => {
   it('采购订单: 行级「反审核」只把菜单所属行交给 runReverseAudit', () => {
     moduleKey = 'purchase-order'
     config = createConfig({ key: 'purchase-order', title: '采购订单' })
-    const target = { id: '2', status: '已审核' } as ModuleRecord
+    const target = { id: '2', status: 'AUDITED' } as ModuleRecord
     selectedRowKeys = ['1', '2']
-    selectedRecords = [{ id: '1', status: '已审核' }, target]
+    selectedRecords = [{ id: '1', status: 'AUDITED' }, target]
     renderOnce()
 
     const reverse = latest
@@ -415,7 +415,7 @@ describe('useBusinessGridActions', () => {
     moduleKey = 'purchase-order'
     config = createConfig({ key: 'purchase-order', title: '采购订单' })
     selectedRowKeys = ['1']
-    selectedRecords = [{ id: '1', status: '草稿' }]
+    selectedRecords = [{ id: '1', status: 'DRAFT' }]
     renderOnce()
 
     const keys = latest.visibleToolbarActions.map((action) => action.key)
@@ -427,7 +427,7 @@ describe('useBusinessGridActions', () => {
   it('routes sales-order delivery confirmation through modal confirm', async () => {
     moduleKey = 'sales-order'
     config = createConfig({ key: 'sales-order', title: '销售订单' })
-    const record = { id: '9', status: '交付核定' } as ModuleRecord
+    const record = { id: '9', status: 'DELIVERY_VERIFICATION' } as ModuleRecord
     selectedRowKeys = ['9']
     selectedRecords = [record]
     renderOnce()

@@ -1,3 +1,4 @@
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { parseOptionalEntityId } from '@/types/entity-id'
 import type {
   ModuleLineItem,
@@ -45,7 +46,7 @@ export function mapFreightBillToFreightStatementDraft(
     startDate: parentRecord.billTime || '',
     endDate: parentRecord.billTime || '',
     paidAmount: 0,
-    status: '草稿',
+    status: DOCUMENT_STATUS.DRAFT,
   }
 }
 

@@ -97,7 +97,7 @@ vi.mock('@/views/modules/use-module-editor-capability-flags', () => ({
     canManageItems: false,
     canReorderItems: false,
     canSaveAndAuditInEditor: true,
-    currentStatus: '草稿',
+    currentStatus: 'DRAFT',
     editorAuditActionKind: 'audit',
     editorAuditLabel: '保存并审核',
     editorAuditTarget: null,

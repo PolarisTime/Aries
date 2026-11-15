@@ -52,12 +52,12 @@ const MODULE_PAGE_BEHAVIORS = {
   'sales-order': {
     deliveryVerification: {
       sourceStatus: DOCUMENT_STATUS.DELIVERY_VERIFICATION,
-      targetStatus: '完成销售',
+      targetStatus: DOCUMENT_STATUS.SALES_COMPLETED,
     },
     confirmsZeroPriceItems: true,
     statusCommands: {
-      完成销售: {
-        status: '完成销售',
+      [DOCUMENT_STATUS.SALES_COMPLETED]: {
+        status: DOCUMENT_STATUS.SALES_COMPLETED,
         confirmTitle: '确认完成销售',
         confirmContent:
           '完成销售后将按最终交付结果进入结算，请确认销售出库和实际重量已经核定。',

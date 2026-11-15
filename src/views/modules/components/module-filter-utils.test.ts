@@ -15,37 +15,40 @@ describe('module filter utilities', () => {
   })
 
   it('keeps valid segmented values as-is', () => {
-    expect(resolveSegmentedFilterValue('草稿')).toBe('草稿')
+    expect(resolveSegmentedFilterValue('DRAFT')).toBe('DRAFT')
     expect(resolveSegmentedFilterValue('123')).toBe('123')
   })
 
   it('flattens grouped options and stringifies values', () => {
     expect(
       toSegmentedOptions([
-        { label: '草稿', value: '草稿' },
+        { label: '草稿', value: 'DRAFT' },
         {
           label: '分组',
           options: [{ label: '待确认', value: 1 }],
         },
       ]),
     ).toEqual([
-      { label: '草稿', value: '草稿' },
+      { label: '草稿', value: 'DRAFT' },
       { label: '待确认', value: '1' },
     ])
   })
 
   it('clears pending-only mode when a status filter changes', () => {
     expect(
-      buildNextFilters({ pendingOnly: 'true' }, 'status', '完成采购', [
-        'pendingOnly',
-      ]),
-    ).toEqual({ status: '完成采购' })
+      buildNextFilters(
+        { pendingOnly: 'true' },
+        'status',
+        'PURCHASE_COMPLETED',
+        ['pendingOnly'],
+      ),
+    ).toEqual({ status: 'PURCHASE_COMPLETED' })
   })
 
   it('clears the status and reset keys when a select is cleared', () => {
     expect(
       buildNextFilters(
-        { pendingOnly: 'true', status: '完成采购' },
+        { pendingOnly: 'true', status: 'PURCHASE_COMPLETED' },
         'status',
         undefined,
         ['pendingOnly'],
@@ -55,7 +58,7 @@ describe('module filter utilities', () => {
 
   it('removes empty values without changing valid filters', () => {
     expect(
-      normalizeFilters({ keyword: '', status: '已审核', pendingOnly: null }),
-    ).toEqual({ status: '已审核' })
+      normalizeFilters({ keyword: '', status: 'AUDITED', pendingOnly: null }),
+    ).toEqual({ status: 'AUDITED' })
   })
 })

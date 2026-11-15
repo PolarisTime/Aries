@@ -35,7 +35,7 @@ const candidatePage = {
       salesName: '系统管理员',
       totalWeight: 46.739,
       totalAmount: 150109.36,
-      status: '完成销售',
+      status: 'SALES_COMPLETED',
       deletedFlag: false,
       remark: null,
       items: [

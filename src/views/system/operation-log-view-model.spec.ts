@@ -20,7 +20,7 @@ const base: OperationLogRecord = {
   actionType: '修改',
   requestMethod: 'PUT',
   requestPath: '/api/v2.0/supplier-price-lists/1/items',
-  resultStatus: '成功',
+  resultStatus: 'SUCCESS',
   operationTime: '2026-10-28T10:00:00',
 }
 
@@ -52,8 +52,8 @@ describe('时间与耗时格式化', () => {
 
 describe('结果与类别', () => {
   it('只有「成功」算成功', () => {
-    expect(isFailure(record({ resultStatus: '成功' }))).toBe(false)
-    expect(isFailure(record({ resultStatus: '失败' }))).toBe(true)
+    expect(isFailure(record({ resultStatus: 'SUCCESS' }))).toBe(false)
+    expect(isFailure(record({ resultStatus: 'FAILED' }))).toBe(true)
   })
 
   it('类别优先用后端字段，历史数据按路径兜底', () => {
@@ -89,17 +89,19 @@ describe('结果与类别', () => {
     expect(
       failureSummary(
         record({
-          resultStatus: '失败',
+          resultStatus: 'FAILED',
           errorCode: '4090',
           errorMessage: '库存不足',
         }),
       ),
     ).toBe('4090: 库存不足')
     expect(
-      failureSummary(record({ resultStatus: '失败', remark: '请求处理失败' })),
+      failureSummary(
+        record({ resultStatus: 'FAILED', remark: '请求处理失败' }),
+      ),
     ).toBe('请求处理失败')
     expect(
-      failureSummary(record({ resultStatus: '失败', statusCode: 500 })),
+      failureSummary(record({ resultStatus: 'FAILED', statusCode: 500 })),
     ).toBe('HTTP 500')
     expect(failureSummary(base)).toBeNull()
   })
@@ -114,7 +116,7 @@ describe('快捷筛选', () => {
         { keyword: 'x', startTime: '2026-10-01' },
         context,
       ),
-    ).toEqual({ keyword: 'x', resultStatus: '失败' })
+    ).toEqual({ keyword: 'x', resultStatus: 'FAILED' })
     expect(applyQuickFilter('today', {}, context)).toEqual({
       startTime: '2026-10-28',
       endTime: '2026-10-28',
@@ -127,7 +129,7 @@ describe('快捷筛选', () => {
     expect(
       applyQuickFilter(
         'all',
-        { keyword: 'x', resultStatus: '失败', operatorName: 'a' },
+        { keyword: 'x', resultStatus: 'FAILED', operatorName: 'a' },
         context,
       ),
     ).toEqual({ keyword: 'x' })

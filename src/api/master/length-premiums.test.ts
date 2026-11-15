@@ -39,7 +39,7 @@ const rawRecord = (overrides: Record<string, unknown> = {}) => ({
   lengthName: '12米',
   premium: 30,
   sortOrder: 1,
-  status: '正常',
+  status: 'NORMAL',
   remark: null,
   createdAt: '2026-01-02T03:04:05',
   updatedAt: null,
@@ -59,19 +59,20 @@ const validInput = (overrides: Record<string, unknown> = {}) => ({
   lengthName: '12米',
   premium: 30,
   sortOrder: 1,
-  status: '正常',
+  status: 'NORMAL',
   ...overrides,
 })
 
-describe('状态白名单解析（正常 / 禁用）', () => {
-  it('忽略首尾空白，合法值原样返回', () => {
-    expect(parseLengthPremiumStatus('正常')).toBe('正常')
-    expect(parseLengthPremiumStatus(' 禁用 ')).toBe('禁用')
+describe('状态白名单解析（NORMAL / DISABLED code）', () => {
+  it('忽略首尾空白，合法 code 原样返回', () => {
+    expect(parseLengthPremiumStatus('NORMAL')).toBe('NORMAL')
+    expect(parseLengthPremiumStatus(' DISABLED ')).toBe('DISABLED')
   })
 
-  it('「停用」不是合法状态（后端与数据库 CHECK 都是「禁用」）', () => {
+  it('中文 label 与「停用」都不再是合法状态（V219 起存 code）', () => {
     expect(parseLengthPremiumStatus('停用')).toBeNull()
-    expect(parseLengthPremiumStatus('DISABLED')).toBeNull()
+    expect(parseLengthPremiumStatus('正常')).toBeNull()
+    expect(parseLengthPremiumStatus('禁用')).toBeNull()
   })
 
   it('非法/空值返回 null（读路径不整页失败）', () => {
@@ -101,7 +102,7 @@ describe('定尺加价写入契约（Zod 边界）', () => {
       lengthName: ' 12米 ',
       premium: 30,
       sortOrder: 2,
-      status: ' 正常 ',
+      status: ' NORMAL ',
       remark: '   ',
     })
     expect(result.success).toBe(true)
@@ -109,7 +110,7 @@ describe('定尺加价写入契约（Zod 边界）', () => {
       lengthName: '12米',
       premium: 30,
       sortOrder: 2,
-      status: '正常',
+      status: 'NORMAL',
       // 打印规格后缀始终回传：后端 update 是「null=保持、''=清空」，
       // 省略该字段会被当成"保持"，页面显示为空却清不掉旧值。
       specSuffix: '',
@@ -191,7 +192,7 @@ describe('定尺加价写入契约（Zod 边界）', () => {
   })
 
   it('状态白名单拒绝「停用」等非法值', () => {
-    expect(parse(validInput({ status: '禁用' })).success).toBe(true)
+    expect(parse(validInput({ status: 'DISABLED' })).success).toBe(true)
     expect(issuesOf(validInput({ status: '停用' }))).toContainEqual({
       path: 'status',
       message: '状态只能是「正常」或「禁用」',
@@ -310,7 +311,7 @@ describe('定尺加价请求函数', () => {
   it('列表默认按 sortOrder 升序，并透传状态与关键字', async () => {
     apiGetMock.mockResolvedValueOnce(rawPage([rawRecord({ premium: -20 })]))
     const page = await listLengthPremiums({
-      status: '禁用',
+      status: 'DISABLED',
       keyword: ' 12米 ',
       page: 1,
       size: 30,
@@ -322,7 +323,7 @@ describe('定尺加价请求函数', () => {
       size: 30,
       sortBy: 'sortOrder',
       direction: 'asc',
-      status: '禁用',
+      status: 'DISABLED',
       keyword: '12米',
     })
     expect(page.content[0].premium).toBe(-20)
@@ -362,7 +363,7 @@ describe('定尺加价请求函数', () => {
       lengthName: ' 12米 ',
       premium: -30,
       sortOrder: 1,
-      status: '正常',
+      status: 'NORMAL',
       remark: ' ',
     })
 
@@ -371,7 +372,7 @@ describe('定尺加价请求函数', () => {
       lengthName: '12米',
       premium: -30,
       sortOrder: 1,
-      status: '正常',
+      status: 'NORMAL',
       specSuffix: '',
     })
     expect(
@@ -385,14 +386,14 @@ describe('定尺加价请求函数', () => {
       lengthName: '12米',
       premium: 35,
       sortOrder: 2,
-      status: '禁用',
+      status: 'DISABLED',
     })
 
     expect(apiPutMock.mock.calls[0][0]).toBe(`/length-premiums/${SNOWFLAKE_ID}`)
     expect(apiPutMock.mock.calls[0][2]).toMatchObject({
       premium: 35,
       sortOrder: 2,
-      status: '禁用',
+      status: 'DISABLED',
     })
     expect(
       apiPutMock.mock.calls[0][3].headers['X-Idempotency-Key'],
@@ -417,7 +418,7 @@ describe('定尺加价请求函数', () => {
         lengthName: '12米',
         premium: LENGTH_PREMIUM_MAX + 1,
         sortOrder: 1,
-        status: '正常',
+        status: 'NORMAL',
       }),
     ).rejects.toThrow()
     await expect(

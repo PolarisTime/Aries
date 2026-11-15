@@ -25,7 +25,7 @@ import { usePriceComparePricing } from './usePriceComparePricing'
 const sheet: PriceSheet = {
   id: 's1',
   name: '批次',
-  status: '报价',
+  status: 'QUOTING',
   projectId: 'p1',
   projectName: '项目',
   orderDate: '2026-09-22',

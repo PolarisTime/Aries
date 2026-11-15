@@ -16,7 +16,7 @@ function makeSheet(overrides: Partial<PriceSheet> = {}): PriceSheet {
   return {
     id: 'sheet-1',
     name: '批次 1',
-    status: '报价',
+    status: 'QUOTING',
     projectId: 'project-1',
     projectName: '项目一',
     orderDate: '2026-10-31',

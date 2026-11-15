@@ -41,7 +41,7 @@ const role = {
   name: '管理员',
   description: '系统管理员',
   builtin: true,
-  status: '正常',
+  status: 'NORMAL',
   permissionCount: 12,
   userCount: 1,
 }
@@ -67,14 +67,14 @@ describe('roles api', () => {
 
     const result = await listRoles({
       keyword: '管理',
-      status: '正常',
+      status: 'NORMAL',
       page: 1,
       size: 20,
     })
 
     expect(apiGetMock.mock.calls[0][0]).toBe('/roles')
     expect(apiGetMock.mock.calls[0][2]).toMatchObject({
-      params: { page: 1, size: 20, keyword: '管理', status: '正常' },
+      params: { page: 1, size: 20, keyword: '管理', status: 'NORMAL' },
     })
     expect(result.content[0]).toMatchObject({
       id: '1844674407370955161',
@@ -136,12 +136,12 @@ describe('roles api', () => {
   })
 
   it('updateRoleStatus 以 PATCH 提交状态', async () => {
-    apiPatchMock.mockResolvedValue({ ...role, status: '禁用' })
+    apiPatchMock.mockResolvedValue({ ...role, status: 'DISABLED' })
 
-    await updateRoleStatus('9', '禁用')
+    await updateRoleStatus('9', 'DISABLED')
 
     expect(apiPatchMock.mock.calls[0][0]).toBe('/roles/9/status')
-    expect(apiPatchMock.mock.calls[0][2]).toEqual({ status: '禁用' })
+    expect(apiPatchMock.mock.calls[0][2]).toEqual({ status: 'DISABLED' })
   })
 
   it('updateRoleStatus 拒绝非法状态', () => {

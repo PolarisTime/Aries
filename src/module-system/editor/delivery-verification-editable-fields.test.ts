@@ -11,7 +11,7 @@ import {
  * 其余字段仍锁定。报单日期此前不在白名单里，交付核定下无法修改。</p>
  */
 
-const DELIVERY_VERIFICATION = '交付核定'
+const DELIVERY_VERIFICATION = 'DELIVERY_VERIFICATION'
 
 /** 交付核定（明细锁定）时该字段是否可编辑。 */
 const editableInDeliveryVerification = (fieldKey: string) =>

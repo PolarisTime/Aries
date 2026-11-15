@@ -60,7 +60,7 @@ const supplierRows = [
     contactName: '张伟',
     contactPhone: '13800001111',
     city: '石家庄',
-    status: '正常',
+    status: 'NORMAL',
     remark: '长期合作',
   },
   {
@@ -71,7 +71,7 @@ const supplierRows = [
     contactName: '李娜',
     contactPhone: '13900002222',
     city: '张家港',
-    status: '禁用',
+    status: 'DISABLED',
     remark: '',
   },
 ]

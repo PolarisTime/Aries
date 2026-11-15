@@ -41,7 +41,7 @@ describe('userAccountResponseSchema', () => {
 
   it('拒绝未知状态', () => {
     expect(() =>
-      userAccountResponseSchema.parse({ ...baseUser, status: '正常' }),
+      userAccountResponseSchema.parse({ ...baseUser, status: 'UNKNOWN' }),
     ).toThrow()
   })
 

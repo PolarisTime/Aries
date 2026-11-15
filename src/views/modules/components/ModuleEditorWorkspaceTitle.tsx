@@ -1,6 +1,6 @@
 import { Space, Tag } from 'antd'
 import { useTranslation } from 'react-i18next'
-import { getStatusColor } from '@/constants/document-status'
+import { getStatusColor, getStatusText } from '@/constants/document-status'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type { ModulePageConfig } from '@/types/module-page'
 
@@ -33,8 +33,8 @@ export function ModuleEditorWorkspaceTitle({
   isEdit,
 }: Props) {
   const { t } = useTranslation()
-  // 新增态还没有后端状态，用草稿顶替；两者都经同一出口取色
-  const statusLabel = currentStatus || DOCUMENT_STATUS.DRAFT
+  // 新增态还没有后端状态，用草稿 code 顶替；取色与文案都经 document-status 同一出口
+  const status = currentStatus || DOCUMENT_STATUS.DRAFT
 
   return (
     <Space size={8}>
@@ -45,7 +45,8 @@ export function ModuleEditorWorkspaceTitle({
         })}
       </span>
       {financeLayout ? (
-        <Tag color={getStatusColor(statusLabel)}>{statusLabel}</Tag>
+        // 状态值是 code，终端用户只看中文：文案走 getStatusText，绝不渲染 status 原值
+        <Tag color={getStatusColor(status)}>{getStatusText(status, t)}</Tag>
       ) : null}
     </Space>
   )

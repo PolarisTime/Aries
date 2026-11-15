@@ -37,7 +37,7 @@ describe('fetchSpecRows：规格行分页', () => {
     expect(client.apiGet).toHaveBeenCalledTimes(1)
     // 报价表的行来自商品资料：只取启用商品，禁用商品不再出现在报价表里
     expect(client.apiGet.mock.calls[0][2]?.params).toMatchObject({
-      status: '正常',
+      status: 'NORMAL',
     })
     const params = client.apiGet.mock.calls[0][2]?.params as {
       page: number

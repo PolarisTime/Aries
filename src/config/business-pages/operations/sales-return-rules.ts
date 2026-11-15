@@ -1,3 +1,4 @@
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type {
   SalesReturnCandidateItem,
   SalesReturnCandidates,
@@ -91,7 +92,7 @@ export function buildSalesReturnSaveRequestFromCandidates(
     settlementCompanyId: candidates.settlementCompanyId ?? undefined,
     settlementCompanyName: candidates.settlementCompanyName ?? undefined,
     returnDate: options.returnDate,
-    status: '草稿',
+    status: DOCUMENT_STATUS.DRAFT,
     items,
   }
 }

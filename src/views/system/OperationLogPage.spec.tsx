@@ -45,7 +45,7 @@ const LOG_OK = {
   requestMethod: 'PUT',
   requestPath: '/api/v2.0/supplier-price-lists/1/items',
   clientIp: '10.0.0.1',
-  resultStatus: '成功',
+  resultStatus: 'SUCCESS',
   operationTime: '2026-10-28T10:00:00',
   statusCode: 200,
   durationMs: 320,
@@ -57,7 +57,7 @@ const LOG_FAILED = {
   ...LOG_OK,
   id: '2',
   logNo: 'OP2',
-  resultStatus: '失败',
+  resultStatus: 'FAILED',
   statusCode: 409,
   durationMs: 1200,
   errorCode: '4090',
@@ -200,7 +200,7 @@ describe('操作日志页（重做版）', () => {
     await flush()
 
     const calls = api.fetchOperationLogs.mock.calls
-    expect(calls.at(-1)?.[0]).toMatchObject({ resultStatus: '失败' })
+    expect(calls.at(-1)?.[0]).toMatchObject({ resultStatus: 'FAILED' })
   })
 
   it('点「详情」打开抽屉，展示请求体与错误信息', async () => {

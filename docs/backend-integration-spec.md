@@ -290,7 +290,25 @@ YYYY + 前缀 + 6位流水
 - `正常`
 - `禁用`
 
-目标编码示例：`草稿 -> DRAFT`、`已审核 -> AUDITED`、`完成采购 -> PURCHASE_COMPLETED`、`完成入库 -> INBOUND_COMPLETED`、`完成销售 -> SALES_COMPLETED`、`价格核准 -> PRICE_APPROVED`、`待确认 -> PENDING_CONFIRMATION`、`已确认 -> CONFIRMED`、`正常 -> ACTIVE`、`禁用 -> DISABLED`。
+已落地的编码映射（2026-11，Flyway V219；与后端 `DocumentStatus.code()` 逐字一致）：
+
+| 中文 label | code | 中文 label | code |
+| --- | --- | --- | --- |
+| 正常 | `NORMAL` | 禁用 | `DISABLED` |
+| 草稿 | `DRAFT` | 已审核 | `AUDITED` |
+| 审核 | `CONTRACT_REVIEWED` | 签发 | `CONTRACT_ISSUED` |
+| 已完成 | `COMPLETED` | 作废 | `VOIDED` |
+| 完成采购 | `PURCHASE_COMPLETED` | 完成销售 | `SALES_COMPLETED` |
+| 完成入库 | `INBOUND_COMPLETED` | 交付核定 | `DELIVERY_VERIFICATION` |
+| 已签署 | `SIGNED` | 未签署 | `UNSIGNED` |
+| 未审核 | `UNAUDITED` | 执行中 | `EXECUTING` |
+| 归档 | `ARCHIVED` | 待确认 | `PENDING_CONFIRM` |
+| 已确认 | `CONFIRMED` | 待审核 | `PENDING_AUDIT` |
+| 报价 | `QUOTING` | 成功 | `SUCCESS` |
+| 失败 | `FAILED` | 已付款 | `PAID` |
+| 已收款 | `RECEIVED` | | |
+
+前端侧只有两处中文：`src/constants/status-constants.ts` 的 `STATUS_LABELS`（code → 中文，配合 `statusLabel()` 用于无 `t()` 的纯逻辑/兜底）与 `modules.status.*` i18n 文案（组件展示，经 `getStatusText(status, t)`）。业务代码禁止再写状态中文字面量或直接渲染 `record.status`。
 
 本文后续以中文描述业务语义时，不代表 API 或数据库继续保存中文；实施迁移时必须按表、列和业务语义建立一对一映射，禁止全局字符串替换。
 

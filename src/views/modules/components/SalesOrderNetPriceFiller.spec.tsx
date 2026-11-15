@@ -159,7 +159,7 @@ function ObservedFiller({
     observedRef.current.replaceItems = setItems
   }, [items, fields])
   return createElement(SalesOrderNetPriceFiller, {
-    currentStatus: '交付核定',
+    currentStatus: 'DELIVERY_VERIFICATION',
     formValues: { deliveryDate: '2026-09-22', projectId: 'p1' },
     items,
     setItems: (updater) => setItems((prev) => updater(prev)),
@@ -417,7 +417,7 @@ describe('SalesOrderNetPriceFiller', () => {
   it('非草稿/交付核定状态: 按钮置灰但可聚焦, 失焦前用 tooltip 说明原因(不静默禁用)', async () => {
     await act(async () => {
       root.render(
-        createElement(Harness, { initialItems: [row({})], status: '已审核' }),
+        createElement(Harness, { initialItems: [row({})], status: 'AUDITED' }),
       )
       await Promise.resolve()
     })
@@ -440,7 +440,7 @@ describe('SalesOrderNetPriceFiller', () => {
   it('已审核状态点击整单取网价不会打开弹层', async () => {
     await act(async () => {
       root.render(
-        createElement(Harness, { initialItems: [row({})], status: '已审核' }),
+        createElement(Harness, { initialItems: [row({})], status: 'AUDITED' }),
       )
       await Promise.resolve()
     })
@@ -456,7 +456,7 @@ describe('SalesOrderNetPriceFiller', () => {
   it('草稿状态可用: 点击打开取价弹层', async () => {
     await act(async () => {
       root.render(
-        createElement(Harness, { initialItems: [row({})], status: '草稿' }),
+        createElement(Harness, { initialItems: [row({})], status: 'DRAFT' }),
       )
       await Promise.resolve()
     })
@@ -480,7 +480,10 @@ describe('SalesOrderNetPriceFiller', () => {
   it('交付核定状态渲染「整单取网价」按钮', async () => {
     await act(async () => {
       root.render(
-        createElement(Harness, { initialItems: [row({})], status: '交付核定' }),
+        createElement(Harness, {
+          initialItems: [row({})],
+          status: 'DELIVERY_VERIFICATION',
+        }),
       )
       await Promise.resolve()
     })
@@ -558,7 +561,7 @@ describe('SalesOrderNetPriceFiller', () => {
         observedRef.current.ruleId = lastRuleId
       }, [items, lastRuleId])
       return createElement(SalesOrderNetPriceFiller, {
-        currentStatus: '交付核定',
+        currentStatus: 'DELIVERY_VERIFICATION',
         formValues: {
           deliveryDate: '2026-09-22',
           projectId: 'p1',
@@ -620,7 +623,7 @@ describe('SalesOrderNetPriceFiller', () => {
         observedRef.current.items = items
       }, [items])
       return createElement(SalesOrderNetPriceFiller, {
-        currentStatus: '交付核定',
+        currentStatus: 'DELIVERY_VERIFICATION',
         formValues: {
           deliveryDate: '2026-09-22',
           projectId: 'p1',

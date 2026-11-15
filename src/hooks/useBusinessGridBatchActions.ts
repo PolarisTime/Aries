@@ -7,7 +7,7 @@ import {
   type BatchFailure,
   showBatchFailureNotification,
 } from '@/components/batch-failure-notification'
-import { getStatusI18nKey } from '@/constants/document-status'
+import { getStatusText } from '@/constants/document-status'
 import {
   canAuditFromStatus,
   resolveReverseAuditTargetForStatus,
@@ -52,17 +52,13 @@ export function useBusinessGridBatchActions({
   const { t } = useTranslation()
 
   /**
-   * 状态中文值 → 当前语言下的状态名。
+   * 状态 code → 当前语言下的状态名。
    *
    * <p>状态文案只在 `DOCUMENT_STATUS_REGISTRY` 登记一次（i18nKey），这里用调用方的
-   * `t()` 翻译；未登记的状态原样返回，避免把信息吞成空白。</p>
+   * `t()` 翻译；未登记的状态回退到中文表再回退原值，避免把信息吞成空白。</p>
    */
-  const statusLabel = (status: unknown) => {
-    const label = String(status ?? '').trim()
-    if (!label) return ''
-    const key = getStatusI18nKey(label)
-    return key ? t(key) : label
-  }
+  const statusLabel = (status: unknown) =>
+    getStatusText(status == null ? '' : String(status), t)
 
   /**
    * 审核/反审核共用的执行体：调用方负责逐条校验（删除态 + 状态机）并给出目标状态，

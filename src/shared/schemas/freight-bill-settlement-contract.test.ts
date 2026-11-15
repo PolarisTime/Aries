@@ -37,7 +37,7 @@ const listRecord = (overrides: Record<string, unknown> = {}) => ({
   settlementMode: 'FIXED',
   fixedFreightAmount: 1800.55,
   tonnageFreightAmount: 1250.63,
-  status: '草稿',
+  status: 'DRAFT',
   deletedFlag: false,
   remark: null,
   ...overrides,

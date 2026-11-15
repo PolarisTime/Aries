@@ -35,7 +35,7 @@ function makeRecord(
     endDate: '2026-12-31',
     totalAmount: 1000,
     totalTonnage: 100,
-    status: '草稿',
+    status: 'DRAFT',
     remark: '备注',
     version: '3',
     ...overrides,
@@ -51,7 +51,7 @@ function versionConflictError(status: number, code?: number): Error {
 
 describe('resolveSalesContractCapabilities', () => {
   it('草稿：可编辑/删除/审核/作废', () => {
-    expect(resolveSalesContractCapabilities({ status: '草稿' })).toEqual({
+    expect(resolveSalesContractCapabilities({ status: 'DRAFT' })).toEqual({
       canEdit: true,
       canDelete: true,
       canAudit: true,
@@ -62,7 +62,9 @@ describe('resolveSalesContractCapabilities', () => {
   })
 
   it('审核：不可编辑删除，可签发/作废', () => {
-    expect(resolveSalesContractCapabilities({ status: '审核' })).toEqual({
+    expect(
+      resolveSalesContractCapabilities({ status: 'CONTRACT_REVIEWED' }),
+    ).toEqual({
       canEdit: false,
       canDelete: false,
       canAudit: false,
@@ -73,7 +75,9 @@ describe('resolveSalesContractCapabilities', () => {
   })
 
   it('签发：仅可归档，不可作废', () => {
-    expect(resolveSalesContractCapabilities({ status: '签发' })).toEqual({
+    expect(
+      resolveSalesContractCapabilities({ status: 'CONTRACT_ISSUED' }),
+    ).toEqual({
       canEdit: false,
       canDelete: false,
       canAudit: false,
@@ -84,7 +88,7 @@ describe('resolveSalesContractCapabilities', () => {
   })
 
   it('归档：仅可作废', () => {
-    expect(resolveSalesContractCapabilities({ status: '归档' })).toEqual({
+    expect(resolveSalesContractCapabilities({ status: 'ARCHIVED' })).toEqual({
       canEdit: false,
       canDelete: false,
       canAudit: false,
@@ -95,7 +99,7 @@ describe('resolveSalesContractCapabilities', () => {
   })
 
   it('作废：只读', () => {
-    expect(resolveSalesContractCapabilities({ status: '作废' })).toEqual({
+    expect(resolveSalesContractCapabilities({ status: 'VOIDED' })).toEqual({
       canEdit: false,
       canDelete: false,
       canAudit: false,
@@ -116,10 +120,10 @@ describe('resolveSalesContractCapabilities', () => {
 
 describe('getStatusActionTarget', () => {
   it('映射到目标状态', () => {
-    expect(getStatusActionTarget('audit')).toBe('审核')
-    expect(getStatusActionTarget('issue')).toBe('签发')
-    expect(getStatusActionTarget('archive')).toBe('归档')
-    expect(getStatusActionTarget('void')).toBe('作废')
+    expect(getStatusActionTarget('audit')).toBe('CONTRACT_REVIEWED')
+    expect(getStatusActionTarget('issue')).toBe('CONTRACT_ISSUED')
+    expect(getStatusActionTarget('archive')).toBe('ARCHIVED')
+    expect(getStatusActionTarget('void')).toBe('VOIDED')
   })
 })
 

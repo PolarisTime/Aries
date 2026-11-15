@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
   exactPageSchema,
   requestEntityIdSchema,
@@ -10,24 +11,24 @@ import {
 } from './decimal'
 
 /**
- * 销售合同状态契约: 草稿 / 审核 / 签发 / 归档 / 作废。
+ * 销售合同状态契约（code）: DRAFT / CONTRACT_REVIEWED / CONTRACT_ISSUED / ARCHIVED / VOIDED。
  * 流转: 草稿 → 审核 → 签发 → 归档, 不支持逆向回退;
  * 作废仅允许自 草稿 / 审核 / 归档, 签发不可作废。
  */
 export const salesContractStatusSchema = z.enum([
-  '草稿',
-  '审核',
-  '签发',
-  '归档',
-  '作废',
+  DOCUMENT_STATUS.DRAFT,
+  DOCUMENT_STATUS.CONTRACT_REVIEWED,
+  DOCUMENT_STATUS.CONTRACT_ISSUED,
+  DOCUMENT_STATUS.ARCHIVED,
+  DOCUMENT_STATUS.VOIDED,
 ])
 export type SalesContractStatus = z.output<typeof salesContractStatusSchema>
 
 /** 参与合同额度累计的状态: 审核 / 签发 / 归档(草稿与作废不计入)。 */
 export const SALES_CONTRACT_QUOTA_STATUSES: readonly SalesContractStatus[] = [
-  '审核',
-  '签发',
-  '归档',
+  DOCUMENT_STATUS.CONTRACT_REVIEWED,
+  DOCUMENT_STATUS.CONTRACT_ISSUED,
+  DOCUMENT_STATUS.ARCHIVED,
 ]
 
 const dateTextSchema = z

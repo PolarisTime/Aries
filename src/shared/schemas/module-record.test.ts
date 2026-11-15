@@ -19,7 +19,7 @@ const purchaseOrder = {
   settlementCompanyName: null,
   totalWeight: 0,
   totalAmount: 0,
-  status: '草稿',
+  status: 'DRAFT',
   deletedFlag: false,
   remark: null,
 }
@@ -41,7 +41,7 @@ const salesOrder = {
   salesName: '销售员',
   totalWeight: 0,
   totalAmount: 0,
-  status: '草稿',
+  status: 'DRAFT',
   deletedFlag: false,
   remark: null,
 }
@@ -501,7 +501,7 @@ const salesOutboundListRecord = {
   outboundDate: '2026-09-01',
   totalWeight: 0,
   totalAmount: 0,
-  status: '草稿',
+  status: 'DRAFT',
   deletedFlag: false,
   remark: null,
 }
@@ -531,7 +531,7 @@ const salesReturnListRecord = {
   returnDate: '2026-09-01',
   totalWeight: 0,
   totalAmount: 0,
-  status: '草稿',
+  status: 'DRAFT',
   deletedFlag: false,
   remark: null,
 }

@@ -21,7 +21,7 @@ const salesReturnDetail = {
   returnDate: '2026-09-14',
   totalWeight: 3.5,
   totalAmount: 700,
-  status: '草稿',
+  status: 'DRAFT',
   deletedFlag: false,
   remark: null,
   items: [

@@ -14,6 +14,7 @@ import { fetchPricingQuoteResolution } from '@/api/market/pricing-quote-resoluti
 import type { ProjectPriceRule } from '@/api/master/project-price-rules'
 import { fetchProjectPriceRules } from '@/api/master/project-price-rules'
 import { buildSalesOrderPricingSnapshot } from '@/config/business-pages/operations/sales-order-price-snapshot'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import type {
   ModuleItemsActionsContext,
   ModuleLineItem,
@@ -39,10 +40,10 @@ import { usePricingQuoteResolution } from './use-pricing-quote-resolution'
 
 const { Text } = Typography
 
-/** 交付核定状态（原「整单取网价」入口）。 */
-const DELIVERY_VERIFICATION = '交付核定'
-/** 草稿状态：本次新增的「整单去网价」入口。 */
-const DRAFT = '草稿'
+/** 交付核定状态 code（原「整单取网价」入口）。 */
+const DELIVERY_VERIFICATION = DOCUMENT_STATUS.DELIVERY_VERIFICATION
+/** 草稿状态 code：本次新增的「整单去网价」入口。 */
+const DRAFT = DOCUMENT_STATUS.DRAFT
 
 /** 空列表常量：派生回退时保持引用稳定，避免下游 memo 每次失效。 */
 const EMPTY_RULES: ProjectPriceRule[] = []

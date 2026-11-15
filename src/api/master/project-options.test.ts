@@ -65,7 +65,7 @@ describe('fetchProjectAbbreviationOptions', () => {
     expect(apiGetMock.mock.calls[1][2].params).toMatchObject({
       page: 1,
       size: 200,
-      status: '正常',
+      status: 'NORMAL',
     })
   })
 

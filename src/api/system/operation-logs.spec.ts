@@ -15,7 +15,7 @@ const rawLog = {
   actionType: '修改',
   requestMethod: 'PUT',
   requestPath: '/api/v2.0/supplier-price-lists/1/items',
-  resultStatus: '失败',
+  resultStatus: 'FAILED',
   operationTime: '2026-10-28T10:00:00',
   statusCode: '409',
   durationMs: '1200',
@@ -91,12 +91,12 @@ describe('操作日志客户端', () => {
       topFailedModules: [{ moduleName: '供应商报价表', count: '1' }],
     })
 
-    const summary = await fetchOperationLogSummary({ resultStatus: '失败' })
+    const summary = await fetchOperationLogSummary({ resultStatus: 'FAILED' })
 
     expect(client.apiGet).toHaveBeenCalledWith(
       '/operation-logs/summary',
       expect.anything(),
-      expect.objectContaining({ params: { resultStatus: '失败' } }),
+      expect.objectContaining({ params: { resultStatus: 'FAILED' } }),
     )
     expect(summary).toEqual({
       total: 10,

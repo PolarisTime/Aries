@@ -22,7 +22,7 @@ vi.mock('@/api/purchase/purchase-order-candidates', () => ({
           orderDate: '2026-09-01 00:00:00',
           totalWeight: 10,
           totalAmount: 1000,
-          status: '已审核',
+          status: 'AUDITED',
           importableQuantity: 5,
         },
         {
@@ -32,7 +32,7 @@ vi.mock('@/api/purchase/purchase-order-candidates', () => ({
           orderDate: '2026-09-02 00:00:00',
           totalWeight: 8,
           totalAmount: 800,
-          status: '已审核',
+          status: 'AUDITED',
           importableQuantity: 3,
         },
       ],
@@ -44,7 +44,7 @@ vi.mock('@/api/purchase/purchase-order-candidates', () => ({
 const getBusinessModuleDetailMock = vi.fn((_moduleKey: string, id: string) => ({
   id,
   orderNo: `PO-${id}`,
-  status: '已审核',
+  status: 'AUDITED',
   items: [
     {
       id: `${id}-1`,

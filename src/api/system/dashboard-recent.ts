@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import { fetchModulePage } from '@/api/business/business-listing-fetch'
+import { DOCUMENT_STATUS } from '@/constants/status-constants'
 
 /** 工作台「最近单据」页签对应的模块 */
 export const DASHBOARD_RECENT_TABS = [
@@ -138,7 +139,7 @@ export async function fetchDashboardMonthCounts(): Promise<DashboardMonthCounts>
 export async function fetchDashboardAwaitingInboundCount(): Promise<number> {
   const page = await fetchModulePage(
     'purchase-order',
-    { status: '已审核' },
+    { status: DOCUMENT_STATUS.AUDITED },
     0,
     1,
   )

@@ -11,7 +11,7 @@ describe('上游单据选择器数据工具', () => {
     const rows = [
       {
         id: TARGET_ORDER_ID,
-        status: '完成销售',
+        status: 'SALES_COMPLETED',
         deletedFlag: false,
         items: [{ id: '350692800100048896' }],
       },

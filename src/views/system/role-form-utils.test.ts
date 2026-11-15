@@ -12,7 +12,7 @@ const role: RoleResponse = {
   name: '管理员',
   description: '系统管理员',
   builtin: true,
-  status: '正常',
+  status: 'NORMAL',
   permissionCount: 3,
   userCount: 1,
 }

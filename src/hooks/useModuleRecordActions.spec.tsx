@@ -169,8 +169,8 @@ describe('useModuleRecordActions 行级审核/反审核', () => {
   let onAuditRecord: (record: ModuleRecord) => void
   let onReverseAuditRecord: (record: ModuleRecord) => void
 
-  const AUDIT_TARGET = { key: 'status', value: '已审核' }
-  const REVERSE_TARGET = { key: 'status', value: '草稿' }
+  const AUDIT_TARGET = { key: 'status', value: 'AUDITED' }
+  const REVERSE_TARGET = { key: 'status', value: 'DRAFT' }
 
   type AuditPropOverrides = Partial<{
     moduleKey: string
@@ -229,7 +229,7 @@ describe('useModuleRecordActions 行级审核/反审核', () => {
   }
 
   it('状态允许审核: 出现「审核」项, 点击只把该行交给行级处理器', () => {
-    const record: ModuleRecord = { id: '7', no: 'PO-7', status: '草稿' }
+    const record: ModuleRecord = { id: '7', no: 'PO-7', status: 'DRAFT' }
     const actions = renderActions(record)
 
     const audit = actions.find((action) => action.key === 'audit')
@@ -246,12 +246,12 @@ describe('useModuleRecordActions 行级审核/反审核', () => {
   })
 
   it('状态允许审核: 不出现「反审核」(两项互斥)', () => {
-    const actions = renderActions({ id: '7', status: '草稿' })
+    const actions = renderActions({ id: '7', status: 'DRAFT' })
     expect(actions.some((action) => action.key === 'reverse-audit')).toBe(false)
   })
 
   it('状态允许反审核: 出现「反审核」项, 点击只把该行交给反审核处理器', () => {
-    const record: ModuleRecord = { id: '8', status: '已审核' }
+    const record: ModuleRecord = { id: '8', status: 'AUDITED' }
     const actions = renderActions(record)
 
     expect(actions.some((action) => action.key === 'audit')).toBe(false)
@@ -266,7 +266,7 @@ describe('useModuleRecordActions 行级审核/反审核', () => {
   })
 
   it('终态记录既不出现「审核」也不出现「反审核」', () => {
-    const actions = renderActions({ id: '9', status: '完成采购' })
+    const actions = renderActions({ id: '9', status: 'PURCHASE_COMPLETED' })
     expect(actions.some((action) => action.key === 'audit')).toBe(false)
     expect(actions.some((action) => action.key === 'reverse-audit')).toBe(false)
   })
@@ -274,7 +274,7 @@ describe('useModuleRecordActions 行级审核/反审核', () => {
   it('已删除记录不出现审核/反审核', () => {
     const actions = renderActions({
       id: '10',
-      status: '草稿',
+      status: 'DRAFT',
       deletedFlag: true,
     })
     expect(actions.some((action) => action.key === 'audit')).toBe(false)
@@ -283,7 +283,7 @@ describe('useModuleRecordActions 行级审核/反审核', () => {
 
   it('只读模块不出现审核/反审核', () => {
     const actions = renderActions(
-      { id: '11', status: '草稿' },
+      { id: '11', status: 'DRAFT' },
       { isReadOnly: true },
     )
     expect(actions.some((action) => action.key === 'audit')).toBe(false)
@@ -292,7 +292,7 @@ describe('useModuleRecordActions 行级审核/反审核', () => {
 
   it('无审核权限时不出现审核/反审核', () => {
     const actions = renderActions(
-      { id: '12', status: '草稿' },
+      { id: '12', status: 'DRAFT' },
       { canAuditRecords: false },
     )
     expect(actions.some((action) => action.key === 'audit')).toBe(false)
@@ -301,7 +301,7 @@ describe('useModuleRecordActions 行级审核/反审核', () => {
 
   it('未注入行级处理器时不出现审核/反审核', () => {
     const actions = renderActions(
-      { id: '13', status: '草稿' },
+      { id: '13', status: 'DRAFT' },
       { onAuditRecord: undefined, onReverseAuditRecord: undefined },
     )
     expect(actions.some((action) => action.key === 'audit')).toBe(false)
@@ -310,7 +310,7 @@ describe('useModuleRecordActions 行级审核/反审核', () => {
 
   it('反审核文案跟随该行解析出的目标状态(完成销售 -> 重新核定)', () => {
     const actions = renderActions(
-      { id: '14', status: '完成销售' },
+      { id: '14', status: 'SALES_COMPLETED' },
       { moduleKey: 'sales-order' },
     )
     const reverse = actions.find((action) => action.key === 'reverse-audit')

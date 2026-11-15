@@ -1,5 +1,6 @@
 import { Tag } from 'antd'
 import type { ReactNode } from 'react'
+import { statusLabel } from '@/constants/status-constants'
 
 interface StatusMeta {
   text?: string
@@ -74,7 +75,9 @@ function resolveAccessibleTextColor(color?: string): string | undefined {
 export function StatusTag({ status, statusMap, fallback, className }: Props) {
   const normalizedStatus = status.trim()
   const meta = statusMap[normalizedStatus] ?? statusMap[status]
-  const fallbackText = fallback || normalizedStatus || '--'
+  // 状态值已是英文 code：未登记的状态也不能把 code 直接摆给用户，
+  // 先查中文表（statusLabel），仍未知才回退原值/占位符。
+  const fallbackText = fallback || statusLabel(normalizedStatus) || '--'
   const displayText = meta?.label || meta?.text || fallbackText
   const color = resolveTagColor(meta?.color)
   const textColor = resolveAccessibleTextColor(color)

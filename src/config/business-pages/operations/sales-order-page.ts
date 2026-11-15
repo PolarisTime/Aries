@@ -1,4 +1,3 @@
-import {} from '@ant-design/icons'
 import i18next from 'i18next'
 import { createElement } from 'react'
 import { buildDocumentStatusOptions } from '@/constants/module-options'
@@ -230,8 +229,8 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       options: buildDocumentStatusOptions(
         DOCUMENT_STATUS.DRAFT,
         DOCUMENT_STATUS.AUDITED,
-        '交付核定',
-        '完成销售',
+        DOCUMENT_STATUS.DELIVERY_VERIFICATION,
+        DOCUMENT_STATUS.SALES_COMPLETED,
       ),
       row: 1,
     },
