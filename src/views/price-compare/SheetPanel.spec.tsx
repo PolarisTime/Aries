@@ -1260,6 +1260,25 @@ describe('SheetPanel 现货价实时派生', () => {
     expect(title).toContain('现货价更新于')
   })
 
+  it('简称列显示供应商简称，全称放 title（没有简称时回退全称）', async () => {
+    lowestQuotesMock.mockResolvedValue([
+      quote('中天', 12, 3420, {
+        supplierName: '浙江企坤集团有限公司（融诚支付）',
+        supplierShortName: '企坤融诚',
+      }),
+    ])
+    renderPanel(makeSheet(), [rowAt('r1', 12)])
+    await waitFor(() =>
+      (
+        container.querySelector('.price-compare-supplier')?.textContent ?? ''
+      ).includes('企坤融诚'),
+    )
+    const cell = container.querySelector('.price-compare-supplier')
+    expect(cell?.textContent).toBe('企坤融诚')
+    // 全称仍可读到：列宽只够简称，全称放 title
+    expect(cell?.getAttribute('title')).toBe('浙江企坤集团有限公司（融诚支付）')
+  })
+
   it('未匹配的格子显示「—」而不是残留旧价', async () => {
     lowestQuotesMock.mockResolvedValue([quote('中天', 12, 3420)])
     renderPanel({ ...makeSheet(), inputs: { '中天:r2': { spot: 3300 } } }, [

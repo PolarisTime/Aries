@@ -93,6 +93,8 @@ const lowestQuoteSchema = z.looseObject({
   priceListId: z.unknown().optional(),
   supplierId: z.unknown().optional(),
   supplierName: z.string().nullish(),
+  /* 供应商简称（主数据 md_supplier.short_name）：报单比价「简称」列优先展示它。 */
+  supplierShortName: z.string().nullish(),
   /* 该现货价最后一次修改时间：报单比价界面要显示「取到的现货价修改时间」。 */
   updatedAt: z.string().nullish(),
 })
@@ -108,6 +110,8 @@ export type BrandLowestQuote = {
   priceListId: EntityId
   supplierId: EntityId
   supplierName: string
+  /** 供应商简称；主数据未维护时缺省，展示端回退全称。 */
+  supplierShortName?: string
   /** 该现货价最后一次修改时间（ISO 8601）；历史数据可能缺省。 */
   updatedAt?: string
 }
@@ -247,6 +251,9 @@ export async function fetchLowestBrandQuotes(
       priceListId: toId(row.priceListId),
       supplierId: toId(row.supplierId),
       supplierName: row.supplierName ?? '',
+      ...(row.supplierShortName
+        ? { supplierShortName: row.supplierShortName }
+        : {}),
       ...(row.updatedAt ? { updatedAt: row.updatedAt } : {}),
     })
   }

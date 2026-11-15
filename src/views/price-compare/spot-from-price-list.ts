@@ -150,6 +150,10 @@ export function importLowestQuotes(
       else delete next.supplierId
       if (quote.supplierName) next.supplierName = quote.supplierName
       else delete next.supplierName
+      // 简称随价一起刷新：报单比价「简称」列优先显示它，缺失则回退全称
+      if (quote.supplierShortName)
+        next.supplierShortName = quote.supplierShortName
+      else delete next.supplierShortName
       if (sourceMaterial) {
         next.spotSourceMaterial = sourceMaterial
         stats.substituted += 1

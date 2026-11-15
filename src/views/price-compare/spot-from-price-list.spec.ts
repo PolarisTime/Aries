@@ -82,6 +82,26 @@ describe('importLowestQuotes 覆盖式导入', () => {
     expect(inputs['中杭:a']).toBeUndefined()
   })
 
+  it('带出供应商简称，同时保留全称（列为简称、title 用全称）', () => {
+    const { inputs } = importLowestQuotes(sheet(), [
+      quote('中天', 12, 3420, {
+        supplierName: '浙江企坤集团有限公司（融诚支付）',
+        supplierShortName: '企坤融诚',
+      }),
+    ])
+    expect(inputs['中天:a']).toEqual({
+      spot: 3420,
+      supplierId: '77',
+      supplierName: '浙江企坤集团有限公司（融诚支付）',
+      supplierShortName: '企坤融诚',
+    })
+  })
+
+  it('价格表没给简称时不写该字段（展示端回退全称）', () => {
+    const { inputs } = importLowestQuotes(sheet(), [quote('中天', 12, 3420)])
+    expect(inputs['中天:a']).not.toHaveProperty('supplierShortName')
+  })
+
   it('已有现货价被覆盖(不是"只填空格")', () => {
     const { inputs, stats } = importLowestQuotes(
       sheet({ inputs: { '中天:a': { spot: 3400 } } }),

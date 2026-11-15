@@ -926,9 +926,14 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                             time: formatSpotUpdatedAt(spotInput.spotUpdatedAt),
                           })
                         : undefined
+                      // 简称优先：全称是「浙江企坤集团有限公司（融诚支付）」这种长串，挤在一格里读不出重点
+                      const supplierLabel =
+                        spotInput?.supplierShortName ||
+                        spotInput?.supplierName ||
+                        undefined
                       const spotTitle = [
                         spot === undefined ? undefined : String(spot),
-                        spotInput?.supplierName || undefined,
+                        supplierLabel,
                         spotUpdatedLabel,
                       ]
                         .filter(Boolean)
@@ -1003,19 +1008,21 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     widths.supplier,
                     (_, row) => {
                       /*
-                       * 供应商只读：与现货价同源 —— 价格表导入时一起写入，格子里不再提供
-                       * 下拉（默认禁止手动改价，供应商也就不允许手工指定）。
+                       * 供应商只读：与现货价同源（供应商价格表实时派生），格子里不提供下拉。
+                       *
+                       * 展示**简称**（md_supplier.short_name），全称放 title：列宽有限，
+                       * 「浙江企坤集团有限公司（融诚支付）」这种全称在「简称」列里会把列撑开、
+                       * 也读不出是哪家；没有简称时回退全称，不留空白。
                        */
-                      const supplierName = getInput(
-                        brand.name,
-                        row.row.id,
-                      )?.supplierName
+                      const supplierInput = getInput(brand.name, row.row.id)
+                      const supplierName = supplierInput?.supplierName
+                      const supplierShortName = supplierInput?.supplierShortName
                       return (
                         <span
                           className={`price-compare-supplier${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                          title={supplierName}
+                          title={supplierName || undefined}
                         >
-                          {supplierName || '—'}
+                          {supplierShortName || supplierName || '—'}
                         </span>
                       )
                     },

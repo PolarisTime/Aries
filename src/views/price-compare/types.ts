@@ -88,6 +88,8 @@ export type SheetInput = {
   /** 现货价来源供应商(主数据) */
   supplierId?: string
   supplierName?: string
+  /** 供应商简称（价格表取价时一并带出）；缺省时展示端回退全称。 */
+  supplierShortName?: string
   /**
    * 现货价的**来源材质**：该格是按替代牌号代取来的（如行材质 HRB400、按 HRB400E 取价）。
    *
