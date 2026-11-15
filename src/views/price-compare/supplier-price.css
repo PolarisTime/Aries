@@ -10,6 +10,11 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  /*
+   * 页内留白：报价表与供应商标签栏不再贴着内容区左边缘。
+   * 左右 16px 与其它业务页一致，顶部 12px 承接面包屑，底部 24px 给最后一行留呼吸。
+   */
+  padding: var(--space-sm, 12px) var(--space-md, 16px) var(--space-lg, 24px);
 }
 
 /*
