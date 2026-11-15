@@ -2996,6 +2996,9 @@ export const enUS = {
       formulaDivideByZero: 'The formula divides by 0',
       formulaNegative: 'The result cannot be negative',
       batchAdjust: 'Batch adjust',
+      selectionMenuLabel: '{{count}} cell(s) selected: bulk actions menu',
+      menuBatchAdjust: 'Batch adjust…',
+      menuClearPrices: 'Clear prices',
       batchAdjustTitle: 'Batch adjust ({{count}} cell(s) selected)',
       batchAdjustPlaceholder: 'e.g. +50, -30, *1.02',
       batchAdjustHint:

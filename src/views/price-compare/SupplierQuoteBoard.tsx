@@ -1,4 +1,5 @@
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { MenuProps } from 'antd'
 import {
   Button,
   Empty,
@@ -37,6 +38,7 @@ import {
   saveSupplierPriceColumnItems,
 } from '@/api/market/supplier-price-lists'
 import { fetchSupplierOptions } from '@/api/master/supplier-options'
+import { ContextMenu } from '@/components/ContextMenu'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useHasPermission } from '@/hooks/usePermission'
 import { message, modal, notification } from '@/utils/antd-app'
@@ -1497,6 +1499,59 @@ export function SupplierQuoteBoard() {
     )
   }
 
+  /**
+   * 框选后的**单元格右键菜单**（批量调价 / 清空价格）。
+   *
+   * <p>为什么只在「多格框选」时接管右键：价格格本身是可编辑 input，单格右键应当保留
+   * 浏览器原生菜单（粘贴 / 检查等）——这也是本仓库上下文菜单契约的要求（参见 `SheetPanel`：
+   * 右键可编辑输入控件时放行原生菜单）。而用户框选出一片单元格之后，意图已经从"编辑这一格"
+   * 变成"对这一片做批量操作"，此时右键弹出批量菜单才符合预期，与 Excel 一致。</p>
+   *
+   * <p>菜单复用 {@link ContextMenu}（antd Dropdown 封装）：可访问名、打开后焦点进首项、
+   * Escape 关闭并把焦点还给原格子，都走同一份 APG 契约；`disabled` 时 antd 不拦截事件，
+   * 原生右键菜单照常出现。</p>
+   */
+  const selectionMenuItems: MenuProps['items'] = [
+    {
+      key: 'bulk-adjust',
+      label: t('priceCompare.supplierPrice.menuBatchAdjust'),
+    },
+    {
+      key: 'clear-prices',
+      label: t('priceCompare.supplierPrice.menuClearPrices'),
+      // 清空是破坏性动作：与列表页删除项同一约定（danger 语义色），但不清空就无法批量重填
+      danger: true,
+    },
+  ]
+
+  const handleSelectionMenuClick: MenuProps['onClick'] = ({ key }) => {
+    if (key === 'bulk-adjust') {
+      // 与 tab 栏「批量调价」按钮同一份状态：清掉上次输入，打开同一个弹层
+      setBatchText('')
+      setBatchOpen(true)
+      return
+    }
+    if (key === 'clear-prices') {
+      clearSelectedCells()
+    }
+  }
+
+  /**
+   * 这张表上是否有"可执行批量动作的框选"。
+   *
+   * <p>选区只属于一个品类 + 一种材质（`selection.category/material`），因此只有选区
+   * 所属的那张表才接管右键；其它材质表、以及单格选区，都放行原生菜单。</p>
+   */
+  const selectionMenuActiveHere = (
+    group: CategoryGroup,
+    sheet: CategorySheet,
+  ) =>
+    canEdit &&
+    selection !== null &&
+    selection.category === group.categoryName &&
+    selection.material === sheet.material &&
+    selectionWritableCount > 1
+
   /** Ctrl+D / Ctrl+R：把选区首行向下 / 首列向右填满。 */
   const fillSelectedCells = (mode: 'down' | 'right') => {
     const target = selectionTarget()
@@ -2426,23 +2481,32 @@ export function SupplierQuoteBoard() {
   const sheetViewOf = (group: CategoryGroup, sheet: CategorySheet) => {
     const { columns: sheetColumns, totalWidth } = columnsOfSheet(group, sheet)
     return (
-      <section className="supplier-price-sheet-material" key={sheet.material}>
-        <Table<SpecRow>
-          bordered
-          columns={sheetColumns}
-          dataSource={sheet.rows}
-          pagination={false}
-          rowKey={(row) => row.spec}
-          /*
-           * 始终给 `scroll.x`：表格宽度 = 各列宽之和，**不随容器拉伸**。
-           * 之前不传 scroll 时表格会撑满 100%，价格列被摊到几百像素宽
-           * （用户反馈「怎么变成自动拉伸了」）。
-           */
-          scroll={{ x: totalWidth }}
-          size="small"
-          tableLayout="fixed"
-        />
-      </section>
+      <ContextMenu
+        ariaLabel={t('priceCompare.supplierPrice.selectionMenuLabel', {
+          count: selectionWritableCount,
+        })}
+        disabled={!selectionMenuActiveHere(group, sheet)}
+        items={selectionMenuItems}
+        onClick={handleSelectionMenuClick}
+      >
+        <section className="supplier-price-sheet-material" key={sheet.material}>
+          <Table<SpecRow>
+            bordered
+            columns={sheetColumns}
+            dataSource={sheet.rows}
+            pagination={false}
+            rowKey={(row) => row.spec}
+            /*
+             * 始终给 `scroll.x`：表格宽度 = 各列宽之和，**不随容器拉伸**。
+             * 之前不传 scroll 时表格会撑满 100%，价格列被摊到几百像素宽
+             * （用户反馈「怎么变成自动拉伸了」）。
+             */
+            scroll={{ x: totalWidth }}
+            size="small"
+            tableLayout="fixed"
+          />
+        </section>
+      </ContextMenu>
     )
   }
 

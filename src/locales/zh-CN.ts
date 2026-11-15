@@ -2977,6 +2977,13 @@ export const zhCN = {
       formulaDivideByZero: '算式里出现了除以 0',
       formulaNegative: '结果不能为负数',
       batchAdjust: '批量调价',
+      /*
+       * 框选后的右键菜单：菜单可访问名 + 两个菜单项。
+       * 「批量调价…」带省略号：点它会打开弹层（与「重命名…」同一约定）。
+       */
+      selectionMenuLabel: '已选 {{count}} 格：批量操作菜单',
+      menuBatchAdjust: '批量调价…',
+      menuClearPrices: '清空价格',
       batchAdjustTitle: '批量调价（已选 {{count}} 格）',
       batchAdjustPlaceholder: '例如 +50、-30、*1.02',
       batchAdjustHint:

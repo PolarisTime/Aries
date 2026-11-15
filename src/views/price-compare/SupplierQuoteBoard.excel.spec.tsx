@@ -657,4 +657,107 @@ describe('供应商报价表：Excel 式网格操作', () => {
       i18n.t('priceCompare.supplierPrice.selectionCount', { count: 3 }),
     )
   })
+
+  /*
+   * 框选后的右键菜单。
+   *
+   * 契约：只有「多格框选」才接管右键（单格右键必须放行原生菜单，否则会抢走输入框的
+   * 粘贴/检查）；菜单项复用既有动作（批量调价弹层 / 清空选区），不另写一套业务逻辑。
+   */
+  const openContextMenu = async (target: Element | null) => {
+    expect(target, '未找到右键目标').not.toBeNull()
+    await act(async () => {
+      target?.dispatchEvent(
+        new MouseEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  const menuItems = () =>
+    Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '.app-context-menu .ant-dropdown-menu-item',
+      ),
+    )
+
+  const clickMenuItem = async (label: string) => {
+    const item = menuItems().find((node) =>
+      (node.textContent ?? '').includes(label),
+    )
+    expect(item, `未找到菜单项：${label}`).toBeDefined()
+    await act(async () => {
+      item?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  it('框选多格后右键弹出单元区菜单：带可访问名，含「批量调价…」「清空价格」', async () => {
+    await render()
+
+    await pointerDown(cellInput('中天 HRB400E 12 9米'))
+    await pointerDown(cellInput('中天 HRB400E 14 9米'), { shiftKey: true })
+    await openContextMenu(cellInput('中天 HRB400E 12 9米'))
+
+    const menu = document.querySelector('.app-context-menu [role="menu"]')
+    expect(menu, '框选后右键未弹出菜单').not.toBeNull()
+    expect(menu?.getAttribute('aria-label')).toBe(
+      i18n.t('priceCompare.supplierPrice.selectionMenuLabel', { count: 2 }),
+    )
+    const labels = menuItems().map((node) => (node.textContent ?? '').trim())
+    expect(labels).toEqual([
+      i18n.t('priceCompare.supplierPrice.menuBatchAdjust'),
+      i18n.t('priceCompare.supplierPrice.menuClearPrices'),
+    ])
+  })
+
+  it('菜单「清空价格」清空选区：走既有清格逻辑（提示已清空格数）', async () => {
+    await render()
+
+    await pointerDown(cellInput('中天 HRB400E 12 9米'))
+    await pointerDown(cellInput('中天 HRB400E 14 9米'), { shiftKey: true })
+    await openContextMenu(cellInput('中天 HRB400E 12 9米'))
+    await clickMenuItem(i18n.t('priceCompare.supplierPrice.menuClearPrices'))
+
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('')
+    expect(cellInput('中天 HRB400E 14 9米')?.value).toBe('')
+    expect(feedback.message.success).toHaveBeenCalledWith(
+      i18n.t('priceCompare.supplierPrice.clearApplied', { count: 2 }),
+    )
+  })
+
+  it('菜单「批量调价…」打开既有批量调价弹层（同一份动作，不是第二套实现）', async () => {
+    await render()
+
+    await pointerDown(cellInput('中天 HRB400E 12 9米'))
+    await pointerDown(cellInput('中天 HRB400E 14 9米'), { shiftKey: true })
+    await openContextMenu(cellInput('中天 HRB400E 12 9米'))
+    await clickMenuItem(i18n.t('priceCompare.supplierPrice.menuBatchAdjust'))
+
+    const modalInput = document.querySelector<HTMLInputElement>(
+      `.ant-modal input[aria-label="${i18n.t('priceCompare.supplierPrice.batchAdjust')}"]`,
+    )
+    expect(modalInput, '菜单未打开批量调价弹层').not.toBeNull()
+  })
+
+  it('单格（未框选）右键不接管：保留浏览器原生菜单', async () => {
+    await render()
+
+    await pointerDown(cellInput('中天 HRB400E 12 9米'))
+    const event = new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+    })
+    await act(async () => {
+      cellInput('中天 HRB400E 12 9米')?.dispatchEvent(event)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(menuItems()).toHaveLength(0)
+    // 没有 preventDefault 才会出现原生菜单
+    expect(event.defaultPrevented).toBe(false)
+  })
 })
