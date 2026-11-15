@@ -139,7 +139,7 @@ export const ENDPOINTS = {
     '/purchase-orders/inbound-import-candidates',
   PURCHASE_ORDER_WAREHOUSE_RECOMMENDATIONS:
     '/purchase-orders/warehouse-recommendations',
-  PURCHASE_ORDER_PICKUP_LIST_PREVIEW: '/purchase-orders/pickup-list-preview',
+  PURCHASE_ORDER_PICKUP_LIST_PREVIEWS: '/purchase-orders/pickup-list-previews',
   /** 强制结单子资源：POST 结单（剩余未入库件数作废），DELETE 撤销结单。 */
   PURCHASE_ORDER_FORCE_CLOSURES: (id: string | number) =>
     `/purchase-orders/${pathSegment(id)}/force-closures`,

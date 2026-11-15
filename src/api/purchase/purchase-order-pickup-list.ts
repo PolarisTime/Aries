@@ -58,7 +58,7 @@ export async function fetchPurchaseOrderPickupList(
   signal?: AbortSignal,
 ): Promise<PurchaseOrderPickupList> {
   return apiGet(
-    ENDPOINTS.PURCHASE_ORDER_PICKUP_LIST_PREVIEW,
+    ENDPOINTS.PURCHASE_ORDER_PICKUP_LIST_PREVIEWS,
     pickupListResponseSchema,
     {
       params: { orderIds },
