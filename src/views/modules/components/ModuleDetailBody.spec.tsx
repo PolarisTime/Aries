@@ -48,7 +48,7 @@ describe('buildModuleDetailBodyModel', () => {
     const model = buildModuleDetailBodyModel({
       config: configWith({
         itemColumns: [{ dataIndex: 'amount', title: '金额' }],
-      } as Partial<ModulePageConfig>),
+      }),
       record,
       formatCellValue: (value) => String(value ?? ''),
     })
@@ -89,7 +89,7 @@ describe('buildModuleDetailBodyModel', () => {
         itemColumns: [{ dataIndex: 'amount', title: '金额' }],
         detailSummary,
       }),
-      record: { id: '2', items: [] } as unknown as ModuleRecord,
+      record: { id: '2', items: [] },
       formatCellValue: (value) => String(value ?? ''),
     })
     // 没有明细行就不该调合计（避免「合计 0 行」），也不给 summary 插槽
