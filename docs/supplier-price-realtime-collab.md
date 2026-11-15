@@ -1,6 +1,9 @@
 # 供应商价格表：实时协作设计（Yjs CRDT）
 
-> 状态：**M1–M4 已实现**（边车 `leo c09bb3a0`、前端 `aries 7e5dd259`；Java 票据与 V218 在建）。
+> 状态：**M1–M6 已实现并完成真实联调**（边车 `leo c09bb3a0` / `5bf4a035` / `75c5684e`，
+> Java `490d1d2d` / `a9801b2c`，前端 `aries 7e5dd259` / `74c99de4`）。供应商价格表与报单比价
+> 两个房间均已用真实边车 + 真实 Java 票据 + 真实 Postgres 验证（改价/改吨位 → 文档收敛 →
+> 物化落库 → 版本递增）。
 > 本文对应两条需求：
 > 1. 多端编辑同一份数据，**不能丢任何一次改动**；
 > 2. 实时协作：多人同时改同一张表，**能看到对方光标**。
@@ -500,6 +503,24 @@ Java addColumn/removeColumn → 写 SQL → PUBLISH collab:structure <supplierId
 | 预估工期 | 6.5 人日 | **≈4 人日**（复用同一 Hocuspocus 边车与物化框架） |
 
 排期建议：先做供应商价格表（把平台跑稳），再复制到报单比价；反过来会把平台问题与业务问题混在一起排查。
+
+## 14.2 联调记录（2026-11-15 实测）
+
+环境：本机 Vite 3100 + Spring Boot 11211 + 边车 11212（COLLAB_STORE=postgres，V218 已由 Flyway 执行）。
+
+| 场景 | 结果 |
+| --- | --- |
+| 票据 | `POST /supplier-price-lists/{listId}/collab-sessions` 与 `/quote-sheets/{id}/collab-sessions` 均 201，`room=supplier-price-list:<listId>` / `quote-sheet:<sheetId>` |
+| 鉴权 | 合法票据 synced；篡改签名 → 4401「协作票据无效：signature verification failed」；房间不符 → 4403；无票据 → 4401「缺少协作票据」 |
+| 双端收敛 | 两个客户端各改一格，双方 `cells` 收敛为同一值；清理（删格/还原）也同步 |
+| 物化（供应商价） | 改价 → `mk_supplier_price_item` 更新、`mk_supplier_price_cell_op` 审计 1 行（cell_key 为 `\u001f` 转义形态）、`mk_supplier_price_list.version` +1 |
+| 物化（报价单） | 改吨位/备注 → `mk_quote_item` 更新、`mk_quote_sheet.version` +1、`updated:1` |
+| 页面 | `/supplier-quote` 与 `/price-compare` 在开关开启时状态条显示「实时协作中」，边车日志有「协作连接已认证」 |
+
+联调中修掉的三个真实缺陷（都已提交）：
+1. **provider 必须显式 `attach()`**：传 `websocketProvider` 时 `manageSocket=false`，构造函数不会自动 attach —— 症状是 WS 已连上、`synced` 永远 false、边车无认证日志（`aries 74c99de4`）；
+2. **取票 POST 缺 `X-Idempotency-Key`** → 422 → 静默降级为 REST（`aries 74c99de4`）；
+3. **cellKey 的 NUL 写进 PG text 列** → 整个物化事务回滚（`leo 5bf4a035`，NUL→US 可逆转义）。
 
 ## 15. 风险与对策
 

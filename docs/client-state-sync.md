@@ -1,6 +1,8 @@
 # 客户端本地状态同步方案（localStorage → 服务器）
 
-> 状态：**P0/P1 已实现**（后端 `leo 82fa4590`、前端 `aries 4f19caa1` / `413285bc`），等待联调验收。
+> 状态：**P0/P1 已实现并完成真实联调**（后端 `leo 82fa4590`；前端 `aries 4f19caa1` / `413285bc` / `81281b83`）。
+> 实测：页面启动只发一次 `GET /account/settings`；改设置 1s 防抖合并成单次 PUT（含 `X-Idempotency-Key`）；
+> 409 冲突按 `serverValue` 采用服务端值；换设备登录能恢复页签（含修复「新设备默认页签覆盖远端」的竞态）。
 > 本文只覆盖**「界面偏好 / 本地状态」的跨设备同步**；
 > 多人实时协作（Yjs / CRDT）另见 [supplier-price-realtime-collab.md](./supplier-price-realtime-collab.md)。
 
