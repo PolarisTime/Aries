@@ -3,10 +3,7 @@
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type {
-  ModulePageConfig,
-  ModuleRecord,
-} from '@/types/module-page'
+import type { ModulePageConfig, ModuleRecord } from '@/types/module-page'
 import {
   buildModuleDetailBodyModel,
   getModuleDetailErrorMessage,
@@ -200,4 +197,3 @@ describe('ModuleDetailBody', () => {
     expect(container.querySelector('.fallback')).not.toBeNull()
   })
 })
-
