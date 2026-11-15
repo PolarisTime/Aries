@@ -1192,11 +1192,20 @@ export function SheetPanel(props: Props) {
    *
    * <p>**不落库**：派生结果只参与渲染与合计，保存时不再携带 prices（见 sheet-snapshot）。
    * 因此供应商改价后刷新页面即可看到最新价，不再需要"导入"这个手动动作。</p>
+   *
+   * <p>**自动同步节奏**（用户实测要求：供应商改价后报单比价要自动跟上）：全站默认
+   * `refetchOnWindowFocus: false`，这里显式打开焦点刷新与重连刷新，并加 60s 轮询；
+   * `staleTime` 压到 15s —— 页面开着不放时最迟约 1 分钟、切回标签页约 15s 内即更新。
+   * 供应商价格表本身是共享数据、单次查询只返回每格最低价（约几百行），轮询成本可接受；
+   * 需要立刻刷新时仍有工具栏「刷新现货价」按钮。</p>
    */
   const lowestQuotesQuery = useQuery({
     queryKey: ['supplier-price-lowest-quotes'],
     queryFn: ({ signal }) => fetchLowestBrandQuotes(undefined, signal),
-    staleTime: 30_000,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60_000,
   })
   const liveInputs = useMemo(() => {
     if (!lowestQuotesQuery.data) return sheet.inputs
