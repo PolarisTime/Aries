@@ -16,6 +16,7 @@ import dayjs from 'dayjs'
 import {
   type ChangeEvent as ReactChangeEvent,
   type ClipboardEvent as ReactClipboardEvent,
+  Fragment,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
@@ -2543,6 +2544,39 @@ export function SupplierQuoteBoard() {
     }
   }
 
+  /**
+   * 一个品类下的「平铺材质区」（demo）：不再用 tab 切换材质，直接把每种材质的一张表并排摆开，
+   * 表与表之间用一条竖向分隔线断开 —— 左侧 HRB400、右侧 HRB400E 同屏对照，报价时不用来回切。
+   *
+   * <p>品类名与右侧状态（已选 / 批量调价 / 最后编辑）复用材质 tab 栏的 extras，
+   * 只是从 tab 栏挪到分区标题行，平铺后这些信息仍有落点。</p>
+   */
+  const materialRowOf = (group: CategoryGroup, groupIndex: number) => {
+    if (group.sheets.length === 0) return null
+    const extras = materialTabExtrasOf(group, groupIndex)
+    return (
+      <section className="supplier-price-material-row">
+        <header className="supplier-price-material-row-head">
+          {extras.left}
+          {extras.right ?? null}
+        </header>
+        <div className="supplier-price-material-row-body">
+          {group.sheets.map((sheet, index) => (
+            <Fragment key={sheet.material}>
+              {index > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className="supplier-price-material-divider"
+                />
+              ) : null}
+              {sheetViewOf(group, sheet)}
+            </Fragment>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
   const materialTabsOf = (group: CategoryGroup, groupIndex: number) => {
     if (group.sheets.length === 0) return null
     const active = activeMaterialByCategory[group.categoryName]
@@ -2639,10 +2673,12 @@ export function SupplierQuoteBoard() {
                 key={group.categoryName}
               >
                 {/*
-                 * 品类名与最后编辑已经并进材质 tab 栏的两侧（见 `materialTabExtras`），
-                 * 这里只渲染 tabs 本体：不再是「品类标题行 + tab 行」两行占位。
+                 * demo：所有品类都改为平铺（材质不再用 tab 切换）。
+                 * 只有一个材质时就是「分区标题 + 一张表」，多个材质时并排 + 竖向分隔线。
                  */}
-                {materialTabsOf(group, groupIndex)}
+                {group.sheets.length > 0
+                  ? materialRowOf(group, groupIndex)
+                  : materialTabsOf(group, groupIndex)}
               </div>
             ))}
           </div>
