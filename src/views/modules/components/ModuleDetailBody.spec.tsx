@@ -4,7 +4,6 @@ import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
-  ModuleLineItem,
   ModulePageConfig,
   ModuleRecord,
 } from '@/types/module-page'
@@ -202,5 +201,3 @@ describe('ModuleDetailBody', () => {
   })
 })
 
-/** 明细行类型仅用于让测试里的 fixture 形状可读。 */
-export type FixtureItem = ModuleLineItem
