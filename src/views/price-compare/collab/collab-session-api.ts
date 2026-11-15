@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { apiPost } from '@/api/core/client'
+import { withIdempotencyKey } from '@/api/core/idempotency'
 import { readRequestError } from '@/api/core/request-errors'
 import { ENDPOINTS } from '@/constants/endpoints'
 
@@ -82,22 +83,51 @@ function toSession(
 }
 
 /**
- * 申请协作房间票据。
+ * 「资源 id → 协作房间票据」的请求函数。
  *
- * <p>不抛异常：任何失败都收敛成 `unavailable`（降级路径），调用方据此回退 REST 自动保存。</p>
+ * <p>供应商价格表与报单比价共用同一套票据契约，只是资源前缀不同，因此抽成一个类型：
+ * hook 侧只依赖这个函数签名，测试里注入假实现即可。</p>
  */
-export async function requestCollabSession(
-  listId: string,
+export type CollabSessionRequest = (
+  resourceId: string,
+) => Promise<CollabSessionOutcome>
+
+/**
+ * 申请协作房间票据（不抛异常）。
+ *
+ * <p>任何失败都收敛成 `unavailable`（降级路径），调用方据此回退 REST 自动保存。</p>
+ */
+async function requestCollabSessionAt(
+  basePath: string,
+  resourceId: string,
 ): Promise<CollabSessionOutcome> {
   try {
     const payload = await apiPost(
-      `${ENDPOINTS.SUPPLIER_PRICE_LISTS}/${listId}/collab-sessions`,
+      `${basePath}/${resourceId}/collab-sessions`,
       collabSessionSchema,
+      undefined,
+      // 取票是 POST（创建会话资源），后端类级 @IdempotencyRequired 要求幂等键；
+      // 少这个头会 422，协作直接降级成 REST（联调实测）。
+      withIdempotencyKey(),
     )
     return { kind: 'session', session: toSession(payload) }
   } catch (error) {
     return { kind: 'unavailable', reason: unavailableReasonOf(error) }
   }
+}
+
+/** 供应商价格表：`POST /supplier-price-lists/{listId}/collab-sessions`。 */
+export async function requestCollabSession(
+  listId: string,
+): Promise<CollabSessionOutcome> {
+  return requestCollabSessionAt(ENDPOINTS.SUPPLIER_PRICE_LISTS, listId)
+}
+
+/** 报单比价（报价单）：`POST /quote-sheets/{sheetId}/collab-sessions`。 */
+export async function requestQuoteSheetCollabSession(
+  sheetId: string,
+): Promise<CollabSessionOutcome> {
+  return requestCollabSessionAt(ENDPOINTS.QUOTE_SHEETS, sheetId)
 }
 
 /**
@@ -107,13 +137,11 @@ export async function requestCollabSession(
  * 长时间挂着的页面断线重连时必须换新票，否则会被边车 4401 拒绝。</p>
  */
 export function createSessionRefresher(
-  listId: string,
-  request: (
-    listId: string,
-  ) => Promise<CollabSessionOutcome> = requestCollabSession,
+  resourceId: string,
+  request: CollabSessionRequest = requestCollabSession,
 ): CollabSessionRefresher {
   return async () => {
-    const outcome = await request(listId)
+    const outcome = await request(resourceId)
     return outcome.kind === 'session' ? outcome.session.token : null
   }
 }

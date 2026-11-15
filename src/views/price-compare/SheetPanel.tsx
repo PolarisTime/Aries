@@ -27,12 +27,25 @@ import {
   Tooltip,
   Typography,
 } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchLowestBrandQuotes } from '@/api/market/supplier-price-lists'
 import { isEditableFieldTarget } from '@/components/row-context-menu'
 import { useColumnSettingsSupport } from '@/hooks/useColumnSettingsSupport'
+import { CollabStatusBar } from './collab/CollabStatusBar'
+import { isCollabFeatureEnabled } from './collab/collab-config'
+import type { CollabPeer } from './collab/collab-presence'
+import { CollabCellCursors } from './collab/RemoteCursors'
+import { useQuoteSheetCollab } from './collab/useQuoteSheetCollab'
 import {
   EMPTY_LENGTH_PREMIUMS,
   filterVarieties,
@@ -92,10 +105,62 @@ type SheetTableProps = {
   /** 点击「添加一行」追加空行, 商品由行内可搜索下拉选择。 */
   onAddRow: () => void
   onAddSeparator: () => void
+  /**
+   * 协作：该行上的远端光标；不传表示未开启协作（DOM 与改动前一致）。
+   *
+   * <p>行光标画在「报单吨位」单元格上：那是这一行唯一的手填输入格，
+   * 对方看到描边就知道你在改哪一行。</p>
+   */
+  collabPeersOfRow?: (rowId: string) => readonly CollabPeer[]
+  /** 协作：焦点进入/离开某一行时上报自己的行光标（`null` = 离开所有行）。 */
+  onCollabRowFocus?: (rowId: string | null) => void
+}
+
+/**
+ * 给「报单吨位」列的渲染结果套一层远端光标锚点。
+ *
+ * <p>这是复用 {@link CollabCellCursors} 的**薄适配层**：不改 `buildSheetColumns`
+ * （列定义的单一出口），只在 SheetPanel 这一侧包一层 DOM；没有远端光标时原样返回，
+ * 不留空节点。</p>
+ */
+function withRowCursors(
+  columns: ColumnsType<GridRow>,
+  collabPeersOfRow?: (rowId: string) => readonly CollabPeer[],
+): ColumnsType<GridRow> {
+  if (!collabPeersOfRow) return columns
+  return columns.map((column) => {
+    if (column.key !== 'ton') return column
+    // 吨位列的 render 只返回 ReactNode（antd 的 `RenderedCell` 分支在这里用不到）
+    const renderCell = column.render as
+      | ((value: unknown, row: GridRow, index: number) => ReactNode)
+      | undefined
+    return {
+      ...column,
+      render: (value: unknown, row: GridRow, index: number) => {
+        const cell = renderCell ? renderCell(value, row, index) : null
+        const peers = collabPeersOfRow(row.rowId)
+        if (!peers.length) return cell
+        return (
+          <span className="collab-cell-anchor collab-cell-anchor--row">
+            {cell}
+            <CollabCellCursors cursors={peers} />
+          </span>
+        )
+      },
+    }
+  })
 }
 
 function SheetTable(props: SheetTableProps) {
-  const { rows, base, onReorderRow, onAddRow, onAddSeparator } = props
+  const {
+    rows,
+    base,
+    onReorderRow,
+    onAddRow,
+    onAddSeparator,
+    collabPeersOfRow,
+    onCollabRowFocus,
+  } = props
   const [dragId, setDragId] = useState<string | null>(null)
   const [dropId, setDropId] = useState<string | null>(null)
   const [dropAfter, setDropAfter] = useState(false)
@@ -233,6 +298,8 @@ function SheetTable(props: SheetTableProps) {
       for (const row of rows) toggleSelect(row.id, checked)
     },
   })
+  /* 协作行光标：只在吨位列上包一层锚点；未开启协作时原样返回 columns */
+  const tableColumns = withRowCursors(columns, collabPeersOfRow)
   /** 报单吨位合计: 与列头口径一致(全部商品行 ton 之和), 现在渲染在表格最后一行。 */
   const tonTotalText = useMemo(() => {
     const total = rows.reduce((sum, row) => sum + (row.ton ?? 0), 0)
@@ -255,7 +322,7 @@ function SheetTable(props: SheetTableProps) {
         bordered
         tableLayout="fixed"
         rowKey="key"
-        columns={columns}
+        columns={tableColumns}
         dataSource={dataSource}
         pagination={false}
         /* 合计行: 报单吨位合计原先挤在列头里(「报单吨位 合计 260」会把列名截断),
@@ -263,7 +330,7 @@ function SheetTable(props: SheetTableProps) {
          「添加一行 / 添加隔断」不再占表格行, 移到表格下方的操作条(见 Table 之后)。 */
         summary={() => (
           <Table.Summary.Row className="price-compare-ton-total-row">
-            {columns.map((column, index) => (
+            {tableColumns.map((column, index) => (
               <Table.Summary.Cell
                 key={column.key ?? index}
                 index={index}
@@ -290,6 +357,22 @@ function SheetTable(props: SheetTableProps) {
           return classes.join(' ')
         }}
         onRow={(row) => ({
+          /*
+           * 协作行光标：焦点进出本行时上报/清除。用 capture 阶段而不是给每个输入框接线，
+           * 这样不必改列定义（`sheet-columns.tsx` 不在本次范围内）。
+           */
+          onFocusCapture: onCollabRowFocus
+            ? () => onCollabRowFocus(row.rowId)
+            : undefined,
+          onBlurCapture: onCollabRowFocus
+            ? (event) => {
+                const next = event.relatedTarget as HTMLElement | null
+                // 焦点仍在同一行内（如吨位格 → 备注格）时不清光标
+                if (!next || !event.currentTarget.contains(next)) {
+                  onCollabRowFocus(null)
+                }
+              }
+            : undefined,
           /*
            * 行容器上的右键入口: 右键行内任意位置等同于点该行的「更多」按钮。
            *
@@ -1049,7 +1132,7 @@ export function SheetPanel(props: Props) {
     chrome = true,
     spotRef,
     designatedBrands,
-    readOnly = false,
+    readOnly: readOnlyProp = false,
   } = props
   const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -1146,10 +1229,58 @@ export function SheetPanel(props: Props) {
 
   // 单元格只读取数与行级写入动作抽到 use-sheet-panel-inputs.ts:
   // 现货价/供应商不再有手工写入动作(唯一来源是供应商价格表实时派生)。
-  const { getSpot, patchRow, getInput } = useSheetPanelInputActions({
+  const {
+    getSpot,
+    patchRow: patchRowRest,
+    getInput,
+  } = useSheetPanelInputActions({
     setRows,
     sheet: sheetWithLivePrices,
   })
+
+  /*
+   * 报单比价实时协作（只协作「报单吨位 + 行备注」）。
+   *
+   * <p>开关关闭 / 没拿到票据 / 单据还没保存到服务端（无 sheetId）时 `mode` 恒为 `rest`，
+   * patchRow 原样走既有 REST 保存链路，行为与改动前一致。</p>
+   */
+  const quoteSheetCollab = useQuoteSheetCollab({
+    enabled: isCollabFeatureEnabled(),
+    rows,
+    setRows,
+    sheetId: sheet.serverId,
+  })
+  const collabActive = quoteSheetCollab.mode === 'collab'
+  /**
+   * 只读判定：原有「他人签出」+ 协作票据 `writable=false`（只读席位）。
+   *
+   * <p>合并成一处再往下传：吨位/备注输入、行操作、增删行都会跟着只读，
+   * 不会出现"能加行却改不了吨位"的半截只读。</p>
+   */
+  const readOnly = readOnlyProp || (collabActive && !quoteSheetCollab.writable)
+
+  /**
+   * 行级写入的统一入口（唯一的「协作还是 REST」分岔点）。
+   *
+   * <p>只有**纯 ton/remark** 的补丁进 Y.Doc；带其它字段（规格/锁定/行结构）的补丁
+   * 一律走原路径 —— 结构变更不进 CRDT。写文档后由 hook 的观察者通过 `setRows`
+   * 把值应用回 rows，因此本地与远端是同一条数据通路。</p>
+   */
+  const patchRow = (rowId: string, patch: Partial<PriceRow>) => {
+    const keys = Object.keys(patch)
+    const collaborative =
+      collabActive &&
+      keys.length > 0 &&
+      keys.every((key) => key === 'ton' || key === 'remark')
+    if (collaborative) {
+      quoteSheetCollab.patchItem(rowId, {
+        ...('ton' in patch ? { ton: patch.ton ?? null } : {}),
+        ...('remark' in patch ? { remark: patch.remark ?? null } : {}),
+      })
+      return
+    }
+    patchRowRest(rowId, patch)
+  }
 
   const toggleSelect = (rowId: string, checked: boolean) =>
     setSelectedIds((current) =>
@@ -1253,12 +1384,30 @@ export function SheetPanel(props: Props) {
         }
       />
 
+      {/*
+       * 协作状态与在线名单：未开启协作时 CollabStatusBar 渲染 null，
+       * 外层不渲染，页面结构与改动前一致。
+       */}
+      {quoteSheetCollab.state !== 'disabled' ? (
+        <div className="price-compare-collab-status">
+          <CollabStatusBar
+            peers={quoteSheetCollab.peers}
+            state={quoteSheetCollab.state}
+            writable={quoteSheetCollab.writable}
+          />
+        </div>
+      ) : null}
+
       <SheetTable
         rows={rows}
         base={{
           ...base,
           moveFocusTon: moveFocusTon(rows),
         }}
+        collabPeersOfRow={
+          collabActive ? quoteSheetCollab.peersOfRow : undefined
+        }
+        onCollabRowFocus={collabActive ? quoteSheetCollab.setCursor : undefined}
         onReorderRow={reorderRow}
         onAddRow={addRow}
         onAddSeparator={addSeparator}

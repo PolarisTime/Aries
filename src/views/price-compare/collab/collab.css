@@ -71,3 +71,28 @@
   border: 1px solid;
   border-radius: 9px;
 }
+
+/* 报单比价：协作状态条的行内留白（与 tab 栏/卡片贴边布局一致，只加纵向节奏） */
+.price-compare-collab-status {
+  display: flex;
+  align-items: center;
+  padding: var(--space-sm, 12px) var(--space-md, 16px) 0;
+}
+
+/*
+ * 报单比价：协作状态条的行内留白（与 tab 栏/卡片贴边布局一致，只补纵向节奏）。
+ */
+.price-compare-collab-status {
+  display: flex;
+  align-items: center;
+  padding: var(--space-sm, 12px) var(--space-md, 16px) 0;
+}
+
+/*
+ * 行光标锚点：包住「报单吨位」单元格内容，让绝对定位的描边 / 人名标签
+ * 落在这一格内（与供应商报价表的格子锚点同一个视觉口径）。
+ */
+.collab-cell-anchor--row {
+  display: block;
+  width: 100%;
+}

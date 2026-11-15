@@ -132,6 +132,14 @@ export function loadHocuspocusTransportFactory(): Promise<CollabTransportFactory
           token: tokenResolver(options.token),
           websocketProvider: websocket,
         })
+        /*
+         * **必须显式 attach**：传了 `websocketProvider` 时 provider 的 `manageSocket=false`，
+         * 构造函数不再自动 attach（官方实现只有 `if (this.manageSocket) this.attach()`），
+         * 于是 WebSocket 能连上、但 provider 从不注册收发与鉴权处理器 —— 表现为
+         * 「状态=已连接、synced 永远 false、边车日志里没有一条『协作连接已认证』」。
+         * attach() 幂等：只注册监听并发送首次 sync/auth，不建立第二条连接。
+         */
+        provider.attach()
         return {
           get state() {
             return state
