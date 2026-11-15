@@ -48,8 +48,8 @@
 - `GET /account`
 - `PUT /account`
 - `PUT /account/password`
-- `GET /account/preferences`
-- `PUT /account/preferences`
+- `GET /account/settings`
+- `PUT /account/settings`
 
 请求头：
 
@@ -200,6 +200,33 @@
 
 - 列表接口直接返回“头 + 明细 + 附件摘要”
 - 先不强拆详情接口
+
+### 3.4 文件上传与导出的两步资源协议
+
+文件不是“动作结果”，而是资源：上传用 `POST /attachments` 创建附件资源，导出用
+`POST /<resource>-export-requests` 创建导出产物资源，再 `GET .../content` 读取文件内容。
+前端统一由 `src/api/core/export-artifacts.ts` 实现，业务模块不得各自重复拼 content 路径或重复判断过期。
+
+- 创建：`POST` + `X-Idempotency-Key`，成功 `201 Created` 且 `Location` 指向新资源。
+- 导出产物响应体 `ExportArtifactResponse`：`id`（雪花 id 十进制**字符串**）、`kind`、`fileName`、
+  `contentType`、`size`（字节数，JSON number）、`createdAt`、`expiresAt`、
+  `contentPath`（含 `/v2.0` 前缀、不含 context-path）。
+- 下载：`GET {contentPath}`，`responseType: 'blob'`，`Authorization` 由统一 client 的拦截器注入。
+- 产物是有界缓存：默认保留 30 分钟；过期或服务端重启后 `content` 返回 `404`，
+  前端提示「导出文件已过期，请重新生成」，不复用旧 `id` 重试。
+
+| 用途 | 创建资源 | 读取内容 |
+| --- | --- | --- |
+| 附件上传 | `POST /attachments`（multipart：`moduleKey`、`file`、`sourceType?`） | `GET /attachments/{id}/content` |
+| 资金流水导出 | `POST /cash-ledger-export-requests` | `GET /cash-ledger-export-requests/{id}/content` |
+| 业务单据导出 | `POST /module-export-requests` | `GET /module-export-requests/{id}/content` |
+| 商品资料导出 | `POST /material-export-requests` | `GET /material-export-requests/{id}/content` |
+| 附件恢复清单导出 | `POST /attachment-manifest-export-requests` | `GET /attachment-manifest-export-requests/{id}/content` |
+| 销售订单套打导出 | `POST /sales-orders/{orderId}/xlsx-export-requests` | `GET /sales-orders/{orderId}/xlsx-export-requests/{exportId}/content` |
+
+旧的动作式端点（`POST /attachments/upload`、`GET /cash-ledger/export`、`POST /module-exports`、
+`POST /material-exports`、`POST /attachment-manifest-exports`、`POST /sales-orders/{id}/xlsx-exports`）
+已于 2026-11-15 删除，不再保留兼容别名；前端全部迁移到上表的资源端点。
 
 ## 4. 基础数据规范
 
@@ -811,7 +838,7 @@ YYYY + 前缀 + 6位流水
 - 当前账号资源由 JWT 认证主体确定，接口不接受外部账号 ID。
 - 系统只允许一个未删除账号，不提供账号列表、新增账号、角色或权限配置接口。
 - 修改密码后递增凭据版本并撤销现有刷新会话，前端应重新登录。
-- 页面偏好通过 `/account/preferences` 读写，存放在当前账号的 `preferencesJson` 中。
+- 页面偏好与列表页列设置通过 `/account/settings` 读写（`sections` 分片增量、`pages` 整段替换），存放在当前账号的 `preferencesJson` 中。
 
 ### 6.24 运维支持 `ops-support`
 

@@ -13,7 +13,7 @@
 | 同步什么 | 个人设置、页签、供应商报价页视图偏好、语言/引导标记、列设置（已同步） |
 | 不同步什么 | 登录凭据、业务数据缓存、**草稿**（见 §6.5） |
 | 存哪里 | 复用 `sys_user.preferences_json`（JSONB），**无需 DDL** |
-| 接口 | `GET/PUT /api/v2/account/settings`，按 section 分片；`/account/preferences` 保留为弃用别名 |
+| 接口 | `GET/PUT /api/v2/account/settings`：`sections` 按分片增量（LWW），`pages`（列设置）整段替换 |
 | 冲突 | 覆盖型按时间戳 LWW；合并型（按 supplierId）深度合并 |
 | 客户端 | 本地先写（离线可用），远端防抖异步，失败退避重试，409 以服务端为准 |
 | 分期 | P0：`ui` 分片；P1：`layoutTabs` + `supplierQuote`；**P2 草稿取消** |
@@ -42,7 +42,7 @@
 | 键 | 内容 | 归属 | 决策 |
 | --- | --- | --- | --- |
 | `aries-personal-settings` | 字号 / 主题 / 导航布局 / 单据按钮位置 / 右键菜单隐藏项 | 个人 | ✅ `ui` 分片（覆盖型） |
-| `aries-list-column-settings:<user>:<page>` | 列顺序、隐藏列、列宽 | 个人 | ✅ **已同步**（`/account/preferences`），只做结构迁移 |
+| `aries-list-column-settings:<user>:<page>` | 列顺序、隐藏列、列宽 | 个人 | ✅ **已同步**（`/account/settings` 的 `pages`），只做结构迁移 |
 | `aries-layout-tabs:<userId>` | 工作台打开的页签（≤10） | 个人 | ✅ `layoutTabs` 分片（覆盖型） |
 | `leo-locale` | 界面语言 | 个人 | ✅ 并入 `ui` |
 | `aries-price-compare-tour` | 比价页引导是否已看 | 个人 | ✅ 并入 `ui` |
@@ -106,14 +106,22 @@ private String preferencesJson;
 
 ```
 GET  /api/v2/account/settings
-PUT  /api/v2/account/settings     # 只提交变化的 section
+PUT  /api/v2/account/settings     # sections 只提交变化的分片；pages 整段替换
 ```
 
 ```json
-// PUT 请求
+// PUT 请求（sections 与 pages 都可选，缺失即保持原样）
 { "sections": { "ui": { "value": { "fontSize": 14, "themeMode": "system" },
-                        "clientUpdatedAt": "2026-11-14T07:05:00Z" } } }
+                        "clientUpdatedAt": "2026-11-14T07:05:00Z" } },
+  "pages": { "sales-order": { "orderedKeys": ["no"], "hiddenKeys": [],
+                              "columnSizes": { "no": 120 } } } }
 ```
+
+- `sections`：按分片增量，覆盖型按 `clientUpdatedAt` LWW；任一分片 409 时整体不落库。
+- `pages`：列设置，无时间戳、整段替换、不参与 LWW；v1 规整规则（pageKey 去空白、列宽 80~800、
+  最多 200 页、整份设置超 256KB 返回 413）继续由服务端执行。
+- 两条写通路互不清空：同步引擎只传 `sections`，列设置只传 `pages`。
+- 旧的 preferences 别名端点已随本次迁移删除，客户端不得再调用。
 
 | 场景 | 状态码 | 客户端处理 |
 | --- | --- | --- |
@@ -122,7 +130,7 @@ PUT  /api/v2/account/settings     # 只提交变化的 section
 | 单 section > 32KB / 总量 > 256KB | 413 | 停止同步并提示，不阻塞本地使用 |
 | 未认证 | 401 | 只写本地，登录后重试 |
 
-`/account/preferences` 保留为弃用别名（内部转调同一 service），避免破坏已上线客户端。
+旧的 preferences 别名端点已删除：列设置与个人设置统一走 `/account/settings`（`pages` / `sections`）。
 
 ### 4.3 section 内容
 
@@ -200,7 +208,7 @@ PUT  /api/v2/account/settings     # 只提交变化的 section
 
 - 业务数据（单据、吨位、锁）全在服务端，本地无副本；
 - 价格已改为**上游实时派生**（网价=行情同步、现货价=供应商价格表），本地不存价格；
-- 本地只剩「引导已看」与列设置：`toursSeen` 并入 `ui` 分片，列设置沿用现有通路。
+- 本地只剩「引导已看」与列设置：`toursSeen` 并入 `ui` 分片，列设置走 `/account/settings` 的 `pages`（整段替换）。
 
 ### 6.5 草稿：明确不做跨端同步
 

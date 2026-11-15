@@ -16,25 +16,30 @@ const columnSettingsPageSchema = z.object({
   columnSizes: columnSizesSchema.optional(),
 })
 
-const userColumnSettingsResponseSchema = z.object({
-  pages: z.record(z.string(), columnSettingsPageSchema),
-})
-
-export type UserColumnSettingsPage = z.output<typeof columnSettingsPageSchema>
-
+/**
+ * 列表页列设置的读接口（v2：`GET /account/settings` 的 `pages` 字段）。
+ *
+ * <p>旧的 preferences 别名端点已删除；保留函数名是为了让调用方不感知端点迁移。
+ * 列设置与个人设置共用同一次 GET（`user-settings-sync` 里的单飞请求）。</p>
+ */
 export async function getUserColumnSettings() {
-  return apiGet(ENDPOINTS.ACCOUNT_PREFERENCES, userColumnSettingsResponseSchema)
+  const settings = await getUserAccountSettings()
+  return { pages: settings.pages }
 }
 
+/**
+ * 列表页列设置的写接口（v2：`PUT /account/settings` 的 `pages` 字段，整段替换）。
+ *
+ * <p>只提交 `pages`，不会带上 `sections`：服务端对缺失字段保持原样，因此列设置保存
+ * 不会清掉同步引擎写入的分片；反之同步引擎只传 `sections`，也不会清掉列设置。</p>
+ */
 export async function saveUserColumnSettings(
   payload: UserColumnSettingsPayload,
 ) {
-  return apiPut(
-    ENDPOINTS.ACCOUNT_PREFERENCES,
-    userColumnSettingsResponseSchema,
-    payload,
-    withIdempotencyKey(),
-  )
+  const settings = await saveUserAccountSettingsUpdate({
+    pages: payload.pages,
+  })
+  return { pages: settings.pages }
 }
 
 /**
@@ -71,15 +76,43 @@ export type UserAccountSettingsSections = Record<
   UserAccountSettingsSectionInput
 >
 
+/**
+ * PUT 载荷：`sections` 只提交变化的分片（LWW）；`pages` 是列设置，整段替换、不参与 LWW。
+ *
+ * <p>两者可同时提交，服务端对缺失字段保持原样 —— 同步引擎只传 `sections`、列设置只传 `pages`，
+ * 不会互相清空。</p>
+ */
+export interface UserAccountSettingsUpdate {
+  sections?: UserAccountSettingsSections
+  pages?: UserAccountSettings['pages']
+}
+
 export function getUserAccountSettings() {
   return apiGet(ENDPOINTS.ACCOUNT_SETTINGS, userAccountSettingsSchema)
 }
 
+/**
+ * 个人设置同步引擎的入口（只提交 `sections`，不会带上 `pages`）。
+ *
+ * <p>`pages` 由列设置单独提交（见 {@link saveUserColumnSettings}）；服务端缺失字段保持原样，
+ * 因此两条写通路并存也不会互相覆盖。</p>
+ */
 export function saveUserAccountSettings(sections: UserAccountSettingsSections) {
+  return saveUserAccountSettingsUpdate({ sections })
+}
+
+/**
+ * PUT `/account/settings` 的统一出口：sections 分片与 pages 列设置可同时提交。
+ *
+ * <p>服务端语义：`sections` 按分片 LWW（409 时整体不落库），`pages` 整段替换、不参与 LWW；
+ * 两者都可选，缺失即保持原样。这样同步引擎（只传 sections）与列设置（只传 pages）
+ * 各走各的字段，不会互相覆盖。</p>
+ */
+function saveUserAccountSettingsUpdate(update: UserAccountSettingsUpdate) {
   return apiPut(
     ENDPOINTS.ACCOUNT_SETTINGS,
     userAccountSettingsSchema,
-    { sections },
+    update,
     withIdempotencyKey(),
   )
 }

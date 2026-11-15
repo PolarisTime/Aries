@@ -507,6 +507,8 @@ export const zhCN = {
     updateFailed: '更新失败',
     createFailed: '创建失败',
     exportFailed: '导出失败',
+    exportArtifactExpired: '导出文件已过期（服务端仅保留 30 分钟），请重新生成',
+    exportArtifactContentUnavailable: '导出文件缺少内容地址，请重新生成',
     importFailed: '导入失败',
     validationFailed: '数据校验失败',
     networkError: '网络错误，请检查网络连接',
@@ -2741,7 +2743,7 @@ export const zhCN = {
         'COORD 使用套打脚本或通用布局 JSON；PDF_FORM 使用纯 JSON 生成 PDF，可选引用 PDF 底版资源。',
       helpTitle: '打印模板说明',
       unifiedPrintApi:
-        '打印接口统一使用 v2.0 契约：GET /v2.0/print-templates 查询模板，PUT /v2.0/print-templates/{id}/content 上传模板 JSON，GET /v2.0/print-previews/items 获取打印明细，POST /v2.0/print-exports 生成打印输出。COORD 返回套打脚本和数据，PDF_FORM 返回 PDF 内容；前端只负责预览和打印。',
+        '打印接口统一使用 v2.0 契约：GET /v2.0/print-templates 查询模板，PUT /v2.0/print-templates/{id}/content 上传模板 JSON，GET /v2.0/print-previews/items 获取打印明细，POST /v2.0/print-exports 生成打印脚本表示、POST /v2.0/print-export-files 生成 PDF 文件。COORD 返回套打脚本和数据，PDF_FORM 通过 print-export-files 返回 PDF 内容；前端只负责预览和打印。',
       syntaxHint:
         '字段使用 {{fieldName}}，明细使用 {{#each details}}...{{/each}}，条件块使用 {{#if fieldName}}...{{else}}...{{/if}}。',
       commonFields: '主表字段',

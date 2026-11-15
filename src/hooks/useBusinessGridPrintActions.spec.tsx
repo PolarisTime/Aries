@@ -48,10 +48,14 @@ vi.mock('@/api/business/common-export', () => ({
   exportModuleRecordsByIds: exportModuleRecordsByIdsMock,
 }))
 
+// 套打导出已迁到资源式两步端点模块（POST xlsx-export-requests → GET content）
+vi.mock('@/api/business/sales-order-xlsx-export', () => ({
+  exportSalesOrderPrintXlsx: vi.fn(),
+}))
+
 vi.mock('@/api/system/print-template', () => ({
   listPrintTemplates: listPrintTemplatesMock,
   renderPrintRecord: renderPrintRecordMock,
-  exportSalesOrderPrintXlsx: vi.fn(),
 }))
 
 vi.mock('@/utils/print-output-runner', () => ({

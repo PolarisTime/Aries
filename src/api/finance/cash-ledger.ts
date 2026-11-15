@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { apiGet, downloadGet } from '@/api/core/client'
+import { apiGet } from '@/api/core/client'
+import { createAndDownloadExportArtifact } from '@/api/core/export-artifacts'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { exactPageSchema, responseEntityIdSchema } from '@/shared/schemas/api'
 import {
@@ -7,7 +8,6 @@ import {
   parseEntityId,
   parseOptionalEntityId,
 } from '@/types/entity-id'
-import { downloadBlob } from '@/utils/download'
 import { asArray, asNumber, asString } from '@/utils/type-narrowing'
 
 export type CashLedgerFlowType =
@@ -192,11 +192,19 @@ export async function getCashLedger(
   return normalizeCashLedgerPage(response)
 }
 
+/**
+ * 导出资金流水 XLSX（两步：POST 创建导出资源 → GET content 下载）。
+ *
+ * <p>筛选条件从查询参数改为请求体：导出被建模为资源创建，筛选条件属于资源属性，
+ * 字段语义与 `GET /cash-ledger` 完全一致（见 `normalizeFilter`）。产物保留 30 分钟，
+ * 过期后下载返回 404，`createAndDownloadExportArtifact` 会提示重新生成。</p>
+ */
 export async function exportCashLedger(
   filter: CashLedgerFilter,
 ): Promise<void> {
-  const blob = await downloadGet(ENDPOINTS.CASH_LEDGER_EXPORT, {
-    params: normalizeFilter(filter),
-  })
-  downloadBlob(blob, '资金流水.xlsx')
+  await createAndDownloadExportArtifact(
+    ENDPOINTS.CASH_LEDGER_EXPORT_REQUESTS,
+    normalizeFilter(filter),
+    { fallbackFileName: '资金流水.xlsx' },
+  )
 }

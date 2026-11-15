@@ -1,10 +1,11 @@
 import { buildFilterParams } from '@/api/business/business-listing-filtering'
 import { getModuleConfig } from '@/api/contracts/module-contracts'
-import { downloadPost, downloadPostResponse } from '@/api/core/client'
+import { downloadPost } from '@/api/core/client'
+import { createAndDownloadExportArtifact } from '@/api/core/export-artifacts'
 import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { SearchParams } from '@/types/api-raw'
-import { downloadBlob, resolveDownloadFileName } from '@/utils/download'
+import { downloadBlob } from '@/utils/download'
 
 /**
  * 服务端支持「按记录 id 集合」导出的业务单据模块。
@@ -43,37 +44,28 @@ export function supportsRecordIdExport(module: string): boolean {
 }
 
 /**
- * 按记录 id 集合导出业务单据（`POST /module-exports`）。
+ * 按记录 id 集合导出业务单据（两步：`POST /module-export-requests` → `GET .../{id}/content`）。
  *
  * <p>只提交勾选的雪花 ID 字符串，不做任何数值转换：`recordIds` 为十进制字符串数组，
  * 与后端 DTO 的 `List<Long>` + `SnowflakeIdStringDeserializer` 契约一致。</p>
  *
- * <p>后端 `V2ModuleExportController` 是类级 `@IdempotencyRequired`，POST 必须带
+ * <p>后端导出请求控制器是类级 `@IdempotencyRequired`，POST 必须带
  * `X-Idempotency-Key`；`idempotencyKey` 可选，同一次用户动作内重试传同一个 key，
- * 不传则本次请求创建时生成一次。</p>
+ * 不传则本次请求创建时生成一次。产物保留 30 分钟，过期后下载返回 404 并提示重新生成。</p>
  */
 export async function exportModuleRecordsByIds(
   module: string,
   recordIds: string[],
   idempotencyKey?: string,
 ): Promise<void> {
-  const response = await downloadPostResponse(
-    ENDPOINTS.MODULE_EXPORTS,
+  await createAndDownloadExportArtifact(
+    ENDPOINTS.MODULE_EXPORT_REQUESTS,
     { moduleKey: module, recordIds },
-    withIdempotencyKey(
-      {
-        responseType: 'blob',
-        suppressGlobalErrorStatuses: RECORD_ID_EXPORT_SUPPRESSED_STATUSES,
-      },
+    {
       idempotencyKey,
-    ),
-  )
-  downloadBlob(
-    response.data,
-    resolveDownloadFileName(
-      response.headers?.['content-disposition'],
-      `${module}-selected.xlsx`,
-    ),
+      fallbackFileName: `${module}-selected.xlsx`,
+      suppressGlobalErrorStatuses: RECORD_ID_EXPORT_SUPPRESSED_STATUSES,
+    },
   )
 }
 
@@ -84,17 +76,13 @@ export async function exportModuleData(
   const exportParams = buildFilterParams(module, params)
 
   if (module === 'material') {
-    const response = await downloadPost(
-      ENDPOINTS.MATERIAL_EXPORTS,
-      undefined,
-      withIdempotencyKey({
-        params: {
-          keyword: exportParams.keyword ?? '',
-          format: 'xlsx',
-        },
-      }),
+    // 商品资料导出已资源化：筛选条件（keyword/format）改为 JSON 请求体，两步取产物。
+    const keyword = exportParams.keyword ?? ''
+    await createAndDownloadExportArtifact(
+      ENDPOINTS.MATERIAL_EXPORT_REQUESTS,
+      { ...(keyword ? { keyword } : {}), format: 'xlsx' },
+      { fallbackFileName: 'material.xlsx' },
     )
-    downloadBlob(response, 'material.xlsx')
     return
   }
 

@@ -23,10 +23,8 @@ export const ENDPOINTS = {
   // Current account (the single authenticated account)
   ACCOUNT: '/account',
   ACCOUNT_PASSWORD: '/account/password',
-  /** 账户设置（v2：sections + pages，见 docs/client-state-sync.md §4.2）。 */
+  /** 账户设置（v2：sections 分片 + pages 列设置，见 docs/client-state-sync.md §4.2）。 */
   ACCOUNT_SETTINGS: '/account/settings',
-  /** 列设置旧端点：保留为弃用别名，后端内部转调同一 service。 */
-  ACCOUNT_PREFERENCES: '/account/preferences',
 
   // Company settings (business entity → plural)
   COMPANY_SETTINGS: '/company-settings',
@@ -55,7 +53,13 @@ export const ENDPOINTS = {
 
   // Cash ledger (aggregate read model)
   CASH_LEDGER: '/cash-ledger',
-  CASH_LEDGER_EXPORT: '/cash-ledger/export',
+  /**
+   * 资金流水导出请求资源：POST 创建导出产物（201 + ExportArtifactResponse），
+   * 再用 `CASH_LEDGER_EXPORT_REQUEST_CONTENT(id)` 下载 XLSX。产物保留 30 分钟，过期/重启后返回 404。
+   */
+  CASH_LEDGER_EXPORT_REQUESTS: '/cash-ledger-export-requests',
+  CASH_LEDGER_EXPORT_REQUEST_CONTENT: (id: string | number) =>
+    `/cash-ledger-export-requests/${pathSegment(id)}/content`,
   FINANCE_OVERVIEW: '/finance/overview',
 
   // Inventory (aggregate read models)
@@ -70,6 +74,8 @@ export const ENDPOINTS = {
 
   // Print
   PRINT_EXPORTS: '/print-exports',
+  /** PDF 表单模板的二进制表示端点（与 print-exports 拆分，避免同一 URL 两种 Content-Type）。 */
+  PRINT_EXPORT_FILES: '/print-export-files',
   PRINT_PREVIEWS_ITEMS: '/print-previews/items',
   PRINT_TEMPLATES: '/print-templates',
   PRINT_TEMPLATE: (id: string | number) =>
@@ -82,7 +88,15 @@ export const ENDPOINTS = {
   SETUP_ACCOUNT: '/setup/account',
 
   // Attachments
-  ATTACHMENTS_UPLOAD: '/attachments/upload',
+  /** 附件资源集合：POST multipart(moduleKey,file,sourceType?) 创建附件，201 + Location(/attachments/{id})。 */
+  ATTACHMENTS: '/attachments',
+  /**
+   * 附件恢复清单导出请求资源：POST（无请求体）创建 gzip 产物，返回 201 + ExportArtifactResponse，
+   * 再用 `ATTACHMENT_MANIFEST_EXPORT_REQUEST_CONTENT(id)` 下载。
+   */
+  ATTACHMENT_MANIFEST_EXPORT_REQUESTS: '/attachment-manifest-export-requests',
+  ATTACHMENT_MANIFEST_EXPORT_REQUEST_CONTENT: (id: string | number) =>
+    `/attachment-manifest-export-requests/${pathSegment(id)}/content`,
   ATTACHMENT_UPLOAD_SESSIONS: '/attachment-upload-sessions',
   ATTACHMENT_UPLOAD_SESSION_COMPLETIONS: (sessionId: string | number) =>
     `/attachment-upload-sessions/${pathSegment(sessionId)}/completions`,
@@ -96,16 +110,22 @@ export const ENDPOINTS = {
   // Materials (pure actions → singular)
   MATERIAL_IMPORTS: '/material-imports',
   MATERIAL_IMPORT_PREVIEWS: '/material-imports/previews',
-  MATERIAL_EXPORTS: '/material-exports',
+  /** 商品资料导出请求资源：POST {keyword,format} 创建产物（201），再 GET `.../{id}/content`（xlsx/csv）。 */
+  MATERIAL_EXPORT_REQUESTS: '/material-export-requests',
+  MATERIAL_EXPORT_REQUEST_CONTENT: (id: string | number) =>
+    `/material-export-requests/${pathSegment(id)}/content`,
   MATERIALS_TEMPLATE: '/materials/template',
   MATERIAL_GRADES: '/materials/grades',
   MATERIAL_BRANDS: '/materials/brands',
   MATERIAL_HISTORIES: (id: string | number) =>
     `/materials/${pathSegment(id)}/histories`,
 
-  // Business document exports (export is modelled as a resource:
-  // POST /module-exports with an optional recordIds filter)
-  MODULE_EXPORTS: '/module-exports',
+  // Business document exports (export is modelled as a request/artifact resource:
+  // POST /module-export-requests {moduleKey,recordIds?} → 201 → GET .../{id}/content)
+  /** 业务单据导出请求资源：POST 创建 XLSX 产物（201），再 GET `.../{id}/content` 下载。 */
+  MODULE_EXPORT_REQUESTS: '/module-export-requests',
+  MODULE_EXPORT_REQUEST_CONTENT: (id: string | number) =>
+    `/module-export-requests/${pathSegment(id)}/content`,
 
   // Import batches (rollback is a rollbacks sub-resource)
   IMPORT_BATCH_ROLLBACKS: (importBatchNo: string) =>
@@ -135,8 +155,14 @@ export const ENDPOINTS = {
     `/sales-orders/${pathSegment(id)}/delivery-verifications`,
   SALES_ORDER_COMPLETIONS: (id: string | number) =>
     `/sales-orders/${pathSegment(id)}/completions`,
-  SALES_ORDER_PRINT_XLSX: (id: string | number) =>
-    `/sales-orders/${pathSegment(id)}/xlsx-exports`,
+  /** 套打导出请求资源（从属于销售订单）：POST 创建 XLSX 产物（201），再 GET 内容端点。 */
+  SALES_ORDER_XLSX_EXPORT_REQUESTS: (id: string | number) =>
+    `/sales-orders/${pathSegment(id)}/xlsx-export-requests`,
+  SALES_ORDER_XLSX_EXPORT_REQUEST_CONTENT: (
+    id: string | number,
+    exportId: string | number,
+  ) =>
+    `/sales-orders/${pathSegment(id)}/xlsx-export-requests/${pathSegment(exportId)}/content`,
   SALES_ORDER_DOCUMENT_FLOW: (id: string | number) =>
     `/sales-orders/${pathSegment(id)}/document-flow`,
 

@@ -27,6 +27,16 @@ const attachmentRecordSchema = z.object({
   storageType: z.string().optional(),
   storageLabel: z.string().optional(),
 })
+/**
+ * `POST /attachments` 的 201 响应（后端 `AttachmentUploadResponse`）。
+ *
+ * <p>调用方只依赖 `id`（随后据此绑定附件），其余展示字段按可选校验，
+ * 避免服务端补齐/省略某个展示字段时把一次成功的上传判成契约失败。</p>
+ */
+const attachmentUploadResponseSchema = attachmentRecordSchema.extend({
+  name: z.string().optional(),
+  fileName: z.string().optional(),
+})
 const attachmentBindingSchema = z.object({
   moduleKey: z.string(),
   recordId: z.string(),
@@ -194,21 +204,28 @@ function uploadAttachmentMultipart(
   formData.append('moduleKey', moduleKey)
   formData.append('sourceType', sourceType)
 
-  return apiPost(ENDPOINTS.ATTACHMENTS_UPLOAD, rawRecordSchema, formData, {
-    ...withIdempotencyKey({
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress: (event) => {
-        if (!event.total) {
-          return
-        }
-        reportUploadProgress(
-          options,
-          Math.min(99, Math.round((event.loaded / event.total) * 100)),
-        )
-      },
-    }),
-    suppressGlobalErrorStatuses: ATTACHMENT_UPLOAD_SUPPRESSED_ERROR_STATUSES,
-  })
+  // 附件上传已资源化：POST /attachments 创建附件资源（201 + Location(/attachments/{id})），
+  // 旧的 POST /attachments/upload 动作端点已删除，统一走资源创建端点。
+  return apiPost(
+    ENDPOINTS.ATTACHMENTS,
+    attachmentUploadResponseSchema,
+    formData,
+    {
+      ...withIdempotencyKey({
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (event) => {
+          if (!event.total) {
+            return
+          }
+          reportUploadProgress(
+            options,
+            Math.min(99, Math.round((event.loaded / event.total) * 100)),
+          )
+        },
+      }),
+      suppressGlobalErrorStatuses: ATTACHMENT_UPLOAD_SUPPRESSED_ERROR_STATUSES,
+    },
+  )
 }
 
 function reportUploadProgress(

@@ -58,9 +58,10 @@ describe('uploadAttachment 直传回退', () => {
         suppressGlobalErrorStatuses: expect.arrayContaining([422]),
       }),
     )
+    // 资源化后 multipart 回退走 POST /attachments（旧的 /attachments/upload 已删除）
     expect(apiPostMock).toHaveBeenNthCalledWith(
       2,
-      '/attachments/upload',
+      '/attachments',
       expect.anything(),
       expect.any(FormData),
       expect.objectContaining({

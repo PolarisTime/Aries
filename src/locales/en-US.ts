@@ -525,6 +525,10 @@ export const enUS = {
     updateFailed: 'Update failed',
     createFailed: 'Create failed',
     exportFailed: 'Export failed',
+    exportArtifactExpired:
+      'The export file has expired (kept for 30 minutes only). Please generate it again.',
+    exportArtifactContentUnavailable:
+      'The export file is missing a content location. Please generate it again.',
     importFailed: 'Import failed',
     validationFailed: 'Validation failed',
     networkError: 'Network error, please check your connection',
@@ -2754,7 +2758,7 @@ export const enUS = {
         'COORD uses overlay script or shared layout JSON. PDF_FORM generates PDF from pure JSON and can optionally reference a PDF asset.',
       helpTitle: 'Print Template Guide',
       unifiedPrintApi:
-        'Print APIs follow the v2.0 contract: GET /v2.0/print-templates lists templates, PUT /v2.0/print-templates/{id}/content uploads template JSON, GET /v2.0/print-previews/items loads print items, and POST /v2.0/print-exports generates print output. COORD returns overlay script and data, PDF_FORM returns PDF content. The frontend only previews and prints.',
+        'Print APIs follow the v2.0 contract: GET /v2.0/print-templates lists templates, PUT /v2.0/print-templates/{id}/content uploads template JSON, GET /v2.0/print-previews/items loads print items, POST /v2.0/print-exports generates the print-script representation, and POST /v2.0/print-export-files generates the PDF file. COORD returns overlay script and data; PDF_FORM returns PDF content via print-export-files. The frontend only previews and prints.',
       syntaxHint:
         'Use {{fieldName}} for fields, {{#each details}}...{{/each}} for detail rows, and {{#if fieldName}}...{{else}}...{{/if}} for conditional blocks.',
       commonFields: 'Header fields',

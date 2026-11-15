@@ -109,11 +109,26 @@ describe('打印导出响应契约', () => {
     })
 
     await expect(
-      renderPrintRecord('template-1', 'sales-order', '123456789012345678'),
+      renderPrintRecord(
+        'template-1',
+        'sales-order',
+        '123456789012345678',
+        undefined,
+        'COORD',
+      ),
     ).resolves.toMatchObject({
       kind: 'LODOP_SCRIPT',
       templateHtml: '<html></html>',
     })
+    expect(downloadPostResponseMock).toHaveBeenCalledWith(
+      '/print-exports',
+      expect.any(Object),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: 'application/json',
+        }),
+      }),
+    )
   })
 
   it('将 PDF 二进制响应转换为 pdfBase64', async () => {
@@ -127,12 +142,27 @@ describe('打印导出响应契约', () => {
     })
 
     await expect(
-      renderPrintRecord('template-1', 'sales-order', '123456789012345678'),
+      renderPrintRecord(
+        'template-1',
+        'sales-order',
+        '123456789012345678',
+        undefined,
+        'PDF_FORM',
+      ),
     ).resolves.toMatchObject({
       kind: 'PDF',
       contentType: 'application/pdf',
       fileName: 'SO-001.pdf',
       pdfBase64: btoa('%PDF'),
     })
+    expect(downloadPostResponseMock).toHaveBeenCalledWith(
+      '/print-export-files',
+      expect.any(Object),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: 'application/pdf',
+        }),
+      }),
+    )
   })
 })

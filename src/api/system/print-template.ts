@@ -104,15 +104,6 @@ export interface SalesOrderPrintXlsxOptions {
   splitItemIds?: string[]
 }
 
-export interface ExportSalesOrderPrintXlsxPayload {
-  printOptions?: SalesOrderPrintXlsxOptions
-}
-
-export interface SalesOrderPrintXlsxDownload {
-  blob: Blob
-  fileName?: string
-}
-
 function contentDispositionFileName(value: unknown) {
   return resolveDownloadFileName(value, '') || undefined
 }
@@ -176,16 +167,26 @@ export async function renderPrintRecord(
   moduleKey: string,
   recordId: string,
   printOptions?: unknown,
+  templateType?: string,
 ) {
+  // PDF 表单与套打脚本分开建模：服务端两个端点分别只返回 application/pdf 与
+  // application/json，不再让同一 URL 返回两种 Content-Type（见后端 V2PrintExportController）。
+  const wantsPdf = templateType === 'PDF_FORM'
+  const endpoint = wantsPdf
+    ? ENDPOINTS.PRINT_EXPORT_FILES
+    : ENDPOINTS.PRINT_EXPORTS
   const response = await downloadPostResponse(
-    ENDPOINTS.PRINT_EXPORTS,
+    endpoint,
     {
       templateId,
       moduleKey,
       recordId,
       ...(printOptions ? { printOptions } : {}),
     },
-    withIdempotencyKey({ responseType: 'blob' }),
+    withIdempotencyKey({
+      responseType: 'blob',
+      headers: { Accept: wantsPdf ? 'application/pdf' : 'application/json' },
+    }),
   )
   const contentType = String(response.headers['content-type'] || '')
 
@@ -194,7 +195,7 @@ export async function renderPrintRecord(
     return parseApiContract(
       printRecordResponseSchema,
       JSON.parse(text),
-      'POST /print-exports',
+      `POST ${endpoint}`,
     )
   }
 
@@ -205,25 +206,6 @@ export async function renderPrintRecord(
       response.headers['content-disposition'],
     ),
     pdfBase64: await blobToBase64(response.data),
-  }
-}
-
-export async function exportSalesOrderPrintXlsx(
-  recordId: string,
-  payload: ExportSalesOrderPrintXlsxPayload = {},
-): Promise<SalesOrderPrintXlsxDownload> {
-  const response = await downloadPostResponse(
-    ENDPOINTS.SALES_ORDER_PRINT_XLSX(recordId),
-    payload,
-    withIdempotencyKey({
-      responseType: 'blob',
-    }),
-  )
-  return {
-    blob: response.data,
-    fileName: contentDispositionFileName(
-      response.headers['content-disposition'],
-    ),
   }
 }
 

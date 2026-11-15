@@ -5,8 +5,8 @@ import {
   exportModuleRecordsByIds,
   supportsRecordIdExport,
 } from '@/api/business/common-export'
+import { exportSalesOrderPrintXlsx } from '@/api/business/sales-order-xlsx-export'
 import {
-  exportSalesOrderPrintXlsx,
   listPrintTemplates,
   renderPrintRecord,
   type SalesOrderPrintXlsxOptions,
@@ -16,7 +16,6 @@ import { isPrintTemplateTarget } from '@/config/print-template-targets'
 import type { PrintActionMode, PrintTemplateRecord } from '@/shared/schemas'
 import type { ModuleRecord } from '@/types/module-page'
 import { message, modal } from '@/utils/antd-app'
-import { downloadBlob } from '@/utils/download'
 import { supportsSalesOrderPrintOption } from '@/utils/print-module-config'
 import { runPrintOutputs } from '@/utils/print-output-runner'
 import { pickDefaultPrintTemplate } from '@/utils/print-template'
@@ -40,15 +39,6 @@ export interface PrintRenderOptions {
   splitPieceCount?: number
   /** 逐行勾选拆分的明细 ID；空数组表示没有任何行需要拆分。 */
   splitItemIds?: string[]
-}
-
-function normalizeXlsxFileName(value: unknown) {
-  const text = value == null ? '' : String(value).trim()
-  const baseName = text || 'sales-order-print'
-  const safeName = baseName.replace(/[\\/:*?"<>|]/g, '_')
-  return safeName.toLowerCase().endsWith('.xlsx')
-    ? safeName
-    : `${safeName}.xlsx`
 }
 
 function extractErrorMessage(value: unknown) {
@@ -158,13 +148,10 @@ export function useBusinessGridPrintActions({
 
     try {
       const recordId = selectedRowKeys[0]
-      const download = await exportSalesOrderPrintXlsx(
+      // 两步导出：POST 创建套打导出资源 → GET content 下载（文件名取自产物元数据）。
+      await exportSalesOrderPrintXlsx(
         recordId,
         printOptions ? { printOptions } : {},
-      )
-      downloadBlob(
-        download.blob,
-        normalizeXlsxFileName(download.fileName || recordId),
       )
       return true
     } catch (err) {
@@ -178,8 +165,8 @@ export function useBusinessGridPrintActions({
   /**
    * 「导出选中 N 条」。
    *
-   * <p>首选服务端按记录 id 集合导出：<code>POST /module-exports</code> 的
-   * <code>recordIds</code> 就是勾选行 id（十进制字符串），响应是真正的 xlsx。
+   * <p>首选服务端按记录 id 集合导出：<code>POST /module-export-requests</code> 的
+   * <code>recordIds</code> 就是勾选行 id（十进制字符串），产物由 content 端点下载。
    * 导出目标严格等于勾选集合，既不回退整页数据，也不再逐条走打印链路。</p>
    *
    * <p>回落：模块不在服务端导出白名单（业务单据默认都在）时，若该模块仍在打印模板白名单内，
@@ -247,7 +234,13 @@ export function useBusinessGridPrintActions({
     try {
       const results = await Promise.all(
         recordIds.map((recordId) =>
-          renderPrintRecord(template.id, moduleKey, recordId, printOptions),
+          renderPrintRecord(
+            template.id,
+            moduleKey,
+            recordId,
+            printOptions,
+            template.templateType,
+          ),
         ),
       )
       const runResult = await runPrintOutputs(results, {
@@ -319,7 +312,13 @@ export function useBusinessGridPrintActions({
     try {
       const results = await Promise.all(
         selectedRowKeys.map((recordId) =>
-          renderPrintRecord(template.id, moduleKey, recordId, printOptions),
+          renderPrintRecord(
+            template.id,
+            moduleKey,
+            recordId,
+            printOptions,
+            template.templateType,
+          ),
         ),
       )
       const runResult = await runPrintOutputs(results, {
