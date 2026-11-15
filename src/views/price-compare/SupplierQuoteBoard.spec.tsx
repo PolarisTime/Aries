@@ -348,7 +348,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
    * 列不是预设的，而是按**每个品牌在商品资料里真实经营**的「材质 × 定尺」生成 ——
    * 萍钢没有 HRB400E、没有 12米，就不该给它这些列；中天有就出现。
    */
-  it('材质用 tab 切换，定尺列固定模板：缺该定尺的品牌整列保留但不可填', async () => {
+  it('材质平铺同屏，定尺列固定模板：缺该定尺的品牌整列保留但不可填', async () => {
     priceApi.fetchSpecRows.mockResolvedValue([
       // 中天：HRB400E 的 9米 与 12米 都有
       {
@@ -380,52 +380,33 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     await render()
 
-    // 材质用 tab 承载：HRB400 / HRB400E（按材质顺序）
-    const materialTabs = () =>
-      Array.from(
-        document.querySelectorAll(
-          '.supplier-price-material-tabs .ant-tabs-tab',
-        ),
-      )
+    // 材质平铺：HRB400 / HRB400E 两张表**同时挂载**（demo：不再用 tab 切换）
     const materials = () =>
       Array.from(
         document.querySelectorAll(
           '.ant-table-thead .supplier-price-corner-material',
         ),
       ).map((node) => node.textContent?.trim())
-    expect(materialTabs().map((node) => node.textContent)).toEqual([
-      'HRB400',
-      'HRB400E',
-    ])
-    // 默认选中排第一的 HRB400：DOM 里只挂这一张材质的表
-    expect(materials()).toEqual(['HRB400'])
-    expect(cellInput('中天 HRB400E 12 9米')).toBeNull()
-
-    // 萍钢只有 9米：9米可填，12米列**保留但整列不可填**（没有输入框，只有斜纹占位）
+    expect(materials()).toEqual(['HRB400', 'HRB400E'])
+    expect(document.querySelector('.supplier-price-material-tabs')).toBeNull()
+    // 两张表都在 DOM 里：中天的 HRB400E 两种定尺、萍钢的 HRB400 9米 都能直接编辑
+    expect(cellInput('中天 HRB400E 12 9米')).not.toBeNull()
+    expect(cellInput('中天 HRB400E 12 12米')).not.toBeNull()
     expect(cellInput('萍钢 HRB400 12 9米')).not.toBeNull()
+
+    // 萍钢只有 9米：12米列**保留但整列不可填**（没有输入框，只有斜纹占位）
     expect(cellInput('萍钢 HRB400 12 12米')).toBeNull()
     // 表头划线标记「这个定尺整列不能填」
     expect(
       document.querySelectorAll('.supplier-price-col-head-na').length,
     ).toBeGreaterThan(0)
-
-    // 切到 HRB400E：只剩这张表，中天两种定尺都可填，萍钢的 HRB400 表被卸载
-    act(() => {
-      materialTabs()[1]?.dispatchEvent(
-        new MouseEvent('click', { bubbles: true }),
-      )
-    })
-    await waitFor(() => cellInput('中天 HRB400E 12 9米') !== null)
-    expect(materials()).toEqual(['HRB400E'])
-    expect(cellInput('中天 HRB400E 12 12米')).not.toBeNull()
-    expect(cellInput('萍钢 HRB400 12 9米')).toBeNull()
   })
 
   /**
-   * 版式一致（用户 2026-11-14 明确）：即使某品类当前只有一种材质，也要保留材质 tab 行，
-   * 不能"多材质有 tab 行、单材质少一行"，否则两个品类上下叠在一起时表格起点对不齐。
+   * 版式一致（demo）：材质不切 tab 后，单材质品类就是「分区标题 + 一张表」，
+   * 多材质品类是「分区标题 + 多张表并排」，不再出现 tab 行。
    */
-  it('单材质品类也保留材质 tab 行', async () => {
+  it('单材质品类平铺为一张表，不再有材质 tab 行', async () => {
     await render()
 
     const categoryBlock = (name: string) =>
@@ -437,19 +418,13 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
           ?.textContent?.includes(name),
       )
 
-    // 直条只有 HRB400E 一种材质：tab 行仍要出现，且只有这一项
+    // 直条只有 HRB400E 一种材质：平铺后直接是一张表，没有 tab 栏
     const zhitiao = categoryBlock('直条')
+    expect(zhitiao?.querySelector('.supplier-price-material-tabs')).toBeNull()
     expect(
-      zhitiao?.querySelector('.supplier-price-material-tabs'),
-    ).not.toBeNull()
-    expect(
-      Array.from(
-        zhitiao?.querySelectorAll(
-          '.supplier-price-material-tabs .ant-tabs-tab',
-        ) ?? [],
-      ).map((node) => node.textContent?.trim()),
-    ).toEqual(['HRB400E'])
-    // 表格照常挂在这唯一一个材质页签下
+      zhitiao?.querySelectorAll('.supplier-price-sheet-material'),
+    ).toHaveLength(1)
+    // 表格照常挂在这唯一一个材质下
     expect(
       zhitiao?.querySelectorAll(
         '.ant-table-tbody tr:not(.ant-table-measure-row)',

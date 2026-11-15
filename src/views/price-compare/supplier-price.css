@@ -558,6 +558,49 @@
   color: var(--ant-color-primary, #1677ff);
 }
 
+/*
+ * 平铺材质区（demo）：多材质不再用 tab 切换，改为「左表 / 竖向分隔线 / 右表」并排。
+ *
+ * <p>两张表各自是独立卡片，同屏对照；分隔线用 1px 渐变线（上下淡出），
+ * 不画满整列，避免把页面切成硬邦邦的两块。窄屏时横向滚动，不压缩表格列宽。</p>
+ */
+.supplier-price-material-row {
+  width: 100%;
+}
+
+.supplier-price-material-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm, 12px);
+  margin-bottom: var(--space-xs, 8px);
+}
+
+.supplier-price-material-row-body {
+  display: flex;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.supplier-price-material-row-body .supplier-price-sheet-material {
+  flex: 0 0 auto;
+  max-width: none;
+}
+
+.supplier-price-material-divider {
+  flex: 0 0 1px;
+  align-self: stretch;
+  margin-inline: var(--space-lg, 24px);
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--supplier-price-grid-strong, #d3d9e3) 10%,
+    var(--supplier-price-grid-strong, #d3d9e3) 90%,
+    transparent 100%
+  );
+}
+
 .supplier-price-sheet-material .ant-table-container {
   border: 0;
 }
