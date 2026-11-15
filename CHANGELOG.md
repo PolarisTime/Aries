@@ -1,3 +1,15 @@
+# [16.1.0](https://github.com/PolarisTime/Aries/compare/v16.0.0...v16.1.0) (2026-11-15)
+
+
+### Features
+
+* **price-compare:** 供应商报价材质改平铺 demo（左 HRB400 / 分隔线 / 右 HRB400E） ([0b55f14](https://github.com/PolarisTime/Aries/commit/0b55f146ea306d4cc30b2c0aafa88b1f2e8253cd))
+* **price-compare:** 供应商报价表支持框选后右键批量调价与清空价格 ([41d435d](https://github.com/PolarisTime/Aries/commit/41d435d0d823ac2238a4e50e5e6e3933c54fd9b2))
+* **price-compare:** 报单比价接入实时协作（吨位/备注 Yjs 绑定 + 降级） ([74c99de](https://github.com/PolarisTime/Aries/commit/74c99de450b1cb841f66b1c215e8a881f79b3c34))
+* **price-compare:** 材质平铺渲染（demo 主体） ([23d9fb7](https://github.com/PolarisTime/Aries/commit/23d9fb7a3374847fbbfefd5856ff18ec5b0b8f56))
+* **price-compare:** 现货价供应商显示简称（列与 tooltip），全称放 title ([98023e0](https://github.com/PolarisTime/Aries/commit/98023e06b215e8f469a921343283f628593b6d35))
+* **price-compare:** 现货价查询自动刷新（焦点/重连/60s 轮询） ([38df223](https://github.com/PolarisTime/Aries/commit/38df2233741dc1724978252cdb11d02796d5aca3))
+
 # [16.0.0](https://github.com/PolarisTime/Aries/compare/v15.9.0...v16.0.0) (2026-11-15)
 
 
