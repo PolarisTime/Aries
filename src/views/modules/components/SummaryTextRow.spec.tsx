@@ -124,9 +124,7 @@ describe('SummaryTextRow', () => {
     })
 
     // antd 会把 summary 的 Row 渲染成 tfoot 里的 tr（className 落在 tbody 之外的 tr 上）
-    const row = container.querySelector(
-      'tfoot tr.module-summary-text-row',
-    )
+    const row = container.querySelector('tfoot tr.module-summary-text-row')
     expect(row).not.toBeNull()
     expect(row?.className).toContain('module-detail-summary-row')
     expect(row?.className).toContain('module-detail-summary-row')
