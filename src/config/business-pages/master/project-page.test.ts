@@ -21,6 +21,8 @@ describe('projectPageConfig', () => {
         'pricePeriodPolicy',
         'pricePeriodFixed',
       ],
+      // 价格规定（多条网价浮动）：整行清单编辑器，自带保存按钮（独立端点 PUT .../price-rules）
+      ['priceRules'],
       // 允许品牌/材质的「不匹配处理方式」各自紧跟本字段，不单独占行
       ['allowedBrands', 'allowedBrandSeverity'],
       ['allowedMaterials', 'allowedMaterialSeverity'],

@@ -24,6 +24,8 @@ interface Props {
   }
   lockedLineItemsNotice: string
   authoritativePrimaryNo?: string
+  /** 正在编辑的记录 ID（新建为空），透传给需要读写附属资源的复合控件。 */
+  recordId?: string
   layoutVariant?: 'default' | 'finance'
   projectOptions?: readonly ProjectOption[]
   settlementAccountOptions?: readonly {
@@ -43,6 +45,7 @@ export function ModuleEditorFormArea({
   editorState,
   lockedLineItemsNotice,
   authoritativePrimaryNo,
+  recordId,
   layoutVariant = 'default',
   projectOptions,
   settlementAccountOptions,
@@ -82,6 +85,7 @@ export function ModuleEditorFormArea({
         editorState={editorState}
         lockedLineItemsNotice={lockedLineItemsNotice}
         authoritativePrimaryNo={authoritativePrimaryNo}
+        recordId={recordId}
         layoutVariant={layoutVariant}
       />
     </Form>

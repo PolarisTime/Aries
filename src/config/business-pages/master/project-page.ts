@@ -35,6 +35,7 @@ import {
   PRICE_PERIOD_POLICY_LABEL_KEYS,
   PRICE_PERIOD_POLICY_OPTIONS,
 } from '@/views/modules/components/pricing-quote-labels'
+import { ProjectPriceRulesField } from '@/views/modules/components/project-price-rules-field'
 import {
   PROJECT_VARIETY_OPTIONS,
   ProjectQuoteBrandCategoriesField,
@@ -106,6 +107,12 @@ const PERIOD_FIELD_OPTIONS: ModuleFormFieldOption[] = PRICE_PERIOD_OPTIONS.map(
 )
 
 const PRICING_SECTION = i18next.t('modules.pages.project.sectionPricing')
+/**
+ * 价格规定区块：**多条**网价浮动规则（名称 / 加价·减价 / 金额），交付核定时单选一条。
+ * 它就是项目资料里原来那条单值「网价浮动（加价/减价 + 幅度）」的替代品——
+ * 旧字段在页面迁到通用列表页时漏搬，只剩后端 `md_project.price_float_*` 与保存白名单。
+ */
+const PRICE_RULE_SECTION = i18next.t('priceRule.title')
 const SCOPE_SECTION = i18next.t('modules.pages.project.sectionScope')
 /**
  * 比价配置区块：2026-11-16 用户定稿，品牌/品种/规格/加价/代取/指定品牌**只在项目资料维护**，
@@ -541,6 +548,35 @@ const projectPageConfig: ModulePageConfig = {
     },
 
     /*
+     * ── 价格规定（多条网价浮动，2026-11-16 起为唯一维护入口）────────────────────
+     * 字段级自保存：`PUT /projects/{id}/price-rules` 是整体替换语义，和项目资料的标量保存
+     * 不共用一个端点，所以控件自己负责读写（见 ProjectPriceRulesField 的注释）。
+     * 编辑态才有项目 ID；新建态只提示「先保存项目」。
+     */
+    {
+      key: 'priceRules',
+      colSpan: 24,
+      formStep: 2,
+      label: i18next.t('priceRule.title'),
+      // 只为表单项样式/占位口径；实际控件由 render 接管（同「每品牌启用品种」的做法）
+      type: 'multiSelect',
+      render: (context) =>
+        createElement(ProjectPriceRulesField, {
+          projectId: context.recordId,
+          disabled: context.disabled,
+          label: context.label,
+        }),
+      tooltip: i18next.t('priceRule.hint'),
+      extra: i18next.t('priceRule.hint'),
+      /*
+       * 行号是**全局排序 + 成行**依据（`groupFieldsByRow` 先按 row 排序再合并相邻同 row）：
+       * 插在取价规则（row 6）之后，后面各区块的 row 顺延一位，否则会被并进同一行或排到末尾。
+       */
+      row: 7,
+      section: PRICE_RULE_SECTION,
+    },
+
+    /*
      * ── 允许范围（与专用弹层 ProjectAllowedSpecFields 同口径）──────────────────
      * 品牌/材质选项都读主数据缓存：getBrandOptions / materialGradeOptions 自带打包安全标记，
      * 编辑器按需求预取，本文件不取数。两者都是 string[]，保存载荷与后端 List<String> 一致。
@@ -555,7 +591,7 @@ const projectPageConfig: ModulePageConfig = {
       placeholder: i18next.t('modules.pages.project.allowedSpecPlaceholder'),
       tooltip: i18next.t('modules.pages.project.allowedSpecHint'),
       extra: i18next.t('modules.pages.project.allowedSpecHint'),
-      row: 7,
+      row: 8,
       section: SCOPE_SECTION,
     },
     {
@@ -572,7 +608,7 @@ const projectPageConfig: ModulePageConfig = {
       options: SCOPE_ENFORCEMENT_OPTIONS,
       tooltip: i18next.t('modules.pages.project.scopeEnforcementHint'),
       extra: i18next.t('modules.pages.project.scopeEnforcementHint'),
-      row: 7,
+      row: 8,
       section: SCOPE_SECTION,
     },
     {
@@ -585,7 +621,7 @@ const projectPageConfig: ModulePageConfig = {
       placeholder: i18next.t('modules.pages.project.allowedSpecPlaceholder'),
       tooltip: i18next.t('modules.pages.project.allowedSpecHint'),
       extra: i18next.t('modules.pages.project.allowedSpecHint'),
-      row: 8,
+      row: 9,
       section: SCOPE_SECTION,
     },
     {
@@ -601,7 +637,7 @@ const projectPageConfig: ModulePageConfig = {
       options: SCOPE_ENFORCEMENT_OPTIONS,
       tooltip: i18next.t('modules.pages.project.scopeEnforcementHint'),
       extra: i18next.t('modules.pages.project.scopeEnforcementHint'),
-      row: 8,
+      row: 9,
       section: SCOPE_SECTION,
     },
 
@@ -626,7 +662,7 @@ const projectPageConfig: ModulePageConfig = {
         }),
       tooltip: i18next.t('modules.pages.project.quoteBrandCategoriesHint'),
       extra: i18next.t('modules.pages.project.quoteBrandCategoriesHint'),
-      row: 9,
+      row: 10,
       section: QUOTE_SECTION,
     },
     {
@@ -639,7 +675,7 @@ const projectPageConfig: ModulePageConfig = {
       placeholder: i18next.t('modules.pages.project.quoteProductsPlaceholder'),
       tooltip: i18next.t('modules.pages.project.quoteProductsHint'),
       extra: i18next.t('modules.pages.project.quoteProductsHint'),
-      row: 10,
+      row: 11,
       section: QUOTE_SECTION,
     },
     {
@@ -651,7 +687,7 @@ const projectPageConfig: ModulePageConfig = {
       options: getBrandOptions,
       tooltip: i18next.t('modules.pages.project.quoteDesignatedBrandsHint'),
       extra: i18next.t('modules.pages.project.quoteDesignatedBrandsHint'),
-      row: 11,
+      row: 12,
       section: QUOTE_SECTION,
     },
     {
@@ -665,7 +701,7 @@ const projectPageConfig: ModulePageConfig = {
       step: 1,
       tooltip: i18next.t('modules.pages.project.quoteLengthPremiumHint'),
       extra: i18next.t('modules.pages.project.quoteLengthPremiumHint'),
-      row: 12,
+      row: 13,
       section: QUOTE_SECTION,
     },
     {
@@ -682,7 +718,7 @@ const projectPageConfig: ModulePageConfig = {
         }),
       tooltip: i18next.t('modules.pages.project.quoteHrb400eFallbackHint'),
       extra: i18next.t('modules.pages.project.quoteHrb400eFallbackHint'),
-      row: 12,
+      row: 13,
       section: QUOTE_SECTION,
     },
   ],

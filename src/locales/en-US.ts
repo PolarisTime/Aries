@@ -17,6 +17,12 @@ export const enUS = {
     saved: 'Price rules saved',
     nameRequired: 'Please enter a rule name',
     nameDuplicate: 'Rule names must be unique',
+    amountRequired: 'Please enter an amount of 0 or more',
+    empty: 'No price rules yet. Use "Add rule" to create one.',
+    saveFirstHint:
+      'Price rules need a project ID: save the project first, then configure them here.',
+    loadFailed: 'Failed to load price rules. Please try again later.',
+    saveFailed: 'Failed to save price rules. Please try again later.',
   },
   appUpdate: {
     title: 'System Updated',

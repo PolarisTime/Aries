@@ -46,6 +46,8 @@ interface Props {
   }
   lockedLineItemsNotice: string
   authoritativePrimaryNo?: string
+  /** 正在编辑的记录 ID（新建为空）。复合控件读写附属资源（如项目价格规定）时需要它。 */
+  recordId?: string
   layoutVariant?: 'default' | 'finance'
   projectOptions?: readonly ProjectOption[]
   settlementAccountOptions?: readonly {
@@ -101,6 +103,7 @@ export function ModuleEditorFormSection({
   editorState,
   lockedLineItemsNotice,
   authoritativePrimaryNo,
+  recordId,
   layoutVariant = 'default',
   projectOptions = EMPTY_PROJECT_OPTIONS,
   settlementAccountOptions = EMPTY_SETTLEMENT_ACCOUNT_OPTIONS,
@@ -287,6 +290,7 @@ export function ModuleEditorFormSection({
                 <Col key={field.key} span={getFieldSpan(field, layoutVariant)}>
                   <FormFieldRenderer
                     field={field}
+                    recordId={recordId}
                     projectOptions={projectOptions}
                     settlementAccountOptions={settlementAccountOptions}
                     disabled={isEditorFieldDisabledForModule(

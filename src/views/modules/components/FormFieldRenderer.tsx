@@ -26,6 +26,8 @@ import {
 
 interface Props {
   field: ModuleFormFieldDefinition
+  /** 正在编辑的记录 ID（新建为空），透传给复合控件的 render 上下文。 */
+  recordId?: string
   disabled?: boolean
   projectOptions?: readonly ProjectOption[]
   settlementAccountOptions?: readonly ModuleFormFieldOption[]
@@ -53,6 +55,7 @@ const SELECT_LIKE_FIELD_TYPES: ReadonlySet<ModuleFormFieldDefinition['type']> =
  */
 export function FormFieldRenderer({
   field,
+  recordId,
   disabled,
   projectOptions = EMPTY_PROJECT_OPTIONS,
   settlementAccountOptions = [],
@@ -144,6 +147,7 @@ export function FormFieldRenderer({
     values: formValues,
     label: displayLabel,
     disabled: Boolean(disabledValue),
+    recordId,
   })
 
   const control =

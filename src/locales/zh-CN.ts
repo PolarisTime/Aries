@@ -17,6 +17,11 @@ export const zhCN = {
     saved: '价格规定已保存',
     nameRequired: '请填写规定名称',
     nameDuplicate: '规定名称不能重复',
+    amountRequired: '请填写不小于 0 的金额',
+    empty: '还没有价格规定，点「新增规定」添加一条',
+    saveFirstHint: '价格规定需要一个项目 ID：先保存项目，再回到这里配置',
+    loadFailed: '价格规定加载失败，请稍后重试',
+    saveFailed: '价格规定保存失败，请稍后重试',
   },
   appUpdate: {
     title: '系统版本已更新',

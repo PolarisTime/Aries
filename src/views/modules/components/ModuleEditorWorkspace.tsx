@@ -424,6 +424,8 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
           editorState={{ isEdit, lineItemsLocked }}
           lockedLineItemsNotice={lockedLineItemsNotice}
           authoritativePrimaryNo={authoritativePrimaryNo}
+          /* 复合控件读写附属资源（例如项目价格规定）需要实体主键；新建态没有 */
+          recordId={record?.id != null ? String(record.id) : undefined}
           layoutVariant={presentation.layoutVariant}
           onValuesChange={(changedValues) => {
             handleFormValuesChange(changedValues)

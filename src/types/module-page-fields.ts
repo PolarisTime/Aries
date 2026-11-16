@@ -18,6 +18,14 @@ export interface ModuleFormFieldRenderContext {
   /** 字段名（`Form.Item` 的 label），复合控件用作 `aria-label`。 */
   label: string
   disabled: boolean
+  /**
+   * 正在编辑的记录 ID（新建态为 undefined）。
+   *
+   * <p>复合控件读写**附属资源**时要靠它：附属资源走自己的 REST 端点（如项目价格规定
+   * `PUT /projects/{id}/price-rules`），主表单的 `values` 里并没有 `id` —— antd 的
+   * `useWatch` 只回表单字段值，实体主键不是声明字段。</p>
+   */
+  recordId?: string
 }
 
 export type ModuleColumnType =
