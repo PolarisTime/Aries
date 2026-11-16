@@ -1279,7 +1279,7 @@ describe('SheetPanel 现货价实时派生', () => {
     expect(cell?.getAttribute('title')).toBe('浙江企坤集团有限公司（融诚支付）')
   })
 
-  it('未匹配的格子显示「—」而不是残留旧价', async () => {
+  it('未匹配的格子保持空白，而不是残留旧价', async () => {
     lowestQuotesMock.mockResolvedValue([quote('中天', 12, 3420)])
     renderPanel({ ...makeSheet(), inputs: { '中天:r2': { spot: 3300 } } }, [
       rowAt('r1', 12),
@@ -1287,8 +1287,8 @@ describe('SheetPanel 现货价实时派生', () => {
     ])
 
     await waitFor(() => (spotOf('r1')?.textContent ?? '').includes('3420'))
-    // 价格表里没有 r2 的报价 → 界面不显示派生前的历史值
-    expect(spotOf('r2')?.textContent).toContain('—')
+    // 价格表里没有 r2 的报价 → 界面不显示派生前的历史值，也不再用「—」占位
+    expect(spotOf('r2')?.textContent).toBe('')
   })
 
   it('不再提供「从供应商价格表导入」按钮（改为实时派生 + 刷新）', async () => {

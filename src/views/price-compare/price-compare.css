@@ -437,6 +437,8 @@
   /* 与报价表一致：数据行 32px，比默认紧凑表更"展示"一些 */
   height: 32px;
   line-height: 1.45;
+  /* 报价表数据格统一 12px；14px 会让本来就多列的价格区显得比报价表更"重" */
+  font-size: 12px;
 }
 
 .price-compare-table .ant-table-thead > tr > th {
@@ -1037,7 +1039,9 @@
   background: var(--price-compare-corner-bg, #f4f7fb) !important;
 }
 
-/* 行标签列（材质·规格·长度）：极浅底色，像报价表的规格列 */
+/* 行标签列（备注 / 类别 / 材质·规格·长度）：极浅底色，像报价表的规格列 */
+.price-compare-table .ant-table-tbody > tr > td:has(.price-compare-row-remark),
+.price-compare-table .ant-table-tbody > tr > td:has(.price-compare-category),
 .price-compare-table
   .ant-table-tbody
   > tr

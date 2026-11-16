@@ -856,11 +856,7 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                           )
                         : { value: undefined, fallback: false }
                       const price = resolved.value
-                      return price === undefined ? (
-                        <div className="price-compare-num price-compare-sub">
-                          -
-                        </div>
-                      ) : (
+                      return price === undefined ? null : (
                         <div
                           className={`price-compare-net price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}${resolved.fallback ? ' price-compare-fallback' : ''}`}
                         >
@@ -940,11 +936,11 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         .join(' ｜ ')
                       const spotNode = (
                         <span
-                          className={`price-compare-spot price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                          className={`price-compare-spot price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}${spot === undefined ? ' price-compare-empty' : ''}`}
                           data-spot={`${brand.name}:${current.id}`}
                           title={spotTitle || undefined}
                         >
-                          {spot === undefined ? '—' : spot}
+                          {spot === undefined ? null : spot}
                           {spotSource ? (
                             <FallbackBadge label={spotBadgeLabel} />
                           ) : null}
@@ -975,11 +971,7 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                         : undefined
                       const spot = getSpot(brand.name, row.row.id)
                       if (price === undefined || spot === undefined) {
-                        return (
-                          <div className="price-compare-num price-compare-sub">
-                            -
-                          </div>
-                        )
+                        return null
                       }
                       const diff = price - spot - brand.freight
                       const cls =
@@ -1022,7 +1014,7 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                           className={`price-compare-supplier${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
                           title={supplierName || undefined}
                         >
-                          {supplierShortName || supplierName || '—'}
+                          {supplierShortName || supplierName || null}
                         </span>
                       )
                     },

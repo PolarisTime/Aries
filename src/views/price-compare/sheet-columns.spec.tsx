@@ -256,10 +256,10 @@ describe('比价表格现货/供应商列只读', () => {
     expect(html).not.toContain('ant-input')
   })
 
-  it('空格子显示「—」占位, 且仍是可定位的只读节点', () => {
+  it('空格子保持空白（不再用「—」占位），仍是可定位的只读节点', () => {
     const html = spotCell()
     expect(html).toContain('data-spot="中天:r1"')
-    expect(html).toContain('—')
+    expect(html).not.toContain('—')
     expect(html).not.toContain('<input')
   })
 
@@ -276,7 +276,7 @@ describe('比价表格现货/供应商列只读', () => {
     expect(html).not.toContain('<input')
   })
 
-  it('供应商列渲染只读文本(简称或「—」), 不渲染下拉', () => {
+  it('供应商列渲染只读文本(简称；无值保持空白), 不渲染下拉', () => {
     const withSupplier = cellHtml(
       brandChildColumns({
         getInput: (brandName, rowId) =>
@@ -289,7 +289,7 @@ describe('比价表格现货/供应商列只读', () => {
     expect(withSupplier).not.toContain('ant-select')
 
     const empty = cellHtml(brandChildColumns()[3])
-    expect(empty).toContain('—')
+    expect(empty).not.toContain('—')
     expect(empty).not.toContain('ant-select')
   })
 
