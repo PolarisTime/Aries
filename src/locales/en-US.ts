@@ -2995,7 +2995,7 @@ export const enUS = {
       saveDiffContent:
         'Saving {{brands}} brand column(s): {{added}} added, {{changed}} changed, {{removed}} cleared.',
       draftsRestored:
-        'Unsaved drafts from last time were restored; they go away after save or "Discard drafts"',
+        'Unsaved drafts from last time were restored and are being saved automatically; use "Discard drafts" to drop them',
       discardDrafts: 'Discard drafts',
       entryHint:
         'Spreadsheet-style entry: rows = specs, columns = brands, type prices directly; ↑/↓ and Enter move vertically, Tab moves right; paste a whole column/block copied from Excel into the starting cell. Empty = not quoted, 0 is a real price; saving replaces each brand column as a whole',

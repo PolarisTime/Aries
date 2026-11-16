@@ -1071,6 +1071,18 @@ export function SupplierQuoteBoard() {
     if (Object.keys(stored).length) {
       commitDrafts(stored)
       setRestoredDrafts(true)
+      /*
+       * 恢复出来的草稿按"未保存改动"处理：立刻给每个有改动的品牌排一次自动保存。
+       *
+       * <p>原先只恢复内存草稿，而页面上**没有保存按钮**（提示文案却让用户去点保存），
+       * 用户以为已经存上了，刷新/关标签就全丢。scheduleSave 定义在本 effect 之后，
+       * 因此经 ref 调用（ref 在每次渲染后同步，见下方 scheduleSaveRef 赋值）。</p>
+       */
+      for (const brandName of Object.keys(stored)) {
+        if (draftCount(stored[brandName]) > 0) {
+          scheduleSaveRef.current(brandName)
+        }
+      }
     }
     setDraftsRestoredFor(supplierId)
   }, [commitDrafts, supplierId, draftsRestoredFor])
@@ -1264,6 +1276,12 @@ export function SupplierQuoteBoard() {
     }
   }
 
+  /**
+   * 草稿恢复 effect 早于 `scheduleSave` 定义（它依赖后面的 saveBrand），
+   * 用 ref 转发：每次渲染后同步成最新实现，effect 里调用拿到的永远是最新闭包。
+   */
+  const scheduleSaveRef = useRef<(brandName: string) => void>(() => {})
+
   const scheduleSave = (brandName: string) => {
     // 协作表不经 REST 落库：连排期都免了，避免切到协作后还有迟到的整列 PUT
     if (collabListIdOf(brandName)) return
@@ -1278,6 +1296,8 @@ export function SupplierQuoteBoard() {
       }, AUTOSAVE_DELAY_MS),
     )
   }
+
+  scheduleSaveRef.current = scheduleSave
 
   useEffect(() => {
     const timers = timersRef.current
@@ -1340,6 +1360,11 @@ export function SupplierQuoteBoard() {
 
   /** 切到某个供应商前先清空这一屏的临时状态（草稿、历史、选区、新建列缓存）。 */
   const resetBoardState = () => {
+    /*
+     * 先删本地草稿再清内存：只清内存的话 localStorage 还留着，切回这家供应商时
+     * 又会提示「已恢复 N 格草稿」，用户明明已经在「放弃草稿并切换」里放弃过（实测反馈）。
+     */
+    if (supplierId) writeDrafts(supplierId, {})
     commitDrafts({})
     // 上一个供应商的自动保存计时器不能跨供应商触发：清空后由当前草稿重新排期，
     // 否则迟到的一次 saveBrand 会拿新供应商的草稿提前落库（保存提示也会错位）。

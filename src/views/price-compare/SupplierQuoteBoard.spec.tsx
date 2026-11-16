@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import i18n from 'i18next'
 import type { SupplierPriceGrid } from '@/api/market/supplier-price-lists'
+import { quoteRowKey } from './supplier-price-list-model'
+import { readDrafts, writeDrafts } from './supplier-quote-view-prefs'
 
 const priceApi = vi.hoisted(() => ({
   fetchSpecRows: vi.fn(),
@@ -713,6 +715,55 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     )
     expect(series).toEqual([...series].sort((a, b) => a - b))
     expect(new Set(series).size).toBe(series.length)
+  })
+
+  /*
+   * 用户反馈（2026-11-16）：草稿恢复后不会自动保存。恢复出来的改动只活在内存里，
+   * 页面又没有保存按钮（提示文案却让用户去点「保存」），刷新/关标签就全丢。
+   */
+  it('恢复出来的草稿会自动保存，不用用户去找不存在的保存按钮', async () => {
+    writeDrafts('s1', { 中天: { [quoteRowKey(ROW_A)]: 3290 } })
+
+    await render()
+    await flushAutosave()
+
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalled()
+    const [, , items] = priceApi.saveSupplierPriceColumnItems.mock.calls.at(
+      -1,
+    ) as [string, number, Array<Record<string, unknown>>]
+    expect(items).toContainEqual({
+      ...withoutBrand(ROW_A),
+      price: 3290,
+      priceStatus: 'NORMAL',
+    })
+  })
+
+  /*
+   * 用户反馈（2026-11-16）：「放弃并切换」之后草稿没有真正删掉 —— 只清了内存，
+   * localStorage 还留着，切回该供应商时又提示「已恢复草稿」。
+   */
+  it('「放弃草稿并切换」同时清掉本地存储', async () => {
+    writeDrafts('s1', { 中天: { [quoteRowKey(ROW_A)]: 3290 } })
+    await render()
+    await waitFor(() => Boolean(document.querySelector('.ant-tabs-tab-remove')))
+
+    // 关闭当前供应商页签 = 放弃草稿并切走（confirm 是 mock，手动执行 onOk）
+    await act(async () => {
+      document
+        .querySelector<HTMLElement>('.ant-tabs-tab-remove')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const confirmArgs = feedback.modal.confirm.mock.calls[0]?.[0] as
+      | { onOk?: () => void }
+      | undefined
+    expect(confirmArgs?.onOk).toBeTypeOf('function')
+    await act(async () => {
+      confirmArgs?.onOk?.()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(readDrafts('s1')).toEqual({})
   })
 
   /*
