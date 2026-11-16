@@ -48,6 +48,18 @@ export function rowDragActivationConstraint(): RowDragActivationConstraint {
 }
 
 /**
+ * 拖动手柄的标记属性（写在手柄元素上）。
+ *
+ * <p>手柄**不能**做成 `button`：`isRowDragBlockedTarget` 会把可交互控件上的按下放行，
+ * 从手柄上反而拖不动（见 `module-table.css` 里 `.module-row-drag-handle` 的说明）。
+ * 所以用一个 data 属性标记它，`RowDragHandleSensor` 按这个属性识别「按下即起拖」的目标。</p>
+ */
+export const ROW_DRAG_HANDLE_ATTRIBUTE = 'data-row-drag-handle'
+
+/** 手柄选择器：从属性名派生，避免属性与选择器两处各写一份字面量而漂移。 */
+export const ROW_DRAG_HANDLE_SELECTOR = `[${ROW_DRAG_HANDLE_ATTRIBUTE}]`
+
+/**
  * 键盘模型里的单个键: 实现(dnd-kit 按 `event.code` 注册)、声明(`aria-keyshortcuts`)
  * 与提示文案三处写法都从这里派生, 三者不可能再分叉。
  */

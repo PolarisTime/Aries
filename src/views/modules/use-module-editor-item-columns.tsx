@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { fetchMaterialSearch } from '@/api/master/materials'
 import type { RowContextMenuMap } from '@/components/row-context-menu'
 import { buildRowContextMenus } from '@/components/row-context-menu'
+import { ROW_DRAG_HANDLE_ATTRIBUTE } from '@/components/table/row-drag/row-drag-config'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
 import { useColumnResizing } from '@/hooks/useColumnResizing'
@@ -382,7 +383,14 @@ export function useModuleEditorItemColumns({
           detailToggle={
             showDragHandle ? (
               <span
+                /*
+                 * `data-row-drag-handle`：`RowDragHandleSensor` 只认这个标记，
+                 * 命中即"按下就起拖"（不用等 380ms 长按），并阻止浏览器划选整行文本。
+                 * 仍然保持 aria-hidden：它不是控件，键盘与读屏用户走行上的 Space/↑↓、
+                 * 以及行内「上移/下移」按钮这条等价路径。
+                 */
                 className="module-row-drag-handle"
+                {...{ [ROW_DRAG_HANDLE_ATTRIBUTE]: '' }}
                 aria-hidden="true"
                 title={t('common.rowDragSort.moveColumnTitle')}
               >

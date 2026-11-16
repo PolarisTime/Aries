@@ -672,10 +672,12 @@
 /*
  * 明细表的拖动柄（行序调整）。
  *
- * <p>顺序列从"可点击的 ↑↓ 按钮"改成拖动柄：整行才是拖动激活点（长按起拖，见
- * `RowDragSortScope`），这个图标是"这里能拖"的可见线索。所以它是**光标提示**，
- * 不是按钮 —— 做成 button 会被 `isRowDragBlockedTarget` 当成可交互元素放行按下事件，
- * 从手柄上反而拖不动。命中区仍给足 24×24（SC 2.5.8）。</p>
+ * <p>两套起拖口径并存：**手柄上按下即拖**（`RowDragHandleSensor`，命中
+ * `data-row-drag-handle` 立即激活），**行其它位置仍需长按 380ms**（`RowDragSortScope`）。
+ * 手柄之所以即时起拖，是因为用户看到 `⋮⋮` 就会去抓它；让它也等长按，一次稍快的拖动
+ * 会先超过容差、传感器取消，浏览器于是把整行文字划选成蓝色 —— 既没拖动、选区还留着。
+ * 手柄本身仍是**光标提示而非按钮**：做成 button 会被 `isRowDragBlockedTarget` 当成
+ * 可交互控件放行按下事件，从手柄上反而拖不动。命中区仍给足 24×24（SC 2.5.8）。</p>
  */
 .module-row-drag-handle {
   display: inline-flex;
@@ -686,6 +688,9 @@
   color: var(--theme-text-muted);
   cursor: grab;
   border-radius: var(--ant-border-radius-sm);
+  /* 手柄上按下就起拖：禁止浏览器顺手开始划选文本，也禁止触摸手势抢走 pointer 事件 */
+  user-select: none;
+  touch-action: none;
 }
 
 .module-row-drag-handle:active {

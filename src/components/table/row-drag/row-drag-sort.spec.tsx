@@ -60,6 +60,24 @@ function stubVariableHeightRows(rows: HTMLElement[], heights: number[]) {
   })
 }
 
+/**
+ * jsdom 没有 `PointerEvent`：补一个带 pointer 语义字段的 MouseEvent 子类。
+ *
+ * <p>{@link RowDragHandleSensor} 的激活判定读 `isPrimary` / `button`，而 `MouseEvent`
+ * 上没有 `isPrimary` —— 直接用 MouseEvent 派发 `pointerdown` 会被判成"非主指针"而永不起拖，
+ * 用例就测不到真实通路。</p>
+ */
+class FakePointerEvent extends MouseEvent {
+  readonly isPrimary: boolean
+  readonly pointerId = 1
+  readonly pointerType = 'mouse'
+
+  constructor(type: string, init: MouseEventInit & { isPrimary?: boolean }) {
+    super(type, init)
+    this.isPrimary = init.isPrimary ?? true
+  }
+}
+
 function Harness({
   initial,
   enabled = true,
@@ -96,7 +114,11 @@ function Harness({
         <tbody>
           {rows.map((row) => (
             <RowDragSortRow data-row-key={row.id} key={row.id}>
-              <td>{row.name}</td>
+              <td>
+                {/* 拖动柄: 真实表格里由 use-module-editor-item-columns 渲染, 这里只放标记属性 */}
+                <span data-row-drag-handle="" />
+                {row.name}
+              </td>
               <td>
                 <RowDragSortMoveButtons rowId={row.id} />
               </td>
@@ -814,5 +836,102 @@ describe('整行长按拖动排序', () => {
     })
     expect(onReorder).not.toHaveBeenCalled()
     expect(order()).toEqual(['a', 'b', 'c'])
+  })
+
+  /*
+   * 拖动柄（顺序列上的 ⋮⋮）：**按下即起拖**。
+   *
+   * 用户反馈的真实故障：从手柄上按下直接拖，长按未满 380ms 就位移超过容差 → 传感器取消 →
+   * 浏览器把整行文字划选成一片蓝色，既没拖动、选区还留着，之后再点像"点不动"。
+   * 因此手柄走 RowDragHandleSensor：命中 `[data-row-drag-handle]` 立刻激活，并
+   * `preventDefault()` 阻止划选。行其它位置仍保持长按口径（下方第三条用例锁定两条通路并存）。
+   */
+  it('拖动柄: 按下即刻起拖并阻止原生划选(不必等满长按阈值)', async () => {
+    const { rows } = render()
+    const handle = rows[0].querySelector('[data-row-drag-handle]')
+    expect(handle, '用例需要手柄标记').not.toBeNull()
+
+    const pointerDown = new FakePointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      clientX: 20,
+      clientY: ROW_HEIGHT / 2,
+    })
+    await act(async () => {
+      handle?.dispatchEvent(pointerDown)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    // 立刻进入拖动态（不需要推进 380ms 假时钟）
+    expect(rows[0].className).toContain('row-drag-sort-row--dragging')
+    // 关键：阻止浏览器从手柄按下开始划选整行文本
+    expect(pointerDown.defaultPrevented).toBe(true)
+
+    await act(async () => {
+      document.dispatchEvent(
+        new FakePointerEvent('pointerup', { bubbles: true, clientX: 20 }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  })
+
+  it('拖动柄: 按住手柄移到下一行后松开，顺序写回', async () => {
+    const { onReorder, rows } = render()
+    const handle = rows[0].querySelector('[data-row-drag-handle]')
+
+    await act(async () => {
+      handle?.dispatchEvent(
+        new FakePointerEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientX: 20,
+          clientY: ROW_HEIGHT / 2,
+        }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await act(async () => {
+      document.dispatchEvent(
+        new FakePointerEvent('pointermove', {
+          bubbles: true,
+          clientX: 20,
+          clientY: ROW_HEIGHT + ROW_HEIGHT / 2,
+        }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await act(async () => {
+      document.dispatchEvent(
+        new FakePointerEvent('pointerup', { bubbles: true, clientX: 20 }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(onReorder).toHaveBeenCalled()
+    // 落位结果以渲染后的行顺序为准(与其它用例同一判据, 不去读 mock 的参数数组)
+    expect(order()).toEqual(['b', 'a', 'c'])
+  })
+
+  it('拖动柄: 行其它位置的 pointerdown 不起拖(长按口径不变)', async () => {
+    const { onReorder, rows } = render()
+    const cell = rows[0].querySelectorAll('td')[1]
+
+    await act(async () => {
+      cell?.dispatchEvent(
+        new FakePointerEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          clientX: 20,
+          clientY: ROW_HEIGHT / 2,
+        }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(rows[0].className).not.toContain('row-drag-sort-row--dragging')
+    expect(onReorder).not.toHaveBeenCalled()
   })
 })

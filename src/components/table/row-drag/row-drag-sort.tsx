@@ -49,6 +49,7 @@ import {
   rowDragKeyboardDelta,
   rowDragKeyboardHintText,
 } from './row-drag-config'
+import { RowDragHandleSensor } from './row-drag-handle-sensor'
 import { RowReorderButtons } from './row-reorder-buttons'
 import '@/styles/row-drag-sort.css'
 
@@ -142,6 +143,12 @@ export function RowDragSortScope({
     useSensor(MouseSensor, {
       activationConstraint: rowDragActivationConstraint(),
     }),
+    /*
+     * 手柄: 顺序列上的 `⋮⋮` 按下即起拖(无延迟), 见 RowDragHandleSensor 的说明。
+     * 事件名是 `onPointerDown`, 与上面的 `onMouseDown` 不冲突; 同一行上两套都挂着,
+     * 由目标是否落在 `[data-row-drag-handle]` 内决定走哪条。
+     */
+    useSensor(RowDragHandleSensor),
     // 键盘: Space/Enter 拾起 → 方向键移动 → Space/Enter 放下, Esc 取消。
     // 键位与 aria-keyshortcuts 同源(ROW_DRAG_KEYBOARD_MODEL), 不再各写一套。
     useSensor(KeyboardSensor, {
