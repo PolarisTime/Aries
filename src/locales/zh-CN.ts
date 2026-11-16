@@ -1764,7 +1764,7 @@ export const zhCN = {
         title: '销售订单',
         description:
           '销售订单围绕客户、项目、交货日期和商品明细管理，支持从采购订单导入并自动汇总重量和金额。',
-        placeholderOrderNo: '输入销售订单号 / 采购订单号',
+        placeholderOrderNo: '输入销售订单号 / 8位单号 / 采购订单号',
         placeholderProductKeyword: '商品编码 / 品牌 / 规格',
         placeholderPurchaseOrderNo: '系统自动生成',
         filterProductKeyword: '商品关键字',
@@ -1777,6 +1777,7 @@ export const zhCN = {
         projectEmptyHint: '请先选择客户，项目按客户归属',
         colPurchaseOrderNo: '采购订单号',
         colOrderNo: '订单编号',
+        colDisplayNo: '8位单号',
         colCustomerName: '客户名称',
         colProjectName: '项目名称',
         colSalesName: '销售员',

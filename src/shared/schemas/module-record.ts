@@ -429,6 +429,8 @@ const salesOrderItemSchema = z.strictObject({
 const salesOrderRecordShape = {
   id: entityIdSchema,
   orderNo: requiredTextSchema,
+  /** 8 位纯数字展示编号：只用于打印/人工检索，不保证唯一；旧后端可缺省。 */
+  displayNo: nullableTextSchema.optional(),
   purchaseInboundNo: nullableTextSchema,
   purchaseOrderNo: nullableTextSchema,
   customerCode: nullableTextSchema,

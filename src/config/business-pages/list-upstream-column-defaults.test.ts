@@ -140,7 +140,7 @@ describe('关键字筛选提示可搜来源单号', () => {
       '输入退货单号 / 销售订单号',
     )
     expect(keywordPlaceholder(salesOrdersPageConfig)).toBe(
-      '输入销售订单号 / 采购订单号',
+      '输入销售订单号 / 8位单号 / 采购订单号',
     )
   })
 

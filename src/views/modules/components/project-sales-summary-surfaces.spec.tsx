@@ -137,7 +137,7 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
     expect(container.querySelectorAll('.module-detail-metric')).toHaveLength(4)
     expect(text).toContain('合同金额使用率')
     expect(text).toContain('合同吨位使用率')
-    expect(text).toContain('合计送货吨位')
+    expect(text).toContain('本单总重量 / 项目累计送货')
     expect(text).toContain('未对账汇总')
     // 未对账金额来自汇总接口（-250.5 → ¥-250.50）。
     expect(text).toContain('¥-250.50')

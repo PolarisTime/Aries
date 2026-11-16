@@ -281,6 +281,11 @@ export const salesOrdersPageConfig: ModulePageConfig = {
       render: renderDocumentReferenceNo,
     },
     {
+      title: i18next.t('modules.pages.salesOrder.colDisplayNo'),
+      dataIndex: 'displayNo',
+      width: 110,
+    },
+    {
       title: i18next.t('modules.pages.salesOrder.colPurchaseOrderNo'),
       dataIndex: 'purchaseOrderNo',
       width: 160,

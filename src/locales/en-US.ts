@@ -1755,7 +1755,7 @@ export const enUS = {
         title: 'Sales Orders',
         description:
           'Manage sales orders by customer, project, delivery date, and item details.',
-        placeholderOrderNo: 'Enter sales / purchase order number',
+        placeholderOrderNo: 'Enter sales / 8-digit / purchase order number',
         placeholderProductKeyword: 'Material code / brand / spec',
         placeholderPurchaseOrderNo: 'Auto-generated',
         filterProductKeyword: 'Product Keyword',
@@ -1766,6 +1766,7 @@ export const enUS = {
           'Select a customer first — projects belong to customers',
         colPurchaseOrderNo: 'PO Number',
         colOrderNo: 'Order No',
+        colDisplayNo: '8-digit No.',
         colCustomerName: 'Customer',
         colProjectName: 'Project',
         colSalesName: 'Salesperson',
