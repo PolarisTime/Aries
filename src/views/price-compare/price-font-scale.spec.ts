@@ -99,4 +99,17 @@ describe('比价页面：字号必须随个人设置缩放', () => {
       )
     }
   })
+
+  /*
+   * 现货格必须是 block：它的 DOM 多一层行内包装（td > span > span.spot），inline-block 会让文本
+   * 按父行盒 strut 对齐，实测比网价/差价高 2.19px —— 截图里三个数字不在同一水平线。
+   */
+  it('现货价格用块级盒（否则比网价/差价高 2px，三个数字不在同一水平线）', () => {
+    const source = readCss('./price-compare.css')
+    const start = source.indexOf('.price-compare-spot {')
+    expect(start).toBeGreaterThan(-1)
+    const block = source.slice(start, source.indexOf('}', start))
+    expect(block).toContain('display: block')
+    expect(block).not.toContain('display: inline-block')
+  })
 })

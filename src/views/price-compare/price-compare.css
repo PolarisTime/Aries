@@ -305,9 +305,15 @@
  * （差价）保持一致：同一行里三个数字是"同一组读数"，字重不同（网价 600 / 现货 400）会被看成
  * 两套字体、两个层级。差价只额外保留语义色（正绿/负红，且都带 tooltip 说明，不靠颜色单打独斗），
  * 字号/字重/等宽数字三者完全一致。</p>
+ *
+ * <p>`display: block` 不能改回 `inline-block`：现货格的 DOM 是
+ * `td > span(spotRef) > span.price-compare-spot`，多一层行内包装后 inline-block 的基线要让位给
+ * 父级行盒的 strut，实测文本整体比网价/差价**高 2.19px**（截图里三个数字不在同一水平线）。
+ * 网价是 block、差价虽为 inline-block 但直接挂在 td 下，所以只有现货会偏；改成 block 三者文本
+ * 顶边完全对齐（实测 delta = 0）。</p>
  */
 .price-compare-spot {
-  display: inline-block;
+  display: block;
   width: 100%;
   text-align: right;
   padding-inline: var(--space-xxs);
