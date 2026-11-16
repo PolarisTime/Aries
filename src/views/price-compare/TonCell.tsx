@@ -1,4 +1,5 @@
-import { Input, Tooltip } from 'antd'
+import { Input, type InputRef, Tooltip } from 'antd'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PriceRow } from './types'
 
@@ -50,8 +51,9 @@ function tonCellLabel(
 /**
  * 吨位输入解析: 空串/非法/非正数一律视为"无有效吨位"。
  *
- * <p>`warnPositive` 只在**失焦**时给出(回车提交时不再重复告警): 用户还在输入中间态
- * (`-`、`0`)时不该弹提示, 但离开这一格时值没存上必须有反馈。</p>
+ * <p>`warnPositive` = 非法值（0 / 负数 / 非数字）：回车与失焦**两条路径都走它**
+ * （曾经回车写死 false，等于跳过校验）。用户还在输入中间态（`-`、`0`）时不弹提示，
+ * 提交那一刻才拦，并把输入框还原成已提交值。</p>
  */
 function parseTonInput(raw: string): {
   value: number | undefined
@@ -83,10 +85,41 @@ export function TonCell({
   const { t } = useTranslation()
   /** 单据不可编辑或该行已锁定: 吨位输入只读(与规格同一锁定口径)。 */
   const inputDisabled = disabled || rowLockDisabled
+  /*
+   * 非法值（0 / 负数 / 非数字）的处理：
+   * 不写回单据（`onTonChange(undefined, true)` 由列层给 warning），**并把输入框还原成已提交值**。
+   * 输入框是非受控的（`defaultValue` + `key`），不回退就会停在用户敲的 "-3" 上，
+   * 而合计仍按旧值算 —— 同一行两个数字打架（用户实测反馈）。
+   */
+  const [invalid, setInvalid] = useState(false)
+  const inputRef = useRef<InputRef | null>(null)
+  /** 回车已提交过：随后的 blur 不要再用同一份文本重复提交一次。 */
+  const skipBlurCommitRef = useRef(false)
+  const committedText = row.ton === undefined ? '' : String(row.ton)
+
+  /**
+   * 提交吨位（**回车与失焦共用这一个出口**）。
+   *
+   * <p>曾经回车路径写死 `warnPositive: false`，等于跳过校验：回车能把 -3 提交上去，
+   * 而失焦又会拦下来 —— 同一个值两条路径两种结果。校验必须只在这里做一次。</p>
+   */
+  const commitTonInput = (raw: string) => {
+    const parsed = parseTonInput(raw)
+    if (parsed.warnPositive) {
+      setInvalid(true)
+      const node = inputRef.current?.input
+      if (node) node.value = committedText
+      onTonChange(undefined, true)
+      return
+    }
+    setInvalid(false)
+    onTonChange(parsed.value, false)
+  }
 
   const tonInput = (
     <Input
       key={`ton:${rowId}:${row.ton ?? ''}`}
+      ref={inputRef}
       aria-label={tonCellLabel(t, row)}
       className={
         lockedClassName
@@ -98,14 +131,24 @@ export function TonCell({
       inputMode="decimal"
       disabled={inputDisabled}
       data-ton={rowId}
-      defaultValue={row.ton === undefined ? '' : String(row.ton)}
+      defaultValue={committedText}
+      status={invalid ? 'error' : undefined}
+      aria-invalid={invalid || undefined}
+      title={invalid ? t('priceCompare.sheet.tonPositive') : undefined}
+      onChange={() => {
+        // 一开始改就撤掉红框：红框表示"上一次提交被拒"，不该粘着不走
+        if (invalid) setInvalid(false)
+      }}
       onBlur={(event) => {
-        const parsed = parseTonInput(event.target.value)
-        onTonChange(parsed.value, parsed.warnPositive)
+        if (skipBlurCommitRef.current) {
+          skipBlurCommitRef.current = false
+          return
+        }
+        commitTonInput(event.target.value)
       }}
       onPressEnter={(event) => {
-        const parsed = parseTonInput((event.target as HTMLInputElement).value)
-        onTonChange(parsed.value, false)
+        skipBlurCommitRef.current = true
+        commitTonInput((event.target as HTMLInputElement).value)
       }}
       onKeyDown={(event) => {
         if (event.key !== 'Tab') return

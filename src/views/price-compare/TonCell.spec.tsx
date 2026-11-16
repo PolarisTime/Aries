@@ -146,7 +146,7 @@ describe('TonCell 报单吨位输入', () => {
     expect(props.onTonChange).toHaveBeenCalledWith(12.5, false)
   })
 
-  it('失焦时 0 / 负数告警(不写回), 由列层给 warning 文案', () => {
+  it('失焦时 0 / 负数不写回：回调给 undefined + 告警标记，输入框还原并标红', () => {
     const props = render()
     const input = tonInput() as HTMLInputElement
     act(() => {
@@ -154,7 +154,15 @@ describe('TonCell 报单吨位输入', () => {
       // React 的 onBlur 走 focusout 委托: 只派发原生 blur 不会触发处理器
       input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
-    expect(props.onTonChange).toHaveBeenCalledWith(0, true)
+    expect(props.onTonChange).toHaveBeenCalledWith(undefined, true)
+    // 非受控输入框必须自己回退，否则格子显示 0、合计按旧值算
+    expect((tonInput() as HTMLInputElement).value).toBe('5')
+    expect((tonInput() as HTMLInputElement).className).toContain(
+      'ant-input-status-error',
+    )
+    expect((tonInput() as HTMLInputElement).getAttribute('aria-invalid')).toBe(
+      'true',
+    )
 
     const negative = render()
     const negativeInput = tonInput() as HTMLInputElement
@@ -163,7 +171,8 @@ describe('TonCell 报单吨位输入', () => {
       // React 的 onBlur 走 focusout 委托: 只派发原生 blur 不会触发处理器
       negativeInput.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
-    expect(negative.onTonChange).toHaveBeenCalledWith(-3, true)
+    expect(negative.onTonChange).toHaveBeenCalledWith(undefined, true)
+    expect((tonInput() as HTMLInputElement).value).toBe('5')
   })
 
   it('清空输入提交 undefined 且不告警(清空不是非法值)', () => {
@@ -177,7 +186,7 @@ describe('TonCell 报单吨位输入', () => {
     expect(props.onTonChange).toHaveBeenCalledWith(undefined, false)
   })
 
-  it('回车提交不重复告警(告警只由失焦给出)', () => {
+  it('回车提交合法吨位：原样回传，随后的失焦不重复提交', () => {
     const props = render()
     const input = tonInput() as HTMLInputElement
     act(() => {
@@ -192,6 +201,36 @@ describe('TonCell 报单吨位输入', () => {
       )
     })
     expect(props.onTonChange).toHaveBeenCalledWith(8, false)
+
+    act(() => {
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    expect(props.onTonChange).toHaveBeenCalledTimes(1)
+  })
+
+  /*
+   * 用户实测（2026-11-16）：吨位格输入 -3 按回车，合计变成「合计 -3」，
+   * 并发出 PUT /quote-sheets/{id}/items/{itemId} 带 "ton":-3。
+   * 根因是回车路径把 warnPositive 写死成 false，等于跳过校验。
+   */
+  it('回车与失焦同一套校验：负数回车不写回，且输入框还原', () => {
+    const props = render()
+    const input = tonInput() as HTMLInputElement
+    act(() => {
+      input.value = '-3'
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+
+    expect(props.onTonChange).toHaveBeenCalledWith(undefined, true)
+    expect(props.onTonChange).not.toHaveBeenCalledWith(-3, expect.anything())
+    expect((tonInput() as HTMLInputElement).value).toBe('5')
   })
 
   it('列尾按 Tab 不吞键: 放行默认行为, 由浏览器把焦点移出本格', () => {
