@@ -6,6 +6,7 @@ import {
   PlusOutlined,
   ReloadOutlined,
   SettingOutlined,
+  SwapOutlined,
   TrophyOutlined,
   UnlockOutlined,
 } from '@ant-design/icons'
@@ -749,6 +750,7 @@ function SheetHeader({
   onRemoveSelected,
   designatedBrands,
   allowHrb400eFallback = false,
+  onToggleHrb400eFallback,
   readOnly = false,
   columnSettingsSlot,
   spotUpdatedAt,
@@ -770,6 +772,7 @@ function SheetHeader({
   onRemoveSelected: () => void
   designatedBrands?: string[]
   allowHrb400eFallback?: boolean
+  onToggleHrb400eFallback?: () => void
   readOnly?: boolean
   /** 列显示设置按钮: 由 SheetPanel 构造后作为节点下传(不再逐层透传 5 个 props)。 */
   columnSettingsSlot: React.ReactNode
@@ -808,6 +811,8 @@ function SheetHeader({
         spotUpdatedAt={spotUpdatedAt}
         refreshingSpotPrices={refreshingSpotPrices}
         onRefreshSpotPrices={onRefreshSpotPrices}
+        allowHrb400eFallback={allowHrb400eFallback}
+        onToggleHrb400eFallback={onToggleHrb400eFallback}
       />
     </Flex>
   )
@@ -988,6 +993,8 @@ function SheetActionRow({
   spotUpdatedAt,
   refreshingSpotPrices,
   onRefreshSpotPrices,
+  allowHrb400eFallback,
+  onToggleHrb400eFallback,
 }: {
   sheet: PriceSheet
   readOnly: boolean
@@ -1004,6 +1011,8 @@ function SheetActionRow({
   spotUpdatedAt?: string
   refreshingSpotPrices: boolean
   onRefreshSpotPrices: () => void
+  allowHrb400eFallback: boolean
+  onToggleHrb400eFallback?: () => void
 }) {
   const { t } = useTranslation()
 
@@ -1044,6 +1053,20 @@ function SheetActionRow({
       >
         {t('priceCompare.sheet.refreshSpotPrices')}
       </Button>
+      {onToggleHrb400eFallback ? (
+        <Tooltip title={t('priceCompare.sheet.hrb400eFallbackHint')}>
+          <Button
+            icon={<SwapOutlined />}
+            type={allowHrb400eFallback ? 'primary' : 'default'}
+            disabled={readOnly}
+            onClick={onToggleHrb400eFallback}
+          >
+            {allowHrb400eFallback
+              ? t('priceCompare.sheet.hrb400eFallbackOff')
+              : t('priceCompare.sheet.fillHrb400e')}
+          </Button>
+        </Tooltip>
+      ) : null}
       {spotUpdatedAt ? (
         <Text type="secondary" className="price-compare-spot-updated-at">
           {t('priceCompare.sheet.spotUpdatedAt', {
@@ -1099,6 +1122,13 @@ type Props = {
   refreshing?: boolean
   onOpenConfig?: () => void
   allowHrb400eFallback?: boolean
+  /**
+   * 切换「HRB400 缺精确现货价时用 HRB400E 现货价填入」。
+   *
+   * <p>沿用项目配置里的 `hrb400eFallback`（同一业务口径只在一处），
+   * 这里只是把它做成报单比价工具栏上可点的快捷按钮。</p>
+   */
+  onToggleHrb400eFallback?: () => void
   allowedProducts?: string[]
   availability?: Record<string, string[]>
   chrome?: boolean
@@ -1127,6 +1157,7 @@ export function SheetPanel(props: Props) {
     refreshing = false,
     onOpenConfig,
     allowHrb400eFallback = false,
+    onToggleHrb400eFallback,
     allowedProducts = [],
     availability = {},
     chrome = true,
@@ -1379,6 +1410,7 @@ export function SheetPanel(props: Props) {
         onRemoveSelected={removeSelected}
         designatedBrands={designatedBrands}
         allowHrb400eFallback={allowHrb400eFallback}
+        onToggleHrb400eFallback={onToggleHrb400eFallback}
         readOnly={readOnly}
         spotUpdatedAt={spotUpdatedAt}
         refreshingSpotPrices={lowestQuotesQuery.isFetching}
