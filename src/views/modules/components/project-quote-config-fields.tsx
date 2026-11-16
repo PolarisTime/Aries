@@ -60,9 +60,13 @@ export function ProjectQuoteBrandCategoriesField({
     <fieldset
       className="project-quote-brand-categories"
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
+        /*
+         * 两列（窄屏自动回退一列）：5 个品牌逐行排会白占 5 行高度，把下面的字段顶出可视区。
+         * 品牌名固定 96px 保证纵向对齐，下拉自适应剩余宽度。
+         */
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+        gap: '8px 24px',
         border: 0,
         margin: 0,
         padding: 0,
@@ -112,14 +116,15 @@ export function ProjectQuoteBrandCategoriesField({
             placeholder={t(
               'modules.pages.project.quoteBrandCategoriesPlaceholder',
             )}
-            style={{ minWidth: 220 }}
+            style={{ flex: 1 }}
             value={current[brand] ?? []}
           />
         </div>
       ))}
-      <Typography.Text type="secondary">
-        {t('modules.pages.project.quoteBrandCategoriesHint')}
-      </Typography.Text>
+      {/*
+       * 说明只在标签旁的 ⓘ 里出现一次（字段级 tooltip + extra）。控件内部不再重复一行
+       * 「为每个品牌勾选可以报的品种…」——同一句话在一屏里出现两次正是这页被判「乱」的原因之一。
+       */}
     </fieldset>
   )
 }

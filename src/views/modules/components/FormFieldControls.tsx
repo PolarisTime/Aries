@@ -131,6 +131,12 @@ function multiSelectFieldElement({
       allowClear={allowClear}
       disabled={disabledValue}
       mode="multiple"
+      /*
+       * 标签折叠：项目资料的「参与比价的商品规格」可能选中几十项，全量铺开会把一行撑成半屏，
+       * 并把同行的其它字段挤到看不见。`responsive` 按控件宽度自动折叠成「+ N …」，
+       * 悬停仍可看到全部（antd 默认 maxTagPlaceholder 的 title 提示）。
+       */
+      maxTagCount="responsive"
       showSearch={{ filterOption: createPinyinFilterOption() }}
       optionLabelProp="label"
       options={selectOptions}

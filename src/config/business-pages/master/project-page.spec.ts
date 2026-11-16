@@ -72,6 +72,37 @@ describe('项目资料：比价配置字段', () => {
     }
   })
 
+  it('比价配置按 24 栅格对齐：长清单整行，其余三项 12 成对', () => {
+    const fields = config?.formFields ?? []
+    const spanOf = (key: string) =>
+      fields.find((item) => item.key === key)?.colSpan
+    // 三个「清单型」字段（矩阵、商品键、指定品牌）各占整行；两个标量设置按 12 成对
+    for (const key of [
+      'quoteBrandCategories',
+      'quoteProducts',
+      'quoteDesignatedBrands',
+    ]) {
+      expect(spanOf(key), `${key} 必须整行`).toBe(24)
+    }
+    expect(spanOf('quoteLengthPremium')).toBe(12)
+    expect(spanOf('quoteHrb400eFallback')).toBe(12)
+    const rowOf = (key: string) => fields.find((item) => item.key === key)?.row
+    expect(rowOf('quoteLengthPremium')).toBe(rowOf('quoteHrb400eFallback'))
+  })
+
+  it('品牌与材质的「处理方式」标签必须可区分（原来两个都叫「处理方式」）', () => {
+    const fields = config?.formFields ?? []
+    const brandLabel = fields.find(
+      (item) => item.key === 'allowedBrandSeverity',
+    )?.label
+    const materialLabel = fields.find(
+      (item) => item.key === 'allowedMaterialSeverity',
+    )?.label
+    expect(brandLabel).toBeTruthy()
+    expect(materialLabel).toBeTruthy()
+    expect(brandLabel).not.toBe(materialLabel)
+  })
+
   it('定尺加价进入详情字段（多值字段留在编辑弹层，避免详情网格挤宽）', () => {
     const detailKeys = (config?.detailFields ?? []).map((field) => field.key)
     expect(detailKeys).toContain('quoteLengthPremium')

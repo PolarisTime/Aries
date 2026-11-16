@@ -289,3 +289,117 @@ describe('基础资料分区块', () => {
     },
   )
 })
+
+/**
+ * 字段说明排版契约（2026-11-16 用户反馈「项目资料第二步太乱」后补）：
+ * ① 长说明走标签旁 ⓘ，extra 视觉收起但仍在 DOM 里（读屏靠 aria-describedby 读到）；
+ * ② 只有 extra、没有 tooltip 的短提示保持可见；
+ * ③ 只能选的控件占位是「请选择」，不再是「请输入」。
+ */
+const HINT_CONFIG = {
+  key: 'project',
+  title: '项目资料',
+  primaryNoKey: 'projectCode',
+  formFields: [
+    {
+      key: 'customerId',
+      label: '客户',
+      type: 'select',
+      tooltip: '选择客户资料中的往来单位',
+      extra: '选择客户资料中的往来单位',
+    },
+    {
+      key: 'projectAddress',
+      label: '项目地址',
+      type: 'input',
+      extra: '最多 255 字',
+    },
+  ],
+  columns: [],
+  filters: [],
+  detailFields: [],
+} as unknown as ModulePageConfig
+
+describe('ModuleEditorFormSection 字段说明与占位', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(async () => {
+    await i18n.changeLanguage('zh-CN')
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    act(() => {
+      root.render(
+        createElement(
+          AppAntdProvider,
+          null,
+          createElement(
+            Form,
+            { className: 'editor-form-shell', layout: 'horizontal' },
+            createElement(ModuleEditorFormSection, {
+              actions: {
+                canAudit: true,
+                canSave: true,
+                onCancel: () => {},
+                onSave: () => {},
+                saving: false,
+                visible: false,
+              },
+              config: HINT_CONFIG,
+              editorState: { isEdit: false, lineItemsLocked: false },
+              lockedLineItemsNotice: '',
+              moduleKey: HINT_CONFIG.key,
+            }),
+          ),
+        ),
+      )
+    })
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('下拉控件占位是「请选择」而不是「请输入」', () => {
+    // antd 6 的 Select 占位节点类名随版本变化，按控件可见文本断言更稳：
+    // 占位一旦退回「请输入客户」，这里立刻变红。
+    const select = container.querySelector('.ant-select')
+    expect(select?.textContent).toContain('请选择客户')
+    expect(container.textContent).not.toContain('请输入客户')
+  })
+
+  it('同时声明 tooltip 与 extra 时，说明折叠到 ⓘ，extra 保留在 DOM 供读屏', () => {
+    const items = Array.from(container.querySelectorAll('.ant-form-item'))
+    const customerItem = items.find(
+      (item) =>
+        (item.querySelector('.ant-form-item-label label')?.textContent ??
+          '') === '客户',
+    )
+    expect(customerItem?.className).toContain(
+      'module-form-item--hint-collapsed',
+    )
+    // 视觉收起靠 CSS，文案本身必须仍可被读屏读到
+    expect(
+      customerItem?.querySelector('.ant-form-item-extra')?.textContent,
+    ).toBe('选择客户资料中的往来单位')
+    // ⓘ 存在（说明入口）
+    expect(customerItem?.querySelector('.ant-form-item-tooltip')).not.toBeNull()
+  })
+
+  it('只有 extra 没有 tooltip 的短提示不被折叠', () => {
+    const items = Array.from(container.querySelectorAll('.ant-form-item'))
+    const addressItem = items.find(
+      (item) =>
+        (item.querySelector('.ant-form-item-label label')?.textContent ??
+          '') === '项目地址',
+    )
+    expect(addressItem?.className).not.toContain(
+      'module-form-item--hint-collapsed',
+    )
+  })
+})

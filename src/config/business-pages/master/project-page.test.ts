@@ -24,10 +24,12 @@ describe('projectPageConfig', () => {
       // 允许品牌/材质的「不匹配处理方式」各自紧跟本字段，不单独占行
       ['allowedBrands', 'allowedBrandSeverity'],
       ['allowedMaterials', 'allowedMaterialSeverity'],
-      // 比价配置（2026-11-16 起为唯一配置点）：矩阵整行；规格 12 + 加价 6 + 代取 6 占满一行
+      // 比价配置（2026-11-16 起为唯一配置点）：两个长清单（品牌×品种矩阵、商品规格）各占整行，
+      // 其余三项按 12 栅格两两成对 —— 不再出现 12+6+6 那种一行三种宽度、竖边对不齐的排法
       ['quoteBrandCategories'],
-      ['quoteProducts', 'quoteLengthPremium', 'quoteHrb400eFallback'],
+      ['quoteProducts'],
       ['quoteDesignatedBrands'],
+      ['quoteLengthPremium', 'quoteHrb400eFallback'],
     ])
   })
 

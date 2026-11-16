@@ -34,6 +34,13 @@ interface Props {
 const EMPTY_PROJECT_OPTIONS: readonly ProjectOption[] = []
 
 /**
+ * 只能从选项里挑、不能手输的控件：占位文案必须是「请选择」，用「请输入」会让人以为要打字。
+ * （number/input/textarea 仍走「请输入」。）
+ */
+const SELECT_LIKE_FIELD_TYPES: ReadonlySet<ModuleFormFieldDefinition['type']> =
+  new Set(['select', 'multiSelect', 'date'])
+
+/**
  * 动态表单字段渲染器。
  *
  * <p>职责在本次重构后收敛为三件事：把字段定义解析成选项/校验规则、套上无障碍表单项
@@ -63,7 +70,12 @@ export function FormFieldRenderer({
   const displayLabel = field.label
   const placeholder =
     field.placeholder ||
-    t('modules.formField.inputPlaceholder', { label: field.label })
+    t(
+      SELECT_LIKE_FIELD_TYPES.has(field.type)
+        ? 'modules.formField.selectPlaceholder'
+        : 'modules.formField.inputPlaceholder',
+      { label: field.label },
+    )
   const allowClear = field.allowClear !== false
   const fieldId = buildFormControlId('module-form', field.key)
   const resolvedOptions = resolveFieldOptions({
@@ -90,7 +102,13 @@ export function FormFieldRenderer({
       extra={extra}
       tooltip={tooltip}
       {...itemProps}
-      className={buildFormItemClassName(field.type, extraClassName)}
+      className={[
+        buildFormItemClassName(field.type, extraClassName),
+        // 同时给了 tooltip 与 extra 时说明只在 ⓘ 里展示，extra 视觉收起（保留给读屏）
+        tooltip && extra ? 'module-form-item--hint-collapsed' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
       {children}
     </AccessibleFormItem>
