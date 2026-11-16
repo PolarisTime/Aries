@@ -298,12 +298,20 @@
   color: var(--color-danger-active, #cf1322);
 }
 
-/* 现货价格: 只读文本(唯一来源是供应商价格表导入), 不再有输入框 */
+/*
+ * 现货价格: 只读文本(唯一来源是供应商价格表), 不再有输入框。
+ *
+ * <p>`font-weight: 600` 与 {@link .price-compare-net}（网价）、{@link .price-compare-diff}
+ * （差价）保持一致：同一行里三个数字是"同一组读数"，字重不同（网价 600 / 现货 400）会被看成
+ * 两套字体、两个层级。差价只额外保留语义色（正绿/负红，且都带 tooltip 说明，不靠颜色单打独斗），
+ * 字号/字重/等宽数字三者完全一致。</p>
+ */
 .price-compare-spot {
   display: inline-block;
   width: 100%;
   text-align: right;
   padding-inline: var(--space-xxs);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -73,4 +73,30 @@ describe('比价页面：字号必须随个人设置缩放', () => {
       'height: calc(var(--app-font-size) + 10px)',
     )
   })
+
+  /*
+   * 同一行里「网价 / 现货 / 差价」三个数字是同一组读数。
+   *
+   * 曾经：网价 600、差价 600，现货却是 400 —— 同一行里两种字重，被当成"两套字体/两个层级"
+   * （用户实测反馈"这 3 个数字的样式没有一致"）。契约：三者字重一致，差价只保留语义色。
+   */
+  it('网价 / 现货 / 差价三个数字同字重（差价只保留语义色，不靠字重区分）', () => {
+    const source = readCss('./price-compare.css')
+    const blockOf = (selector: string) => {
+      const start = source.indexOf(selector)
+      expect(start, `未找到选择器 ${selector}`).toBeGreaterThan(-1)
+      const open = source.indexOf('{', start)
+      const close = source.indexOf('}', open)
+      return source.slice(open, close)
+    }
+    for (const selector of [
+      '.price-compare-net',
+      '.price-compare-spot',
+      '.price-compare-diff',
+    ]) {
+      expect(blockOf(selector), `${selector} 的字重应与网价一致`).toContain(
+        'font-weight: 600',
+      )
+    }
+  })
 })
