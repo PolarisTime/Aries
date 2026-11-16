@@ -1,3 +1,10 @@
+## [16.3.1](https://github.com/PolarisTime/Aries/compare/v16.3.0...v16.3.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* **price-compare:** 补齐无障碍标记并静默自动保存错误 toast ([cf54235](https://github.com/PolarisTime/Aries/commit/cf542354290d4f900695ed47b32e8d366087ad09))
+
 # [16.3.0](https://github.com/PolarisTime/Aries/compare/v16.2.0...v16.3.0) (2026-11-16)
 
 
