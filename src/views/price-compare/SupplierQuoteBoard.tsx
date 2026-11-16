@@ -41,6 +41,7 @@ import { fetchSupplierOptions } from '@/api/master/supplier-options'
 import { ContextMenu } from '@/components/ContextMenu'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useHasPermission } from '@/hooks/usePermission'
+import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import { message, modal, notification } from '@/utils/antd-app'
 import { CollabStatusBar } from './collab/CollabStatusBar'
 import { isCollabFeatureEnabled } from './collab/collab-config'
@@ -56,6 +57,7 @@ import {
   type CollabTarget,
   useSupplierPriceCollab,
 } from './collab/useSupplierPriceCollab'
+import { SHEET_WIDTH_BASE_FONT_SIZE, scaleSheetColumnWidth } from './core'
 import {
   type BrandDraft,
   buildBrandCatalog,
@@ -143,6 +145,32 @@ const ROW_HEAD_WIDTHS = {
 const BRAND_COLUMN_WIDTH = 64
 /* 单定尺（盘螺）时品牌表头直接坐在价格列上，64px 放不下「武钢汉钢」+ ⋯，列宽单独放宽。 */
 const BRAND_FLAT_COLUMN_WIDTH = 96
+
+/**
+ * 列宽随个人设置字号等比换算（与报单比价 `useSheetColumnWidths` 同一口径）。
+ *
+ * <p>上面几条宽度都是按 **14px 基准字号**量出来的设计值（"64px 刚好装下 4 位数字"）。字号调到
+ * 16/18 后数字变宽，列宽不跟就会把第 4 位裁掉，所以列宽一律由字号换算，而不是各处写死。</p>
+ */
+export function supplierBoardWidths(fontSize: number) {
+  return {
+    rowHead: {
+      material: scaleSheetColumnWidth(ROW_HEAD_WIDTHS.material, fontSize),
+      spec: scaleSheetColumnWidth(ROW_HEAD_WIDTHS.spec, fontSize),
+      category: scaleSheetColumnWidth(ROW_HEAD_WIDTHS.category, fontSize),
+    },
+    brand: scaleSheetColumnWidth(BRAND_COLUMN_WIDTH, fontSize),
+    brandFlat: scaleSheetColumnWidth(BRAND_FLAT_COLUMN_WIDTH, fontSize),
+  }
+}
+
+/** 订阅个人设置字号 → 现算列宽（字号是唯一真源，保存设置的同一帧就重算）。 */
+function useSupplierBoardWidths() {
+  const fontSize = useUiSettingsStore(
+    (state) => state.settings?.fontSize ?? SHEET_WIDTH_BASE_FONT_SIZE,
+  )
+  return useMemo(() => supplierBoardWidths(fontSize), [fontSize])
+}
 
 /*
  * 通知卡片的固定 key：同一类提示只保留一张。重复失败时 key 相同 → antd 原地刷新卡片，
@@ -2169,6 +2197,12 @@ export function SupplierQuoteBoard() {
   }
 
   /**
+   * 列宽（随个人设置字号等比缩放，见 {@link supplierBoardWidths}）。
+   * 只在这里取一次，列定义与 `scroll.x` 共用同一份值 —— 两者各算一遍就会错位。
+   */
+  const boardWidths = useSupplierBoardWidths()
+
+  /**
    * 一张类别表（盘螺 / 直条）的列定义：行 = 规格，列 = 品牌 → 材质 → 定尺。
    *
    * <p>三级表头都来自商品资料：某个品牌没有的材质、没有的定尺，连列都不出现（见
@@ -2201,13 +2235,13 @@ export function SupplierQuoteBoard() {
           </span>
         ),
         key: 'spec',
-        width: ROW_HEAD_WIDTHS.spec,
+        width: boardWidths.rowHead.spec,
         align: 'center',
         fixed: 'left',
         render: (_value, row) => row.spec,
       },
     ]
-    let totalWidth = ROW_HEAD_WIDTHS.spec
+    let totalWidth = boardWidths.rowHead.spec
     /*
      * 列下标查表（品牌|材质|定尺 → 列下标）：每次渲染只建一次。
      * 之前在每个叶列里 `findIndex`，列数一多就变成 O(列²)，属于典型的「循环里做数组查找」。
@@ -2254,7 +2288,7 @@ export function SupplierQuoteBoard() {
            * 用 96px；多定尺用 64px，刚好装下 4 位数字。
            */
           const leafWidth =
-            length === '-' ? BRAND_FLAT_COLUMN_WIDTH : BRAND_COLUMN_WIDTH
+            length === '-' ? boardWidths.brandFlat : boardWidths.brand
           totalWidth += leafWidth
           /*
            * 「整列不可填」：该品牌在商品资料里没有任何这个定尺的规格。

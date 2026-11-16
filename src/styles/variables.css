@@ -63,6 +63,21 @@
   --default-font-family: var(--app-font-family);
   --default-mono-font-family: var(--app-font-family);
   --app-font-size: 14px;
+  /*
+   * 随个人设置字号缩放的次级字号阶梯。
+   *
+   * <p>14px 基准下正好等于原先写死的设计值（10 / 11 / 12 / 13px），字号调到 16/18 时按比例放大；
+   * 反过来说：**业务 CSS 里不要再出现 `font-size: 12px` 这类绝对值** —— 那会让"正文变大了、
+   * 表格里的次要文字还卡在 12px"，报单比价/供应商报价表就踩过这个坑（33 处写死 px）。</p>
+   *
+   * <p>不用 `--font-size-xs` 一类 token：那套是 `var(--ant-font-size-sm, 12px)`，antd 未开启
+   * CSS 变量输出时它就是死值 12px（实测 `--ant-font-size-sm` 为空），不会跟随个人设置。</p>
+   */
+  --app-font-size-3xs: calc(var(--app-font-size) * 0.714);
+  --app-font-size-2xs: calc(var(--app-font-size) * 0.786);
+  --app-font-size-xs: calc(var(--app-font-size) * 0.857);
+  --app-font-size-sm: calc(var(--app-font-size) * 0.929);
+  --app-font-size-lg: calc(var(--app-font-size) + 4px);
   /* 控件高度以 antd token 为单一来源，自定义元素与 antd 控件保持等高 */
   --app-control-height: var(--ant-control-height, 32px);
   --app-control-height-sm: var(--ant-control-height-sm, 24px);

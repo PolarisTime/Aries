@@ -230,7 +230,7 @@
   display: block;
   margin-bottom: 6px;
   color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
-  font-size: 12px;
+  font-size: var(--app-font-size-xs);
 }
 
 .supplier-price-column-panel-chips {
@@ -245,7 +245,8 @@
   padding: 0 8px;
   border: 1px solid var(--ant-color-border, #d9d9d9);
   border-radius: 999px;
-  line-height: 22px;
+  /* 22px @14px 字号：胶囊高度随字号缩放，避免大字号下勾选项文字贴边 */
+  line-height: calc(var(--app-font-size) + 8px);
   transition:
     border-color 0.15s ease,
     background-color 0.15s ease;
@@ -287,7 +288,7 @@
   padding-top: 8px;
   border-top: 1px solid var(--ant-color-split, rgb(0 0 0 / 6%));
   color: var(--ant-color-text-tertiary, rgb(0 0 0 / 45%));
-  font-size: 12px;
+  font-size: var(--app-font-size-xs);
   line-height: 1.5;
 }
 
@@ -318,7 +319,7 @@
   width: 100%;
   height: var(--supplier-price-row-height, 25px);
   color: var(--supplier-price-na-text, #cbd3df);
-  font-size: 11px;
+  font-size: var(--app-font-size-2xs);
   text-align: center;
   background: repeating-linear-gradient(
     135deg,
@@ -360,8 +361,8 @@
   flex: none;
   margin-inline-end: 0;
   padding-inline: 4px;
-  font-size: 11px;
-  line-height: 16px;
+  font-size: var(--app-font-size-2xs);
+  line-height: 1.45;
 }
 
 /* 规格横置视图：品牌分块 → 品类块（规格作列）→ 行 = 材质 + 定尺 */
@@ -419,7 +420,7 @@
 }
 
 .supplier-price-sheet-category-name {
-  font-size: 14px;
+  font-size: var(--app-font-size);
   font-weight: 650;
   letter-spacing: 0.3px;
   color: var(--ant-color-text);
@@ -554,7 +555,7 @@
 
 .supplier-price-material-tabs .ant-tabs-tab {
   padding-block: 4px;
-  font-size: 12.5px;
+  font-size: calc(var(--app-font-size) * 0.893);
   font-weight: 600;
   color: var(--supplier-price-head-muted, #6b7482);
 }
@@ -625,14 +626,14 @@
 /* 组表头第二行（定尺）：比品牌名弱一级 */
 .supplier-price-board .ant-table-thead > tr:nth-child(2) > th {
   font-weight: 500;
-  font-size: 11px;
+  font-size: var(--app-font-size-2xs);
   color: var(--supplier-price-head-muted, #6b7482);
 }
 
 /* 规格列（第一列）：浅底 + 加粗数字，像表格软件的行号列 */
 .supplier-price-board .ant-table-tbody > tr > td:first-child {
   background: var(--supplier-price-spec-bg, #fbfcfe);
-  font-size: 12px;
+  font-size: var(--app-font-size-xs);
   font-weight: 600;
   color: var(--supplier-price-spec-text, #3c4553);
   border-inline-end-color: var(--supplier-price-grid-strong, #d3d9e3);
@@ -657,14 +658,14 @@
 }
 
 .supplier-price-corner-material {
-  font-size: 12.5px;
+  font-size: calc(var(--app-font-size) * 0.893);
   font-weight: 650;
   color: var(--supplier-price-head-text, #2b3444);
   white-space: nowrap;
 }
 
 .supplier-price-corner-spec {
-  font-size: 10.5px;
+  font-size: calc(var(--app-font-size) * 0.75);
   font-weight: 400;
   color: var(--ant-color-text-tertiary);
 }
@@ -687,7 +688,7 @@
   display: block;
   max-width: 100%;
   padding-inline: 0;
-  font-size: 12px;
+  font-size: var(--app-font-size-xs);
   font-weight: 650;
   color: var(--supplier-price-head-text, #2b3444);
   text-align: center;
@@ -836,5 +837,5 @@
 
 .supplier-price-last-edited {
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--app-font-size-xs);
 }

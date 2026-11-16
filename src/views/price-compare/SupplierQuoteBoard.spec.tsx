@@ -43,6 +43,7 @@ vi.mock('@/hooks/usePermission', () => ({
   useHasPermission: () => permissions.canWrite,
 }))
 
+import { supplierBoardWidths } from './SupplierQuoteBoard'
 import { SupplierQuotePage } from './SupplierQuotePage'
 
 /*
@@ -682,5 +683,42 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     expect(container.textContent).toContain(
       i18n.t('priceCompare.supplierPrice.noBrands'),
     )
+  })
+
+  /*
+   * 列宽随个人设置字号缩放。
+   *
+   * 原实现把 64px（4 位数字）/ 96px（单定尺品牌列）/ 88·72·56（行首三列）写死，
+   * 字号调到 16/18 后数字变宽、列宽不动 → 第 4 位被裁。这里锁定"字号是列宽的唯一依据"：
+   * 14px 等于原设计值，其它字号等比缩放且单调。
+   */
+  it('列宽随字号等比缩放：14px 取设计值，字号变大列宽变大', () => {
+    const base = supplierBoardWidths(14)
+    expect(base.brand).toBe(64)
+    expect(base.brandFlat).toBe(96)
+    expect(base.rowHead.spec).toBe(72)
+    expect(base.rowHead.material).toBe(88)
+    expect(base.rowHead.category).toBe(56)
+
+    const wide = supplierBoardWidths(18)
+    expect(wide.brand).toBeGreaterThan(base.brand)
+    expect(wide.brandFlat).toBeGreaterThan(base.brandFlat)
+    expect(wide.rowHead.spec).toBeGreaterThan(base.rowHead.spec)
+    expect(wide.rowHead.material).toBeGreaterThan(base.rowHead.material)
+    expect(wide.rowHead.category).toBeGreaterThan(base.rowHead.category)
+
+    // 单调不减：11 / 12 / 13 / 14 / 16 / 18 逐档递增
+    const series = [11, 12, 13, 14, 16, 18].map(
+      (fontSize) => supplierBoardWidths(fontSize).brand,
+    )
+    expect(series).toEqual([...series].sort((a, b) => a - b))
+    expect(new Set(series).size).toBe(series.length)
+  })
+
+  it('非法字号回落到 14px 基准列宽，不产生 0 宽列', () => {
+    const base = supplierBoardWidths(14)
+    for (const invalid of [0, -3, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(supplierBoardWidths(invalid)).toEqual(base)
+    }
   })
 })
