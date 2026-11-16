@@ -325,6 +325,7 @@ describe('供应商报价表：Excel 式网格操作', () => {
       'l1',
       3,
       [{ ...withoutBrand(ROW_B), price: 3300 }],
+      { suppressGlobalErrorToast: true },
     )
     // 界面同步清空
     expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('')
@@ -360,6 +361,7 @@ describe('供应商报价表：Excel 式网格操作', () => {
         { ...withoutBrand(ROW_A), price: 3280, priceStatus: 'NORMAL' },
         { ...withoutBrand(ROW_B), price: 3280 },
       ],
+      { suppressGlobalErrorToast: true },
     )
   })
 
@@ -494,6 +496,7 @@ describe('供应商报价表：Excel 式网格操作', () => {
         { ...withoutBrand(ROW_A), price: 3250, priceStatus: 'NORMAL' },
         { ...withoutBrand(ROW_B), price: 3300 },
       ],
+      { suppressGlobalErrorToast: true },
     )
   })
 
@@ -586,6 +589,7 @@ describe('供应商报价表：Excel 式网格操作', () => {
       'l1',
       3,
       [{ ...withoutBrand(ROW_B), price: 3300 }],
+      { suppressGlobalErrorToast: true },
     )
   })
 
