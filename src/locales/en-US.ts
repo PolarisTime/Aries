@@ -2944,7 +2944,10 @@ export const enUS = {
       viewModeSpecs: 'Specs across columns',
       materialColumn: 'Material',
       specColumn: 'Spec',
-      varietyOutOfScope: 'Not selectable for this project',
+      closeTabDiscardTitle: 'Save failed before closing',
+      closeTabDiscardContent:
+        'This supplier still has unsaved quotes; closing the tab will discard them.',
+      closeTabDiscardOk: 'Discard and close',
       basePriceRuleTitle: 'Base price & premiums',
       basePriceRuleMenu: 'Base price & premiums…',
       basePriceRuleHint:
@@ -3064,6 +3067,7 @@ export const enUS = {
       takeoverFailed: 'The other user is still editing. Try again later.',
     },
     saveStatus: {
+      idle: 'Nothing to save',
       dirty: 'Unsaved',
       dirtyHint:
         'Changes are saved automatically after you stop typing; closing the tab or refreshing will ask for confirmation.',
@@ -3144,6 +3148,10 @@ export const enUS = {
         moveBrandLast: 'Move to last',
       },
       selectProduct: 'Select product',
+      /** Spec comes from a saved row but is outside the project's selectable products: display only, not selectable. */
+      varietyOutOfScope: 'Not selectable for this project',
+      spotPricesFailed: 'Spot prices failed to load; showing snapshot',
+      spotPricesRetry: 'Retry',
       /** Row-level lock is the same concept as the toolbar "lock spec & quantity", scoped to one row. */
       lockRow: 'Lock row spec & quantity',
       unlockRow: 'Unlock row spec & quantity',

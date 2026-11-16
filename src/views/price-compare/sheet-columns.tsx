@@ -153,7 +153,7 @@ export function buildVarietySelectOptions(
     'varieties' | 'brands' | 'allowedProducts' | 'rows' | 't'
   >,
 ) {
-  const hint = ctx.t('priceCompare.supplierPrice.varietyOutOfScope')
+  const hint = ctx.t('priceCompare.sheet.varietyOutOfScope')
   return buildVarietyOptions(
     withStoredVarieties(
       filterVarieties(ctx.varieties, ctx.brands, ctx.allowedProducts),
@@ -510,7 +510,16 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
    */
   const varietyOptions = buildVarietySelectOptions(ctx)
   /** 范围外规格的可见标记(与选项 title 共用同一 i18n key)。 */
-  const outOfScopeHint = t('priceCompare.supplierPrice.varietyOutOfScope')
+  const outOfScopeHint = t('priceCompare.sheet.varietyOutOfScope')
+  /**
+   * 规格下拉选项按 value 索引：单元格的「范围外」标记与下拉 disabled 共用同一份判定
+   * （disabled 的唯一来源是 withStoredVarieties），这里不重新比对白名单。
+   */
+  const varietyOptionByValue = new Map(
+    varietyOptions.flatMap((group) =>
+      group.options.map((option) => [option.value, option] as const),
+    ),
+  )
   /** 报单吨位列的构建上下文(列宽取整张宽度表, 不另设参数)。 */
   const tonColumnCtx = {
     t,
@@ -742,6 +751,18 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           current && current.material
             ? `${current.category}|${current.material}|${current.spec}|${current.length}`
             : undefined
+        /*
+         * 范围外规格不只在 dropdown 里标：单元格本身也要能看出这行需修正。
+         * 判定与下拉 disabled 同源（withStoredVarieties 唯一出口），不另写白名单判断。
+         */
+        const varietyOption = value
+          ? varietyOptionByValue.get(value)
+          : undefined
+        const outOfScope = varietyOption?.disabled === true
+        const varietyLabel = cellLabel(
+          t('priceCompare.sheet.columns.variety'),
+          row,
+        )
         // 锁定层级 单据 > 行 > 单元格: 行级锁同样冻结本行规格(行锁 = 规格与吨位定稿)。
         const specLock = resolveLock({
           sheet: quantityLocked,
@@ -755,16 +776,21 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
             : t(LOCK_REASON_KEYS[specLock.level ?? 'row'])
         return (
           <LockReason reason={lockReason}>
-            <div className="price-compare-variety-cell">
+            <div
+              className="price-compare-variety-cell"
+              title={outOfScope ? varietyOption?.title : undefined}
+            >
               <Select
                 size="small"
                 variant="borderless"
-                aria-label={cellLabel(
-                  t('priceCompare.sheet.columns.variety'),
-                  row,
-                )}
+                aria-label={
+                  outOfScope
+                    ? `${varietyLabel} · ${outOfScopeHint}`
+                    : varietyLabel
+                }
                 className={quantityLockClass}
                 disabled={selectDisabled}
+                status={outOfScope ? 'warning' : undefined}
                 style={{ width: widths.spec }}
                 placeholder={t('priceCompare.sheet.selectProduct')}
                 /*
@@ -781,6 +807,17 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                  */
                 labelRender={({ label }) => (
                   <span title={typeof label === 'string' ? label : undefined}>
+                    {/* 单元格内可见标记：不打开下拉也能看出该行规格不在项目可选范围。
+                        标记本身 aria-hidden，可访问提示走 Select 的 aria-label 与外层 title。 */}
+                    {outOfScope ? (
+                      <span
+                        aria-hidden="true"
+                        className="price-compare-variety-out-of-scope-mark"
+                        style={{ marginInlineEnd: 2 }}
+                      >
+                        ⚠
+                      </span>
+                    ) : null}
                     {label}
                   </span>
                 )}
@@ -789,8 +826,7 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 options={varietyOptions}
                 /*
                  * 范围外规格只回显不可选: antd 对 disabled 选项自带 aria-disabled 并跳过键盘选择,
-                 * 这里再把 i18n 标记渲染进下拉项; 选中值仍走 labelRender 的纯文本,
-                 * 不把标记塞进 60~160px 的规格格。
+                 * 下拉项里再渲染完整 i18n 标记; 单元格本身用 ⚠ + title/aria-label 提示（见上）。
                  */
                 optionRender={(option) => {
                   const data = option.data as

@@ -2927,7 +2927,10 @@ export const zhCN = {
       viewModeSpecs: '规格横置',
       materialColumn: '材质',
       specColumn: '规格',
-      varietyOutOfScope: '不在项目可选范围',
+      closeTabDiscardTitle: '关闭页签前保存失败',
+      closeTabDiscardContent:
+        '该供应商还有未保存的报价；关闭页签会丢弃这些改动。',
+      closeTabDiscardOk: '放弃并关闭',
       basePriceRuleTitle: '基价加价',
       basePriceRuleMenu: '基价加价…',
       basePriceRuleHint:
@@ -3047,6 +3050,7 @@ export const zhCN = {
       takeoverFailed: '对方仍在编辑该批次，请稍后再试。',
     },
     saveStatus: {
+      idle: '无需保存',
       dirty: '未保存',
       dirtyHint: '改动会在停止输入后自动保存；关闭标签页或刷新前会再次确认。',
       saving: '保存中',
@@ -3132,6 +3136,10 @@ export const zhCN = {
       columnPanelFixed: '固定列',
       columnPanelBrands: '品牌列',
       selectProduct: '选择商品',
+      /** 规格来自已保存行但不在项目可选商品范围: 只回显、不可选。 */
+      varietyOutOfScope: '不在项目可选范围',
+      spotPricesFailed: '现货价获取失败，当前为快照',
+      spotPricesRetry: '重试',
       /** 行级锁与工具栏「锁定规格和数量」是同一件事, 只是范围 = 一行, 文案保持同词根。 */
       lockRow: '锁定该行规格和数量',
       unlockRow: '解锁该行规格和数量',

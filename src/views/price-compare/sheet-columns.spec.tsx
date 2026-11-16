@@ -1,6 +1,8 @@
 import type { TFunction } from 'i18next'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { enUS } from '@/locales/en-US'
+import { zhCN } from '@/locales/zh-CN'
 import { SHEET_COLUMN_WIDTH, SHEET_HIDEABLE_COLUMN } from './core'
 import {
   buildSheetColumns,
@@ -405,7 +407,7 @@ describe('比价表格规格列：已保存值必须有 label', () => {
     expect(outOfScope.every((option) => option.disabled === true)).toBe(true)
     expect(
       outOfScope.every((option) =>
-        option.title?.includes('priceCompare.supplierPrice.varietyOutOfScope'),
+        option.title?.includes('priceCompare.sheet.varietyOutOfScope'),
       ),
     ).toBe(true)
     // 白名单内的 HRB400E 不受影响
@@ -413,5 +415,62 @@ describe('比价表格规格列：已保存值必须有 label', () => {
       (option) => option.label === 'HRB400E 12 9米',
     )
     expect(allowedHrb400e?.disabled).toBeUndefined()
+  })
+
+  /** 取 S15 真实上下文下的规格列。 */
+  const s15VarietyColumn = () =>
+    columnsOf({
+      varieties: allowedVarieties,
+      allowedProducts,
+      rows: storedStraightRows,
+    }).find(
+      (column) =>
+        (column as { title?: unknown }).title ===
+        'priceCompare.sheet.columns.variety',
+    )
+
+  it('范围外规格在单元格本身有可见标记 + title/aria-label（不打开下拉也能看出需修正）', () => {
+    const column = s15VarietyColumn()
+    expect(column?.render).toBeTypeOf('function')
+    const html = cellHtml(column as RenderableColumn, {
+      category: '直条',
+      material: 'HRB400',
+      spec: 12,
+      length: '9米',
+    })
+
+    // 可见标记：不打开下拉也能看到
+    expect(html).toContain('⚠')
+    // 可访问提示：Select aria-label 与外层 title 共用同一 i18n key（fakeT 原样返回 key）
+    expect(html).toContain('priceCompare.sheet.varietyOutOfScope')
+    expect(html).toContain(
+      'aria-label="priceCompare.sheet.a11y.cell · priceCompare.sheet.varietyOutOfScope"',
+    )
+    // 回显文字仍在（S12 不回退）
+    expect(html).toContain('HRB400 12 9米')
+  })
+
+  it('白名单内的盘螺 HRB400 单元格不显示范围外标记', () => {
+    const column = s15VarietyColumn()
+    const html = cellHtml(column as RenderableColumn, {
+      category: '盘螺',
+      material: 'HRB400',
+      spec: 6,
+      length: '-',
+    })
+
+    expect(html).not.toContain('⚠')
+    expect(html).not.toContain('priceCompare.sheet.varietyOutOfScope')
+  })
+})
+
+describe('范围外规格文案 key 迁移', () => {
+  it('已迁到 priceCompare.sheet，supplierPrice 下不再保留旧 key', () => {
+    expect(zhCN.priceCompare.sheet.varietyOutOfScope).toBe('不在项目可选范围')
+    expect(enUS.priceCompare.sheet.varietyOutOfScope).toBe(
+      'Not selectable for this project',
+    )
+    expect('varietyOutOfScope' in zhCN.priceCompare.supplierPrice).toBe(false)
+    expect('varietyOutOfScope' in enUS.priceCompare.supplierPrice).toBe(false)
   })
 })
