@@ -1162,6 +1162,10 @@ export const zhCN = {
     detailCards: {
       /** 业务信息卡的标题栏文案。 */
       businessInfoTitle: '订单业务信息',
+      /** 指标卡 3 标题：本单总重量。 */
+      orderWeight: '本单总重量',
+      /** 指标卡 3 标题：项目累计送货。 */
+      projectDeliveredTonnage: '项目累计送货',
       /** 采购入库 / 销售出库 / 收付款 / 物流对账单等单据信息卡的通用标题。 */
       docInfoTitle: '单据信息',
       /** 详情顶栏「单据链」按钮：打开单据流向弹层（图 / 列表 / 时间线）。 */
@@ -1684,6 +1688,9 @@ export const zhCN = {
         allowedSpecHint: '销售订单导入采购订单明细时按此校验并预警',
         allowedSpecUnlimited: '不限制',
         scopeEnforcement: '处理方式',
+        scopeEnforcementBrand: '品牌处理方式',
+        scopeEnforcementMaterial: '材质处理方式',
+        scopeEnforcementPlaceholder: '请选择处理方式',
         scopeEnforcementHint: '不匹配时如何处理（清单为空时不生效）',
         scopeEnforcementWarn: '提醒（可继续）',
         scopeEnforcementBlock: '阻断（不可保存）',

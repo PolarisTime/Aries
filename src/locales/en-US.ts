@@ -1152,6 +1152,8 @@ export const enUS = {
      */
     detailCards: {
       businessInfoTitle: 'Business info',
+      orderWeight: 'Order weight',
+      projectDeliveredTonnage: 'Project delivered',
       docInfoTitle: 'Document info',
       documentChain: 'Document chain',
       copySourceNo: 'Copy source document number',
@@ -1673,6 +1675,9 @@ export const enUS = {
           'Checked when sales orders import PO items, mismatches raise a warning',
         allowedSpecUnlimited: 'No restriction',
         scopeEnforcement: 'Enforcement',
+        scopeEnforcementBrand: 'Brand enforcement',
+        scopeEnforcementMaterial: 'Material enforcement',
+        scopeEnforcementPlaceholder: 'Select enforcement',
         scopeEnforcementHint:
           'What happens on a mismatch (ignored when the list is empty)',
         scopeEnforcementWarn: 'Warn (continue)',

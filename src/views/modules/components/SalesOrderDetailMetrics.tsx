@@ -193,9 +193,9 @@ export function SalesOrderDetailMetrics({
       key: 'deliveredVsOrderWeight',
       /*
        * 两个数不同源：主值是**本单**的 totalWeight，副值是**项目汇总**的合计送货吨位（含其它单据）。
-       * 主次按「先看本单、再看项目累计」排列，label 顺序与数值顺序保持一致。
+       * 标题直接点明两个口径，避免「总重量 / 合计送货吨位」被误读为同一范围。
        */
-      label: `${t('modules.columns.totalWeight')} / ${t('modules.projectSalesSummary.deliveredTonnage')}`,
+      label: `${t('modules.detailCards.orderWeight')} / ${t('modules.detailCards.projectDeliveredTonnage')}`,
       value: formatWeight(currentOrderWeight),
       subValue: `/ ${formatWeight(summary.deliveredTonnage)} ${ton}`,
     },
