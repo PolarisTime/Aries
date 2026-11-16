@@ -754,6 +754,7 @@ function SheetHeader({
   readOnly = false,
   columnSettingsSlot,
   spotUpdatedAt,
+  spotPricesFailed,
   refreshingSpotPrices,
   onRefreshSpotPrices,
 }: {
@@ -778,6 +779,8 @@ function SheetHeader({
   columnSettingsSlot: React.ReactNode
   /** 现货价实时派生：最新修改时间 + 刷新入口（替代原来的手动「导入」）。 */
   spotUpdatedAt?: string
+  /** 现货价查询失败：工具栏要明确告知「当前为快照」，并给出重试入口。 */
+  spotPricesFailed: boolean
   refreshingSpotPrices: boolean
   onRefreshSpotPrices: () => void
 }) {
@@ -809,6 +812,7 @@ function SheetHeader({
         selectedCount={selectedCount}
         onRemoveSelected={onRemoveSelected}
         spotUpdatedAt={spotUpdatedAt}
+        spotPricesFailed={spotPricesFailed}
         refreshingSpotPrices={refreshingSpotPrices}
         onRefreshSpotPrices={onRefreshSpotPrices}
         allowHrb400eFallback={allowHrb400eFallback}
@@ -991,6 +995,7 @@ function SheetActionRow({
   selectedCount,
   onRemoveSelected,
   spotUpdatedAt,
+  spotPricesFailed,
   refreshingSpotPrices,
   onRefreshSpotPrices,
   allowHrb400eFallback,
@@ -1009,6 +1014,8 @@ function SheetActionRow({
   onRemoveSelected: () => void
   /** 本批现货价里最新的修改时间（供应商价格表条目时间）；缺省表示还没取到。 */
   spotUpdatedAt?: string
+  /** 现货价查询失败：明确告知「当前为快照」并给出重试入口。 */
+  spotPricesFailed: boolean
   refreshingSpotPrices: boolean
   onRefreshSpotPrices: () => void
   allowHrb400eFallback: boolean
@@ -1053,6 +1060,26 @@ function SheetActionRow({
       >
         {t('priceCompare.sheet.refreshSpotPrices')}
       </Button>
+      {/*
+       * 现货价查询失败：价格会回退到单据里的快照值（`liveInputs` 用 sheet.inputs），
+       * 界面看起来"一切正常"，用户不会知道价格其实没刷新。所以失败必须在工具栏说清
+       * 「当前为快照」并给一次性重试入口，而不是只依赖 toast / 控制台。
+       *
+       * role="status" 让读屏在失败发生时念出来；重试按钮保持键盘可达（antd Button 原生）。
+       * 文案 key 由 Lead 统一补 zh/en，本分支先用 defaultValue 兜底，避免界面露出原始 key。
+       */}
+      {spotPricesFailed ? (
+        <Flex align="center" gap={4} className="price-compare-spot-error">
+          <Text type="warning" role="status">
+            {t('priceCompare.sheet.spotPricesFailed', {
+              defaultValue: '现货价获取失败，当前为快照',
+            })}
+          </Text>
+          <Button size="small" onClick={onRefreshSpotPrices}>
+            {t('priceCompare.sheet.spotPricesRetry', { defaultValue: '重试' })}
+          </Button>
+        </Flex>
+      ) : null}
       {onToggleHrb400eFallback ? (
         <Tooltip title={t('priceCompare.sheet.hrb400eFallbackHint')}>
           <Button
@@ -1252,20 +1279,42 @@ export function SheetPanel(props: Props) {
     [liveInputs, sheet],
   )
   /**
-   * 「现货价修改时间」：取本次派生用到的报价里最新的那个时间。
+   * 「现货价修改时间」：只统计**本批次实际用到**的报价。
    *
    * <p>供应商价格表按条目记 updated_at（V217）；一格一个时间太碎，这里聚合到"整批价
    * 最新是什么时候改的"，用户据此判断要不要让供应商重新报价。</p>
+   *
+   * <p>聚合口径必须限定在**已有格子命中的报价**上：`importLowestQuotes` 命中某格时会把
+   * 该条报价的 `updatedAt` 写进单元格（`spotUpdatedAt`），因此这里只遍历派生 `liveInputs`
+   * 即可。价格表里其它品牌/其它商品、以及没被任何行用到的报价（例如不在本单范围、
+   * 或仅作为代取候选但最终没代取的 HRB400E）都不参与 —— 否则一个无关报价的修改时间
+   * 会让用户误以为本单价格已经刷新过。</p>
    */
   const spotUpdatedAt = useMemo(() => {
     let latest: string | undefined
-    for (const quote of lowestQuotesQuery.data ?? []) {
-      if (quote.updatedAt && (!latest || quote.updatedAt > latest)) {
-        latest = quote.updatedAt
+    for (const input of Object.values(liveInputs)) {
+      const updatedAt = input?.spotUpdatedAt
+      if (updatedAt && (!latest || updatedAt > latest)) {
+        latest = updatedAt
       }
     }
     return latest
-  }, [lowestQuotesQuery.data])
+  }, [liveInputs])
+
+  /**
+   * 「刷新现货价」按钮的转圈只跟**手动**刷新走。
+   *
+   * <p>`lowestQuotesQuery.isFetching` 在 60s 轮询、窗口重新聚焦、网络重连时都会变 true；
+   * 直接拿它当 loading 会让按钮在后台上定时闪一下，看起来像有人在点。这里单独跟踪一次
+   * 手动刷新，后台刷新不打扰用户。</p>
+   */
+  const [refreshingSpotPrices, setRefreshingSpotPrices] = useState(false)
+  const { refetch: refetchLowestQuotes } = lowestQuotesQuery
+  const handleRefreshSpotPrices = useCallback(async () => {
+    setRefreshingSpotPrices(true)
+    await refetchLowestQuotes()
+    setRefreshingSpotPrices(false)
+  }, [refetchLowestQuotes])
 
   // 单元格只读取数与行级写入动作抽到 use-sheet-panel-inputs.ts:
   // 现货价/供应商不再有手工写入动作(唯一来源是供应商价格表实时派生)。
@@ -1413,8 +1462,11 @@ export function SheetPanel(props: Props) {
         onToggleHrb400eFallback={onToggleHrb400eFallback}
         readOnly={readOnly}
         spotUpdatedAt={spotUpdatedAt}
-        refreshingSpotPrices={lowestQuotesQuery.isFetching}
-        onRefreshSpotPrices={() => void lowestQuotesQuery.refetch()}
+        // 用 `error != null` 而不是 `isError`：初次取数失败与「已取到数据后轮询/手动刷新失败」
+        // 都要提示，否则屏幕上留着上一轮价格、用户完全不知道这次没取到新价。
+        spotPricesFailed={lowestQuotesQuery.error != null}
+        refreshingSpotPrices={refreshingSpotPrices}
+        onRefreshSpotPrices={() => void handleRefreshSpotPrices()}
         columnSettingsSlot={
           <ColumnSettingsButton
             hideRemark={hideRemark}

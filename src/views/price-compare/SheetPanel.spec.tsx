@@ -1329,4 +1329,117 @@ describe('SheetPanel 现货价实时派生', () => {
       false,
     )
   })
+
+  it('现货价查询失败时工具栏提示当前为快照, 并可重试重新取数', async () => {
+    lowestQuotesMock.mockRejectedValue(new Error('现货价查询失败'))
+    renderPanel(makeSheet(), [rowAt('r1', 12)])
+
+    await waitFor(() =>
+      (container.textContent ?? '').includes('现货价获取失败'),
+    )
+    // 价格会静默回退到单据快照值，因此失败必须在工具栏明确说清"当前为快照"
+    expect(container.textContent).toContain('现货价获取失败，当前为快照')
+    // 读屏要能念出来：失败文案在 role="status" 里
+    const status = container.querySelector('[role="status"]')
+    expect(status?.textContent).toContain('现货价获取失败')
+
+    // antd 会在两个汉字之间插入空格（「重 试」），比对时去掉空白
+    const retry = [...container.querySelectorAll('button')].find((button) =>
+      (button.textContent ?? '').replace(/\s+/g, '').includes('重试'),
+    )
+    expect(retry).toBeTruthy()
+
+    lowestQuotesMock.mockReset()
+    lowestQuotesMock.mockResolvedValue([quote('中天', 12, 3420)])
+    act(() => retry?.click())
+    await waitFor(() => (spotOf('r1')?.textContent ?? '').includes('3420'))
+    // 重试成功后提示消失
+    expect(container.textContent).not.toContain('现货价获取失败')
+  })
+
+  it('后台刷新(轮询/聚焦)不转圈, 只有手动刷新才转圈', async () => {
+    let resolveQuotes: (quotes: unknown[]) => void = () => {}
+    lowestQuotesMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveQuotes = resolve
+        }),
+    )
+    renderPanel(makeSheet(), [rowAt('r1', 12)], { chrome: true })
+
+    const refreshButton = () =>
+      [...container.querySelectorAll('button')].find((button) =>
+        (button.textContent ?? '').includes('刷新现货价'),
+      )
+
+    // 首次查询仍在飞（isFetching=true）：按钮不得转圈，否则用户以为有人在点
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(refreshButton()?.querySelector('.ant-btn-loading-icon')).toBeNull()
+
+    resolveQuotes([])
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+
+    // 手动点击：按钮进入 loading
+    act(() => refreshButton()?.click())
+    expect(
+      refreshButton()?.querySelector('.ant-btn-loading-icon'),
+    ).not.toBeNull()
+
+    resolveQuotes([])
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(refreshButton()?.querySelector('.ant-btn-loading-icon')).toBeNull()
+  })
+
+  it('「现货价更新于」只统计本批次用到的报价, 忽略无关报价的更新时间', async () => {
+    lowestQuotesMock.mockResolvedValue([
+      // 本批次命中：中天 12（updatedAt 默认 2026-11-14T03:20:00Z）
+      quote('中天', 12, 3420),
+      // 本批次用不到：表格没有杭钢列，且修改时间更新 —— 不能拿来当"整批价更新时间"
+      quote('杭钢', 12, 3450, { updatedAt: '2026-11-16T09:00:00Z' }),
+    ])
+    renderPanel(makeSheet(), [rowAt('r1', 12)])
+    await waitFor(() => (spotOf('r1')?.textContent ?? '').includes('3420'))
+
+    const updatedAt = container.querySelector('.price-compare-spot-updated-at')
+    expect(updatedAt?.textContent ?? '').toContain('11-14')
+    expect(updatedAt?.textContent ?? '').not.toContain('11-16')
+  })
+
+  it('已取到价格后刷新失败也要提示当前为快照(轮询/手动刷新失败)', async () => {
+    lowestQuotesMock.mockResolvedValue([quote('中天', 12, 3420)])
+    renderPanel(makeSheet(), [rowAt('r1', 12)])
+    await waitFor(() => (spotOf('r1')?.textContent ?? '').includes('3420'))
+    expect(container.textContent).not.toContain('现货价获取失败')
+
+    // 后台轮询/手动刷新失败：data 仍在（react-query 保留上一轮），但必须告知用户没刷新成功
+    lowestQuotesMock.mockReset()
+    lowestQuotesMock.mockRejectedValue(new Error('network down'))
+    const refreshButton = [...container.querySelectorAll('button')].find(
+      (button) => (button.textContent ?? '').includes('刷新现货价'),
+    )
+    act(() => refreshButton?.click())
+    await waitFor(() =>
+      (container.textContent ?? '').includes('现货价获取失败'),
+    )
+    expect(container.textContent).toContain('现货价获取失败，当前为快照')
+    // 旧价仍在屏幕上（快照语义），失败提示与旧价并存
+    expect(spotOf('r1')?.textContent).toContain('3420')
+  })
+
+  it('本批次没有命中任何报价时不显示「现货价更新于」', async () => {
+    lowestQuotesMock.mockResolvedValue([
+      quote('杭钢', 12, 3450, { updatedAt: '2026-11-16T09:00:00Z' }),
+    ])
+    renderPanel(makeSheet(), [rowAt('r1', 12)])
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 40))
+    })
+    expect(container.querySelector('.price-compare-spot-updated-at')).toBeNull()
+  })
 })

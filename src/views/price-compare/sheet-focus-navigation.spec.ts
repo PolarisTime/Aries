@@ -76,6 +76,33 @@ describe('表格焦点移动(sheet-focus-navigation)', () => {
     expect(document.activeElement).toBe(document.body)
   })
 
+  it('锁定行(disabled 输入框)被跳过: Tab 不会卡在锁定行', () => {
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      `<input data-ton="r1" value="r1" />
+       <input data-ton="r2" value="r2" disabled />
+       <input data-ton="r3" value="r3" />`,
+    )
+    expect(moveFocusTon(rows)('r1', 1)).toBe(true)
+    expect(document.activeElement).toBe(
+      document.querySelector('input[data-ton="r3"]'),
+    )
+  })
+
+  it('后面只剩锁定行时返回 false, 放行浏览器默认 Tab(不制造键盘陷阱)', () => {
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      `<input data-ton="r1" value="r1" />
+       <input data-ton="r2" value="r2" disabled />`,
+    )
+    const first = document.querySelector<HTMLInputElement>(
+      'input[data-ton="r1"]',
+    )
+    first?.focus()
+    expect(moveFocusTon(rows)('r1', 1)).toBe(false)
+    expect(document.activeElement).toBe(first)
+  })
+
   it('只有可聚焦行参与移动: 从末行向上越过隔断落到首行', () => {
     renderInputs(['r1', 'r3'])
     expect(

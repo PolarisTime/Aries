@@ -34,13 +34,20 @@ export function moveFocusBy(
   return false
 }
 
-/** 吨位列内的焦点移动（选择器 `input[data-ton="行"]`）。 */
+/**
+ * 吨位列内的焦点移动（选择器 `input[data-ton="行"]:not(:disabled)`）。
+ *
+ * <p>**`:not(:disabled)` 是锁定行的关键**：锁定/只读行的吨位输入框带 `disabled`，
+ * 若选择器不排除它，`focus()` 会落在不可聚焦元素上（浏览器静默忽略），但函数仍返回
+ * `true` —— 调用方据此 `preventDefault`，Tab 就卡在锁定行上，整列变成键盘陷阱。
+ * 排除后循环会继续找下一行，锁定行被正常跳过。</p>
+ */
 export function moveFocusTon(orderedRows: PriceRow[]) {
   return (rowId: string, delta: number) =>
     moveFocusBy(
       orderedRows,
       rowId,
       delta,
-      (row) => `input[data-ton="${row.id}"]`,
+      (row) => `input[data-ton="${row.id}"]:not(:disabled)`,
     )
 }
