@@ -7,7 +7,11 @@ import '@/i18n'
 import i18n from 'i18next'
 import type { SupplierPriceGrid } from '@/api/market/supplier-price-lists'
 import { quoteRowKey } from './supplier-price-list-model'
-import { readDrafts, writeDrafts } from './supplier-quote-view-prefs'
+import {
+  readDrafts,
+  writeDrafts,
+  writeSupplierTabs,
+} from './supplier-quote-view-prefs'
 
 const priceApi = vi.hoisted(() => ({
   fetchSpecRows: vi.fn(),
@@ -94,6 +98,15 @@ const SUPPLIER = {
   brands: ['中天'],
   value: 's1',
   label: '浙江铁都钢材有限公司',
+}
+
+const SUPPLIER2 = {
+  id: 's2',
+  supplierCode: 'S002',
+  supplierName: '江苏永钢集团有限公司',
+  brands: ['中天'],
+  value: 's2',
+  label: '江苏永钢集团有限公司',
 }
 
 const COLUMN = {
@@ -794,32 +807,58 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
   })
 
   /*
-   * 用户反馈（2026-11-16）：「放弃并切换」之后草稿没有真正删掉 —— 只清了内存，
-   * localStorage 还留着，切回该供应商时又提示「已恢复草稿」。
+   * P1-1：关闭页签前先保存；只有保存失败才弹「重试 / 放弃 / 取消」，
+   * 且关闭页签使用独立文案（closeTab* key 由 task-18 统一补）。
+   * S14：选「放弃」必须同时清掉 localStorage 草稿，切回时不再提示恢复。
    */
-  it('「放弃草稿并切换」同时清掉本地存储', async () => {
+  it('关闭页签前先保存：失败才弹三选一，放弃会清掉本地草稿', async () => {
     writeDrafts('s1', { 中天: { [quoteRowKey(ROW_A)]: 3290 } })
+    // 4xx：不可自动修复，必须先让用户决定
+    priceApi.saveSupplierPriceColumnItems.mockRejectedValue(
+      Object.assign(new Error('价格不能为负'), { status: 422 }),
+    )
     await render()
     await waitFor(() => Boolean(document.querySelector('.ant-tabs-tab-remove')))
 
-    // 关闭当前供应商页签 = 放弃草稿并切走（confirm 是 mock，手动执行 onOk）
     await act(async () => {
       document
         .querySelector<HTMLElement>('.ant-tabs-tab-remove')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 50))
     })
-    const confirmArgs = feedback.modal.confirm.mock.calls[0]?.[0] as
-      | { onOk?: () => void }
-      | undefined
-    expect(confirmArgs?.onOk).toBeTypeOf('function')
+
+    // 关闭页签独立文案（不用「切换供应商会丢弃…」）
+    expect(document.body.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.closeTabDiscardTitle'),
+    )
+    const dialog = document.querySelector('.ant-modal')
+    const buttons = Array.from(
+      dialog?.querySelectorAll<HTMLButtonElement>('button') ?? [],
+    )
+    // antd 会给两个汉字的按钮插空格（取 消）：断言前去掉空白
+    const labels = buttons
+      .map((button) => button.textContent?.replace(/\s/g, ''))
+      .join('|')
+    expect(labels).toContain(i18n.t('common.cancel').replace(/\s/g, ''))
+    expect(labels).toContain(
+      i18n.t('priceCompare.supplierPrice.closeTabDiscardOk').replace(/\s/g, ''),
+    )
+    expect(labels).toContain(
+      i18n.t('priceCompare.supplierPrice.retry').replace(/\s/g, ''),
+    )
+
+    const discard = buttons.find((button) =>
+      button.textContent?.includes(
+        i18n.t('priceCompare.supplierPrice.closeTabDiscardOk'),
+      ),
+    )
     await act(async () => {
-      confirmArgs?.onOk?.()
+      discard?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
 
     expect(readDrafts('s1')).toEqual({})
-  })
+  }, 10000)
 
   /*
    * 键盘把焦点移到另一格时，选区必须跟着走。
@@ -1269,5 +1308,109 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     })
     await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
     expect(cellInput('中天 HRB400E 12 9米')?.disabled).toBe(false)
+  }, 10000)
+
+  /*
+   * P1-2：保存状态常驻（idle 也不卸载）并按品牌汇总 dirty → saved。
+   */
+  it('保存状态常驻并按品牌汇总：idle → 未保存 → 已保存', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    const statusNode = () =>
+      container.querySelector('.price-compare-save-status')
+    expect(statusNode()).not.toBeNull()
+    expect(statusNode()?.getAttribute('role')).toBe('status')
+    expect(statusNode()?.textContent).toContain(
+      i18n.t('priceCompare.saveStatus.idle'),
+    )
+
+    await typePrice('中天 HRB400E 12 9米', '3290')
+    await pressKey(cellInput('中天 HRB400E 12 9米'), 'Enter')
+    expect(statusNode()?.textContent).toContain(
+      i18n.t('priceCompare.saveStatus.dirty'),
+    )
+
+    await flushAutosave()
+    await waitFor(() =>
+      Boolean(
+        statusNode()?.textContent?.includes(
+          i18n.t('priceCompare.saveStatus.saved'),
+        ),
+      ),
+    )
+  }, 10000)
+
+  /*
+   * P1-2：失败时状态区必须给出品牌原因与重试入口，不能只靠全局 toast。
+   */
+  it('保存失败时状态区显示品牌与重试入口', async () => {
+    priceApi.saveSupplierPriceColumnItems.mockRejectedValue(
+      Object.assign(new Error('价格不能为负'), { status: 422 }),
+    )
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+
+    await typePrice('中天 HRB400E 12 9米', '3290')
+    await pressKey(cellInput('中天 HRB400E 12 9米'), 'Enter')
+    await flushAutosave()
+
+    const statusNode = container.querySelector('.price-compare-save-status')
+    expect(statusNode?.textContent).toContain(
+      i18n.t('priceCompare.saveStatus.error'),
+    )
+    expect(statusNode?.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.saveFailedNames', { names: '中天' }),
+    )
+
+    const retry = Array.from(
+      statusNode?.querySelectorAll<HTMLButtonElement>('button') ?? [],
+    ).find((button) =>
+      button.textContent?.includes(i18n.t('priceCompare.saveStatus.retry')),
+    )
+    const callsBefore = priceApi.saveSupplierPriceColumnItems.mock.calls.length
+    await act(async () => {
+      retry?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(
+      priceApi.saveSupplierPriceColumnItems.mock.calls.length,
+    ).toBeGreaterThan(callsBefore)
+  }, 10000)
+
+  /*
+   * P1-1：切换供应商前先保存；保存成功直接切换，不再无条件弹「放弃草稿」。
+   */
+  it('切换供应商前先保存：成功即直接切换，不弹放弃确认', async () => {
+    supplierApi.fetchSupplierOptions.mockResolvedValue([SUPPLIER, SUPPLIER2])
+    writeSupplierTabs({
+      openSupplierIds: ['s1', 's2'],
+      activeSupplierId: 's1',
+    })
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+
+    await typePrice('中天 HRB400E 12 9米', '3290')
+    await pressKey(cellInput('中天 HRB400E 12 9米'), 'Enter')
+
+    const targetTab = Array.from(
+      container.querySelectorAll<HTMLElement>('.ant-tabs-tab'),
+    ).find((tab) => tab.textContent?.includes(SUPPLIER2.label))
+    expect(targetTab).toBeDefined()
+    await act(async () => {
+      targetTab?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalled()
+    expect(document.body.textContent).not.toContain(
+      i18n.t('priceCompare.supplierPrice.discardTitle'),
+    )
+    await waitFor(() =>
+      Boolean(
+        container
+          .querySelector('.ant-tabs-tab-active')
+          ?.textContent?.includes(SUPPLIER2.label),
+      ),
+    )
   }, 10000)
 })

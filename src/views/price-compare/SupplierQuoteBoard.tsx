@@ -43,10 +43,14 @@ import {
 import { fetchSupplierOptions } from '@/api/master/supplier-options'
 import { ContextMenu } from '@/components/ContextMenu'
 import { EmptyState } from '@/components/EmptyState'
+import {
+  PriceCompareSaveStatus,
+  type PriceCompareSaveStatusValue,
+} from '@/components/PriceCompareSaveStatus'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useHasPermission } from '@/hooks/usePermission'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
-import { message, modal, notification } from '@/utils/antd-app'
+import { message, notification } from '@/utils/antd-app'
 import { CollabStatusBar } from './collab/CollabStatusBar'
 import { isCollabFeatureEnabled } from './collab/collab-config'
 import {
@@ -124,6 +128,9 @@ import './supplier-price.css'
 
 /** 一列的保存状态：安静地告诉用户「存了没」，不需要点保存按钮。 */
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
+
+/** 单品牌保存结果：切换/关闭供应商前据此决定放行、提示还是弹三选一。 */
+type BrandSaveOutcome = 'saved' | 'skipped' | 'failed'
 
 /** 自动保存的防抖时长：打字停顿这么久就落库。 */
 const AUTOSAVE_DELAY_MS = 800
@@ -703,6 +710,14 @@ export function SupplierQuoteBoard() {
   /** 批量调价弹窗。 */
   const [batchOpen, setBatchOpen] = useState(false)
   const [batchText, setBatchText] = useState('')
+  /**
+   * 切换 / 关闭供应商前的三选一弹窗：只有「草稿保存失败」时才会出现。
+   * 保存成功 / 无需保存时直接放行，不再像旧实现那样一律弹「放弃草稿」确认。
+   */
+  const [pendingLeave, setPendingLeave] = useState<{
+    kind: 'switch' | 'close'
+    run: () => void
+  } | null>(null)
   /** 批量操作令牌：自增后让所有格子丢掉正在输入的算式文本（见 {@link SheetCell}）。 */
   const [bulkResetToken, setBulkResetToken] = useState(0)
 
@@ -1061,6 +1076,8 @@ export function SupplierQuoteBoard() {
   const draftsRef = useRef<Record<string, BrandDraft>>({})
   const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const savingRef = useRef(new Set<string>())
+  /** 品牌 → 正在进行的保存 Promise：切换前保存与自动保存同时触发时复用同一次请求。 */
+  const savingPromiseRef = useRef(new Map<string, Promise<BrandSaveOutcome>>())
   /** 品牌 → 已自动重试次数（S6：只用 5xx/网络错误推进，4xx 清零）。 */
   const saveRetryRef = useRef(new Map<string, number>())
   const supplierIdRef = useRef(supplierId)
@@ -1242,19 +1259,20 @@ export function SupplierQuoteBoard() {
    * 「可见行 ∪ 服务端已有条目」，所以商品资料里已停用的历史行不会被清掉；这里传的是
    * **全部商品行**（不是搜索过滤后的行），否则搜索会把其它行的价格删掉。</p>
    */
-  const saveBrand = async (brandName: string) => {
+  /** 真正执行一次保存；返回值供「切换/关闭供应商前保存」判断是否放行。 */
+  const runSaveBrand = async (brandName: string): Promise<BrandSaveOutcome> => {
     const currentSupplierId = supplierIdRef.current
-    if (!currentSupplierId || savingRef.current.has(brandName)) return
+    if (!currentSupplierId) return 'skipped'
     // 该品牌已进协作：值和落库由边车物化器负责，前端不能再整列 PUT（两写者会互相覆盖）
-    if (collabListIdOf(brandName)) return
+    if (collabListIdOf(brandName)) return 'skipped'
     const snapshot = draftsRef.current[brandName]
-    if (draftCount(snapshot) === 0) return
+    if (draftCount(snapshot) === 0) return 'skipped'
 
     /*
      * 该品牌的价格表还没加载成功：此时无法判断「有没有列」，先不保存、保留草稿，
      * 避免把一次「还没读到」误判成「未建列」而 addSupplierPriceColumn（S13）。
      */
-    if (gridReadyByBrandRef.current.get(brandName) !== true) return
+    if (gridReadyByBrandRef.current.get(brandName) !== true) return 'failed'
 
     const existing = byBrandRef.current.columns.get(brandName) ?? null
     const serverCells = byBrandRef.current.cells.get(brandName) ?? new Map()
@@ -1288,10 +1306,10 @@ export function SupplierQuoteBoard() {
         setSaveState((current) => ({ ...current, [brandName]: 'saved' }))
         savedOk = true
         saveRetryRef.current.delete(brandName)
-        return
+        return 'saved'
       }
       // target 一定非空（刚创建或本来就存在）；这里的守卫只用于满足类型收窄
-      if (!target) return
+      if (!target) return 'failed'
       const saved = await saveSupplierPriceColumnItems(
         target.listId,
         target.version,
@@ -1352,6 +1370,7 @@ export function SupplierQuoteBoard() {
       )
       savedOk = true
       saveRetryRef.current.delete(brandName)
+      return 'saved'
     } catch (error) {
       // 失败保留草稿：用户不必重敲，点列头圆点即可重试
       setSaveState((current) => ({ ...current, [brandName]: 'error' }))
@@ -1372,6 +1391,7 @@ export function SupplierQuoteBoard() {
       } else {
         saveRetryRef.current.delete(brandName)
       }
+      return 'failed'
     } finally {
       savingRef.current.delete(brandName)
       /*
@@ -1383,6 +1403,20 @@ export function SupplierQuoteBoard() {
         scheduleSave(brandName)
       }
     }
+  }
+
+  /**
+   * 保存一个品牌。同品牌已有 in-flight 时复用同一个 Promise，避免「切换前保存」与
+   * 800ms 自动保存同时触发两次整列 PUT；返回值用于决定是否允许离开当前供应商。
+   */
+  const saveBrand = (brandName: string): Promise<BrandSaveOutcome> => {
+    const inFlight = savingPromiseRef.current.get(brandName)
+    if (inFlight) return inFlight
+    const promise = runSaveBrand(brandName)
+    savingPromiseRef.current.set(brandName, promise)
+    return promise.finally(() => {
+      savingPromiseRef.current.delete(brandName)
+    })
   }
 
   /**
@@ -1525,26 +1559,49 @@ export function SupplierQuoteBoard() {
     setBatchText('')
   }
 
-  /** 有未保存改动时先确认：切标签页会丢弃草稿，不能静默丢。 */
-  const confirmDiscardIfDirty = (run: () => void) => {
-    if (Object.keys(drafts).length === 0) {
-      run()
-      return
-    }
-    modal.confirm({
-      title: t('priceCompare.supplierPrice.discardTitle'),
-      content: t('priceCompare.supplierPrice.discardContent'),
-      okText: t('priceCompare.supplierPrice.discardOk'),
-      okButtonProps: { danger: true },
-      cancelText: t('common.cancel'),
-      onOk: run,
-    })
+  /** 把当前供应商所有品牌草稿保存完；返回是否全部成功（skipped = 无需保存，视为成功）。 */
+  const saveDraftsBeforeLeave = async (): Promise<boolean> => {
+    const brands = Object.keys(draftsRef.current).filter(
+      (brandName) => draftCount(draftsRef.current[brandName]) > 0,
+    )
+    if (brands.length === 0) return true
+    const outcomes = await Promise.all(
+      brands.map((brandName) => saveBrand(brandName)),
+    )
+    return outcomes.every((outcome) => outcome !== 'failed')
+  }
+
+  /**
+   * 切换 / 关闭供应商前先保存（P1-1）。
+   *
+   * <p>成功或无需保存 → 直接执行离开动作；仍有失败 → 弹「重试 / 放弃 / 取消」，
+   * 不再静默丢草稿，也不再像旧实现那样无论有没有改动都先弹一次「放弃草稿」。</p>
+   */
+  const requestLeave = (kind: 'switch' | 'close', run: () => void) => {
+    void (async () => {
+      const saved = await saveDraftsBeforeLeave()
+      if (saved) {
+        run()
+        return
+      }
+      setPendingLeave({ kind, run })
+    })()
+  }
+
+  /** 弹窗里的重试：再存一轮，全部成功才放行；仍失败则保持弹窗。 */
+  const retryPendingLeave = async () => {
+    const pending = pendingLeave
+    if (!pending) return
+    const saved = await saveDraftsBeforeLeave()
+    if (!saved) return
+    pending.run()
+    setPendingLeave(null)
   }
 
   /** 切换供应商标签：有未保存草稿时先确认（切页会丢弃草稿）。 */
   const switchSupplierTab = (nextSupplierId: string) => {
     if (nextSupplierId === supplierId) return
-    confirmDiscardIfDirty(() => {
+    requestLeave('switch', () => {
       resetBoardState()
       setActiveSupplierId(nextSupplierId)
     })
@@ -1569,7 +1626,8 @@ export function SupplierQuoteBoard() {
       resetBoardState()
       setActiveSupplierId(nextActive)
     }
-    if (closingId === activeSupplierId) confirmDiscardIfDirty(close)
+    // 只有关闭当前供应商才需要先保存；关后台页签不涉及本屏草稿
+    if (closingId === activeSupplierId) requestLeave('close', close)
     else close()
   }
 
@@ -2940,8 +2998,94 @@ export function SupplierQuoteBoard() {
    * 页签与内容面板连成一体（editable-card 的选中页签不会再像浮空胶囊），
    * 切换供应商时由 antd 负责卸载/挂载面板。
    */
+  const failedBrandNames = brandNames.filter(
+    (brandName) => saveState[brandName] === 'error',
+  )
+  /** 供应商报价表的保存状态：按品牌汇总，优先级 saving > error > dirty > saved。 */
+  const aggregateSaveStatus: PriceCompareSaveStatusValue = (() => {
+    let status: PriceCompareSaveStatusValue = 'idle'
+    let hasSaved = false
+    for (const brandName of brandNames) {
+      const brandState = saveState[brandName]
+      if (brandState === 'saving') return 'saving'
+      if (brandState === 'error') status = 'error'
+      if (draftCount(drafts[brandName]) > 0 && status !== 'error') {
+        status = 'dirty'
+      }
+      if (brandState === 'saved') hasSaved = true
+    }
+    if (status === 'idle' && hasSaved) return 'saved'
+    return status
+  })()
+  const aggregateSaveDetail =
+    aggregateSaveStatus === 'error' && failedBrandNames.length > 0
+      ? t('priceCompare.supplierPrice.saveFailedNames', {
+          names: failedBrandNames.join('、'),
+        })
+      : undefined
+  const retryFailedBrands = () => {
+    for (const brandName of failedBrandNames) {
+      saveRetryRef.current.delete(brandName)
+      void saveBrand(brandName)
+    }
+  }
+
   const boardContent = (
     <>
+      {/*
+       * 切换 / 关闭供应商前的三选一：只有草稿保存失败才会出现。
+       * 关闭页签用独立文案（closeTab*），不与「切换供应商会丢弃…」混用。
+       */}
+      <Modal
+        cancelText={t('common.cancel')}
+        footer={[
+          <Button key="cancel" onClick={() => setPendingLeave(null)}>
+            {t('common.cancel')}
+          </Button>,
+          <Button
+            danger
+            key="discard"
+            onClick={() => {
+              pendingLeave?.run()
+              setPendingLeave(null)
+            }}
+          >
+            {pendingLeave?.kind === 'close'
+              ? t('priceCompare.supplierPrice.closeTabDiscardOk')
+              : t('priceCompare.supplierPrice.discardOk')}
+          </Button>,
+          <Button
+            key="retry"
+            onClick={() => void retryPendingLeave()}
+            type="primary"
+          >
+            {t('priceCompare.supplierPrice.retry')}
+          </Button>,
+        ]}
+        onCancel={() => setPendingLeave(null)}
+        open={Boolean(pendingLeave)}
+        title={
+          pendingLeave?.kind === 'close'
+            ? t('priceCompare.supplierPrice.closeTabDiscardTitle')
+            : t('priceCompare.supplierPrice.discardTitle')
+        }
+      >
+        <Typography.Text>
+          {pendingLeave?.kind === 'close'
+            ? t('priceCompare.supplierPrice.closeTabDiscardContent')
+            : t('priceCompare.supplierPrice.discardContent')}
+        </Typography.Text>
+        {failedBrandNames.length > 0 ? (
+          <Typography.Text
+            style={{ display: 'block', marginTop: 8 }}
+            type="secondary"
+          >
+            {t('priceCompare.supplierPrice.saveFailedNames', {
+              names: failedBrandNames.join('、'),
+            })}
+          </Typography.Text>
+        ) : null}
+      </Modal>
       {/*
        * 批量调价：一个输入框，两套语义（以运算符开头 = 相对调整，否则 = 设为该价）。
        * 不合法时**不关弹窗**，让用户就地改；调完/没可调的格子才关。
@@ -3067,11 +3211,20 @@ export function SupplierQuoteBoard() {
          * 未开启协作时 `CollabStatusBar` 渲染 null，页面与改动前一致。
          */
         left: (
-          <CollabStatusBar
-            peers={collab.peers}
-            state={collab.state}
-            writable={collab.writable}
-          />
+          <Flex align="center" gap={8}>
+            <CollabStatusBar
+              peers={collab.peers}
+              state={collab.state}
+              writable={collab.writable}
+            />
+            <PriceCompareSaveStatus
+              detail={aggregateSaveDetail}
+              onRetry={
+                failedBrandNames.length > 0 ? retryFailedBrands : undefined
+              }
+              status={aggregateSaveStatus}
+            />
+          </Flex>
         ),
         right: (
           <Select
