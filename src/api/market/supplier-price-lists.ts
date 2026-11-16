@@ -1,6 +1,9 @@
 import { z } from 'zod'
 import { apiDeleteNoContent, apiGet, apiPost, apiPut } from '@/api/core/client'
-import { withIdempotencyKey, withIdempotencyKeySuppressingGlobalErrors } from '@/api/core/idempotency'
+import {
+  withIdempotencyKey,
+  withIdempotencyKeySuppressingGlobalErrors,
+} from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { STATUS } from '@/constants/status-constants'
 import type { EntityId } from '@/types/entity-id'

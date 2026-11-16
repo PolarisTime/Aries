@@ -196,7 +196,9 @@ describe('SheetPanel 无障碍契约', () => {
     const pressed = [...container.querySelectorAll('button[aria-pressed]')]
     expect(pressed.length).toBe(4)
     expect(
-      pressed.filter((button) => button.getAttribute('aria-pressed') === 'true'),
+      pressed.filter(
+        (button) => button.getAttribute('aria-pressed') === 'true',
+      ),
     ).toHaveLength(3)
     expect(
       container.querySelector('label[for="price-compare-order-date"]'),
