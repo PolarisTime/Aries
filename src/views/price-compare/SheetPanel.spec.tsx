@@ -1207,7 +1207,15 @@ describe('SheetPanel 现货价实时派生', () => {
     bindAntdAppApi(null)
   })
 
-  function renderPanel(initialSheet: PriceSheet, rows: PriceRow[]) {
+  function renderPanel(
+    initialSheet: PriceSheet,
+    rows: PriceRow[],
+    overrides: {
+      chrome?: boolean
+      allowHrb400eFallback?: boolean
+      onToggleHrb400eFallback?: () => void
+    } = {},
+  ) {
     act(() => {
       root.render(
         createElement(
@@ -1226,8 +1234,10 @@ describe('SheetPanel 现货价实时派生', () => {
             onReorderBrands: () => {},
             periods: [],
             onRefresh: () => {},
-            chrome: false,
+            chrome: overrides.chrome ?? false,
             spotRef: { current: null },
+            allowHrb400eFallback: overrides.allowHrb400eFallback ?? false,
+            onToggleHrb400eFallback: overrides.onToggleHrb400eFallback,
           }),
         ),
       )
@@ -1246,6 +1256,22 @@ describe('SheetPanel 现货价实时派生', () => {
       })
     }
   }
+
+  it('工具栏「填入 HRB400E 价格」按钮按配置切换文案并回传', () => {
+    const onToggle = vi.fn()
+    renderPanel(makeSheet(), [rowAt('r1', 12)], {
+      chrome: true,
+      allowHrb400eFallback: false,
+      onToggleHrb400eFallback: onToggle,
+    })
+    const button = () =>
+      [...container.querySelectorAll('button')].find((item) =>
+        (item.textContent ?? '').includes('HRB400E'),
+      )
+    expect(button()?.textContent).toBe('填入 HRB400E 价格')
+    act(() => button()?.click())
+    expect(onToggle).toHaveBeenCalledTimes(1)
+  })
 
   it('现货价与供应商来自供应商价格表，且悬停显示修改时间', async () => {
     lowestQuotesMock.mockResolvedValue([quote('中天', 12, 3420)])
