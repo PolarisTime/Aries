@@ -7,6 +7,7 @@ import {
   Input,
   Modal,
   Select,
+  Skeleton,
   Table,
   Tabs,
   Tooltip,
@@ -29,6 +30,7 @@ import {
   useState,
 } from 'react'
 import { useTranslation } from 'react-i18next'
+import { readRequestError } from '@/api/core/request-errors'
 import {
   addSupplierPriceColumn,
   fetchSpecRows,
@@ -40,6 +42,7 @@ import {
 } from '@/api/market/supplier-price-lists'
 import { fetchSupplierOptions } from '@/api/master/supplier-options'
 import { ContextMenu } from '@/components/ContextMenu'
+import { EmptyState } from '@/components/EmptyState'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { useHasPermission } from '@/hooks/usePermission'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
@@ -124,6 +127,14 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 /** 自动保存的防抖时长：打字停顿这么久就落库。 */
 const AUTOSAVE_DELAY_MS = 800
+
+/**
+ * 保存失败后的重试退避（毫秒）：只在网络错误 / 5xx 时使用。
+ *
+ * <p>依次 2s → 4s → 8s → 16s → 30s，最多 5 次；4xx（409/412/422）是用户可修复的错误，
+ * 自动重试没有意义（S6：负价会让整列保存永久失败，旧实现每 800ms 重发一次，10 秒 12 次）。</p>
+ */
+const SAVE_RETRY_DELAYS_MS = [2000, 4000, 8000, 16000, 30000] as const
 
 /**
  * 列宽（px）。
@@ -358,6 +369,14 @@ function SheetCell({
    * 同一个错误算式会连弹两次提示、成功时也会重复提交一次。
    */
   const handledTextRef = useRef<string | null>(null)
+  /**
+   * 本地文本的同步镜像。
+   *
+   * <p>`setText` 是异步的，而 Tab 提交会**同步**移动焦点、立刻触发旧格的 blur：
+   * 只读 state 会让同一次编辑被提交两次（多推一条重复历史，Ctrl+Z 一次看不出变化，S9）。
+   * 提交/放弃时先清这个 ref 再 `setText(null)`，blur 再来时就是空操作。</p>
+   */
+  const pendingTextRef = useRef<string | null>(null)
   /*
    * 错误反馈：算式求值失败时给这一格红色闪一下（同时父级已弹 message.warning）。
    *
@@ -383,6 +402,7 @@ function SheetCell({
       }
     }
   }, [])
+
   /*
    * 批量操作（清空 / 填充 / 批量调价）改的是外面这格的值：本格若还留着半截算式文本，
    * 界面就会显示一个已经不成立的值。用渲染期状态校正（React 文档的
@@ -391,7 +411,7 @@ function SheetCell({
   if (seenResetToken !== resetToken) {
     setSeenResetToken(resetToken)
     setText(null)
-    // 文本已清空，commitPendingFormula 会直接返回；「已处理」标记也由下一次输入/聚焦重置
+    // 文本已清空，commitEditing 会直接返回；「已处理」标记也由下一次输入/聚焦重置
   }
 
   const display = text ?? (value === null ? '' : String(value))
@@ -405,75 +425,114 @@ function SheetCell({
      * 误判成「这段文本处理过了」而静默丢掉 —— 去重只能作用于**一次编辑会话**。
      */
     handledTextRef.current = null
+    /*
+     * 输入期只更新本地文本，不逐键落草稿：逐键 onCommit 会让「一个键 = 一条历史 +
+     * 一次排保存」，撤销一次只退一个字符（S9），Esc 也失去了「恢复原值」的语义（S8）。
+     * 数字与算式统一在 Enter / Tab / ↑↓ / 失焦时提交一次。
+     */
+    pendingTextRef.current = raw
     setText(raw)
-    // 含运算符的文本要等离开格子时整体求值；普通数字逐键落草稿
-    if (!isPlainPriceText(raw)) return
-    const trimmed = raw.trim()
-    if (trimmed === '') {
-      onCommit(null)
-      return
-    }
-    const parsed = Number(trimmed)
-    // `12.`、`.` 这类半成品不提交：等用户把数字敲完
-    if (Number.isFinite(parsed)) onCommit(roundPrice(parsed))
   }
 
   /**
-   * 离开格子（blur / Tab / ↑↓）前收尾正在输入的算式。
+   * 提交当前编辑会话（一次会话只提交一次）。
    *
-   * <p>算式不能像普通数字那样逐键落草稿（`3200+` 这种半截串会被当成一次改价），也不能在
-   * 离开时静默丢掉 —— 用户敲完 `3200+50` 直接按 Tab 是常见操作。所以离开前统一整体求值：
-   * 成功落草稿并把文本换成结果，失败回退到已提交值（提示由 `onSubmitFormula` 负责，
-   * 与回车路径共用 `reportFormulaFailure` 的口径）。</p>
+   * <p>普通数字与算式走同一入口：普通数字直接落草稿；算式整体求值，失败时红色闪一下
+   * 并保留文本（Enter 路径）或回退到已提交值（失焦 / 移动路径），提示由 `onSubmitFormula`
+   * 统一负责，避免重复弹消息。</p>
+   *
+   * @param keepOnFailure 失败时是否保留文本：回车保留让用户就地改，失焦/移动则丢弃回原值
+   * @returns 是否提交成功
    */
-  const commitPendingFormula = () => {
-    if (text === null || isPlainPriceText(text)) return
-    if (handledTextRef.current === text) return
-    handledTextRef.current = text
-    if (onSubmitFormula(text) === null) flashError()
+  const commitEditing = ({
+    keepOnFailure,
+  }: {
+    keepOnFailure?: boolean
+  } = {}): boolean => {
+    // 读同步镜像而不是 state：Tab 同步移焦触发的 blur 会在 setText 生效前再次进来
+    const raw = pendingTextRef.current
+    // 镜像与 state 都为空 = 本次会话已提交/被批量操作清空：幂等返回（不再推历史）
+    if (raw === null || text === null) {
+      pendingTextRef.current = null
+      return true
+    }
+    const trimmed = raw.trim()
+    if (trimmed === '') {
+      pendingTextRef.current = null
+      setText(null)
+      // 幂等：本来就是空值时不重复写草稿（否则一次回车也会产生一条空历史 + 一次排保存）
+      if (value !== null) onCommit(null)
+      return true
+    }
+    if (isPlainPriceText(raw)) {
+      const parsed = Number(trimmed)
+      // `12.`、`.` 这类半成品：回车时留着让用户敲完；离开时丢弃回已提交值
+      if (!Number.isFinite(parsed)) {
+        flashError()
+        if (!keepOnFailure) {
+          pendingTextRef.current = null
+          setText(null)
+        }
+        return false
+      }
+      const next = roundPrice(parsed)
+      pendingTextRef.current = null
+      setText(null)
+      // 幂等：与当前已提交值相同就不重复写草稿（也不产生多余历史）
+      if (next !== value) onCommit(next)
+      return true
+    }
+    if (handledTextRef.current === raw) {
+      // 同一个失败算式已经提示过一次（回车失败后紧跟 blur）：不再重复提示
+      pendingTextRef.current = null
+      setText(null)
+      return true
+    }
+    handledTextRef.current = raw
+    if (onSubmitFormula(raw) === null) {
+      flashError()
+      if (!keepOnFailure) {
+        pendingTextRef.current = null
+        setText(null)
+      }
+      return false
+    }
+    pendingTextRef.current = null
     setText(null)
+    return true
   }
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
-      if (text !== null && !isPlainPriceText(text)) {
-        // 算式：整体求值。成功时把文本换成结果，失败时留着让用户就地改
-        event.preventDefault()
-        if (onSubmitFormula(text) !== null) {
-          setText(null)
-        } else {
-          // 已提示过一次，离开格子时不再重复报警；红色闪一下表示这一格没提交成功
-          flashError()
-          handledTextRef.current = text
-        }
-        return
-      }
-      // 普通数字沿用「回车下移一格」
-      setText(null)
-      if (onMove(1)) event.preventDefault()
+      event.preventDefault()
+      if (commitEditing({ keepOnFailure: true })) onMove(1)
       return
     }
     if (event.key === 'ArrowDown') {
-      commitPendingFormula()
+      commitEditing()
       if (onMove(1)) event.preventDefault()
       return
     }
     if (event.key === 'ArrowUp') {
-      commitPendingFormula()
+      commitEditing()
       if (onMove(-1)) event.preventDefault()
       return
     }
     if (event.key === 'Tab') {
       // Tab 由 nextCell 决定落点（行优先、跳过不存在的格子、不回环）
-      commitPendingFormula()
+      commitEditing()
       if (onTab(event.shiftKey)) event.preventDefault()
       return
     }
     if (event.key === 'Escape') {
-      // 放弃本格正在输入的算式，回到已提交值（与「离开时提交」相对的另一条路径）
-      handledTextRef.current = text
+      /*
+       * 恢复聚焦时 / 上次提交的值，焦点留在格内（S8：不再 blur，否则焦点掉到 body）。
+       * 这里只丢本地文本；`value` 仍是已提交值，display 自然回退。
+       */
+      handledTextRef.current = null
+      pendingTextRef.current = null
       setText(null)
-      event.currentTarget.blur()
+      event.preventDefault()
     }
   }
 
@@ -490,8 +549,8 @@ function SheetCell({
       size="small"
       value={display}
       onBlur={() => {
-        commitPendingFormula()
-        setText(null)
+        // 失焦 = 一次编辑会话的结束：提交一次（失败则回退到已提交值）
+        commitEditing()
         onBlurCell?.()
       }}
       onChange={handleChange}
@@ -804,6 +863,8 @@ export function SupplierQuoteBoard() {
    * 「还没读到」误判成「未建列」而去 `addSupplierPriceColumn` 新建（S13：慢网 5 秒内 4 次 POST）。</p>
    */
   const gridsReady = gridQueries.every((query) => query.isSuccess)
+  /** 任一品牌的价格表加载失败：整屏错误态 + 重试，不把「没读到」当成「未报价」可编辑（S11）。 */
+  const gridsError = gridQueries.some((query) => query.isError)
 
   /** 品牌 → 该品牌价格表是否加载成功；saveBrand 的守卫读它（异步回调里读不到最新渲染值）。 */
   const gridReadyByBrandRef = useRef(new Map<string, boolean>())
@@ -1000,6 +1061,8 @@ export function SupplierQuoteBoard() {
   const draftsRef = useRef<Record<string, BrandDraft>>({})
   const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const savingRef = useRef(new Set<string>())
+  /** 品牌 → 已自动重试次数（S6：只用 5xx/网络错误推进，4xx 清零）。 */
+  const saveRetryRef = useRef(new Map<string, number>())
   const supplierIdRef = useRef(supplierId)
 
   useEffect(() => {
@@ -1075,7 +1138,8 @@ export function SupplierQuoteBoard() {
 
   /** 协作只读（票据 writable=false）：所有写入口（输入框、粘贴、批量）都要拦住。 */
   const collabReadOnly = collab.mode === 'collab' && !collab.writable
-  const canEdit = canUpdate && !collabReadOnly
+  // 价格表未全部成功前不可编辑（S11：加载中/失败时格子不能看起来像「未报价」）
+  const canEdit = canUpdate && !collabReadOnly && gridsReady
 
   /*
    * 草稿的本地持久化 —— 自动保存有 800ms 防抖，保存失败还会把改动留在内存；
@@ -1196,6 +1260,7 @@ export function SupplierQuoteBoard() {
     const serverCells = byBrandRef.current.cells.get(brandName) ?? new Map()
     savingRef.current.add(brandName)
     setSaveState((current) => ({ ...current, [brandName]: 'saving' }))
+    let savedOk = false
     try {
       // 没有列就先建一条 (供应商, 品牌) 价格表，再整列提交
       const created = existing
@@ -1221,6 +1286,8 @@ export function SupplierQuoteBoard() {
         delete cleared[brandName]
         commitDrafts(cleared)
         setSaveState((current) => ({ ...current, [brandName]: 'saved' }))
+        savedOk = true
+        saveRetryRef.current.delete(brandName)
         return
       }
       // target 一定非空（刚创建或本来就存在）；这里的守卫只用于满足类型收窄
@@ -1283,12 +1350,36 @@ export function SupplierQuoteBoard() {
           )
           .map(([key]) => key),
       )
-    } catch {
+      savedOk = true
+      saveRetryRef.current.delete(brandName)
+    } catch (error) {
       // 失败保留草稿：用户不必重敲，点列头圆点即可重试
       setSaveState((current) => ({ ...current, [brandName]: 'error' }))
+      /*
+       * 失败分类（S6）：
+       * - 无 HTTP 状态（网络错误）或 5xx：可重试，按 2 → 4 → 8 → 16 → 30s 退避，最多 5 次；
+       * - 4xx（400/409/412/422…）：用户可修复（例如负价），自动重试没有意义，
+       *   等用户改完再走正常保存，避免「一格负价让整列永久失败并持续重发」。
+       */
+      const status = readRequestError(error).status
+      const transient = status === undefined || status >= 500
+      if (transient) {
+        const attempt = (saveRetryRef.current.get(brandName) ?? 0) + 1
+        if (attempt <= SAVE_RETRY_DELAYS_MS.length) {
+          saveRetryRef.current.set(brandName, attempt)
+          scheduleSave(brandName, SAVE_RETRY_DELAYS_MS[attempt - 1])
+        }
+      } else {
+        saveRetryRef.current.delete(brandName)
+      }
     } finally {
       savingRef.current.delete(brandName)
-      if (draftCount(draftsRef.current[brandName]) > 0) {
+      /*
+       * 只有「成功 + 保存期间又有新改动」才续排；失败由上面的退避策略负责。
+       * 旧实现 finally 里无条件 scheduleSave，负价会让整列保存永久失败并每 800ms
+       * 重发一次（S6：10 秒 12 次）。
+       */
+      if (savedOk && draftCount(draftsRef.current[brandName]) > 0) {
         scheduleSave(brandName)
       }
     }
@@ -1300,7 +1391,10 @@ export function SupplierQuoteBoard() {
    */
   const scheduleSaveRef = useRef<(brandName: string) => void>(() => {})
 
-  const scheduleSave = (brandName: string) => {
+  const scheduleSave = (
+    brandName: string,
+    delayMs: number = AUTOSAVE_DELAY_MS,
+  ) => {
     // 协作表不经 REST 落库：连排期都免了，避免切到协作后还有迟到的整列 PUT
     if (collabListIdOf(brandName)) return
     /*
@@ -1316,7 +1410,7 @@ export function SupplierQuoteBoard() {
       setTimeout(() => {
         timers.delete(brandName)
         void saveBrand(brandName)
-      }, AUTOSAVE_DELAY_MS),
+      }, delayMs),
     )
   }
 
@@ -1371,6 +1465,8 @@ export function SupplierQuoteBoard() {
       ...draftsRef.current,
       [brandName]: setDraftPrice(draftsRef.current[brandName], rowKey, value),
     })
+    // 用户重新编辑 = 新意图：清掉上轮失败留下的退避计数，按正常防抖保存
+    saveRetryRef.current.delete(brandName)
     scheduleSave(brandName)
   }
 
@@ -1749,11 +1845,16 @@ export function SupplierQuoteBoard() {
     }
     // 以运算符开头 = 在该格当前值上调整；否则整块设为该价
     const relative = /^[+\-*/]/.test(text)
-    const absolute = Number(text.replace(/^=/, '').replace(/[,¥￥\s]/g, ''))
-    if (!relative && !Number.isFinite(absolute)) {
-      reportFormulaFailure({ reason: 'invalid', text })
+    /*
+     * 「直接设价」不再用 Number()：与粘贴 / 单格同一口径走 evaluatePriceFormula，
+     * ￥/¥/逗号/`=` 去噪，负数与非法算式按各自 reason 拒绝（S7）。
+     */
+    const absoluteResult = relative ? null : evaluatePriceFormula(text)
+    if (absoluteResult && !absoluteResult.ok) {
+      reportFormulaFailure({ reason: absoluteResult.reason, text })
       return
     }
+    const absolute = absoluteResult?.ok ? absoluteResult.value : 0
     const cells = listSelectionCells({
       bounds: target.bounds,
       lookup: lookupOfSheet(target.group, target.sheet),
@@ -1972,16 +2073,28 @@ export function SupplierQuoteBoard() {
           filled += 1
           return
         }
-        const value = Number(trimmed.replace(/[,¥\s]/g, ''))
-        if (!Number.isFinite(value)) {
+        /*
+         * 与单格算式 / 批量直接设价同一口径：￥/¥/逗号/`=` 去噪，负数与非法算式一律丢弃
+         * （旧实现只去 `[,¥\\s]`、不认 `￥`/`=`，还会把 -3200 当合法价写进去，S7）。
+         */
+        const parsed = evaluatePriceFormula(trimmed)
+        if (!parsed.ok) {
           dropped += 1
           return
         }
-        plan.push({ brandName, rowKey, value: roundPrice(value) })
+        plan.push({ brandName, rowKey, value: roundPrice(parsed.value) })
         filled += 1
       })
     })
-    if (!filled) return
+    if (!filled) {
+      // 整块粘贴都被拒（负数 / 非法算式 / 越界）时也要告诉用户为什么没生效（S7）
+      if (dropped > 0) {
+        message.warning(
+          t('priceCompare.supplierPrice.pasteDropped', { count: dropped }),
+        )
+      }
+      return
+    }
     writeCellValues(plan)
     message.success(
       t('priceCompare.supplierPrice.pasteApplied', { count: filled }),
@@ -2010,14 +2123,24 @@ export function SupplierQuoteBoard() {
    * 没有选区时把这两个键吞掉纯属添乱。按下 Esc 或点成单格即可恢复浏览器默认行为。</p>
    */
   const handleBoardKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    /*
+     * SheetCell 在有未提交文本时挂 `data-editing`：输入框自己的按键
+     * （Ctrl+Z 原生撤销、Delete 删字符、Esc 放弃这段文本）不再由表格拦截（S9）。
+     */
+    const editing =
+      (event.target as HTMLElement | null)?.dataset.editing === 'true'
     if ((event.ctrlKey || event.metaKey) && !event.altKey) {
       const key = event.key.toLowerCase()
       if (key === 'z') {
+        if (editing) return
         event.preventDefault()
-        undo()
+        // Ctrl+Shift+Z 与 Ctrl+Y 都是重做（S9）
+        if (event.shiftKey) redo()
+        else undo()
         return
       }
       if (key === 'y') {
+        if (editing) return
         event.preventDefault()
         redo()
         return
@@ -2030,10 +2153,6 @@ export function SupplierQuoteBoard() {
     }
     if (event.key !== 'Delete' && event.key !== 'Escape') return
     if (!selection) return
-    // SheetCell 在有未提交文本时挂 `data-editing`：此时 Delete / Esc 归输入框
-    // （删字符 / 放弃这段算式），表格不再拦截。
-    const editing =
-      (event.target as HTMLElement | null)?.dataset.editing === 'true'
     if (editing) return
     if (event.key === 'Escape') {
       setSelection(null)
@@ -2077,6 +2196,8 @@ export function SupplierQuoteBoard() {
           size="small"
           onClick={() => {
             for (const brandName of failedBrandsRef.current) {
+              // 手动重试 = 用户明确要求再来一次：重置退避计数
+              saveRetryRef.current.delete(brandName)
               void saveBrandRef.current(brandName)
             }
           }}
@@ -2857,6 +2978,21 @@ export function SupplierQuoteBoard() {
         </Typography.Text>
       ) : specsQuery.isError ? (
         <Empty description={t('priceCompare.supplierPrice.specsLoadFailed')} />
+      ) : gridsError ? (
+        <EmptyState
+          primaryAction={{
+            label: t('common.retry'),
+            onClick: () => {
+              for (const query of gridQueries) void query.refetch()
+            },
+          }}
+          title={t('common.loadFailed')}
+          type="error"
+        />
+      ) : !gridsReady ? (
+        <div aria-busy="true" className="supplier-price-grid-skeleton">
+          <Skeleton active paragraph={{ rows: 6 }} />
+        </div>
       ) : categoryGroups.every((group) =>
           group.sheets.every((sheet) => sheet.rows.length === 0),
         ) ? (

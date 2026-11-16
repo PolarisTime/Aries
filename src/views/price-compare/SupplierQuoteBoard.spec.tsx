@@ -274,6 +274,56 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     })
   }
 
+  /** 键盘事件：从格子冒泡到表格容器（容器用 keyDownCapture 接）。 */
+  async function pressKey(
+    target: Element | null,
+    key: string,
+    options: KeyboardEventInit = {},
+  ) {
+    expect(target, '未找到按键目标').not.toBeNull()
+    const event = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key,
+      ...options,
+    })
+    await act(async () => {
+      target?.dispatchEvent(event)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    return event
+  }
+
+  async function pointerDown(
+    target: Element | null,
+    options: MouseEventInit = {},
+  ) {
+    expect(target, '未找到指针目标').not.toBeNull()
+    await act(async () => {
+      target?.dispatchEvent(
+        new MouseEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          ...options,
+        }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  /** 粘贴：jsdom 没有 ClipboardEvent 构造器，用 Event + clipboardData 桩模拟。 */
+  async function pasteText(target: Element | null, text: string) {
+    expect(target, '未找到粘贴目标').not.toBeNull()
+    await act(async () => {
+      const event = new Event('paste', { bubbles: true, cancelable: true })
+      Object.defineProperty(event, 'clipboardData', {
+        value: { getData: () => text },
+      })
+      target?.dispatchEvent(event)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
   it('直条固定 12 个规格：行来自品类模板，列 = 该供应商的经营品牌', async () => {
     await render()
 
@@ -558,6 +608,8 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
 
     await typePrice('中天 HRB400E 12 9米', '3290')
+    // 新交互：输入期只更新本地文本，按 Enter 提交一次（一次编辑会话一条历史）
+    await pressKey(cellInput('中天 HRB400E 12 9米'), 'Enter')
     await flushAutosave()
 
     expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledTimes(1)
@@ -620,6 +672,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
 
     await typePrice('中天 HRB400E 12 9米', '')
+    await pressKey(cellInput('中天 HRB400E 12 9米'), 'Enter')
     await flushAutosave()
 
     expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledWith(
@@ -634,6 +687,8 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
 
     await typePrice('中天 HRB400E 12 9米', '3380')
+    // 输入期不落草稿：提交（Enter）后才出现「未保存」态
+    await pressKey(cellInput('中天 HRB400E 12 9米'), 'Enter')
 
     // 草稿与服务端值不同 → 这一格有未保存改动（左琥珀条）
     expect(cellInput('中天 HRB400E 12 9米')?.className).toContain(
@@ -936,4 +991,283 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
       priceStatus: 'NORMAL',
     })
   })
+
+  /*
+   * S6：保存失败不能形成 800ms 重试风暴。
+   *
+   * 旧实现 finally 无条件 scheduleSave：一格负价让整列永久失败，10 秒重发 12 次。
+   * 新策略：500/网络错误按 2s → 4s → 8s → 16s → 30s 退避，最多 5 次。
+   */
+  it('保存失败（500）按退避重试，不形成 800ms 重试风暴', async () => {
+    priceApi.saveSupplierPriceColumnItems.mockRejectedValue(
+      Object.assign(new Error('boom'), { status: 500 }),
+    )
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+
+    await typePrice('中天 HRB400E 12 9米', '3290')
+    await pressKey(cellInput('中天 HRB400E 12 9米'), 'Enter')
+    await flushAutosave() // 800ms 防抖后的第一次保存
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledTimes(1)
+
+    // 2s 退避窗口内不应再发请求（旧实现这里会每 800ms 一次）
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1400))
+    })
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledTimes(1)
+
+    // 退避到点才重试：第二次
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 800))
+    })
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledTimes(2)
+
+    // 同一失败通知复用固定 key，不叠一墙 toast
+    const keys = feedback.notification.error.mock.calls.map(
+      (call) => (call[0] as { key?: string } | undefined)?.key,
+    )
+    expect(new Set(keys).size).toBe(1)
+  }, 15000)
+
+  it('保存失败（422，例如负价）不自动重试，等用户修改', async () => {
+    priceApi.saveSupplierPriceColumnItems.mockRejectedValue(
+      Object.assign(new Error('价格不能为负'), { status: 422 }),
+    )
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+
+    await typePrice('中天 HRB400E 12 9米', '3290')
+    await pressKey(cellInput('中天 HRB400E 12 9米'), 'Enter')
+    await flushAutosave()
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+    })
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledTimes(1)
+  }, 10000)
+
+  /*
+   * S7：粘贴与单格 / 批量「直接设价」同一口径。
+   *
+   * 旧实现粘贴只去 `[,¥\s]`、接受负数、不认 `￥`/`=`；批量直接设价用 Number() 也接受负数。
+   */
+  it('粘贴价格：负数/abc 丢弃并提示，￥/千分位/= 去噪后接受', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    const cell = cellInput('中天 HRB400E 12 9米')
+    await pointerDown(cell)
+    // 真实浏览器 pointerdown 会让格子获得焦点；jsdom 不会，手动补上（粘贴锚点来自 onFocusCell）
+    await act(async () => {
+      cell?.focus()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    await pasteText(cell, '-3200')
+    expect(feedback.message.warning).toHaveBeenCalled()
+    await flushAutosave()
+    expect(priceApi.saveSupplierPriceColumnItems).not.toHaveBeenCalled()
+
+    await pasteText(cell, 'abc')
+    expect(feedback.message.warning).toHaveBeenCalledTimes(2)
+    expect(priceApi.saveSupplierPriceColumnItems).not.toHaveBeenCalled()
+
+    await pasteText(cell, '￥3,250')
+    await flushAutosave()
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalled()
+    const [, , items] = priceApi.saveSupplierPriceColumnItems.mock.calls.at(
+      -1,
+    ) as [string, number, Array<Record<string, unknown>>]
+    expect(items).toContainEqual({
+      ...withoutBrand(ROW_A),
+      price: 3250,
+      priceStatus: 'NORMAL',
+    })
+  }, 10000)
+
+  it('批量调价「直接设价」接受 ￥/千分位（与粘贴同一口径）', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    await pointerDown(cellInput('中天 HRB400E 12 9米'))
+
+    const batchButton = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('button'),
+    ).find((node) =>
+      node.textContent?.includes(
+        i18n.t('priceCompare.supplierPrice.batchAdjust'),
+      ),
+    )
+    expect(batchButton).toBeDefined()
+    await act(async () => {
+      batchButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const modalInput = document.querySelector<HTMLInputElement>(
+      `.ant-modal input[aria-label="${i18n.t('priceCompare.supplierPrice.batchAdjust')}"]`,
+    )
+    expect(modalInput).not.toBeNull()
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.call(modalInput, '￥3,250')
+      modalInput?.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const okButton = document.querySelector<HTMLButtonElement>(
+      '.ant-modal-footer .ant-btn-primary',
+    )
+    await act(async () => {
+      okButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3250')
+    expect(feedback.message.success).toHaveBeenCalled()
+  }, 10000)
+
+  /*
+   * S8：Esc 恢复聚焦时的值，焦点留在格内（旧实现直接 blur，焦点掉到 body）。
+   */
+  it('Esc 恢复聚焦时的值，焦点留在格内且不提交', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    const cell = cellInput('中天 HRB400E 12 9米') as HTMLInputElement
+    await pointerDown(cell)
+    cell.focus()
+
+    await typePrice('中天 HRB400E 12 9米', '3500')
+    const escapeEvent = await pressKey(cell, 'Escape')
+
+    expect(escapeEvent.defaultPrevented).toBe(true)
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3280')
+    expect(document.activeElement).toBe(cellInput('中天 HRB400E 12 9米'))
+    await flushAutosave()
+    expect(priceApi.saveSupplierPriceColumnItems).not.toHaveBeenCalled()
+  }, 10000)
+
+  /*
+   * S9：一次编辑一步撤销；Ctrl+Shift+Z 与 Ctrl+Y 都是重做（旧实现 Ctrl+Shift+Z 仍撤销）。
+   */
+  it('一次编辑一步撤销；Ctrl+Shift+Z / Ctrl+Y 重做', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    const cell = cellInput('中天 HRB400E 12 9米')
+    await pointerDown(cell)
+
+    await typePrice('中天 HRB400E 12 9米', '3290')
+    await pressKey(cell, 'Enter')
+    await typePrice('中天 HRB400E 12 9米', '3300')
+    await pressKey(cell, 'Enter')
+    await flushAutosave()
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3300')
+
+    // 真实交互：焦点在下一格输入框上按 Ctrl+Z（不是往旧格子或容器上派发）
+    const undoOnce = await pressKey(document.activeElement, 'z', {
+      ctrlKey: true,
+    })
+    expect(undoOnce.defaultPrevented).toBe(true)
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3290')
+
+    await pressKey(document.activeElement, 'z', {
+      ctrlKey: true,
+      shiftKey: true,
+    })
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3300')
+
+    await pressKey(document.activeElement, 'z', { ctrlKey: true })
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3290')
+    await pressKey(document.activeElement, 'y', { ctrlKey: true })
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3300')
+  }, 10000)
+
+  /*
+   * S9 真实复现（QA 2026-11-16）：原值「空」→ 输入 3250 → Tab（提交，焦点落到下一格输入框）
+   * → 在**焦点所在输入框**上按 Ctrl+Z，应回到空，而不是被输入框原生撤销吞掉。
+   */
+  it('Tab 提交后焦点在下一格输入框，Ctrl+Z 仍能撤销', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    const emptyCell = cellInput('中天 HRB400E 12 12米') as HTMLInputElement
+    expect(emptyCell.value).toBe('')
+
+    emptyCell.focus()
+    await typePrice('中天 HRB400E 12 12米', '3250')
+    await pressKey(emptyCell, 'Tab')
+    expect(cellInput('中天 HRB400E 12 12米')?.value).toBe('3250')
+
+    const focused = document.activeElement as HTMLInputElement
+    expect(focused).not.toBe(emptyCell)
+    expect(focused.tagName).toBe('INPUT')
+
+    const undoEvent = await pressKey(focused, 'z', { ctrlKey: true })
+    expect(undoEvent.defaultPrevented).toBe(true)
+    expect(cellInput('中天 HRB400E 12 12米')?.value).toBe('')
+  }, 10000)
+
+  it('编辑中 Ctrl+Z 交给输入框原生撤销，表格不拦截也不改草稿', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    const cell = cellInput('中天 HRB400E 12 9米')
+
+    await typePrice('中天 HRB400E 12 9米', '3500')
+    const nativeUndo = await pressKey(cell, 'z', { ctrlKey: true })
+
+    expect(nativeUndo.defaultPrevented).toBe(false)
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3500')
+    expect(cellInput('中天 HRB400E 12 9米')?.getAttribute('data-editing')).toBe(
+      'true',
+    )
+  }, 10000)
+
+  /*
+   * S11：价格表加载失败 → 错误态 + 重试；加载中 → 骨架且不可编辑。
+   */
+  it('价格表加载失败：错误态可重试，且不渲染可编辑格子', async () => {
+    priceApi.fetchSupplierPriceGrid.mockRejectedValueOnce(
+      new Error('grid down'),
+    )
+    await render()
+
+    await waitFor(() =>
+      Boolean(container.querySelector('[data-testid="empty-state-error"]')),
+    )
+    expect(
+      container.querySelector('[data-testid="empty-state-error"]'),
+    ).not.toBeNull()
+    expect(cellInput('中天 HRB400E 12 9米')).toBeNull()
+
+    const retry = container.querySelector<HTMLButtonElement>(
+      '[data-testid="empty-state-primary-action"]',
+    )
+    expect(retry).not.toBeNull()
+    await act(async () => {
+      retry?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    expect(cellInput('中天 HRB400E 12 9米')?.disabled).toBe(false)
+  }, 10000)
+
+  it('价格表加载中：显示骨架且不渲染可编辑格子', async () => {
+    let resolveGrid: (grid: SupplierPriceGrid) => void = () => {}
+    priceApi.fetchSupplierPriceGrid.mockImplementation(
+      () =>
+        new Promise<SupplierPriceGrid>((resolve) => {
+          resolveGrid = resolve
+        }),
+    )
+    await render()
+
+    expect(container.querySelector('.ant-skeleton')).not.toBeNull()
+    expect(cellInput('中天 HRB400E 12 9米')).toBeNull()
+
+    await act(async () => {
+      resolveGrid(gridWithColumn())
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    expect(cellInput('中天 HRB400E 12 9米')?.disabled).toBe(false)
+  }, 10000)
 })

@@ -745,6 +745,8 @@ describe('供应商报价表：Excel 式网格操作', () => {
      * 这一步会把「已保存值」(savedValues) 填上，正好覆盖清空后旧值回弹的路径。
      */
     await typeInto(cellInput('中天 HRB400E 12 9米'), '3500')
+    // 输入期只更新本地文本（task-14 P0-3）：补一次 Enter 提交，语义仍是「先正常保存一次」
+    await keyDown(cellInput('中天 HRB400E 12 9米'), 'Enter')
     await flushAutosave()
     await flush()
     expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3500')
