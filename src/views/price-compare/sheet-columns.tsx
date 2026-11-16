@@ -141,6 +141,34 @@ export type ColumnContext = {
   visibleBrandCount: number
 }
 
+/**
+ * 规格下拉选项的**唯一出口**：项目白名单/品牌类别裁剪 + 已保存但范围外的补项。
+ *
+ * <p>补项由 {@link withStoredVarieties} 标记 `disabled: true`（只回显、不可选），
+ * 这里原样透传给 antd option；列定义与单测共用本函数，避免测试另写一份口径。</p>
+ */
+export function buildVarietySelectOptions(
+  ctx: Pick<
+    ColumnContext,
+    'varieties' | 'brands' | 'allowedProducts' | 'rows' | 't'
+  >,
+) {
+  const hint = ctx.t('priceCompare.supplierPrice.varietyOutOfScope')
+  return buildVarietyOptions(
+    withStoredVarieties(
+      filterVarieties(ctx.varieties, ctx.brands, ctx.allowedProducts),
+      ctx.rows,
+    ),
+  ).map((group) => ({
+    ...group,
+    options: group.options.map((option) =>
+      option.disabled
+        ? { ...option, title: `${option.label} · ${hint}` }
+        : option,
+    ),
+  }))
+}
+
 const cellOf = (
   title: React.ReactNode,
   width: number,
@@ -451,7 +479,6 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     attachSpotRef,
     allowHrb400eFallback,
     bestOn,
-    allowedProducts,
     t,
     readOnly,
     sheet,
@@ -479,12 +506,11 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
    * 已保存的规格必须始终有 label：`filterVarieties` 会按品牌类别 / 项目白名单裁剪选项，
    * 落在裁剪之外的历史行若不在 options 里，Select 的 label 会渲染成空
    * （用户实测：多条「直条」行的材质/规格/长度空白，读屏却念得出「直条 HRB400 12 9米」）。
+   * 范围外补项「只回显不可选」由 buildVarietySelectOptions / withStoredVarieties 统一保证。
    */
-  const varietyOptionsFlat = withStoredVarieties(
-    filterVarieties(ctx.varieties, brands, allowedProducts),
-    ctx.rows,
-  )
-  const varietyOptions = buildVarietyOptions(varietyOptionsFlat)
+  const varietyOptions = buildVarietySelectOptions(ctx)
+  /** 范围外规格的可见标记(与选项 title 共用同一 i18n key)。 */
+  const outOfScopeHint = t('priceCompare.supplierPrice.varietyOutOfScope')
   /** 报单吨位列的构建上下文(列宽取整张宽度表, 不另设参数)。 */
   const tonColumnCtx = {
     t,
@@ -761,6 +787,26 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                 showSearch={{ optionFilterProp: 'label' }}
                 value={value}
                 options={varietyOptions}
+                /*
+                 * 范围外规格只回显不可选: antd 对 disabled 选项自带 aria-disabled 并跳过键盘选择,
+                 * 这里再把 i18n 标记渲染进下拉项; 选中值仍走 labelRender 的纯文本,
+                 * 不把标记塞进 60~160px 的规格格。
+                 */
+                optionRender={(option) => {
+                  const data = option.data as
+                    | { disabled?: boolean; title?: string }
+                    | undefined
+                  return data?.disabled ? (
+                    <span
+                      className="price-compare-variety-out-of-scope"
+                      title={data.title}
+                    >
+                      {option.label} · {outOfScopeHint}
+                    </span>
+                  ) : (
+                    option.label
+                  )
+                }}
                 onChange={(key) => {
                   const target = varietyByLabel.get(key)
                   if (!target) return

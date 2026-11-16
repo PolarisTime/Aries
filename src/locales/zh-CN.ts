@@ -2927,6 +2927,7 @@ export const zhCN = {
       viewModeSpecs: '规格横置',
       materialColumn: '材质',
       specColumn: '规格',
+      varietyOutOfScope: '不在项目可选范围',
       basePriceRuleTitle: '基价加价',
       basePriceRuleMenu: '基价加价…',
       basePriceRuleHint:

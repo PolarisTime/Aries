@@ -4,10 +4,11 @@ import { describe, expect, it } from 'vitest'
 import { SHEET_COLUMN_WIDTH, SHEET_HIDEABLE_COLUMN } from './core'
 import {
   buildSheetColumns,
+  buildVarietySelectOptions,
   type ColumnContext,
   FallbackBadge,
 } from './sheet-columns'
-import type { Brand, PriceRow, PriceSheet } from './types'
+import type { Brand, PriceRow, PriceSheet, Variety } from './types'
 
 /** 只回显 key 的 t(): 列头文案不是本用例的断言对象。 */
 const fakeT = ((key: string) => key) as unknown as TFunction
@@ -98,8 +99,10 @@ type AnyColumn = {
   children?: AnyColumn[]
 }
 
-function columnsOf(overrides: Partial<ColumnContext> = {}): AnyColumn[] {
-  return buildSheetColumns(makeContext(overrides)) as unknown as AnyColumn[]
+function columnsOf(overrides: Partial<ColumnContext> = {}): RenderableColumn[] {
+  return buildSheetColumns(
+    makeContext(overrides),
+  ) as unknown as RenderableColumn[]
 }
 
 describe('比价表格列定义(sheet-columns)', () => {
@@ -326,7 +329,7 @@ describe('比价表格规格列：已保存值必须有 label', () => {
       (column) =>
         (column as { title?: unknown }).title ===
         'priceCompare.sheet.columns.variety',
-    ) as RenderableColumn | undefined
+    )
 
   it('已保存规格不在可选商品里时仍显示文字，不是空白', () => {
     const column = varietyColumn()
@@ -340,5 +343,75 @@ describe('比价表格规格列：已保存值必须有 label', () => {
     // label 既进正文也进 title（labelRender 的 title 兜住省略号）：没有 label 时两者都是空的
     expect(html).toContain('HRB400 12 9米')
     expect(html).toContain('title="HRB400 12 9米"')
+  })
+
+  /*
+   * S15 的真实前置（项目 339483372885635072，库内实测）：
+   * - 白名单：盘螺 HRB400 6/8/10 + 螺纹钢 HRB400E；
+   * - 该批次已保存行：直条 HRB400 12/14/16/20/25/28（`直条` 与白名单 `螺纹钢` 不是同一 key）。
+   * 所以 3 个盘螺 HRB400 必须仍可选，只有 6 个直条 HRB400 才是范围外补项。
+   */
+  const allowedProducts = [
+    '盘螺|HRB400|6|-',
+    '盘螺|HRB400|8|-',
+    '盘螺|HRB400|10|-',
+    '螺纹钢|HRB400E|12|9米',
+  ]
+  const allowedVarieties: Variety[] = [
+    { category: '盘螺', material: 'HRB400', spec: 6, length: '-', label: '' },
+    { category: '盘螺', material: 'HRB400', spec: 8, length: '-', label: '' },
+    {
+      category: '盘螺',
+      material: 'HRB400',
+      spec: 10,
+      length: '-',
+      label: '',
+    },
+    {
+      category: '螺纹钢',
+      material: 'HRB400E',
+      spec: 12,
+      length: '9米',
+      label: '',
+    },
+  ]
+  const storedStraightRows = [12, 14, 16, 20, 25, 28].map((spec, index) => ({
+    ...storedRow,
+    id: `r${index + 1}`,
+    spec,
+  }))
+
+  it('白名单内的盘螺 HRB400 仍可选；6 个范围外直条 HRB400 disabled 且带 i18n 提示', () => {
+    const options = buildVarietySelectOptions({
+      varieties: allowedVarieties,
+      brands,
+      allowedProducts,
+      rows: storedStraightRows,
+      t: fakeT,
+    })
+    const flat = options.flatMap((group) => group.options)
+    const hrb400 = flat.filter((option) => option.label.startsWith('HRB400 '))
+    const selectable = hrb400.filter((option) => !option.disabled)
+    const outOfScope = hrb400.filter((option) => option.disabled === true)
+
+    // 3 个白名单内的盘螺 HRB400：仍可选（display 不含长度）
+    expect(selectable.map((option) => option.label)).toEqual([
+      'HRB400 6',
+      'HRB400 8',
+      'HRB400 10',
+    ])
+    // 6 个范围外直条 HRB400：disabled 是唯一判定出口，且带 i18n 提示文案
+    expect(outOfScope).toHaveLength(6)
+    expect(outOfScope.every((option) => option.disabled === true)).toBe(true)
+    expect(
+      outOfScope.every((option) =>
+        option.title?.includes('priceCompare.supplierPrice.varietyOutOfScope'),
+      ),
+    ).toBe(true)
+    // 白名单内的 HRB400E 不受影响
+    const allowedHrb400e = flat.find(
+      (option) => option.label === 'HRB400E 12 9米',
+    )
+    expect(allowedHrb400e?.disabled).toBeUndefined()
   })
 })

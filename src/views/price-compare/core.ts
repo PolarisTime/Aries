@@ -592,19 +592,51 @@ export function varietyDisplay(item: Variety): string {
     .join(' ')
 }
 
+/**
+ * 规格下拉选项：`Variety` 本体 + 是否只用于回显。
+ *
+ * <p>`disabled: true` 的唯一来源是 {@link withStoredVarieties} 补入的范围外规格，
+ * 这里不再有第二个判定处（下游 `buildVarietyOptions` / 列内 Select 都只读这一位）。</p>
+ */
+export type VarietyOption = Variety & {
+  /** true = 该规格只来自已保存行、不在当前项目可选范围：仅回显，禁止选择。 */
+  disabled?: boolean
+}
+
+/** 规格下拉分组：`disabled`/`title` 直接透传给 antd option。 */
+export type VarietyOptionGroup = {
+  label: string
+  options: {
+    value: string
+    label: string
+    disabled?: boolean
+    title?: string
+  }[]
+}
+
 /** 按类别把商品组织为分组下拉选项(类别来自数据, 新类别自动成组)。 */
-export function buildVarietyOptions(varieties: Variety[]) {
-  return categoriesOf(varieties).reduce<
-    { label: string; options: { value: string; label: string }[] }[]
-  >((groups, category) => {
-    const options: { value: string; label: string }[] = []
-    for (const item of varieties) {
-      if (canonicalCategory(item.category) === category)
-        options.push({ value: varietyKeyOf(item), label: varietyDisplay(item) })
-    }
-    if (options.length) groups.push({ label: category, options })
-    return groups
-  }, [])
+export function buildVarietyOptions(
+  varieties: readonly VarietyOption[],
+): VarietyOptionGroup[] {
+  return categoriesOf(varieties).reduce<VarietyOptionGroup[]>(
+    (groups, category) => {
+      const options: VarietyOptionGroup['options'] = []
+      for (const item of varieties) {
+        if (canonicalCategory(item.category) !== category) continue
+        const label = varietyDisplay(item)
+        options.push({
+          value: varietyKeyOf(item),
+          label,
+          // 范围外规格只回显: disabled 直接来自 withStoredVarieties 的唯一判定出口;
+          // 可见标记与 title 由列定义层用 i18n 文案补(纯函数不感知语言)。
+          ...(item.disabled ? { disabled: true } : {}),
+        })
+      }
+      if (options.length) groups.push({ label: category, options })
+      return groups
+    },
+    [],
+  )
 }
 
 /**
@@ -638,7 +670,7 @@ export function filterVarieties(
 }
 
 /**
- * 把「表里已存在、但不在可选商品里」的规格补进下拉选项。
+ * 把「表里已存在、但不在可选商品里」的规格补进下拉选项（**只回显、不可选**）。
  *
  * <p>`filterVarieties` 会按品牌启用类别与项目白名单裁剪选项，而**已保存的行**可能落在裁剪之外
  * （历史数据、商品资料调整、白名单收紧）。antd `Select` 的 `value` 不在 `options` 里时
@@ -647,13 +679,17 @@ export function filterVarieties(
  *
  * <p>因此把表里出现过的组合补到选项末尾，并按 {@link varietyKeyOf} 去重：
  * 已存在的规格仍是原选项（顺序不变），缺的补一条，保证任何已保存值都有 label。</p>
+ *
+ * <p><b>关键约束</b>：补入的规格是「范围外」的，只用于回显，必须标 `disabled: true`
+ * （见 {@link VarietyOption}），否则任何一行都能选到白名单之外的规格，绕过项目可选商品白名单。
+ * `disabled` 是唯一判定出口，下游不再二次判断。</p>
  */
 export function withStoredVarieties(
   options: readonly Variety[],
   rows: readonly PriceRow[],
-): Variety[] {
+): VarietyOption[] {
   const seen = new Set(options.map(varietyKeyOf))
-  const extra: Variety[] = []
+  const extra: VarietyOption[] = []
   for (const row of rows) {
     if (isSeparatorRow(row)) continue
     const material = (row.material ?? '').trim()
@@ -669,7 +705,9 @@ export function withStoredVarieties(
     const key = varietyKeyOf(item)
     if (seen.has(key)) continue
     seen.add(key)
-    extra.push({ ...item, label: varietyDisplay(item) })
+    // 补入的范围外规格只用于回显: disabled 让下拉/键盘都无法选中,
+    // 从源头保证「范围外商品不能被写进报单」, 不只靠 UI 层拦截。
+    extra.push({ ...item, label: varietyDisplay(item), disabled: true })
   }
   return extra.length ? [...options, ...extra] : [...options]
 }

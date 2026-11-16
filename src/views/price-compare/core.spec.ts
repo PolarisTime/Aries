@@ -24,6 +24,7 @@ import {
   scaleSheetColumnWidth,
   sheetColumnWidths,
   TON_INPUT_WIDTH_EM,
+  varietyKeyOf,
   withStoredVarieties,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet, Variety } from './types'
@@ -923,8 +924,13 @@ describe('pickBestDiffBrands', () => {
 })
 
 describe('withStoredVarieties：已保存的规格必须有 label', () => {
-  const variety = (material: string, spec: number, length = '9米') => ({
-    category: '直条',
+  const variety = (
+    material: string,
+    spec: number,
+    length = '9米',
+    category = '直条',
+  ) => ({
+    category,
     material,
     spec,
     length,
@@ -985,5 +991,81 @@ describe('withStoredVarieties：已保存的规格必须有 label', () => {
       },
     ]
     expect(withStoredVarieties([], rows)).toEqual([])
+  })
+
+  /*
+   * S15 的真实前置（项目 339483372885635072，库内实测）：
+   * - 白名单含 `盘螺|HRB400|6|-`、`盘螺|HRB400|8|-`、`盘螺|HRB400|10|-` 与螺纹钢 HRB400E；
+   * - 该批次已保存行是「直条 HRB400」12/14/16/20/25/28——`直条` 与白名单里的 `螺纹钢`
+   *   不是同一个 varietyKey（`varietyKeyOf` 用原始 category），因此这 6 个才是范围外。
+   * 结论：3 个盘螺 HRB400 是白名单合法项（必须仍可选），只有 6 个直条 HRB400 需要 disabled。
+   */
+  const projectAllowedProducts = [
+    '盘螺|HRB400|6|-',
+    '盘螺|HRB400|8|-',
+    '盘螺|HRB400|10|-',
+    '螺纹钢|HRB400E|12|9米',
+  ]
+  const projectVarieties: Variety[] = [
+    variety('HRB400', 6, '-', '盘螺'),
+    variety('HRB400', 8, '-', '盘螺'),
+    variety('HRB400', 10, '-', '盘螺'),
+    variety('HRB400E', 12, '9米', '螺纹钢'),
+  ]
+  /** 该批次已保存的 6 个范围外行（直条 HRB400）。 */
+  const storedStraightRows = [12, 14, 16, 20, 25, 28].map((spec, index) => ({
+    id: `r${index + 1}`,
+    rowType: 'PRODUCT' as const,
+    category: '直条',
+    material: 'HRB400',
+    spec,
+    length: '9米',
+  }))
+
+  it('白名单内的盘螺 HRB400（6/8/10）保留为可选项，不是范围外', () => {
+    const allowed = filterVarieties(
+      projectVarieties,
+      [],
+      projectAllowedProducts,
+    )
+
+    expect(allowed.map((item) => varietyKeyOf(item))).toEqual([
+      '盘螺|HRB400|6|-',
+      '盘螺|HRB400|8|-',
+      '盘螺|HRB400|10|-',
+      '螺纹钢|HRB400E|12|9米',
+    ])
+  })
+
+  it('只有 6 个范围外直条 HRB400 被补为 disabled；3 个白名单盘螺 HRB400 仍可选', () => {
+    const allowed = filterVarieties(
+      projectVarieties,
+      [],
+      projectAllowedProducts,
+    )
+    const flat = buildVarietyOptions(
+      withStoredVarieties(allowed, storedStraightRows),
+    ).flatMap((group) => group.options)
+    const hrb400 = flat.filter((option) => option.label.startsWith('HRB400 '))
+    const selectable = hrb400.filter((option) => !option.disabled)
+    const outOfScope = hrb400.filter((option) => option.disabled === true)
+
+    // 白名单内 3 个盘螺 HRB400：仍可选（display 不含长度，所以是「HRB400 6/8/10」）
+    expect(selectable.map((option) => option.label)).toEqual([
+      'HRB400 6',
+      'HRB400 8',
+      'HRB400 10',
+    ])
+    // 范围外 6 个直条 HRB400：全部 disabled，且回显 label 不为空
+    expect(outOfScope).toHaveLength(6)
+    expect(outOfScope.map((option) => option.label)).toContain('HRB400 12 9米')
+    expect(outOfScope.every((option) => option.label.trim().length > 0)).toBe(
+      true,
+    )
+    // HRB400E 白名单项不受影响
+    const allowedHrb400e = flat.filter((option) =>
+      option.label.startsWith('HRB400E '),
+    )
+    expect(allowedHrb400e[0]?.disabled).toBeUndefined()
   })
 })

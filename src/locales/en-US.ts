@@ -2944,6 +2944,7 @@ export const enUS = {
       viewModeSpecs: 'Specs across columns',
       materialColumn: 'Material',
       specColumn: 'Spec',
+      varietyOutOfScope: 'Not selectable for this project',
       basePriceRuleTitle: 'Base price & premiums',
       basePriceRuleMenu: 'Base price & premiums…',
       basePriceRuleHint:
