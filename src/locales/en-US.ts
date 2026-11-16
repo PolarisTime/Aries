@@ -3182,7 +3182,7 @@ export const enUS = {
       fallbackBadgeLabel: 'Priced as {{material}}',
       spotSubstitutedLabel: 'Priced as {{material}} (source {{supplier}})',
       bestDiff: 'Best Difference',
-      refreshPrice: 'Refresh Prices',
+      refreshNetPrices: 'Refresh market prices',
       refreshSpotPrices: 'Refresh spot prices',
       spotUpdatedAt: 'Spot prices updated {{time}}',
       config: 'Settings',

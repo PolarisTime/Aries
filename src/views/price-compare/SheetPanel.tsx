@@ -1040,7 +1040,7 @@ function SheetActionRow({
         loading={refreshing}
         onClick={onRefresh}
       >
-        {t('priceCompare.sheet.refreshPrice')}
+        {t('priceCompare.sheet.refreshNetPrices')}
       </Button>
       {/*
        * 现货价改为实时派生后不再需要「导入」这个手动动作：价格随查询自动带出。

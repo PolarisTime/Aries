@@ -3164,7 +3164,11 @@ export const zhCN = {
       fallbackBadgeLabel: '按 {{material}} 代取',
       spotSubstitutedLabel: '按 {{material}} 代取（来源 {{supplier}}）',
       bestDiff: '差价最优',
-      refreshPrice: '刷新价格',
+      /*
+       * 按钮语义 = 只重新取「网价」（行情）。现货价是供应商价格表实时派生的，另有
+       * `refreshSpotPrices` 一个入口；叫「刷新价格」会和现货按钮混淆，故明确写成「刷新网价」。
+       */
+      refreshNetPrices: '刷新网价',
       refreshSpotPrices: '刷新现货价',
       spotUpdatedAt: '现货价更新于 {{time}}',
       config: '配置',
