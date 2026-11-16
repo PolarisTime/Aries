@@ -3,6 +3,24 @@ import dayjs from 'dayjs'
 export const PERIODS = ['上午', '中午', '下午']
 export const BREEDS = ['螺纹钢', '盘螺', '高线', '圆钢']
 export const PAGE_SIZE = 20
+/**
+ * 明细抽屉里一行的估算高度（含 1px 分隔线，按 antd small Table 实测约 41px）。
+ * 只用于按视口高度估算「一页能放多少行」，不参与布局计算。
+ */
+export const DETAIL_ROW_HEIGHT = 41
+/**
+ * 明细抽屉按视口高度自适应每页行数：高屏多显示几行，避免表格下面留一大片空白；
+ * 低屏保持 {@link PAGE_SIZE} 的基准，抽屉内部自然滚动。
+ *
+ * <p>预留 260px 给抽屉标题栏、筛选行、表头、分页和上下留白。上限 100 行，
+ * 防止超高分屏一次请求过多；下限保持 PAGE_SIZE，测试与低分辨率下的既有行为不变。</p>
+ */
+export function detailPageSizeFor(viewportHeight: number): number {
+  if (!Number.isFinite(viewportHeight) || viewportHeight <= 0) return PAGE_SIZE
+  const rows = Math.floor((viewportHeight - 260) / DETAIL_ROW_HEIGHT)
+  return Math.max(PAGE_SIZE, Math.min(100, rows))
+}
+
 export const MATRIX_DAYS = 30
 /**
  * 矩阵最多能往前翻几段（每段 {@link MATRIX_DAYS} 天）。

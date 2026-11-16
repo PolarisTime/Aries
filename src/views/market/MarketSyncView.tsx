@@ -51,6 +51,7 @@ export function MarketSyncView() {
     quoteTotal,
     quotes,
     quotesQuery,
+    detailPageSize,
     resetFilters,
     selectQuote,
     selected,
@@ -165,6 +166,7 @@ export function MarketSyncView() {
         onChangeSort={changeSort}
         quotePage={quotePage}
         onPageChange={setQuotePage}
+        pageSize={detailPageSize}
       />
     </div>
   )

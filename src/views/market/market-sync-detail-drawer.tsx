@@ -18,16 +18,12 @@ import {
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import type { Dispatch, SetStateAction } from 'react'
+import { type Dispatch, type SetStateAction, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SteelQuote } from '@/api/market/steel-quotes'
+import { useMasterOptions } from '@/hooks/useMasterOptions'
 import { formatDate } from '@/utils/formatters'
-import {
-  BREEDS,
-  type Filters,
-  PAGE_SIZE,
-  type QuoteSort,
-} from './market-sync-model'
+import { BREEDS, type Filters, type QuoteSort } from './market-sync-model'
 
 const { Text } = Typography
 
@@ -46,6 +42,7 @@ export function MarketSyncDetailDrawer({
   onPageChange,
   onResetFilters,
   open,
+  pageSize,
   quotePage,
   quoteTotal,
   quotes,
@@ -62,6 +59,8 @@ export function MarketSyncDetailDrawer({
   onPageChange: (page: number) => void
   onResetFilters: () => void
   open: boolean
+  /** 明细每页行数（随视口高度自适应，见 detailPageSizeFor）。 */
+  pageSize: number
   quotePage: number
   quoteTotal: number
   quotes: SteelQuote[]
@@ -71,6 +70,30 @@ export function MarketSyncDetailDrawer({
 }) {
   const { t } = useTranslation()
   const hasTarget = Boolean(selected.date && selected.period)
+
+  /*
+   * 材质 / 品牌钢厂改为下拉：选项来自主数据（与商品资料同一份口径），
+   * 抽屉打开时才拉取；当前页行情里出现的工厂再并进品牌选项，避免主数据未收录的钢厂选不到。
+   */
+  const { brands: masterBrands, materialGrades } = useMasterOptions(
+    { brands: true, materialGrades: true },
+    open,
+  )
+  const materialOptions = useMemo(
+    () =>
+      materialGrades.map((option) => ({
+        value: option.value,
+        label: option.label,
+      })),
+    [materialGrades],
+  )
+  const factoryOptions = useMemo(() => {
+    const values = new Set<string>(masterBrands)
+    for (const quote of quotes) {
+      if (quote.factory) values.add(quote.factory)
+    }
+    return [...values].map((value) => ({ value, label: value }))
+  }, [masterBrands, quotes])
 
   const columns: ColumnsType<SteelQuote> = [
     {
@@ -191,33 +214,29 @@ export function MarketSyncDetailDrawer({
               }
               options={BREEDS.map((b) => ({ value: b, label: b }))}
             />
-            <Input
+            <Select
               size="small"
               style={{ width: 110 }}
               placeholder={t('marketSync.columnMaterial')}
               allowClear
+              showSearch={{ optionFilterProp: 'label' }}
               value={form.material}
-              onChange={(event) =>
-                onFormChange((prev) => ({
-                  ...prev,
-                  material: event.target.value,
-                }))
+              onChange={(value) =>
+                onFormChange((prev) => ({ ...prev, material: value }))
               }
-              onPressEnter={onApplyFilters}
+              options={materialOptions}
             />
-            <Input
+            <Select
               size="small"
               style={{ width: 120 }}
               placeholder={t('marketSync.columnFactory')}
               allowClear
+              showSearch={{ optionFilterProp: 'label' }}
               value={form.factory}
-              onChange={(event) =>
-                onFormChange((prev) => ({
-                  ...prev,
-                  factory: event.target.value,
-                }))
+              onChange={(value) =>
+                onFormChange((prev) => ({ ...prev, factory: value }))
               }
-              onPressEnter={onApplyFilters}
+              options={factoryOptions}
             />
             <Input
               size="small"
@@ -298,7 +317,7 @@ export function MarketSyncDetailDrawer({
               }}
               pagination={{
                 current: quotePage + 1,
-                pageSize: PAGE_SIZE,
+                pageSize,
                 total: quoteTotal,
                 showSizeChanger: false,
                 size: 'small',

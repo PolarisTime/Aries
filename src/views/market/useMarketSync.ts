@@ -26,11 +26,11 @@ import {
   BACKFILL_POLL_INTERVAL_MS,
   type CalendarMap,
   csvCell,
+  detailPageSizeFor,
   type Filters,
   isTradingDay,
   MATRIX_DAYS,
   MAX_WINDOW_PAGES,
-  PAGE_SIZE,
   PERIODS,
   type QuoteSort,
   today,
@@ -59,6 +59,20 @@ export function useMarketSync() {
   const [applied, setApplied] = useState<Filters>({})
   const [sort, setSort] = useState<QuoteSort>({})
   const [quotePage, setQuotePage] = useState(0)
+  /**
+   * 明细每页行数随视口高度变化：高屏多显示几行，把抽屉高度填满；低屏仍保持 20 行并滚动。
+   * 视口尺寸变化时重新估算（只影响分页大小，不需要重新请求其它数据）。
+   */
+  const [detailPageSize, setDetailPageSize] = useState(() =>
+    detailPageSizeFor(typeof window === 'undefined' ? 0 : window.innerHeight),
+  )
+  useEffect(() => {
+    const onResize = () => {
+      setDetailPageSize(detailPageSizeFor(window.innerHeight))
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   /**
    * 矩阵窗口页码：0 = 最近一段（结束于今天），1 = 再往前一段…
@@ -160,11 +174,20 @@ export function useMarketSync() {
       sortBy: sort.field,
       direction: sort.order,
       page: quotePage,
-      size: PAGE_SIZE,
+      size: detailPageSize,
       source,
       region,
     }),
-    [selected.date, selected.period, applied, sort, quotePage, source, region],
+    [
+      selected.date,
+      selected.period,
+      applied,
+      sort,
+      quotePage,
+      detailPageSize,
+      source,
+      region,
+    ],
   )
 
   const quotesQuery = useQuery({
@@ -460,6 +483,7 @@ export function useMarketSync() {
     sort,
     quotePage,
     setQuotePage,
+    detailPageSize,
     matrixDays,
     calendars,
     calendarQuery,

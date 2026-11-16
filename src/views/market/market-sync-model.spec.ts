@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { latestQuotedSlot } from './market-sync-metrics'
 import {
   type CalendarMap,
+  detailPageSizeFor,
   isTradingDay,
   isWeekend,
   matrixCellState,
@@ -177,5 +178,20 @@ describe('交易日判定: 年度节假日/调休日历优先于周末兜底', (
         closed: true,
       }),
     ).toBe(true)
+  })
+})
+
+describe('detailPageSizeFor', () => {
+  it('高屏按行高估算更多行，低屏保持 20 行基准', () => {
+    // 1740 高屏：预留抽屉头/筛选/表头/分页后约 36 行，填满剩余高度
+    expect(detailPageSizeFor(1740)).toBe(36)
+    // 普通笔电高度不放大，保持既有 20 行/页
+    expect(detailPageSizeFor(1100)).toBe(20)
+    expect(detailPageSizeFor(768)).toBe(20)
+  })
+
+  it('非法/缺失视口高度回退到 PAGE_SIZE', () => {
+    expect(detailPageSizeFor(0)).toBe(20)
+    expect(detailPageSizeFor(Number.NaN)).toBe(20)
   })
 })
