@@ -2548,10 +2548,6 @@
   font-weight: 600;
 }
 
-.module-filter-chip-panel {
-  width: 240px;
-}
-
 .module-filter-chip-options {
   display: flex;
   flex-direction: column;
