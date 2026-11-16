@@ -1,4 +1,4 @@
-import { Input, type InputRef, Tooltip } from 'antd'
+import { Input, Tooltip } from 'antd'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PriceRow } from './types'
@@ -88,14 +88,30 @@ export function TonCell({
   /*
    * 非法值（0 / 负数 / 非数字）的处理：
    * 不写回单据（`onTonChange(undefined, true)` 由列层给 warning），**并把输入框还原成已提交值**。
-   * 输入框是非受控的（`defaultValue` + `key`），不回退就会停在用户敲的 "-3" 上，
-   * 而合计仍按旧值算 —— 同一行两个数字打架（用户实测反馈）。
+   *
+   * <p>显示值必须走受控 value：antd 内部自己维护 value 状态，过去用 `defaultValue` + 直接改
+   * `node.value` 回滚，重渲染后会被写回用户敲的 "-3"（用户实测：格内残留 -3，合计按旧值算）。</p>
    */
   const [invalid, setInvalid] = useState(false)
-  const inputRef = useRef<InputRef | null>(null)
-  /** 回车已提交过：随后的 blur 不要再用同一份文本重复提交一次。 */
-  const skipBlurCommitRef = useRef(false)
+  /*
+   * 输入期只改 draft；提交 / 回滚统一 `setDraft(null)`，显示值回到 row.ton。
+   * 这是本格吨位显示的**唯一来源**（与 SupplierQuoteBoard 的 `text ?? value` 同一写法）。
+   */
+  const [draft, setDraft] = useState<string | null>(null)
   const committedText = row.ton === undefined ? '' : String(row.ton)
+  const displayText = draft ?? committedText
+  /**
+   * 最近一次提交结果（含被拒的非法值）。
+   *
+   * <p>回车提交后紧接着的焦点下移会**同步**触发一次 blur，而父级此时还没把新的 row.ton
+   * 重渲染下来，只看 `parsed.value !== row.ton` 判不出重复，会把同一个值再提交一次。
+   * 这里按「提交结果是否与上一次相同」去重；用户一改输入（onChange）就清空，
+   * 因此不会像旧 `skipBlurCommitRef` 那样残留并吞掉下一次真实失焦（S4 的根因）。</p>
+   */
+  const lastCommittedRef = useRef<{
+    value: number | undefined
+    warnPositive: boolean
+  } | null>(null)
 
   /**
    * 提交吨位（**回车与失焦共用这一个出口**）。
@@ -105,21 +121,35 @@ export function TonCell({
    */
   const commitTonInput = (raw: string) => {
     const parsed = parseTonInput(raw)
+    // 先收掉草稿：无论提交成功还是回滚，显示值都回到 row.ton（或空），
+    // 不让用户敲的临时串（尤其 "-3"）粘在格子里。
+    setDraft(null)
+    const last = lastCommittedRef.current
+    if (
+      last &&
+      last.value === parsed.value &&
+      last.warnPositive === parsed.warnPositive
+    ) {
+      return
+    }
+    lastCommittedRef.current = {
+      value: parsed.value,
+      warnPositive: parsed.warnPositive,
+    }
     if (parsed.warnPositive) {
       setInvalid(true)
-      const node = inputRef.current?.input
-      if (node) node.value = committedText
       onTonChange(undefined, true)
       return
     }
     setInvalid(false)
+    // 幂等：值没变就不写回，避免失焦重复提交触发重复保存 / 重复历史。
+    if (parsed.value === row.ton) return
     onTonChange(parsed.value, false)
   }
 
   const tonInput = (
     <Input
-      key={`ton:${rowId}:${row.ton ?? ''}`}
-      ref={inputRef}
+      key={`ton:${rowId}`}
       aria-label={tonCellLabel(t, row)}
       className={
         lockedClassName
@@ -131,24 +161,25 @@ export function TonCell({
       inputMode="decimal"
       disabled={inputDisabled}
       data-ton={rowId}
-      defaultValue={committedText}
+      value={displayText}
       status={invalid ? 'error' : undefined}
       aria-invalid={invalid || undefined}
       title={invalid ? t('priceCompare.sheet.tonPositive') : undefined}
-      onChange={() => {
+      onChange={(event) => {
+        // 新输入 = 新一次提交：清掉上一次的提交结果，否则「回车后改值再失焦」会被误判成重复。
+        lastCommittedRef.current = null
+        setDraft(event.target.value)
         // 一开始改就撤掉红框：红框表示"上一次提交被拒"，不该粘着不走
         if (invalid) setInvalid(false)
       }}
       onBlur={(event) => {
-        if (skipBlurCommitRef.current) {
-          skipBlurCommitRef.current = false
-          return
-        }
         commitTonInput(event.target.value)
       }}
       onPressEnter={(event) => {
-        skipBlurCommitRef.current = true
         commitTonInput((event.target as HTMLInputElement).value)
+        // 回车 = 提交并下移一行（与供应商报价表、引导文案一致）；列尾返回 false 时
+        // 焦点留在本格。key 不再包含 row.ton，本格不会被重挂载，焦点不会掉到 body。
+        onMoveFocus(1)
       }}
       onKeyDown={(event) => {
         if (event.key !== 'Tab') return

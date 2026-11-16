@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import i18n from 'i18next'
-import { act, createElement } from 'react'
+import { act, createElement, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
@@ -99,6 +99,49 @@ describe('TonCell 报单吨位输入', () => {
   const tonInput = () =>
     container.querySelector<HTMLInputElement>('input[data-ton="r1"]')
 
+  /**
+   * 受控输入的真实键入模拟：必须走原生 setter 再派发 input 事件，
+   * React 的 value tracker 才会认为「用户改了值」并触发 onChange（直接赋值会被当成没变）。
+   */
+  const typeTon = (input: HTMLInputElement, value: string) => {
+    Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )?.set?.call(input, value)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
+  /**
+   * 有状态父级：像真实页面一样在 onTonChange 后把值回写到 row.ton（ton-column 的 patchRow）。
+   *
+   * <p>S3 / S4 / S5 都只在「父级回写后重渲染」这条真实路径上才暴露：
+   * 旧实现 `key` 含 row.ton，回写即重挂载 —— 焦点掉到 body、后续失焦提交被吞。</p>
+   */
+  const renderStateful = (
+    initialTon: number | undefined = 5,
+    onMoveFocus: TonCellProps['onMoveFocus'] = vi.fn(() => false),
+  ) => {
+    const onTonChange = vi.fn()
+    const StatefulTonCell = () => {
+      const [ton, setTon] = useState<number | undefined>(initialTon)
+      return createElement(TonCell, {
+        row: { ...baseRow, ton },
+        rowId: 'r1',
+        disabled: false,
+        rowLockDisabled: false,
+        onTonChange: (value, warnPositive) => {
+          onTonChange(value, warnPositive)
+          if (!warnPositive) setTon(value)
+        },
+        onMoveFocus,
+      })
+    }
+    act(() => {
+      root.render(createElement(StatefulTonCell))
+    })
+    return { onTonChange, onMoveFocus }
+  }
+
   it('渲染吨位输入框并回显当前吨位, 不渲染任何采购相关节点', () => {
     render()
     const input = tonInput()
@@ -139,7 +182,7 @@ describe('TonCell 报单吨位输入', () => {
     const props = render()
     const input = tonInput() as HTMLInputElement
     act(() => {
-      input.value = '12.5'
+      typeTon(input, '12.5')
       // React 的 onBlur 走 focusout 委托: 只派发原生 blur 不会触发处理器
       input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
@@ -150,12 +193,12 @@ describe('TonCell 报单吨位输入', () => {
     const props = render()
     const input = tonInput() as HTMLInputElement
     act(() => {
-      input.value = '0'
+      typeTon(input, '0')
       // React 的 onBlur 走 focusout 委托: 只派发原生 blur 不会触发处理器
       input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
     expect(props.onTonChange).toHaveBeenCalledWith(undefined, true)
-    // 非受控输入框必须自己回退，否则格子显示 0、合计按旧值算
+    // 受控 value 必须自己回退，否则格子显示 0、合计按旧值算
     expect((tonInput() as HTMLInputElement).value).toBe('5')
     expect((tonInput() as HTMLInputElement).className).toContain(
       'ant-input-status-error',
@@ -164,14 +207,12 @@ describe('TonCell 报单吨位输入', () => {
       'true',
     )
 
-    const negative = render()
-    const negativeInput = tonInput() as HTMLInputElement
     act(() => {
-      negativeInput.value = '-3'
+      typeTon(input, '-3')
       // React 的 onBlur 走 focusout 委托: 只派发原生 blur 不会触发处理器
-      negativeInput.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
-    expect(negative.onTonChange).toHaveBeenCalledWith(undefined, true)
+    expect(props.onTonChange).toHaveBeenLastCalledWith(undefined, true)
     expect((tonInput() as HTMLInputElement).value).toBe('5')
   })
 
@@ -179,7 +220,7 @@ describe('TonCell 报单吨位输入', () => {
     const props = render()
     const input = tonInput() as HTMLInputElement
     act(() => {
-      input.value = ''
+      typeTon(input, '')
       // React 的 onBlur 走 focusout 委托: 只派发原生 blur 不会触发处理器
       input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
@@ -190,8 +231,7 @@ describe('TonCell 报单吨位输入', () => {
     const props = render()
     const input = tonInput() as HTMLInputElement
     act(() => {
-      input.value = '8'
-      input.dispatchEvent(new Event('input', { bubbles: true }))
+      typeTon(input, '8')
       input.dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'Enter',
@@ -217,8 +257,7 @@ describe('TonCell 报单吨位输入', () => {
     const props = render()
     const input = tonInput() as HTMLInputElement
     act(() => {
-      input.value = '-3'
-      input.dispatchEvent(new Event('input', { bubbles: true }))
+      typeTon(input, '-3')
       input.dispatchEvent(
         new KeyboardEvent('keydown', {
           key: 'Enter',
@@ -306,5 +345,104 @@ describe('TonCell 报单吨位输入', () => {
   it('未锁定时不渲染锁定原因包装层(不误报只读)', () => {
     render()
     expect(container.querySelector('.price-compare-ton-lock-reason')).toBeNull()
+  })
+
+  /*
+   * 以下三条对应用户实测场景（2026-11-16，HANDOFF R2）：
+   * - S3：输入 -3 按回车，格内仍残留 -3（直接改 DOM 回滚，被 antd 内部 value 写回）。
+   * - S4：回车后再改值，失焦不提交（key 含 row.ton → 重挂载；skipBlurCommitRef 残留吞掉下一次失焦）。
+   * - S5：回车后焦点掉到 body（同一次重挂载）。
+   * 三条都必须在「父级把值回写到 row.ton 并重渲染」的真实路径上验证，静态 props 测不出来。
+   */
+  it('S3 回车提交负数被拒：格内还原成已提交值，不残留 -3', () => {
+    const props = renderStateful()
+    const input = tonInput() as HTMLInputElement
+    act(() => {
+      input.focus()
+      typeTon(input, '-3')
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+
+    expect(props.onTonChange).toHaveBeenCalledWith(undefined, true)
+    expect(props.onTonChange).not.toHaveBeenCalledWith(-3, expect.anything())
+    const restored = tonInput() as HTMLInputElement
+    expect(restored.value).toBe('5')
+    expect(restored.className).toContain('ant-input-status-error')
+    expect(restored.getAttribute('aria-invalid')).toBe('true')
+    // 旧实现重挂载会让焦点掉到 body；受控后本格不卸载，焦点留在输入框
+    expect(document.activeElement).toBe(restored)
+  })
+
+  it('S4/S5 回车提交后不重挂载：焦点留在本格，随后改值失焦仍提交', () => {
+    const props = renderStateful()
+    const input = tonInput() as HTMLInputElement
+    act(() => {
+      input.focus()
+      typeTon(input, '8')
+    })
+    act(() => {
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+
+    expect(props.onTonChange).toHaveBeenNthCalledWith(1, 8, false)
+    // 父级回写 row.ton=8 后仍应是同一个 DOM 节点（key 不含 row.ton），焦点不能掉到 body（S5）
+    const afterEnter = tonInput() as HTMLInputElement
+    expect(afterEnter).toBe(input)
+    expect(afterEnter.value).toBe('8')
+    expect(document.activeElement).toBe(afterEnter)
+
+    // 回车后继续改值 → 失焦必须仍然提交（旧实现 skipBlurCommitRef 残留会吞掉这次提交，S4）
+    act(() => {
+      typeTon(afterEnter, '7')
+    })
+    act(() => {
+      afterEnter.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    expect(props.onTonChange).toHaveBeenLastCalledWith(7, false)
+    expect((tonInput() as HTMLInputElement).value).toBe('7')
+  })
+
+  it('回车提交后调用 onMoveFocus(1) 下移；同步 blur 不会重复提交同一格', () => {
+    // 真实浏览器里 onMoveFocus 会 focus 下一行 → 同步触发本格 blur。
+    // 这里用外部 input 复现这个顺序，锁定「回车只提交一次」。
+    const nextInput = document.createElement('input')
+    document.body.appendChild(nextInput)
+    const onMoveFocus = vi.fn(() => {
+      nextInput.focus()
+      return true
+    })
+    const props = renderStateful(5, onMoveFocus)
+    const input = tonInput() as HTMLInputElement
+    act(() => {
+      input.focus()
+      typeTon(input, '8')
+    })
+    act(() => {
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+
+    expect(onMoveFocus).toHaveBeenCalledWith(1)
+    expect(props.onTonChange).toHaveBeenCalledTimes(1)
+    expect(props.onTonChange).toHaveBeenCalledWith(8, false)
+    expect(document.activeElement).toBe(nextInput)
+    nextInput.remove()
   })
 })
