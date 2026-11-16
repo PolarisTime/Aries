@@ -13,6 +13,16 @@ export function resolveSegmentedFilterValue(value: unknown): string {
   return normalized || SEGMENTED_ALL_VALUE
 }
 
+/**
+ * 「全部」哨兵值 → `undefined`（= 不限），其它值原样返回。
+ *
+ * <p>**唯一转换口**：分段筛选与下拉筛选都靠它把「全部」落回"不过滤"。
+ * 两处各写一次三元表达式时，很容易一边把哨兵字符串直接提交给后端。</p>
+ */
+export function normalizeAllOptionValue(value: unknown): unknown {
+  return value === SEGMENTED_ALL_VALUE ? undefined : value
+}
+
 export function toSegmentedOptions(
   entries: readonly ModuleFilterOptionEntry[],
 ): { label: string; value: string }[] {

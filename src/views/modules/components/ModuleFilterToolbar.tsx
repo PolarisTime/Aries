@@ -333,12 +333,14 @@ export function ModuleFilterToolbar({
         field.span,
       )
     }
-    if (field.type === 'dateRange') {
+    if (field.type === 'dateRange' || field.type === 'select') {
       return (
         <FilterField
           key={field.key}
           label={field.label}
-          className="module-filter-field-range"
+          className={
+            field.type === 'dateRange' ? 'module-filter-field-range' : undefined
+          }
           span={field.span}
         >
           <ModuleFilterField
@@ -356,6 +358,11 @@ export function ModuleFilterToolbar({
         </FilterField>
       )
     }
+    /*
+     * 只剩「分段按钮」类筛选走 chip：它的面板里是 Radio 组，本身就是一层，不会再套下拉。
+     * 下拉筛选（select）已改为上面那条内联 Select —— 之前 chip → Popover → Select 的三层
+     * 结构就是用户说的「套中套」。
+     */
     return (
       <FilterField key={field.key} label={field.label} span={field.span}>
         <ModuleFilterChip

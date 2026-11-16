@@ -362,4 +362,40 @@ describe('ModuleFilterToolbar', () => {
     expect(hasResetButton()).toBe(true)
     expect(hasResetButton(false)).toBe(false)
   })
+
+  /*
+   * 下拉筛选曾经是「chip 按钮 → Popover → 里面再放一个 Select」，
+   * 点一次开弹层、再点一次才出选项（用户："这个套中套的下拉框移除"）。
+   * 契约：select 类型只渲染内联控件，不再出现 chip 按钮/弹层。
+   */
+  it('下拉筛选直接内联渲染，不再包 chip 弹层', () => {
+    const config = {
+      filters: [
+        {
+          key: 'customerId',
+          label: '客户名称',
+          type: 'select',
+          options: [{ label: 'E2E-FIXTURE客户', value: 'c2' }],
+        },
+      ],
+      quickFilters: [],
+    } as unknown as ModulePageConfig
+
+    act(() => {
+      root.render(
+        createElement(ModuleFilterToolbar, {
+          config,
+          filters: {},
+          submittedFilters: {},
+          onUpdateFilter: vi.fn(),
+          onApplyFilters: vi.fn(),
+          onReset: vi.fn(),
+        }),
+      )
+    })
+
+    // 本 spec 把 ModuleFilterField 整体 mock 成 null，能断言的只有「不再出现 chip 按钮」；
+    // 内联 Select 的真实渲染由 ModuleFilterField.spec.tsx 覆盖。
+    expect(container.querySelectorAll('.module-filter-chip').length).toBe(0)
+  })
 })

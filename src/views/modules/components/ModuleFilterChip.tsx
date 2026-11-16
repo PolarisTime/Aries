@@ -1,5 +1,5 @@
 import { DownOutlined } from '@ant-design/icons'
-import { Popover, Radio, Select } from 'antd'
+import { Popover, Radio } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { ProjectOption } from '@/api/master/project-options'
 import type { SearchParams } from '@/types/api-raw'
@@ -10,6 +10,7 @@ import type {
 import { resolveFilterOptions } from '@/views/modules/components/module-filter-options'
 import {
   buildNextFilters,
+  normalizeAllOptionValue,
   normalizeFilters,
   resolveSegmentedFilterValue,
   SEGMENTED_ALL_VALUE,
@@ -34,7 +35,7 @@ interface ChipProps {
   onApplyFilters: (filters: SearchParams) => void
 }
 
-/** 单个分段/下拉筛选 chip：按钮 + 弹出面板，提交行为与工具栏一致。 */
+/** 分段筛选 chip（按钮 + Radio 面板）。下拉筛选已改为内联 Select，不再走这里。 */
 export function ModuleFilterChip({
   field,
   filters,
@@ -56,64 +57,34 @@ export function ModuleFilterChip({
   )?.label
   const ariaLabel = `${field.label}: ${active ? (selectedLabel ?? String(value)) : t('modules.filter.all')}`
   const closeChip = () => onToggle(false)
-  const popoverContent =
-    field.type === 'select' ? (
-      <div className="module-filter-chip-panel">
-        <Select
-          autoFocus
-          allowClear
-          aria-label={field.label}
-          style={{ width: '100%' }}
-          placeholder={
-            field.placeholder ||
-            t('modules.filter.selectPlaceholder', { label: field.label })
-          }
-          value={
-            typeof value === 'string' || typeof value === 'number'
-              ? value
-              : undefined
-          }
-          onChange={(nextValue) => {
-            onUpdateFilter(field.key, nextValue)
-            onApplyFilters(
-              buildNextFilters(
-                submittedFilters,
-                field.key,
-                nextValue,
-                field.resetKeysOnChange,
-              ),
-            )
-            closeChip()
-          }}
-          options={resolveFilterOptions(field, filters, projectOptions)}
-        />
-      </div>
-    ) : (
-      <Radio.Group
-        aria-label={field.label}
-        className="module-filter-chip-options"
-        value={resolveSegmentedFilterValue(value)}
-        onChange={(event) => {
-          const rawValue = String(event.target.value)
-          const nextValue =
-            rawValue === SEGMENTED_ALL_VALUE ? undefined : rawValue
-          onUpdateFilter(field.key, nextValue)
-          onApplyFilters(
-            buildNextFilters(
-              submittedFilters,
-              field.key,
-              nextValue,
-              field.resetKeysOnChange,
-            ),
-          )
-          closeChip()
-        }}
-        options={[
-          { label: t('modules.filter.all'), value: SEGMENTED_ALL_VALUE },
-          ...options,
-        ]}
-      />
-    )
+  /*
+   * 面板里只放 Radio 组（一层）：下拉筛选已经改为内联 Select，不再走这里 ——
+   * 曾经的「chip → Popover → Select」是用户反馈的「套中套」。
+   */
+  const popoverContent = (
+    <Radio.Group
+      aria-label={field.label}
+      className="module-filter-chip-options"
+      value={resolveSegmentedFilterValue(value)}
+      onChange={(event) => {
+        const nextValue = normalizeAllOptionValue(String(event.target.value))
+        onUpdateFilter(field.key, nextValue)
+        onApplyFilters(
+          buildNextFilters(
+            submittedFilters,
+            field.key,
+            nextValue,
+            field.resetKeysOnChange,
+          ),
+        )
+        closeChip()
+      }}
+      options={[
+        { label: t('modules.filter.all'), value: SEGMENTED_ALL_VALUE },
+        ...options,
+      ]}
+    />
+  )
 
   return (
     <Popover

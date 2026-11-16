@@ -10,6 +10,10 @@ import { DATE_PICKER_FORMATS } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
 import type { ModuleDateRangePreset } from '@/views/modules/components/module-date-range'
 import { resolveFilterOptions } from '@/views/modules/components/module-filter-options'
+import {
+  normalizeAllOptionValue,
+  SEGMENTED_ALL_VALUE,
+} from '@/views/modules/components/module-filter-utils'
 
 interface Props {
   field: ModuleFilterDefinition
@@ -36,6 +40,16 @@ export function ModuleFilterField({
   const fieldId = buildFormControlId('module-filter', field.key)
 
   if (field.type === 'select') {
+    /*
+     * 下拉筛选必须**一层**：控件本身就是 Select，「全部」作为第一个选项（选中它 = 不限，
+     * 提交时转成 undefined）。曾经这里套在 chip 按钮的 Popover 里，点开 popover 还要再点一次
+     * Select 才出选项 —— 「套中套」既多一次点击，也让人分不清哪个才是真正的下拉。
+     */
+    const rawValue = filters[field.key]
+    const value =
+      typeof rawValue === 'string' || typeof rawValue === 'number'
+        ? rawValue
+        : SEGMENTED_ALL_VALUE
     return (
       <Select
         id={fieldId}
@@ -43,18 +57,15 @@ export function ModuleFilterField({
         allowClear
         className="module-filter-control"
         style={{ width: '100%' }}
-        placeholder={
-          field.placeholder ||
-          t('modules.filter.selectPlaceholder', { label: field.label })
+        placeholder={t('modules.filter.all')}
+        value={value}
+        onChange={(nextValue) =>
+          onCommitFilter(field.key, normalizeAllOptionValue(nextValue))
         }
-        value={
-          typeof filters[field.key] === 'string' ||
-          typeof filters[field.key] === 'number'
-            ? filters[field.key]
-            : undefined
-        }
-        onChange={(value) => onCommitFilter(field.key, value)}
-        options={resolveFilterOptions(field, filters, projectOptions)}
+        options={[
+          { label: t('modules.filter.all'), value: SEGMENTED_ALL_VALUE },
+          ...resolveFilterOptions(field, filters, projectOptions),
+        ]}
       />
     )
   }
