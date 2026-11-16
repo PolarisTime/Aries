@@ -120,6 +120,7 @@ describe('SheetPanel 无障碍契约', () => {
             onReorderBrands: () => {},
             periods: ['9:30 上午'],
             onRefresh: () => {},
+            onToggleHrb400eFallback: () => {},
             chrome: false,
             spotRef: { current: null },
             allowHrb400eFallback: overrides?.allowHrb400eFallback ?? false,
@@ -185,6 +186,26 @@ describe('SheetPanel 无障碍契约', () => {
       .map((input) => input.getAttribute('aria-label'))
       .filter(Boolean)
     expect(periodLabel).toContain('参照时段')
+  })
+
+  it('四个开关暴露 aria-pressed，两个日期控件有关联标签', () => {
+    render({
+      sheet: { locked: true, specQuantityLocked: true },
+      allowHrb400eFallback: true,
+    })
+    const pressed = [...container.querySelectorAll('button[aria-pressed]')]
+    expect(pressed.length).toBe(4)
+    expect(
+      pressed.filter((button) => button.getAttribute('aria-pressed') === 'true'),
+    ).toHaveLength(3)
+    expect(
+      container.querySelector('label[for="price-compare-order-date"]'),
+    ).not.toBeNull()
+    expect(
+      container.querySelector('label[for="price-compare-ref-date"]'),
+    ).not.toBeNull()
+    expect(container.querySelector('#price-compare-order-date')).not.toBeNull()
+    expect(container.querySelector('#price-compare-ref-date')).not.toBeNull()
   })
 
   it('被裁切的表头提供 title 完整文案', () => {

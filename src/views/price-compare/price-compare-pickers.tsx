@@ -270,6 +270,7 @@ export function PriceCompareBatchBar({
       <Dropdown
         trigger={['click']}
         menu={{
+          'aria-label': t('priceCompare.picker.a11y.more'),
           items: [
             {
               key: 'rename',

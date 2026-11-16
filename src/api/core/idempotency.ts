@@ -80,3 +80,13 @@ export function withIdempotencyKeySuppressingErrors(
     suppressGlobalErrorStatuses: statuses,
   })
 }
+
+/** 附幂等键并完全静默全局错误 toast；用于页内已有保存状态/重试入口的自动保存。 */
+export function withIdempotencyKeySuppressingGlobalErrors(
+  config?: AxiosRequestConfig & { suppressGlobalErrorToast?: boolean },
+): AxiosRequestConfig & { suppressGlobalErrorToast?: boolean } {
+  return withIdempotencyKey({
+    ...config,
+    suppressGlobalErrorToast: true,
+  })
+}

@@ -3073,7 +3073,7 @@ export const zhCN = {
       batchCount: '（{{n}} 个批次）',
       noBatch: '（未建批次）',
       newBatch: '新建批次',
-      renameCurrentBatch: '重命名批次',
+      renameCurrentBatch: '重命名批次…',
       /* 重命名弹层。后端对 name 是 @NotBlank + @Size(max=64)，这里同口径校验后再提交。 */
       renameTitle: '重命名批次',
       renameLabel: '批次名称',

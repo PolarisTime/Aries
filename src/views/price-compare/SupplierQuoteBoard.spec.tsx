@@ -633,6 +633,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
         { ...withoutBrand(ROW_A), price: 3290, priceStatus: 'NORMAL' },
         { ...withoutBrand(ROW_B), price: 3300 },
       ],
+      { suppressGlobalErrorToast: true },
     )
   })
 
@@ -692,6 +693,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
       'l1',
       3,
       [{ ...withoutBrand(ROW_B), price: 3300 }],
+      { suppressGlobalErrorToast: true },
     )
   })
 

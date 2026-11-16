@@ -1314,6 +1314,7 @@ export function SupplierQuoteBoard() {
         target.listId,
         target.version,
         plan.items,
+        { suppressGlobalErrorToast: true },
       )
       setColumns((current) => ({ ...current, [brandName]: saved }))
       applySavedToGrid(

@@ -3092,7 +3092,7 @@ export const enUS = {
       batchCount: ' ({{n}} batches)',
       noBatch: ' (no batch yet)',
       newBatch: 'New batch',
-      renameCurrentBatch: 'Rename batch',
+      renameCurrentBatch: 'Rename batch…',
       renameTitle: 'Rename batch',
       renameLabel: 'Batch name',
       renamePlaceholder: 'Enter batch name',

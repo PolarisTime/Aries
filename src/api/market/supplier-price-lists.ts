@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { apiDeleteNoContent, apiGet, apiPost, apiPut } from '@/api/core/client'
-import { withIdempotencyKey } from '@/api/core/idempotency'
+import { withIdempotencyKey, withIdempotencyKeySuppressingGlobalErrors } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import { STATUS } from '@/constants/status-constants'
 import type { EntityId } from '@/types/entity-id'
@@ -204,12 +204,15 @@ export async function saveSupplierPriceColumnItems(
   listId: EntityId,
   expectedVersion: number,
   items: SupplierPriceCellInput[],
+  options?: { suppressGlobalErrorToast?: boolean },
 ): Promise<SupplierPriceColumn> {
   const payload = await apiPut(
     `${ENDPOINTS.SUPPLIER_PRICE_LISTS}/${listId}/items`,
     columnSchema,
     { expectedVersion, items },
-    withIdempotencyKey(),
+    options?.suppressGlobalErrorToast
+      ? withIdempotencyKeySuppressingGlobalErrors()
+      : withIdempotencyKey(),
   )
   return {
     listId: toId(payload.listId),

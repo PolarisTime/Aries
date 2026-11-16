@@ -639,6 +639,7 @@ function LockRefButton({
       }
     >
       <Button
+        aria-pressed={sheet.locked}
         type={sheet.locked ? 'primary' : 'default'}
         icon={sheet.locked ? <LockOutlined /> : <UnlockOutlined />}
         disabled={readOnly}
@@ -672,6 +673,7 @@ function LockSpecQuantityButton({
       }
     >
       <Button
+        aria-pressed={sheet.specQuantityLocked}
         type={sheet.specQuantityLocked ? 'primary' : 'default'}
         icon={sheet.specQuantityLocked ? <LockOutlined /> : <UnlockOutlined />}
         disabled={readOnly}
@@ -849,6 +851,8 @@ function SheetDateFields({
 }) {
   const { t } = useTranslation()
   const dateFormat = t('priceCompare.sheet.dateFormat')
+  const orderDateId = 'price-compare-order-date'
+  const refDateId = 'price-compare-ref-date'
   return (
     <Flex align="center" wrap="wrap" gap={8}>
       <Flex gap="small" align="center" wrap="wrap">
@@ -856,14 +860,17 @@ function SheetDateFields({
           {sheet.projectName || t('priceCompare.sheet.unspecifiedProject')}
         </Text>
         <Space size="small">
-          <Text type="secondary" className="price-compare-sub">
-            {t('priceCompare.sheet.orderDate')}
-          </Text>
+          <label htmlFor={orderDateId}>
+            <Text type="secondary" className="price-compare-sub">
+              {t('priceCompare.sheet.orderDate')}
+            </Text>
+          </label>
           {/*
             宽度必须放得下 `YYYY年MM月DD日`：132px 在 size="small" 下会把「日」截掉
             （实测只显示到「2026年10月19」，用户看不出是哪一天）。156px 留出图标与内边距。
           */}
           <DatePicker
+            id={orderDateId}
             size="small"
             style={{ width: 156 }}
             value={sheet.orderDate ? dayjs(sheet.orderDate) : null}
@@ -877,12 +884,15 @@ function SheetDateFields({
           />
         </Space>
         <Space size="small">
-          <Tooltip title={t('priceCompare.sheet.refDateTooltip')}>
-            <Text type="secondary" className="price-compare-sub">
-              <InfoCircleOutlined /> {t('priceCompare.sheet.refPrice')}
-            </Text>
-          </Tooltip>
+          <label htmlFor={refDateId}>
+            <Tooltip title={t('priceCompare.sheet.refDateTooltip')}>
+              <Text type="secondary" className="price-compare-sub">
+                <InfoCircleOutlined /> {t('priceCompare.sheet.refPrice')}
+              </Text>
+            </Tooltip>
+          </label>
           <DatePicker
+            id={refDateId}
             size="small"
             style={{ width: 156 }}
             className={
@@ -1038,6 +1048,7 @@ function SheetActionRow({
         patchSheet={patchSheet}
       />
       <Button
+        aria-pressed={bestOn}
         type={bestOn ? 'primary' : 'default'}
         icon={<TrophyOutlined />}
         onClick={onToggleBest}
@@ -1085,6 +1096,7 @@ function SheetActionRow({
       {onToggleHrb400eFallback ? (
         <Tooltip title={t('priceCompare.sheet.hrb400eFallbackHint')}>
           <Button
+            aria-pressed={allowHrb400eFallback}
             icon={<SwapOutlined />}
             type={allowHrb400eFallback ? 'primary' : 'default'}
             disabled={readOnly}

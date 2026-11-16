@@ -7,6 +7,8 @@ import { apiBaseUrl } from '@/utils/env'
 
 export type ApiRequestConfig = AxiosRequestConfig & {
   suppressGlobalErrorStatuses?: readonly number[]
+  /** 完全静默该请求的全局错误 toast；错误由调用方在页内呈现。 */
+  suppressGlobalErrorToast?: boolean
   returnFullResponse?: boolean
 }
 
