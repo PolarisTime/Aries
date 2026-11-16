@@ -41,7 +41,7 @@ jobs:
       PROD_FRONTEND_ROOT: ${{ vars.PROD_FRONTEND_ROOT || '/instance/steelx/frontend' }}
     steps:
       - name: Checkout Aries deploy scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Roll back frontend release
         run: |
@@ -70,7 +70,7 @@ jobs:
       PROD_FRONTEND_ROOT: ${{ vars.PROD_FRONTEND_ROOT || '/instance/steelx/frontend' }}
     steps:
       - name: Checkout Aries deploy scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configure SSH
         run: |
