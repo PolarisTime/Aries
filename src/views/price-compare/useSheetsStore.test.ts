@@ -8,6 +8,7 @@ import { message, modal } from '@/utils/antd-app'
 import { makeRow } from './core'
 import {
   buildConfigFromRecord,
+  buildConfigPayload,
   type SheetsStore,
   STEELX_VIRTUAL_BRAND,
   useSheetsStore,
@@ -2447,5 +2448,37 @@ describe('buildConfigFromRecord 西本归一', () => {
   it('Mysteel 项目保留原有品牌', () => {
     const config = buildConfigFromRecord({ ...base, quoteSource: 'MYSTEEL' })
     expect(config.brands.map((b) => b.name)).toEqual(['中天', '永钢'])
+  })
+})
+
+describe('比价配置保存载荷：只写运费（2026-11-16 定稿）', () => {
+  it('brands 只带 brandName + freight，其它配置字段一律不下发', () => {
+    const payload = buildConfigPayload({
+      brands: [
+        { name: '中天', freight: 32, categories: ['直条'] },
+        { name: '永钢', freight: 20 },
+      ],
+      lengthPremium: 45,
+      hrb400eFallback: true,
+      products: ['直条|HRB400E|12|9米'],
+      designatedBrands: ['中天'],
+      remark: '只改运费',
+    })
+    expect(payload).toEqual({
+      remark: '只改运费',
+      brands: [
+        { brandName: '中天', freight: 32 },
+        { brandName: '永钢', freight: 20 },
+      ],
+    })
+  })
+
+  it('没有备注时载荷里不出现 remark 键', () => {
+    const payload = buildConfigPayload({
+      brands: [{ name: '中天', freight: 30 }],
+      lengthPremium: 0,
+      hrb400eFallback: false,
+    })
+    expect('remark' in payload).toBe(false)
   })
 })

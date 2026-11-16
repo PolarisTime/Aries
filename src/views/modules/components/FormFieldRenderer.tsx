@@ -116,8 +116,22 @@ export function FormFieldRenderer({
     return null
   })()
 
+  /*
+   * 模块专属控件优先：复合字段（品牌 × 品类矩阵、按类别分组的商品多选）由模块自己渲染，
+   * `Form.Item` 仍负责取值/校验（value/onChange 由它注入）。只读态沿用同一套「文本回显」
+   * 规则之外，不再强行改成纯文本 —— 复合控件自己按 disabled 呈现。
+   */
+  const customControl = field.render?.({
+    form,
+    values: formValues,
+    label: displayLabel,
+    disabled: Boolean(disabledValue),
+  })
+
   const control =
-    readOnlyText !== null ? (
+    customControl !== undefined ? (
+      customControl
+    ) : readOnlyText !== null ? (
       <span id={fieldId} className="editor-form-readonly-text">
         {readOnlyText}
       </span>

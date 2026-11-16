@@ -34,6 +34,7 @@ export type {
   ModuleFormFieldHint,
   ModuleFormFieldOption,
   ModuleFormFieldOptionResolver,
+  ModuleFormFieldRenderContext,
   ModuleFormFieldType,
   ModuleFormStep,
   ModuleMasterOptionRequirements,

@@ -1,46 +1,32 @@
 // @vitest-environment jsdom
+
 import i18n from 'i18next'
-import { act, createElement, useState } from 'react'
+import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
 import { ProjectConfigModal } from './ProjectConfigModal'
 import type { ProjectConfig } from './types'
 
-const EMPTY_CONFIG: ProjectConfig = {
-  brands: [],
+/**
+ * 比价「配置」弹层：**品牌只读、只写运费**。
+ *
+ * <p>2026-11-16 定稿：品牌/品种/规格/加价/代取/指定品牌只在项目资料维护，
+ * 弹层里不应再出现增删品牌、品类、商品等控件；保存回调只带回运费变化。</p>
+ */
+
+const config = (): ProjectConfig => ({
+  brands: [
+    { name: '中天', freight: 30 },
+    { name: '沙钢', freight: 25 },
+  ],
   lengthPremium: 30,
   hrb400eFallback: false,
-}
+})
 
-const BRAND_OPTIONS = ['中天', '沙钢', '永钢']
-
-/**
- * 切到「品牌与品种」页签。
- *
- * <p>品牌区在 antd Tabs 的非默认页签里，未切换时 DOM 上根本没有候选品牌节点，
- * 直接断言会得到空字符串而不是失败原因，容易误判成「过滤没生效」。</p>
- */
-async function activateBrandsTab() {
-  const tab = Array.from(document.querySelectorAll('[role="tab"]')).find(
-    (node) =>
-      (node.textContent ?? '').includes(
-        i18n.t('priceCompare.config.tabs.brands'),
-      ),
-  )
-  if (!tab) throw new Error('未找到「品牌与品种」页签')
-  await act(async () => {
-    ;(tab as HTMLElement).click()
-    await Promise.resolve()
-  })
-}
-
-describe('ProjectConfigModal 草稿稳定性', () => {
+describe('ProjectConfigModal：品牌只读 + 只写运费', () => {
   let container: HTMLDivElement
   let root: Root
-  let renderCount = 0
-  let setOpenRef: ((value: boolean) => void) | null = null
-  let setConfigRef: ((value: ProjectConfig) => void) | null = null
 
   beforeEach(async () => {
     await i18n.changeLanguage('zh-CN')
@@ -66,9 +52,6 @@ describe('ProjectConfigModal 草稿稳定性', () => {
     ;(
       globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true
-    renderCount = 0
-    setOpenRef = null
-    setConfigRef = null
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
@@ -84,131 +67,78 @@ describe('ProjectConfigModal 草稿稳定性', () => {
     container.remove()
   })
 
-  /**
-   * 模拟父组件未 memo 的行为: 每次 render 都构造新的 brandOptions 数组,
-   * 且 config 可在打开期间变化(保存回填/后台刷新)。
-   */
-  function Harness() {
-    renderCount += 1
-    const brandOptions = [...BRAND_OPTIONS]
-    const [open, setOpen] = useState(false)
-    const [config, setConfig] = useState<ProjectConfig>(EMPTY_CONFIG)
-    setOpenRef = setOpen
-    setConfigRef = setConfig
-    return createElement(ProjectConfigModal, {
-      open,
-      brandOptions,
-      projectAllowedBrands: [],
-      varieties: [],
-      config,
-      onClose: () => {},
-      onSave: () => {},
+  const render = (onSave = vi.fn()) => {
+    act(() => {
+      root.render(
+        createElement(ProjectConfigModal, {
+          config: config(),
+          onClose: () => {},
+          onSave,
+          open: true,
+        }),
+      )
     })
+    return onSave
   }
 
-  it('空品牌打开时不出现无限渲染', async () => {
-    act(() => {
-      root.render(createElement(Harness))
-    })
-    act(() => {
-      setOpenRef?.(true)
-    })
-    const afterOpen = renderCount
-    await act(async () => {
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-
-    expect(renderCount - afterOpen).toBeLessThanOrEqual(4)
-    expect(document.querySelector('.ant-modal')).not.toBeNull()
+  it('品牌来自服务端配置且只读：只有品牌名与运费输入，没有增删/品类/商品控件', () => {
+    render()
+    const rows = document.querySelectorAll('.pc-brand-row')
+    expect(rows).toHaveLength(2)
+    expect(
+      Array.from(document.querySelectorAll('.pc-brand-name')).map(
+        (node) => node.textContent,
+      ),
+    ).toEqual(['中天', '沙钢'])
+    // 每个品牌只有运费一个输入框
+    expect(document.querySelectorAll('.pc-freight-input')).toHaveLength(2)
+    // 删除品牌 / 添加品牌 / 品类 / 商品区一律不存在（配置点已归并到项目资料）
+    expect(document.querySelector('[aria-label="Remove brand"]')).toBeNull()
+    expect(document.querySelectorAll('.pc-remove-brand')).toHaveLength(0)
+    expect(document.querySelectorAll('[role="tab"]')).toHaveLength(0)
   })
 
-  it('打开期间 config 变化不重置正在编辑的草稿', async () => {
-    act(() => {
-      root.render(createElement(Harness))
-    })
-    act(() => {
-      setOpenRef?.(true)
-    })
-    // 切到品牌页签(默认仅渲染当前页签内容)
-    const tabs = document.querySelectorAll('.ant-tabs-tab')
-    act(() => {
-      ;(tabs[1] as HTMLElement).click()
-    })
-    expect(document.querySelectorAll('.pc-brand-row')).toHaveLength(3)
-
-    // 打开期间 config 变化(保存回填版本/刷新): 草稿不应被重置
-    await act(async () => {
-      setConfigRef?.({
-        brands: [{ name: '中天', freight: 30 }],
-        lengthPremium: 30,
-        hrb400eFallback: false,
-      })
-      await Promise.resolve()
-    })
-
-    expect(document.querySelectorAll('.pc-brand-row')).toHaveLength(3)
+  it('顶部提示与「去项目资料维护」入口', () => {
+    render()
+    const text = document.body.textContent ?? ''
+    expect(text).toContain(i18n.t('priceCompare.config.freightOnlyHint'))
+    const link = document.querySelector('.price-compare-config-goto-project')
+    expect(link?.getAttribute('href')).toBe('/project')
   })
 
-  /**
-   * 「参与品牌」的候选范围以项目资料的允许品牌为上限。
-   *
-   * <p>合并前比价页自己维护一份品牌清单，可以与项目资料互相矛盾
-   * （项目允许 A/B，比价却在用 C）。现在品牌范围的唯一配置入口是项目资料，
-   * 比价页只能在其中挑选，并提示来源。</p>
-   */
-  it('项目配置了允许品牌时，候选只包含这些品牌并显示来源提示', async () => {
+  it('保存只带回运费：其它配置字段保持调用方传入的值', () => {
+    const onSave = render()
+    // 直接触发 antd Modal 的确定按钮（文案为「保存」）
+    const okButton = Array.from(
+      document.querySelectorAll('.ant-modal-footer button'),
+    ).find((button) => (button.textContent ?? '').includes('保'))
+    if (!okButton) throw new Error('未找到弹层的保存按钮')
+    act(() => {
+      ;(okButton as HTMLButtonElement).click()
+    })
+
+    expect(onSave).toHaveBeenCalledTimes(1)
+    const saved = onSave.mock.calls[0]?.[0] as ProjectConfig
+    expect(saved.brands.map((brand) => brand.name)).toEqual(['中天', '沙钢'])
+    expect(saved.brands.map((brand) => brand.freight)).toEqual([30, 25])
+    expect(saved.lengthPremium).toBe(30)
+    expect(saved.hrb400eFallback).toBe(false)
+  })
+
+  it('没有品牌时不渲染运费行，而是给出空态提示', () => {
     act(() => {
       root.render(
         createElement(ProjectConfigModal, {
-          open: true,
-          brandOptions: BRAND_OPTIONS,
-          projectAllowedBrands: ['中天', '沙钢'],
-          varieties: [],
-          config: EMPTY_CONFIG,
+          config: { brands: [], lengthPremium: 0, hrb400eFallback: false },
           onClose: () => {},
-          onSave: () => {},
+          onSave: vi.fn(),
+          open: true,
         }),
       )
     })
-    await act(async () => {
-      await Promise.resolve()
-    })
-    await activateBrandsTab()
-
-    // antd Modal 渲染到 body 下的 portal，不在 container 内
-    const text = document.body.textContent ?? ''
-    // 候选 = 商品品牌全集 ∩ 项目允许品牌；「永钢」不在允许范围，不应出现
-    expect(text).toContain('中天')
-    expect(text).toContain('沙钢')
-    expect(text).not.toContain('永钢')
-    // 来源提示说明这批品牌来自项目资料
-    expect(text).toContain('允许的品牌')
-  })
-
-  it('项目未配置允许品牌时不限制，候选为商品品牌全集且不显示来源提示', async () => {
-    act(() => {
-      root.render(
-        createElement(ProjectConfigModal, {
-          open: true,
-          brandOptions: BRAND_OPTIONS,
-          projectAllowedBrands: [],
-          varieties: [],
-          config: EMPTY_CONFIG,
-          onClose: () => {},
-          onSave: () => {},
-        }),
-      )
-    })
-    await act(async () => {
-      await Promise.resolve()
-    })
-    await activateBrandsTab()
-
-    const text = document.body.textContent ?? ''
-    expect(text).toContain('中天')
-    expect(text).toContain('沙钢')
-    expect(text).toContain('永钢')
-    expect(text).not.toContain('来自项目资料的「允许的品牌」')
+    expect(document.querySelectorAll('.pc-brand-row')).toHaveLength(0)
+    expect(document.body.textContent).toContain(
+      i18n.t('priceCompare.config.noBrands'),
+    )
   })
 })

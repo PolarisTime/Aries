@@ -1,4 +1,5 @@
 import i18next from 'i18next'
+import { createElement } from 'react'
 import {
   DEFAULT_PRICE_CLOSED_SETTLE_DAYS,
   DEFAULT_PRICE_CLOSED_SETTLE_DIRECTION,
@@ -34,6 +35,11 @@ import {
   PRICE_PERIOD_POLICY_LABEL_KEYS,
   PRICE_PERIOD_POLICY_OPTIONS,
 } from '@/views/modules/components/pricing-quote-labels'
+import {
+  PROJECT_VARIETY_OPTIONS,
+  ProjectQuoteBrandCategoriesField,
+  ProjectQuoteHrb400eFallbackField,
+} from '@/views/modules/components/project-quote-config-fields'
 import { actionSet, buildMasterOverview, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'
 import {
@@ -101,6 +107,20 @@ const PERIOD_FIELD_OPTIONS: ModuleFormFieldOption[] = PRICE_PERIOD_OPTIONS.map(
 
 const PRICING_SECTION = i18next.t('modules.pages.project.sectionPricing')
 const SCOPE_SECTION = i18next.t('modules.pages.project.sectionScope')
+/**
+ * 比价配置区块：2026-11-16 用户定稿，品牌/品种/规格/加价/代取/指定品牌**只在项目资料维护**，
+ * 报单比价的「配置」弹层只剩每品牌运费。
+ */
+const QUOTE_SECTION = i18next.t('modules.pages.project.sectionQuote')
+
+/** 表单值里的字符串数组归一化（品牌矩阵要读同表单的「允许的品牌」）。 */
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((item) => {
+    const text = asString(item).trim()
+    return text ? [text] : []
+  })
+}
 
 /**
  * 允许品牌 / 允许材质的展示口径 —— 列表列与详情页**共用这一个出口**。
@@ -251,6 +271,15 @@ const projectPageConfig: ModulePageConfig = {
     {
       label: i18next.t('modules.pages.project.allowedMaterials'),
       key: 'allowedMaterials',
+    },
+    /*
+     * 比价配置字段按需进详情：品牌/品种/规格/指定品牌都是多值，详情网格里挤成一行会很难读，
+     * 且列表主列已够用 —— 详情只补「定尺加价」这一项单值（其余在编辑弹层查看）。
+     */
+    {
+      label: i18next.t('modules.pages.project.quoteLengthPremium'),
+      key: 'quoteLengthPremium',
+      type: 'amount',
     },
     {
       label: i18next.t('modules.columns.status'),
@@ -568,6 +597,87 @@ const projectPageConfig: ModulePageConfig = {
       row: 8,
       section: SCOPE_SECTION,
     },
+
+    /*
+     * ── 比价配置（2026-11-16 起为**唯一配置点**）──────────────────────────────
+     * 品牌沿用上面「允许的品牌」（allowedBrands），这里只补：每品牌启用品种、
+     * 参与比价的商品规格、定尺加价、抗震牌号代取、指定品牌。
+     * 报单比价「配置」弹层只读这些值，只写每品牌运费（PUT 只发运费）。
+     */
+    {
+      key: 'quoteBrandCategories',
+      colSpan: 24,
+      formStep: 2,
+      label: i18next.t('modules.pages.project.quoteBrandCategories'),
+      // 实际控件由 render 接管（品牌 × 品类矩阵）；type 只决定表单项样式与占位口径
+      type: 'multiSelect',
+      render: (context) =>
+        createElement(ProjectQuoteBrandCategoriesField, {
+          brands: asStringArray(context.values.allowedBrands),
+          disabled: context.disabled,
+          label: context.label,
+        }),
+      tooltip: i18next.t('modules.pages.project.quoteBrandCategoriesHint'),
+      extra: i18next.t('modules.pages.project.quoteBrandCategoriesHint'),
+      row: 9,
+      section: QUOTE_SECTION,
+    },
+    {
+      key: 'quoteProducts',
+      colSpan: 12,
+      formStep: 2,
+      label: i18next.t('modules.pages.project.quoteProducts'),
+      type: 'multiSelect',
+      options: PROJECT_VARIETY_OPTIONS,
+      placeholder: i18next.t('modules.pages.project.quoteProductsPlaceholder'),
+      tooltip: i18next.t('modules.pages.project.quoteProductsHint'),
+      extra: i18next.t('modules.pages.project.quoteProductsHint'),
+      row: 10,
+      section: QUOTE_SECTION,
+    },
+    {
+      key: 'quoteLengthPremium',
+      colSpan: 6,
+      formStep: 2,
+      label: i18next.t('modules.pages.project.quoteLengthPremium'),
+      type: 'number',
+      min: 0,
+      precision: 2,
+      step: 1,
+      tooltip: i18next.t('modules.pages.project.quoteLengthPremiumHint'),
+      extra: i18next.t('modules.pages.project.quoteLengthPremiumHint'),
+      row: 10,
+      section: QUOTE_SECTION,
+    },
+    {
+      key: 'quoteHrb400eFallback',
+      colSpan: 6,
+      formStep: 2,
+      label: i18next.t('modules.pages.project.quoteHrb400eFallback'),
+      type: 'segmented',
+      defaultValue: false,
+      // 布尔值控件由模块自己渲染（通用 segmented 会把值 String 化，接口要 boolean）
+      render: (context) =>
+        createElement(ProjectQuoteHrb400eFallbackField, {
+          disabled: context.disabled,
+        }),
+      tooltip: i18next.t('modules.pages.project.quoteHrb400eFallbackHint'),
+      extra: i18next.t('modules.pages.project.quoteHrb400eFallbackHint'),
+      row: 10,
+      section: QUOTE_SECTION,
+    },
+    {
+      key: 'quoteDesignatedBrands',
+      colSpan: 12,
+      formStep: 2,
+      label: i18next.t('modules.pages.project.quoteDesignatedBrands'),
+      type: 'multiSelect',
+      options: getBrandOptions,
+      tooltip: i18next.t('modules.pages.project.quoteDesignatedBrandsHint'),
+      extra: i18next.t('modules.pages.project.quoteDesignatedBrandsHint'),
+      row: 11,
+      section: QUOTE_SECTION,
+    },
   ],
   data: [],
   buildOverview: buildMasterOverview,
@@ -593,6 +703,11 @@ const projectPageConfig: ModulePageConfig = {
       'allowedMaterials',
       'allowedBrandSeverity',
       'allowedMaterialSeverity',
+      'quoteProducts',
+      'quoteBrandCategories',
+      'quoteLengthPremium',
+      'quoteHrb400eFallback',
+      'quoteDesignatedBrands',
       'priceDateBasis',
       'priceDateOffsetDays',
       'priceClosedSettleDirection',

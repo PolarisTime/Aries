@@ -51,13 +51,22 @@ export type QuoteProjectConfigRecord = {
   quoteSource?: 'MYSTEEL' | 'STEELX'
 }
 
+/** 保存载荷里的一行品牌：**只有运费**（品牌清单由项目资料决定）。 */
+export type QuoteProjectConfigBrandPayload = {
+  brandName: string
+  freight: number
+}
+
+/**
+ * 保存载荷：**只写运费**。
+ *
+ * <p>2026-11-16 定稿：品牌、品种、规格、定尺加价、抗震代取、指定品牌都在项目资料维护，
+ * `PUT /quote-project-configs/{id}` 只收 `{brands:[{brandName,freight}], remark?}`。
+ * 类型里保留的 `remark` 是唯一其它可写字段。</p>
+ */
 export type QuoteProjectConfigPayload = {
-  lengthPremium: number
-  hrb400eFallback: boolean
-  products: string[]
-  designatedBrands: string[]
   remark?: string
-  brands: QuoteProjectBrandRecord[]
+  brands: QuoteProjectConfigBrandPayload[]
 }
 
 function normalizeConfig(

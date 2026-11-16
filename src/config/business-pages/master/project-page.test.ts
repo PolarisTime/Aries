@@ -3,7 +3,7 @@ import { groupFieldsByRow } from '@/module-system/presentation/module-field-layo
 import { masterProjectPageConfigs } from './project-page'
 
 describe('projectPageConfig', () => {
-  it('新建表单按四列栅格紧凑排列（基础 → 取价规则 → 允许范围）', () => {
+  it('新建表单按四列栅格紧凑排列（基础 → 取价规则 → 允许范围 → 比价配置）', () => {
     const rows = groupFieldsByRow(
       masterProjectPageConfigs.project.formFields ?? [],
     )
@@ -24,6 +24,10 @@ describe('projectPageConfig', () => {
       // 允许品牌/材质的「不匹配处理方式」各自紧跟本字段，不单独占行
       ['allowedBrands', 'allowedBrandSeverity'],
       ['allowedMaterials', 'allowedMaterialSeverity'],
+      // 比价配置（2026-11-16 起为唯一配置点）：矩阵整行；规格 12 + 加价 6 + 代取 6 占满一行
+      ['quoteBrandCategories'],
+      ['quoteProducts', 'quoteLengthPremium', 'quoteHrb400eFallback'],
+      ['quoteDesignatedBrands'],
     ])
   })
 

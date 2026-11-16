@@ -36,6 +36,21 @@ export type ProjectOption = {
   allowedBrandSeverity?: ProjectScopeEnforcement
   /** 允许材质不匹配时的处理方式; 清单为空或未配置时缺省, 由调用方按 WARN 处理。 */
   allowedMaterialSeverity?: ProjectScopeEnforcement
+  /**
+   * 参与比价的商品规格（商品键 `类别|材质|规格|长度`）；空数组 = 不限制。
+   *
+   * <p>2026-11-16 起，品牌/品种/规格/加价/代取/指定品牌**只在项目资料维护**，
+   * 比价页的「配置」弹层只剩每品牌运费。</p>
+   */
+  quoteProducts?: string[]
+  /** 每品牌启用的品种（品牌 → 品类数组）；缺省品牌 = 全部品类。 */
+  quoteBrandCategories?: Record<string, string[]>
+  /** 定尺加价（元/吨）；未配置时由调用方回退默认值。 */
+  quoteLengthPremium?: number
+  /** 抗震牌号（HRB400E）代取开关；未配置时按关闭处理。 */
+  quoteHrb400eFallback?: boolean
+  /** 指定品牌（仅用于报单展示，不参与自动过滤）。 */
+  quoteDesignatedBrands?: string[]
 }
 
 /**
@@ -135,6 +150,11 @@ type RawProjectOption = {
   allowedMaterials?: unknown
   allowedBrandSeverity?: unknown
   allowedMaterialSeverity?: unknown
+  quoteProducts?: unknown
+  quoteBrandCategories?: unknown
+  quoteLengthPremium?: unknown
+  quoteHrb400eFallback?: unknown
+  quoteDesignatedBrands?: unknown
 }
 
 type RawProjectPageRow = {
@@ -165,6 +185,14 @@ const projectOptionsResponseSchema = z.array(
     allowedMaterials: z.array(z.string()).nullable().optional(),
     allowedBrandSeverity: z.string().nullable().optional(),
     allowedMaterialSeverity: z.string().nullable().optional(),
+    quoteProducts: z.array(z.string()).nullable().optional(),
+    quoteBrandCategories: z
+      .record(z.string(), z.array(z.string()))
+      .nullable()
+      .optional(),
+    quoteLengthPremium: z.union([z.string(), z.number()]).nullable().optional(),
+    quoteHrb400eFallback: z.boolean().nullable().optional(),
+    quoteDesignatedBrands: z.array(z.string()).nullable().optional(),
   }),
 )
 
@@ -209,6 +237,26 @@ function normalizeAllowedSpec(value: unknown): string[] {
       seen.add(text)
       normalized.push(text)
     }
+  }
+  return normalized
+}
+
+/**
+ * 每品牌启用品种归一化: `Record<品牌, 品类[]>`。
+ *
+ * <p>只保留「非空品牌名 → 去重后的非空品类」；不是对象的脏值按"未配置"处理（整表回退全品类），
+ * 与 {@link normalizeAllowedSpec} 的读路径宽松口径一致。</p>
+ */
+function normalizeBrandCategories(value: unknown): Record<string, string[]> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const normalized: Record<string, string[]> = {}
+  for (const [brand, categories] of Object.entries(
+    value as Record<string, unknown>,
+  )) {
+    const name = brand.trim()
+    if (!name) continue
+    const list = normalizeAllowedSpec(categories)
+    if (list.length) normalized[name] = list
   }
   return normalized
 }
@@ -381,6 +429,15 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
       row.allowedMaterialSeverity,
       allowedMaterials,
     )
+    /* 比价配置字段：2026-11-16 起由项目资料承载（比价「配置」弹层只留运费）。 */
+    const quoteProducts = normalizeAllowedSpec(row.quoteProducts)
+    const quoteBrandCategories = normalizeBrandCategories(
+      row.quoteBrandCategories,
+    )
+    const quoteDesignatedBrands = normalizeAllowedSpec(
+      row.quoteDesignatedBrands,
+    )
+    const quoteLengthPremiumNum = Number(row.quoteLengthPremium)
 
     return {
       id,
@@ -408,6 +465,17 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
       allowedMaterials,
       ...(allowedBrandSeverity ? { allowedBrandSeverity } : {}),
       ...(allowedMaterialSeverity ? { allowedMaterialSeverity } : {}),
+      quoteProducts,
+      quoteBrandCategories,
+      ...(Number.isFinite(quoteLengthPremiumNum) &&
+      row.quoteLengthPremium !== null &&
+      row.quoteLengthPremium !== undefined
+        ? { quoteLengthPremium: quoteLengthPremiumNum }
+        : {}),
+      ...(typeof row.quoteHrb400eFallback === 'boolean'
+        ? { quoteHrb400eFallback: row.quoteHrb400eFallback }
+        : {}),
+      quoteDesignatedBrands,
     }
   })
 }

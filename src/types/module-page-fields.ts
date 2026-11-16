@@ -1,6 +1,24 @@
+import type { FormInstance } from 'antd'
 import type { ReactNode } from 'react'
 import type { ModuleRecord, ModuleRecordInput } from '@/types/module-record'
 import type { TradeLineItemEditorSemantics } from '@/types/trade-line-item-fields'
+
+/**
+ * 模块专属字段控件的渲染上下文。
+ *
+ * <p>与 `MasterFormFieldSpec.render` 同一思路：字段本身是**复合编辑器**时（例如项目资料的
+ * 「每品牌启用品种」= 品牌 × 品类矩阵），通用渲染器不认识它的数据结构，由模块在自己的
+ * 字段定义里注入控件；`Form.Item` 仍负责取值、必填与校验（value/onChange 由它注入）。</p>
+ */
+export interface ModuleFormFieldRenderContext {
+  /** 当前表单实例：复合控件读写其它字段（如「允许的品牌」）时用它。 */
+  form: FormInstance<Record<string, unknown>>
+  /** 当前表单值快照（渲染期只读）。 */
+  values: Record<string, unknown>
+  /** 字段名（`Form.Item` 的 label），复合控件用作 `aria-label`。 */
+  label: string
+  disabled: boolean
+}
 
 export type ModuleColumnType =
   | 'text'
@@ -242,6 +260,14 @@ export interface ModuleFormFieldDefinition {
   maxLength?: number
   showCount?: boolean
   readonlyWhenLocked?: boolean
+  /**
+   * 模块专属控件：声明后由它渲染该字段的控件，`Form.Item` 仍负责取值与校验
+   * （控件的 `value` / `onChange` 由 `Form.Item` 注入）。
+   *
+   * <p>用于「字段本身是复合编辑器」的场景，例如项目资料里「每品牌启用品种」
+   * （品牌 × 品类矩阵）与「参与比价的商品规格」（按类别分组的多选）。</p>
+   */
+  render?: (context: ModuleFormFieldRenderContext) => ReactNode
   /**
    * 字段级自定义校验：返回错误文案表示不通过，返回空表示通过。
    *

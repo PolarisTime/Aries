@@ -105,24 +105,21 @@ export const STEELX_VIRTUAL_BRAND = '基准价'
 /** 服务端项目配置记录 -> 本地配置(无品牌时回退单据品牌快照)。 */
 export function buildConfigFromRecord(
   record: QuoteProjectConfigRecord,
-  fallbackBrands?: Brand[],
 ): ProjectConfig {
+  /*
+   * 品牌唯一来源是项目资料：后端 `GET /quote-project-configs/{id}` 恒按项目资料派生品牌
+   * （2026-11-16 定稿），因此不再有「服务端没返回品牌 → 回退单据品牌快照」的分支 ——
+   * 那个分支会在项目资料为空时悄悄造出第二份品牌清单。
+   */
   // 西本模式无品牌: 归一为单个虚拟品牌, 复用既有列与保存链路。
   const brands: Brand[] =
     record.quoteSource === 'STEELX'
       ? [{ name: STEELX_VIRTUAL_BRAND, freight: 0 }]
-      : record.brands.length
-        ? record.brands.map((brand) => ({
-            name: brand.brandName,
-            freight: brand.freight,
-            ...(brand.categories.length
-              ? { categories: brand.categories }
-              : {}),
-          }))
-        : (fallbackBrands ?? []).map((brand) => ({
-            name: brand.name,
-            freight: brand.freight,
-          }))
+      : record.brands.map((brand) => ({
+          name: brand.brandName,
+          freight: brand.freight,
+          ...(brand.categories.length ? { categories: brand.categories } : {}),
+        }))
   return {
     brands,
     lengthPremium: record.lengthPremium,
@@ -138,18 +135,22 @@ export function buildConfigFromRecord(
 }
 
 /** 本地配置 -> 保存请求体。 */
-function buildConfigPayload(config: ProjectConfig): QuoteProjectConfigPayload {
+/**
+ * 本地配置 → 保存载荷：**只发运费**。
+ *
+ * <p>品牌/品种/规格/加价/代取/指定品牌已归并到项目资料（2026-11-16 定稿），
+ * `PUT /quote-project-configs/{id}` 只接受 `{brands:[{brandName,freight}], remark?}`。
+ * 把其它字段一起发出去会让后端在两个配置点之间做取舍，也会让「改项目资料」与
+ * 「改比价运费」互相覆盖。</p>
+ */
+export function buildConfigPayload(
+  config: ProjectConfig,
+): QuoteProjectConfigPayload {
   return {
-    lengthPremium: config.lengthPremium,
-    hrb400eFallback: Boolean(config.hrb400eFallback),
-    products: config.products ?? [],
-    designatedBrands: config.designatedBrands ?? [],
     ...(config.remark ? { remark: config.remark } : {}),
-    brands: config.brands.map((brand, index) => ({
+    brands: config.brands.map((brand) => ({
       brandName: brand.name,
       freight: brand.freight,
-      categories: brand.categories ?? [],
-      sortOrder: index,
     })),
   }
 }
@@ -928,10 +929,7 @@ export function useSheetsStore(options?: {
     async (projectId: string) => {
       try {
         const record = await fetchQuoteProjectConfig(projectId)
-        const fallbackBrands = stateRef.current.sheets.find(
-          (sheet) => sheet.projectId === projectId && sheet.brands?.length,
-        )?.brands
-        const fresh = buildConfigFromRecord(record, fallbackBrands)
+        const fresh = buildConfigFromRecord(record)
         mutate((current) => ({
           ...current,
           configs: { ...current.configs, [projectId]: fresh },
@@ -1470,10 +1468,7 @@ export function useSheetsStore(options?: {
       ) {
         return false
       }
-      const fallbackBrands = stateRef.current.sheets.find(
-        (sheet) => sheet.projectId === projectId && sheet.brands?.length,
-      )?.brands
-      const fresh = buildConfigFromRecord(record, fallbackBrands)
+      const fresh = buildConfigFromRecord(record)
       mutate((current) => ({
         ...current,
         configs: { ...current.configs, [projectId]: fresh },
@@ -1937,14 +1932,11 @@ export function useSheetsStore(options?: {
         // 服务端配置加载不是用户编辑: 静默写入, 不进入撤销历史, 也不据此判定本地有改动
         mutate((current) => {
           if (current.configs[projectId]) return current
-          const sheetBrands = current.sheets.find(
-            (sheet) => sheet.projectId === projectId && sheet.brands?.length,
-          )?.brands
           return {
             ...current,
             configs: {
               ...current.configs,
-              [projectId]: buildConfigFromRecord(record, sheetBrands),
+              [projectId]: buildConfigFromRecord(record),
             },
           }
         })
