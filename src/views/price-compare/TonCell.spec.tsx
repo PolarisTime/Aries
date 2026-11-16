@@ -189,7 +189,7 @@ describe('TonCell 报单吨位输入', () => {
     expect(props.onTonChange).toHaveBeenCalledWith(12.5, false)
   })
 
-  it('失焦时 0 / 负数不写回：回调给 undefined + 告警标记，输入框还原并标红', () => {
+  it('失焦时 0 / 负数不写回：回调给 undefined + 告警标记，输入框还原且不留 invalid 标记', () => {
     const props = render()
     const input = tonInput() as HTMLInputElement
     act(() => {
@@ -200,11 +200,12 @@ describe('TonCell 报单吨位输入', () => {
     expect(props.onTonChange).toHaveBeenCalledWith(undefined, true)
     // 受控 value 必须自己回退，否则格子显示 0、合计按旧值算
     expect((tonInput() as HTMLInputElement).value).toBe('5')
-    expect((tonInput() as HTMLInputElement).className).toContain(
+    // 还原后显示的是已提交的合法值：不能再挂 aria-invalid / error 态
+    expect(
+      (tonInput() as HTMLInputElement).getAttribute('aria-invalid'),
+    ).toBeNull()
+    expect((tonInput() as HTMLInputElement).className).not.toContain(
       'ant-input-status-error',
-    )
-    expect((tonInput() as HTMLInputElement).getAttribute('aria-invalid')).toBe(
-      'true',
     )
 
     act(() => {
@@ -214,6 +215,9 @@ describe('TonCell 报单吨位输入', () => {
     })
     expect(props.onTonChange).toHaveBeenLastCalledWith(undefined, true)
     expect((tonInput() as HTMLInputElement).value).toBe('5')
+    expect(
+      (tonInput() as HTMLInputElement).getAttribute('aria-invalid'),
+    ).toBeNull()
   })
 
   it('清空输入提交 undefined 且不告警(清空不是非法值)', () => {
@@ -270,6 +274,11 @@ describe('TonCell 报单吨位输入', () => {
     expect(props.onTonChange).toHaveBeenCalledWith(undefined, true)
     expect(props.onTonChange).not.toHaveBeenCalledWith(-3, expect.anything())
     expect((tonInput() as HTMLInputElement).value).toBe('5')
+    expect(
+      (tonInput() as HTMLInputElement).getAttribute('aria-invalid'),
+    ).toBeNull()
+    // 非法回车不移动焦点（与合法回车区分）
+    expect(props.onMoveFocus).not.toHaveBeenCalled()
   })
 
   it('列尾按 Tab 不吞键: 放行默认行为, 由浏览器把焦点移出本格', () => {
@@ -348,13 +357,14 @@ describe('TonCell 报单吨位输入', () => {
   })
 
   /*
-   * 以下三条对应用户实测场景（2026-11-16，HANDOFF R2）：
+   * 以下用例对应用户实测场景（2026-11-16 HANDOFF R2 + 2026-11-17 回车焦点反馈）：
    * - S3：输入 -3 按回车，格内仍残留 -3（直接改 DOM 回滚，被 antd 内部 value 写回）。
    * - S4：回车后再改值，失焦不提交（key 含 row.ton → 重挂载；skipBlurCommitRef 残留吞掉下一次失焦）。
    * - S5：回车后焦点掉到 body（同一次重挂载）。
-   * 三条都必须在「父级把值回写到 row.ton 并重渲染」的真实路径上验证，静态 props 测不出来。
+   * - 2026-11-17：非法回车把焦点推到下一行，且还原后残留 aria-invalid。
+   * 都必须在「父级把值回写到 row.ton 并重渲染」的真实路径上验证，静态 props 测不出来。
    */
-  it('S3 回车提交负数被拒：格内还原成已提交值，不残留 -3', () => {
+  it('S3 回车提交负数被拒：格内还原成已提交值，焦点留本格', () => {
     const props = renderStateful()
     const input = tonInput() as HTMLInputElement
     act(() => {
@@ -373,10 +383,47 @@ describe('TonCell 报单吨位输入', () => {
     expect(props.onTonChange).not.toHaveBeenCalledWith(-3, expect.anything())
     const restored = tonInput() as HTMLInputElement
     expect(restored.value).toBe('5')
-    expect(restored.className).toContain('ant-input-status-error')
-    expect(restored.getAttribute('aria-invalid')).toBe('true')
-    // 旧实现重挂载会让焦点掉到 body；受控后本格不卸载，焦点留在输入框
+    // 还原后不得留下「输入无效」的读屏/视觉标记
+    expect(restored.getAttribute('aria-invalid')).toBeNull()
+    expect(restored.className).not.toContain('ant-input-status-error')
+    // 非法回车停在本格：不请求下移；旧实现重挂载会让焦点掉到 body
+    expect(props.onMoveFocus).not.toHaveBeenCalled()
     expect(document.activeElement).toBe(restored)
+  })
+
+  /*
+   * 用户实测（2026-11-17）：负数回车虽然值还原了，但焦点被推到下一行，且格内残留 aria-invalid。
+   * 本条用「下一行真的可聚焦」的 onMoveFocus 复现真实焦点链路：非法值必须原地不动。
+   */
+  it('非法吨位回车停在本格：下一行可聚焦也不调用 onMoveFocus', () => {
+    const nextInput = document.createElement('input')
+    document.body.appendChild(nextInput)
+    const onMoveFocus = vi.fn(() => {
+      nextInput.focus()
+      return true
+    })
+    const props = renderStateful(5, onMoveFocus)
+    const input = tonInput() as HTMLInputElement
+    act(() => {
+      input.focus()
+      typeTon(input, '-3')
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+
+    expect(props.onTonChange).toHaveBeenCalledWith(undefined, true)
+    expect(onMoveFocus).not.toHaveBeenCalled()
+    const restored = tonInput() as HTMLInputElement
+    expect(restored.value).toBe('5')
+    expect(restored.getAttribute('aria-invalid')).toBeNull()
+    expect(document.activeElement).toBe(restored)
+    expect(document.activeElement).not.toBe(nextInput)
+    nextInput.remove()
   })
 
   it('S4/S5 回车提交后不重挂载：焦点留在本格，随后改值失焦仍提交', () => {

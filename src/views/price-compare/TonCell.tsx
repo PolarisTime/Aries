@@ -91,8 +91,10 @@ export function TonCell({
    *
    * <p>显示值必须走受控 value：antd 内部自己维护 value 状态，过去用 `defaultValue` + 直接改
    * `node.value` 回滚，重渲染后会被写回用户敲的 "-3"（用户实测：格内残留 -3，合计按旧值算）。</p>
+   *
+   * <p>还原后不保留 invalid 状态 / aria-invalid：格内显示的是已提交的合法值，
+   * 再挂「输入无效」读屏标记会自相矛盾；失败提示由列层 `message.warning` 承担。</p>
    */
-  const [invalid, setInvalid] = useState(false)
   /*
    * 输入期只改 draft；提交 / 回滚统一 `setDraft(null)`，显示值回到 row.ton。
    * 这是本格吨位显示的**唯一来源**（与 SupplierQuoteBoard 的 `text ?? value` 同一写法）。
@@ -118,8 +120,10 @@ export function TonCell({
    *
    * <p>曾经回车路径写死 `warnPositive: false`，等于跳过校验：回车能把 -3 提交上去，
    * 而失焦又会拦下来 —— 同一个值两条路径两种结果。校验必须只在这里做一次。</p>
+   *
+   * @returns 是否合法：非法值已还原显示并通知列层，调用方不应移动焦点。
    */
-  const commitTonInput = (raw: string) => {
+  const commitTonInput = (raw: string): boolean => {
     const parsed = parseTonInput(raw)
     // 先收掉草稿：无论提交成功还是回滚，显示值都回到 row.ton（或空），
     // 不让用户敲的临时串（尤其 "-3"）粘在格子里。
@@ -130,21 +134,20 @@ export function TonCell({
       last.value === parsed.value &&
       last.warnPositive === parsed.warnPositive
     ) {
-      return
+      return !parsed.warnPositive
     }
     lastCommittedRef.current = {
       value: parsed.value,
       warnPositive: parsed.warnPositive,
     }
     if (parsed.warnPositive) {
-      setInvalid(true)
       onTonChange(undefined, true)
-      return
+      return false
     }
-    setInvalid(false)
     // 幂等：值没变就不写回，避免失焦重复提交触发重复保存 / 重复历史。
-    if (parsed.value === row.ton) return
+    if (parsed.value === row.ton) return true
     onTonChange(parsed.value, false)
+    return true
   }
 
   const tonInput = (
@@ -162,23 +165,20 @@ export function TonCell({
       disabled={inputDisabled}
       data-ton={rowId}
       value={displayText}
-      status={invalid ? 'error' : undefined}
-      aria-invalid={invalid || undefined}
-      title={invalid ? t('priceCompare.sheet.tonPositive') : undefined}
       onChange={(event) => {
         // 新输入 = 新一次提交：清掉上一次的提交结果，否则「回车后改值再失焦」会被误判成重复。
         lastCommittedRef.current = null
         setDraft(event.target.value)
-        // 一开始改就撤掉红框：红框表示"上一次提交被拒"，不该粘着不走
-        if (invalid) setInvalid(false)
       }}
       onBlur={(event) => {
         commitTonInput(event.target.value)
       }}
       onPressEnter={(event) => {
-        commitTonInput((event.target as HTMLInputElement).value)
-        // 回车 = 提交并下移一行（与供应商报价表、引导文案一致）；列尾返回 false 时
-        // 焦点留在本格。key 不再包含 row.ton，本格不会被重挂载，焦点不会掉到 body。
+        const valid = commitTonInput((event.target as HTMLInputElement).value)
+        // 非法值：显示值已还原，焦点必须停在本格（与供应商报价表一致），不把用户推到下一行。
+        if (!valid) return
+        // 合法值：回车 = 提交并下移一行；列尾返回 false 时焦点留在本格。
+        // key 不再包含 row.ton，本格不会被重挂载，焦点不会掉到 body。
         onMoveFocus(1)
       }}
       onKeyDown={(event) => {
