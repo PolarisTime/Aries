@@ -1,3 +1,26 @@
+# [16.3.0](https://github.com/PolarisTime/Aries/compare/v16.2.0...v16.3.0) (2026-11-16)
+
+
+### Bug Fixes
+
+* **price-compare:** 修复 Shift 框选回归并延后草稿保存 ([a777a91](https://github.com/PolarisTime/Aries/commit/a777a91f774fed40bca37cce94be274c884108e7))
+* **price-compare:** 修复保存重试风暴、粘贴口径、Esc 撤销与加载错误态 ([4e1ff8b](https://github.com/PolarisTime/Aries/commit/4e1ff8bf132d8295121f6af66ef66d5308b5897f))
+* **price-compare:** 吨位输入改为受控草稿，修复回车后残留与失焦不提交 ([199c7a2](https://github.com/PolarisTime/Aries/commit/199c7a23d70b46e8d17ec8ac3abd7ef0a7f3af12))
+* **price-compare:** 已保存的规格不再显示成空白 ([fd8b675](https://github.com/PolarisTime/Aries/commit/fd8b675a830e5c29a23bcde61b903ab740d84dec))
+* **price-compare:** 报单吨位回车与失焦走同一套校验，非法值不写回也不留在格里 ([aa8c411](https://github.com/PolarisTime/Aries/commit/aa8c411c3663a5527b2a246fd93af775b0e68c1d))
+* **price-compare:** 现货价失败提示与锁定行 Tab 焦点 ([be326f2](https://github.com/PolarisTime/Aries/commit/be326f2234d5e48662694385f6fc7faa2d1d98eb))
+* **price-compare:** 统一缺价派生口径 ([40f22c6](https://github.com/PolarisTime/Aries/commit/40f22c628d638b640a51effdee52657febe6f124))
+* **price-compare:** 范围外规格单元格标记并迁移 i18n key ([1873298](https://github.com/PolarisTime/Aries/commit/1873298de28d15432ac8edb4a6aeed2097cccbf1))
+* **price-compare:** 范围外规格只回显不可选 ([d494665](https://github.com/PolarisTime/Aries/commit/d49466580bca079fe57bed133642e90cb26fc34e))
+* **price-compare:** 草稿恢复后自动保存，「放弃并切换」真正清掉本地草稿 ([50e0b96](https://github.com/PolarisTime/Aries/commit/50e0b96c1fd702a50e0b6b81f55b3367fa2b941a))
+* **price-compare:** 键盘移到别的格再按 Delete 不再清错格 ([e2ed2d2](https://github.com/PolarisTime/Aries/commit/e2ed2d28e2be6fd9b02fd1c38bd5c43393bf9ec0))
+* **price-compare:** 非法吨位回车停在本格并清理无效标记 ([381d42a](https://github.com/PolarisTime/Aries/commit/381d42a251bd12ef532d480fb60e5be514a1f3a5))
+
+
+### Features
+
+* **price-compare:** 两页共用保存状态并在离开前保存 ([bf3a236](https://github.com/PolarisTime/Aries/commit/bf3a236775973dc837b3035c67d7df30c8e21aac))
+
 # [16.2.0](https://github.com/PolarisTime/Aries/compare/v16.1.0...v16.2.0) (2026-11-16)
 
 
