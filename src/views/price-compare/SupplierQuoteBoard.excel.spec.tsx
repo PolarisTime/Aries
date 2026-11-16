@@ -729,6 +729,43 @@ describe('供应商报价表：Excel 式网格操作', () => {
     )
   })
 
+  /*
+   * 回归：清空后自动保存完成，价格不能回弹。
+   *
+   * <p>清空的格子在 `buildColumnSavePlan` 里被过滤掉（price=null），所以不会出现在
+   * `plan.items`；如果 `savedValues` 里上一次保存留下的旧价不一起删掉，草稿被清除后
+   * 单元格就会回退到 `savedValues ?? 服务端价` —— 表现为「提示清空成功，1 秒后价格又出现」，
+   * 刷新（savedValues 归零）才消失。</p>
+   */
+  it('清空价格后自动保存完成，价格不会回弹', async () => {
+    await render()
+
+    /*
+     * 先经历一次正常保存：真实用户往往是先改过价、再框选清空。
+     * 这一步会把「已保存值」(savedValues) 填上，正好覆盖清空后旧值回弹的路径。
+     */
+    await typeInto(cellInput('中天 HRB400E 12 9米'), '3500')
+    await flushAutosave()
+    await flush()
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3500')
+
+    await pointerDown(cellInput('中天 HRB400E 12 9米'))
+    await pointerDown(cellInput('中天 HRB400E 14 9米'), { shiftKey: true })
+    await openContextMenu(cellInput('中天 HRB400E 12 9米'))
+    await clickMenuItem(i18n.t('priceCompare.supplierPrice.menuClearPrices'))
+
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('')
+    expect(cellInput('中天 HRB400E 14 9米')?.value).toBe('')
+
+    // 等自动保存（800ms 防抖）落库并清理草稿：这里正是旧价回弹的时间点
+    await flushAutosave()
+    await flush()
+
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalled()
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('')
+    expect(cellInput('中天 HRB400E 14 9米')?.value).toBe('')
+  })
+
   it('菜单「批量调价…」打开既有批量调价弹层（同一份动作，不是第二套实现）', async () => {
     await render()
 

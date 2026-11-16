@@ -1180,10 +1180,22 @@ export function SupplierQuoteBoard() {
       )
       setSavedValues((current) => {
         const values = { ...(current[brandName] ?? {}) }
+        const plannedKeys = new Set<string>()
         for (const item of plan.items) {
-          values[
-            `${item.category}|${item.material}|${item.spec}|${item.length}`
-          ] = item.price
+          const key = `${item.category}|${item.material}|${item.spec}|${item.length}`
+          plannedKeys.add(key)
+          values[key] = item.price
+        }
+        /*
+         * 清空的格子不会出现在 plan.items 里（buildColumnSavePlan 把 price=null 过滤掉），
+         * 所以必须在这里把 savedValues 中上一次保存留下的旧价一并删掉。
+         *
+         * 否则草稿一清除，`cellValueAt` 就回退到 `savedValues ?? 服务端价`：旧价让
+         * 「清空」在自动保存完成后（约 1 秒）自己弹回来，只有刷新/切页重置 savedValues
+         * 才会消失。见 SupplierQuoteBoard.excel.spec.tsx 的「价格不会回弹」用例。
+         */
+        for (const key of Object.keys(snapshot ?? {})) {
+          if (!plannedKeys.has(key)) delete values[key]
         }
         return { ...current, [brandName]: values }
       })
