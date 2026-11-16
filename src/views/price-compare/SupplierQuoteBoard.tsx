@@ -2435,6 +2435,29 @@ export function SupplierQuoteBoard() {
                       columnIndex,
                       rowKey: String(row.spec),
                     }
+                    /*
+                     * 焦点即选区：方向键 / Tab / Enter 把焦点移到另一格时，选区必须跟着走。
+                     *
+                     * <p>这里原先只更新粘贴锚点，`selection`（Delete 清空、Ctrl+D/R 填充、
+                     * 右键菜单、批量调价都读它）还停在上一次点选/拖选的那片格子。用户实测：
+                     * 点「亚新 HRB400 8」（3320）→ ↑ 移到空格「6」→ Delete，被清空的是 8。</p>
+                     *
+                     * <p>只在焦点确实换了格时才写，避免同一格重复聚焦把多格选区缩成单格。</p>
+                     */
+                    setSelection((current) =>
+                      current &&
+                      current.category === group.categoryName &&
+                      current.material === material &&
+                      current.anchor.row === rowIndex &&
+                      current.anchor.col === columnIndex &&
+                      current.focus.row === rowIndex &&
+                      current.focus.col === columnIndex
+                        ? current
+                        : selectSingle(group.categoryName, material, {
+                            row: rowIndex,
+                            col: columnIndex,
+                          }),
+                    )
                     // 协作表：把光标共享给同房间的人（节流在 hook 内，80ms 一次）
                     if (collabListId && collabCell) {
                       collab.setCursor(collabListId, collabCell)

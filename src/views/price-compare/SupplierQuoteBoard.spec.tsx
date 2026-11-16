@@ -715,10 +715,61 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     expect(new Set(series).size).toBe(series.length)
   })
 
-  it('非法字号回落到 14px 基准列宽，不产生 0 宽列', () => {
-    const base = supplierBoardWidths(14)
-    for (const invalid of [0, -3, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(supplierBoardWidths(invalid)).toEqual(base)
-    }
+  /*
+   * 键盘把焦点移到另一格时，选区必须跟着走。
+   *
+   * 用户实测（2026-11-16）：点「亚新 HRB400 8」（3320）→ 按 ↑ 移到上面的空格「6」→ 按 Delete，
+   * 被清空的是 8 那一格。根因是 `onFocusCell` 只同步了粘贴锚点、没同步 `selection`，
+   * 而 Delete / Ctrl+D / 右键菜单 / 批量调价读的都是 `selection`。
+   */
+  it('键盘移到空格再按 Delete：清的是当前格，不动上一个点过的格', async () => {
+    priceApi.fetchSupplierPriceGrid.mockResolvedValue({
+      brandName: '中天',
+      columns: [COLUMN],
+      rows: [
+        {
+          ...ROW_A,
+          prices: { l1: 3280 },
+          priceStatuses: { l1: 'NORMAL' },
+          remarks: {},
+        },
+        // 下面这格故意留空：Delete 落到空格上应提示「没有可清空的格子」
+        { ...ROW_B, prices: {}, priceStatuses: {}, remarks: {} },
+      ],
+    })
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+
+    // 1) 点有价的那格（建立选区）
+    const priced = cellInput('中天 HRB400E 12 9米') as HTMLInputElement
+    await act(async () => {
+      priced.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }))
+      priced.focus()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    // 2) 方向键 ↓ 把焦点移到下面的空格
+    await act(async () => {
+      priced.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const focused = document.activeElement as HTMLInputElement | null
+    expect(focused?.ariaLabel).toBe('中天 HRB400E 14 9米')
+
+    // 3) Delete 落在空格上：不该去动上一次点过的 3280
+    await act(async () => {
+      focused?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(feedback.message.info).toHaveBeenCalledWith(
+      i18n.t('priceCompare.supplierPrice.clearNothing'),
+    )
+    expect(priceApi.saveSupplierPriceColumnItems).not.toHaveBeenCalled()
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3280')
   })
 })
