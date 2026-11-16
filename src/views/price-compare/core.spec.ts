@@ -24,6 +24,7 @@ import {
   scaleSheetColumnWidth,
   sheetColumnWidths,
   TON_INPUT_WIDTH_EM,
+  withStoredVarieties,
 } from './core'
 import type { Brand, PriceData, PriceRow, PriceSheet, Variety } from './types'
 
@@ -918,5 +919,71 @@ describe('pickBestDiffBrands', () => {
         { brand: '永钢', diff: -10 },
       ]),
     ).toEqual(['沙钢', '永钢'])
+  })
+})
+
+describe('withStoredVarieties：已保存的规格必须有 label', () => {
+  const variety = (material: string, spec: number, length = '9米') => ({
+    category: '直条',
+    material,
+    spec,
+    length,
+    label: `${material} ${spec} ${length}`,
+  })
+
+  it('把表里出现、但不在选项里的组合补到末尾（历史行 / 白名单收紧）', () => {
+    const options = [variety('HRB400E', 12)]
+    const rows = [
+      {
+        id: 'r1',
+        rowType: 'PRODUCT' as const,
+        category: '直条',
+        material: 'HRB400',
+        spec: 12,
+        length: '9米',
+      },
+    ]
+    const merged = withStoredVarieties(options, rows)
+    expect(merged.map((item) => item.label)).toEqual([
+      'HRB400E 12 9米',
+      'HRB400 12 9米',
+    ])
+  })
+
+  it('已在选项里的组合不重复追加，且保持原顺序', () => {
+    const options = [variety('HRB400E', 12), variety('HRB400E', 14)]
+    const rows = [
+      {
+        id: 'r1',
+        rowType: 'PRODUCT' as const,
+        category: '直条',
+        material: 'HRB400E',
+        spec: 12,
+        length: '9米',
+      },
+    ]
+    expect(withStoredVarieties(options, rows)).toEqual(options)
+  })
+
+  it('隔断行与未选商品的行不参与补齐', () => {
+    const rows = [
+      {
+        id: 's1',
+        rowType: 'SEPARATOR' as const,
+        category: '',
+        material: '',
+        spec: null,
+        length: '',
+      },
+      {
+        id: 'r2',
+        rowType: 'PRODUCT' as const,
+        category: '',
+        material: '',
+        spec: null,
+        length: '',
+      },
+    ]
+    expect(withStoredVarieties([], rows)).toEqual([])
   })
 })

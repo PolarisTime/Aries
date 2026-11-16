@@ -638,6 +638,43 @@ export function filterVarieties(
 }
 
 /**
+ * 把「表里已存在、但不在可选商品里」的规格补进下拉选项。
+ *
+ * <p>`filterVarieties` 会按品牌启用类别与项目白名单裁剪选项，而**已保存的行**可能落在裁剪之外
+ * （历史数据、商品资料调整、白名单收紧）。antd `Select` 的 `value` 不在 `options` 里时
+ * label 渲染为空 —— 格子里什么都不显示，用户会以为这几行没填规格（实测：多条「直条」行的
+ * 材质/规格/长度空白，但读屏标签仍念得出「直条 HRB400 12 9米」）。</p>
+ *
+ * <p>因此把表里出现过的组合补到选项末尾，并按 {@link varietyKeyOf} 去重：
+ * 已存在的规格仍是原选项（顺序不变），缺的补一条，保证任何已保存值都有 label。</p>
+ */
+export function withStoredVarieties(
+  options: readonly Variety[],
+  rows: readonly PriceRow[],
+): Variety[] {
+  const seen = new Set(options.map(varietyKeyOf))
+  const extra: Variety[] = []
+  for (const row of rows) {
+    if (isSeparatorRow(row)) continue
+    const material = (row.material ?? '').trim()
+    const spec = row.spec
+    if (!material || spec === null || spec === undefined) continue
+    const item: Variety = {
+      category: row.category ?? '',
+      material,
+      spec,
+      length: row.length ?? '-',
+      label: '',
+    }
+    const key = varietyKeyOf(item)
+    if (seen.has(key)) continue
+    seen.add(key)
+    extra.push({ ...item, label: varietyDisplay(item) })
+  }
+  return extra.length ? [...options, ...extra] : [...options]
+}
+
+/**
  * 定尺排序：**定尺主数据 sortOrder 优先**，其次按名称里的米数升序，`''` / `'-'` 永远最后。
  *
  * <p>为什么不能用字符串排序：`"12米" < "9米"` 会颠倒；`'-'` 混在中间也会让「无定尺」

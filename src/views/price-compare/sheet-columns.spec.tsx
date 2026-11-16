@@ -302,3 +302,43 @@ describe('比价表格现货/供应商列只读', () => {
     )
   })
 })
+
+/*
+ * 用户实测（2026-11-16）：多条「直条」行的「材质 / 规格 / 长度」显示空白，
+ * 但读屏标签仍念得出「直条 HRB400 12 9米」。
+ *
+ * 根因：`filterVarieties` 按品牌启用类别 / 项目白名单裁剪选项，落在裁剪之外的历史行
+ * 不在 options 里 → antd Select 的 label 渲染成空。
+ */
+describe('比价表格规格列：已保存值必须有 label', () => {
+  /** 表里那一行（ctx.rows 决定选项补齐，cellHtml 决定渲染的那一格，两边必须是同一行）。 */
+  const storedRow: PriceRow = {
+    id: 'r1',
+    rowType: 'PRODUCT',
+    category: '直条',
+    material: 'HRB400',
+    spec: 12,
+    length: '9米',
+  }
+
+  const varietyColumn = () =>
+    columnsOf({ varieties: [], rows: [storedRow] }).find(
+      (column) =>
+        (column as { title?: unknown }).title ===
+        'priceCompare.sheet.columns.variety',
+    ) as RenderableColumn | undefined
+
+  it('已保存规格不在可选商品里时仍显示文字，不是空白', () => {
+    const column = varietyColumn()
+    expect(column?.render).toBeTypeOf('function')
+    const html = cellHtml(column as RenderableColumn, {
+      category: '直条',
+      material: 'HRB400',
+      spec: 12,
+      length: '9米',
+    })
+    // label 既进正文也进 title（labelRender 的 title 兜住省略号）：没有 label 时两者都是空的
+    expect(html).toContain('HRB400 12 9米')
+    expect(html).toContain('title="HRB400 12 9米"')
+  })
+})

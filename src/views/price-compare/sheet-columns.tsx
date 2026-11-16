@@ -36,6 +36,7 @@ import {
   resolveLock,
   resolveSpotSourceMaterial,
   type SHEET_COLUMN_WIDTH,
+  withStoredVarieties,
 } from './core'
 import { buildTonColumn } from './ton-column'
 import type {
@@ -474,10 +475,14 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
   /** 仅由「锁定规格和数量」触发: 保持不可编辑, 但仍以正常文字色显示已保存值。 */
   const quantityLockClass =
     quantityLocked && !readOnly ? 'price-compare-locked-field' : undefined
-  const varietyOptionsFlat = filterVarieties(
-    ctx.varieties,
-    brands,
-    allowedProducts,
+  /*
+   * 已保存的规格必须始终有 label：`filterVarieties` 会按品牌类别 / 项目白名单裁剪选项，
+   * 落在裁剪之外的历史行若不在 options 里，Select 的 label 会渲染成空
+   * （用户实测：多条「直条」行的材质/规格/长度空白，读屏却念得出「直条 HRB400 12 9米」）。
+   */
+  const varietyOptionsFlat = withStoredVarieties(
+    filterVarieties(ctx.varieties, brands, allowedProducts),
+    ctx.rows,
   )
   const varietyOptions = buildVarietyOptions(varietyOptionsFlat)
   /** 报单吨位列的构建上下文(列宽取整张宽度表, 不另设参数)。 */
