@@ -1159,8 +1159,6 @@ export const enUS = {
       capsuleHealthy: 'Healthy',
       capsuleSufficient: 'Sufficient',
       capsuleExceeded: 'Over limit',
-      deliveryVariance: 'Delivery variance',
-      varianceInTransit: '{{value}} (incl. in transit)',
       unreconciledSummary: 'Unreconciled summary',
       totalLabel: 'Total',
       remainingLabel: 'Remaining',

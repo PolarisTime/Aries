@@ -12,12 +12,6 @@ import {
   toBarPercent,
 } from './project-sales-summary-display'
 
-/** 需要带符号展示的差异值：正数补 `+`（`-13.484` 自带符号，不重复补）。 */
-function formatSignedWeight(value: number, unit: string): string {
-  const text = formatWeight(value)
-  return `${value > 0 ? '+' : ''}${text} ${unit}`
-}
-
 /**
  * 销售订单只读详情面的四张指标卡（参考稿「顶栏卡」下方的指标区）。
  *
@@ -120,11 +114,6 @@ export function SalesOrderDetailMetrics({
    */
   const currentOrderWeight =
     orderTotalWeight ?? (Number(record.totalWeight) || 0)
-  /*
-   * 送货差异 = 合计送货吨位 − 本单总重量（正数表示项目送货多于本单订货，含在途）。
-   * 两个数同源同上：都取汇总接口与本单记录，不在别处再算一遍。
-   */
-  const deliveryVariance = summary.deliveredTonnage - currentOrderWeight
 
   /*
    * 胶囊文案的唯一出口：只有后端下发的 exceeded* 才判「超支」，其余（含无合同、使用率
@@ -209,22 +198,6 @@ export function SalesOrderDetailMetrics({
       label: `${t('modules.projectSalesSummary.deliveredTonnage')} / ${t('modules.columns.totalWeight')}`,
       value: formatWeight(summary.deliveredTonnage),
       subValue: `/ ${formatWeight(currentOrderWeight)} ${ton}`,
-      stats: {
-        left: { label: t('modules.detailCards.deliveryVariance') },
-        right: {
-          /*
-           * 蓝色差异值：用 CSS 类取 `--ant-color-primary-active`（深一档主色，
-           * 对白底 6.16:1 达 AA），不在这里写死色值、也不读 theme token 传入。
-           */
-          value: (
-            <span className="module-detail-metric__stat-emphasis">
-              {t('modules.detailCards.varianceInTransit', {
-                value: formatSignedWeight(deliveryVariance, ton),
-              })}
-            </span>
-          ),
-        },
-      },
     },
     {
       key: 'unreconciled',

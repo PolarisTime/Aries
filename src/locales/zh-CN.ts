@@ -1175,10 +1175,6 @@ export const zhCN = {
       capsuleSufficient: '充足',
       /** 使用率胶囊：已超限态。判定只看后端下发的 exceeded*，不拿使用率再判一次。 */
       capsuleExceeded: '超支',
-      /** 指标卡 3 底行左侧标签。 */
-      deliveryVariance: '交货差异率',
-      /** 指标卡 3 底行右侧值：{{value}} 形如「+13.484 吨」。 */
-      varianceInTransit: '{{value}}（含在途）',
       /** 指标卡 4 标题。 */
       unreconciledSummary: '未对账汇总',
       /** 指标卡 1/2 底行左侧标签。 */
