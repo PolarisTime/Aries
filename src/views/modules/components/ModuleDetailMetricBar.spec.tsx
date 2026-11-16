@@ -49,7 +49,7 @@ const fourMetrics: ModuleDetailMetric[] = [
   },
   {
     key: 'delivered',
-    label: '合计送货吨位 / 总重量',
+    label: '总重量 / 合计送货吨位',
     value: '1000.250 / 0.000 吨',
     icon: createElement('span', { 'data-testid': 'icon-delivered' }),
   },
@@ -100,7 +100,7 @@ describe('ModuleDetailMetricBar', () => {
     ).toEqual([
       '合同金额使用率',
       '合同吨位使用率',
-      '合计送货吨位 / 总重量',
+      '总重量 / 合计送货吨位',
       '未对账金额 / 未对账吨位',
     ])
     expect(
@@ -224,7 +224,7 @@ describe('ModuleDetailMetricBar', () => {
       },
       {
         key: 'plain-card',
-        label: '合计送货吨位 / 总重量',
+        label: '总重量 / 合计送货吨位',
         value: '53.186',
         subValue: '/ 39.702 吨',
         stats: {
