@@ -1663,6 +1663,27 @@ export const zhCN = {
         sectionBasic: '基本信息',
         sectionPricing: '取价规则',
         sectionScope: '范围与校验',
+        sectionQuote: '比价配置',
+        quoteBrandCategories: '每品牌启用品种',
+        quoteBrandCategoriesHint:
+          '为每个品牌勾选可以报的品种（品类）；留空表示该品牌全部品种都参与比价',
+        quoteBrandCategoriesEmpty:
+          '请先在上方「允许品牌」中选择品牌，再配置每个品牌启用的品种',
+        quoteBrandCategoriesPlaceholder: '选择品种',
+        quoteProducts: '参与比价的商品规格',
+        quoteProductsHint:
+          '只勾选需要参与报单比价的商品（类别|材质|规格|长度）；留空表示全部商品',
+        quoteProductsPlaceholder: '选择商品规格',
+        quoteLengthPremium: '定尺加价',
+        quoteLengthPremiumHint:
+          '非基准定尺每吨加价（元/吨）；具体各定尺金额仍以「定尺加价维护」主数据为准',
+        quoteHrb400eFallback: '抗震牌号代取',
+        quoteHrb400eFallbackHint:
+          '开启后缺少 HRB400E 报价时参考 HRB400 报价（仅比价展示，表格中以 E 标记）',
+        quoteHrb400eFallbackOn: '开启',
+        quoteHrb400eFallbackOff: '关闭',
+        quoteDesignatedBrands: '指定品牌',
+        quoteDesignatedBrandsHint: '指定品牌仅用于报单展示，不参与自动过滤',
         sectionOther: '其他',
         allowedSpecHint: '销售订单导入采购订单明细时按此校验并预警',
         allowedSpecUnlimited: '不限制',
@@ -3132,6 +3153,10 @@ export const zhCN = {
       refDateTooltip: '全部行统一使用该日期与时段作为网价基准',
       fallbackLegend: 'HRB400E 参考价',
       fallbackTooltip: '该品牌此规格暂无 HRB400 网价，当前按 HRB400E 参考价',
+      fillHrb400e: '填入 HRB400E 价格',
+      hrb400eFallbackOff: '取消 HRB400E 参考价',
+      hrb400eFallbackHint:
+        '本项目 HRB400 行没有精确现货价时，用同品牌同规格的 HRB400E 现货价填入（带 E 标记）',
       // 角标自身的可访问名（WCAG 1.4.1：不能只靠颜色/图形表达状态）
       fallbackBadgeLabel: '按 {{material}} 代取',
       spotSubstitutedLabel: '按 {{material}} 代取（来源 {{supplier}}）',
@@ -3156,6 +3181,10 @@ export const zhCN = {
     },
     config: {
       title: '项目配置',
+      freightOnlyHint:
+        '品牌、品种、规格、定尺加价、抗震代取、指定品牌请在「基础数据 → 项目资料」维护；此处只维护每品牌运费。',
+      gotoProject: '去项目资料维护',
+      noBrands: '该项目还没有品牌配置，请先在「项目资料」中维护允许品牌',
       tabs: {
         basic: '基础',
         brands: '品牌与品种',

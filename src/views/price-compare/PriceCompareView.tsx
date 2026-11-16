@@ -28,7 +28,6 @@ import { SheetPanel } from './SheetPanel'
 import { usePriceCompareReferenceSync } from './use-price-compare-reference-sync'
 import {
   useActiveProjectQuoteConfig,
-  useEffectiveProjectBrands,
   usePriceCompareData,
 } from './usePriceCompareData'
 import { usePriceComparePricing } from './usePriceComparePricing'
@@ -89,8 +88,6 @@ export function PriceCompareView() {
   const [tourOpen, setTourOpen] = useState(false)
   const spotRef = useRef<HTMLSpanElement>(null)
   const urlParamsApplied = useRef(false)
-  /** 已按项目完成品牌回填的项目 id: 避免用户显式清空品牌后被再次自动回填。 */
-  const brandAutoFilledRef = useRef<Set<string>>(new Set())
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
   const projectAllowedBrands = useProjectAllowedBrands(
@@ -103,46 +100,10 @@ export function PriceCompareView() {
     isAuthenticated,
   )
 
-  /**
-   * 品牌唯一取源：项目资料优先，资料未限制品牌时后端回退到比价配置并置 fallback=true。
-   * 不再用商品品牌目录(catalog)当品牌清单 —— 那会让「资料没配」与「配了这些」看起来一样。
-   */
-  const effectiveBrands = useEffectiveProjectBrands(
-    active?.projectId,
-    isAuthenticated,
-  )
   useInitialProjectAssignment(projects, assignProjectToUnassigned, setTourOpen)
   usePriceCompareEditorSession(hasUnsavedChanges)
   // 只读态(他人签出)禁用撤销/重做快捷键
   useUndoRedoShortcuts(undo, redo, !readOnly)
-
-  // 配置首次从服务端加载且品牌为空时, 用**有效品牌集合**(项目资料优先 / 回退比价配置)回填;
-  // 每个项目只回填一次, 用户显式清空品牌后不再自动回填。运费优先取商品品牌目录里同名品牌的默认值,
-  // 目录没有该品牌时按 0 —— 有效品牌集合只给品牌名, 不带运费(运费属于本项目配置)。
-  useEffect(() => {
-    const projectId = active?.projectId
-    if (!projectId || !configLoaded || !effectiveBrands.brands.length) return
-    if (brandAutoFilledRef.current.has(projectId)) return
-    brandAutoFilledRef.current.add(projectId)
-    if (!config.brands.length) {
-      const freightByName = new Map(
-        catalog.map((item) => [item.name, item.freight] as const),
-      )
-      setBrands(
-        effectiveBrands.brands.map((name) => ({
-          name,
-          freight: freightByName.get(name) ?? 0,
-        })),
-      )
-    }
-  }, [
-    active?.projectId,
-    configLoaded,
-    catalog,
-    effectiveBrands.brands,
-    config.brands.length,
-    setBrands,
-  ])
 
   // 支持从「行情同步」页跳转携带 refDate/refPeriod
   useEffect(() => {
@@ -303,17 +264,6 @@ export function PriceCompareView() {
         onSubmit={submitRename}
       />
 
-      {active && effectiveBrands.fallback ? (
-        <div className="price-compare-brand-fallback-hint" role="status">
-          {t('priceCompare.view.brandFallbackHint', {
-            // 兜底文案: 该 key 的 zh-CN/en-US 由另一批 locale 改动一并提交;
-            // 即使 key 尚未落地, 这里也必须显示可读中文而不是裸 key(提示是这轮唯一必须"看得见"的东西)。
-            defaultValue:
-              '该项目未在项目资料限制品牌，暂用比价配置的品牌（建议到「项目资料」补齐允许品牌）',
-          })}
-        </div>
-      ) : null}
-
       {/*
        * 锁横幅只在「他人占用」或「保存冲突」时出现：
        * 自己正常编辑时不需要一条常驻的「你正在编辑该批次」提示带，白占一行高度。
@@ -350,6 +300,11 @@ export function PriceCompareView() {
         availability={availability}
         spotRef={spotRef}
         readOnly={readOnly}
+        onToggleHrb400eFallback={
+          configLoaded
+            ? () => setConfig({ hrb400eFallback: !config.hrb400eFallback })
+            : undefined
+        }
       />
 
       <PriceCompareOverlays
@@ -390,6 +345,7 @@ function PriceCompareSheetArea({
   availability,
   spotRef,
   readOnly,
+  onToggleHrb400eFallback,
 }: {
   active: ReturnType<typeof useSheetsStore>['active']
   watermark: string
@@ -411,6 +367,8 @@ function PriceCompareSheetArea({
   availability: React.ComponentProps<typeof SheetPanel>['availability']
   spotRef: React.ComponentProps<typeof SheetPanel>['spotRef']
   readOnly: boolean
+  /** 项目配置已加载后可切换 HRB400E 参考价；加载中不展示按钮。 */
+  onToggleHrb400eFallback?: () => void
 }) {
   if (!active) {
     return (
@@ -444,6 +402,7 @@ function PriceCompareSheetArea({
         }}
         refreshing={refreshing}
         allowHrb400eFallback={config.hrb400eFallback}
+        onToggleHrb400eFallback={onToggleHrb400eFallback}
         allowedProducts={config.products}
         onOpenConfig={onOpenConfig}
         availability={availability}

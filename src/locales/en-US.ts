@@ -1648,6 +1648,28 @@ export const enUS = {
         sectionBasic: 'Basic information',
         sectionPricing: 'Pricing rules',
         sectionScope: 'Scope & validation',
+        sectionQuote: 'Quote config',
+        quoteBrandCategories: 'Enabled categories per brand',
+        quoteBrandCategoriesHint:
+          'Pick the categories each brand can quote; leave empty to include every category',
+        quoteBrandCategoriesEmpty:
+          'Choose allowed brands above first, then configure the categories per brand',
+        quoteBrandCategoriesPlaceholder: 'Select categories',
+        quoteProducts: 'Products in price comparison',
+        quoteProductsHint:
+          'Pick the products (category|material|spec|length) that join price comparison; leave empty for all',
+        quoteProductsPlaceholder: 'Select products',
+        quoteLengthPremium: 'Fixed-length premium',
+        quoteLengthPremiumHint:
+          'Premium per ton for non-standard lengths (CNY/ton); per-length amounts still come from length master data',
+        quoteHrb400eFallback: 'Seismic grade fallback',
+        quoteHrb400eFallbackHint:
+          'When enabled, HRB400 quotes are used when HRB400E is missing (display only, marked with E)',
+        quoteHrb400eFallbackOn: 'On',
+        quoteHrb400eFallbackOff: 'Off',
+        quoteDesignatedBrands: 'Designated brands',
+        quoteDesignatedBrandsHint:
+          'Designated brands are shown in sales orders only and do not filter automatically',
         sectionOther: 'Other',
         allowedSpecHint:
           'Checked when sales orders import PO items, mismatches raise a warning',
@@ -3149,6 +3171,10 @@ export const enUS = {
       fallbackLegend: 'HRB400E reference price',
       fallbackTooltip:
         'No HRB400 quote for this brand/spec; using the HRB400E reference price',
+      fillHrb400e: 'Fill HRB400E price',
+      hrb400eFallbackOff: 'Disable HRB400E reference',
+      hrb400eFallbackHint:
+        'For HRB400 rows with no exact spot price, fill in the HRB400E spot price for the same brand/spec (marked with E)',
       // Accessible name for the badge itself (WCAG 1.4.1: never colour/shape only)
       fallbackBadgeLabel: 'Priced as {{material}}',
       spotSubstitutedLabel: 'Priced as {{material}} (source {{supplier}})',
@@ -3174,6 +3200,11 @@ export const enUS = {
     },
     config: {
       title: 'Project Settings',
+      freightOnlyHint:
+        'Brands, categories, products, length premium, seismic fallback and designated brands are maintained in Master Data → Projects; only freight per brand is edited here.',
+      gotoProject: 'Open project master data',
+      noBrands:
+        'This project has no brand configuration yet; maintain allowed brands in project master data',
       tabs: {
         basic: 'Basic',
         brands: 'Brands & Categories',
