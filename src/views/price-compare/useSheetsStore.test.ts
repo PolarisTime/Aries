@@ -1395,6 +1395,43 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(store.current.conflict).toBeNull()
   })
 
+  it('删除当前批次后停留在原项目，切到同项目相邻批次', async () => {
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord({
+        id: '9001',
+        sheetNo: '9001',
+        name: '项目A 批次1',
+        projectId: '100',
+        projectName: '项目A',
+      }),
+      sheetRecord({
+        id: '9002',
+        sheetNo: '9002',
+        name: '项目A 批次2',
+        projectId: '100',
+        projectName: '项目A',
+      }),
+      sheetRecord({
+        id: '9003',
+        sheetNo: '9003',
+        name: '项目B 批次1',
+        projectId: '200',
+        projectName: '项目B',
+      }),
+    ])
+    const store = renderStore()
+    await hydrate(store)
+
+    expect(store.current.active.id).toBe('9001')
+    act(() => {
+      store.current.removeSheet('9001')
+    })
+
+    // 同项目还有批次：必须留在项目A，并切到相邻的批次2
+    expect(store.current.active.projectId).toBe('100')
+    expect(store.current.active.id).toBe('9002')
+  })
+
   it('项目配置未加载完成时跳过保存, 加载完成后再发完整 prices', async () => {
     let resolveConfig!: (value: typeof configRecord) => void
     api.fetchQuoteProjectConfig.mockImplementation(

@@ -2180,14 +2180,33 @@ export function useSheetsStore(options?: {
       if (nextConflict) openConflictRef.current(nextConflict)
     }
     apply((current) => {
+      const removedIndex = current.sheets.findIndex((sheet) => sheet.id === id)
+      const removed = current.sheets[removedIndex]
       const next = current.sheets.filter((sheet) => sheet.id !== id)
       if (!next.length) return current
-      return {
-        ...current,
-        sheets: next,
-        activeId:
-          id === current.activeId ? next[next.length - 1].id : current.activeId,
+      if (id !== current.activeId || !removed) {
+        return { ...current, sheets: next }
       }
+      /*
+       * 删除当前批次后必须留在**原项目**：先在同项目内找前一个批次，
+       * 没有前一个就取同项目的第一个；只有该项目已经没有任何批次时，
+       * 才按原位置落到相邻项目，避免删除后直接跳到第一个项目的批次。
+       */
+      const sameProject = next.filter(
+        (sheet) => sheet.projectId === removed.projectId,
+      )
+      let nextActiveId =
+        next[Math.min(Math.max(removedIndex, 0), next.length - 1)]?.id ??
+        next[0]?.id ??
+        current.activeId
+      if (sameProject.length) {
+        const beforeCount = current.sheets
+          .slice(0, Math.max(removedIndex, 0))
+          .filter((sheet) => sheet.projectId === removed.projectId).length
+        nextActiveId =
+          sameProject[Math.max(0, beforeCount - 1)]?.id ?? sameProject[0].id
+      }
+      return { ...current, sheets: next, activeId: nextActiveId }
     })
     if (serverId) {
       void deleteQuoteSheet(serverId).catch((error) => {
