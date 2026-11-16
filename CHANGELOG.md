@@ -1,3 +1,32 @@
+# [16.2.0](https://github.com/PolarisTime/Aries/compare/v16.1.0...v16.2.0) (2026-11-16)
+
+
+### Bug Fixes
+
+* **modules:** 下拉筛选去掉「套中套」，改为一层内联 Select ([16c4c23](https://github.com/PolarisTime/Aries/commit/16c4c233fb20dd40f0c23c159dd598a219fc3e16))
+* **modules:** 明细行拖动手柄改为按下即拖并阻止整行划选 ([5c06b28](https://github.com/PolarisTime/Aries/commit/5c06b284f3baec4822c8ca3dcc2f77418372a91f))
+* **price-compare:** 删除批次后停留在原项目并切到相邻批次 ([04c3d8c](https://github.com/PolarisTime/Aries/commit/04c3d8c5dc4467384e0aa576ca7c7cd712e2565f))
+* **price-compare:** 清空价格后自动保存完成不再回弹 ([b3a57c4](https://github.com/PolarisTime/Aries/commit/b3a57c434909785221dae96942d7b67d45de4277))
+* **price-compare:** 现货价格改块级盒，与网价/差价对齐到同一水平线 ([d811990](https://github.com/PolarisTime/Aries/commit/d8119906c367f1b2de4ed563aa5f3d19cce2716a))
+* **price-compare:** 网价/现货/差价三个数字统一字重 ([5804d6d](https://github.com/PolarisTime/Aries/commit/5804d6d1efc781303854ca8237ca05ef391f9e23))
+* **project:** 项目资料编辑弹层第二步「取价规则」排版收敛 ([9100757](https://github.com/PolarisTime/Aries/commit/9100757e66136d1cb91d2a11a7713d75d936d50d))
+* **sales-order:** 删除无业务意义的送货差异指标 ([b88c0f1](https://github.com/PolarisTime/Aries/commit/b88c0f1f89541ccab688bd5ef18b2eb6eacc7548))
+* **sales-order:** 明确本单重量与项目累计送货口径 ([06c2c1c](https://github.com/PolarisTime/Aries/commit/06c2c1c7590cab556ece71a943e17a4c6af30103))
+* **sales-order:** 调整本单重量与项目累计送货的展示顺序 ([2187112](https://github.com/PolarisTime/Aries/commit/21871120d7bf787480054b20bc1bbed24f18a540))
+* **settings-sync:** 修复设置同步 409 死循环与重复弹窗 ([c90e181](https://github.com/PolarisTime/Aries/commit/c90e1816aa96184cc7a024fd7785c7e440aebadc))
+
+
+### Features
+
+* **market:** 行情明细筛选改下拉，并按视口高度填满明细行数 ([b2eaa78](https://github.com/PolarisTime/Aries/commit/b2eaa78a4eeca501b76b9427bcc6b7eb7bbaf4e8))
+* **price-compare:** 刷新价格按钮语义改为刷新网价 ([f8719dd](https://github.com/PolarisTime/Aries/commit/f8719dd99e04a3ac863386c28075cf3b9beaec33))
+* **price-compare:** 工具栏增加「填入 HRB400E 价格」快捷开关 ([dd78bcb](https://github.com/PolarisTime/Aries/commit/dd78bcbe01baa27e6db42d059a1da1a8f72396de))
+* **price-compare:** 报单比价/供应商报价表字号与列宽跟随个人设置 ([66203f1](https://github.com/PolarisTime/Aries/commit/66203f170138c77ca5fc99bdef54df855821d5cb))
+* **project:** 报单比价品牌改为项目资料派生，去掉自动回填与回退提示 ([f849136](https://github.com/PolarisTime/Aries/commit/f8491363a45e532ed62e4ba511408007741c7cba))
+* **project:** 比价配置归并到项目资料，比价弹层只保留每品牌运费 ([b7c1a42](https://github.com/PolarisTime/Aries/commit/b7c1a42246f211da0a7cb2362e239c41b0be17e6))
+* **project:** 项目资料补齐「价格规定」清单维护入口 ([54f4e3d](https://github.com/PolarisTime/Aries/commit/54f4e3d6e283a0316a03e35cef6970f4d45bcc27))
+* **sales-order:** 展示 8 位单号并支持按单号检索 ([89fd77a](https://github.com/PolarisTime/Aries/commit/89fd77a0d9eb59a07e8153496b7f8e5eb03be4a6))
+
 # [16.1.0](https://github.com/PolarisTime/Aries/compare/v16.0.0...v16.1.0) (2026-11-15)
 
 
