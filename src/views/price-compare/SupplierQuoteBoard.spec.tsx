@@ -823,4 +823,117 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     expect(priceApi.saveSupplierPriceColumnItems).not.toHaveBeenCalled()
     expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3280')
   })
+
+  /*
+   * S2 回归（65d9eee3 引入）：Shift+单击框选被收成单格。
+   *
+   * 浏览器真实顺序是 pointerdown（Shift 时先把选区扩成整块）→ focus；`onFocusCell`
+   * 若连 `anchor` 一起要求等于本格，就会把整块收成单击的单格。这里按真实顺序触发，
+   * 断言 12/14/16 三格都保持选中。
+   */
+  it('Shift+单击框选整块：pointerdown 扩选后 focus 不会把选区收成单格', async () => {
+    // 默认夹具的 9米 列只有 2 行；补一行 16，才能构成 3 格选区。
+    const ROW_C = { ...ROW_B, spec: 16 }
+    priceApi.fetchSpecRows.mockResolvedValue([ROW_A, ROW_A12, ROW_B, ROW_C])
+    priceApi.fetchSupplierPriceGrid.mockResolvedValue({
+      brandName: '中天',
+      columns: [COLUMN],
+      rows: [
+        {
+          ...ROW_A,
+          prices: { l1: 3280 },
+          priceStatuses: { l1: 'NORMAL' },
+          remarks: {},
+        },
+        { ...ROW_B, prices: {}, priceStatuses: {}, remarks: {} },
+        { ...ROW_C, prices: {}, priceStatuses: {}, remarks: {} },
+      ],
+    })
+
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+
+    /*
+     * 同一列（中天 / HRB400E / 9米）的格子按行序取前三行：规格模板随品类变化，
+     * 不写死具体规格号，避免模板调整时用例变成「找不到输入框」。
+     */
+    const columnInputs = Array.from(
+      container.querySelectorAll<HTMLInputElement>(
+        'input[aria-label^="中天 HRB400E "]',
+      ),
+    ).filter((input) => input.getAttribute('aria-label')?.endsWith(' 9米'))
+    expect(columnInputs.length).toBeGreaterThanOrEqual(3)
+    const first = columnInputs[0]
+    const third = columnInputs[2]
+    const expectedLabels = columnInputs
+      .slice(0, 3)
+      .map((input) => input.getAttribute('aria-label'))
+
+    // 1) 单击第一格：建立 anchor
+    await act(async () => {
+      first.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }))
+      first.focus()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    // 2) Shift+单击第三格：真实浏览器顺序 pointerdown(shift) → focus
+    await act(async () => {
+      third.dispatchEvent(
+        new MouseEvent('pointerdown', { bubbles: true, shiftKey: true }),
+      )
+      third.focus()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    const selected = Array.from(
+      container.querySelectorAll<HTMLInputElement>(
+        'input.supplier-price-cell-selected',
+      ),
+    ).map((input) => input.getAttribute('aria-label'))
+    expect(selected).toEqual(expectedLabels)
+  })
+
+  /*
+   * S13：价格表还没加载完时恢复草稿，不能去新建价格列。
+   *
+   * 修复前 saveBrand 读不到列，把「还没读到」当成「未建列」，慢网下 5 秒内连发 4 次
+   * addSupplierPriceColumn。现在 gridQueries 未全部成功前不排保存，saveBrand 也有
+   * 品牌级守卫；网格成功后才允许保存（该品牌已有价格表列，因此仍不应新建）。
+   */
+  it('价格表未加载完时恢复草稿：不新建价格列，加载成功后才保存', async () => {
+    writeDrafts('s1', { 中天: { [quoteRowKey(ROW_A)]: 3290 } })
+
+    let resolveGrid: (grid: SupplierPriceGrid) => void = () => {}
+    priceApi.fetchSupplierPriceGrid.mockImplementation(
+      () =>
+        new Promise<SupplierPriceGrid>((resolve) => {
+          resolveGrid = resolve
+        }),
+    )
+
+    await render()
+    await flushAutosave()
+
+    // 网格还在 pending：既不能新建列，也不能提交整列
+    expect(priceApi.addSupplierPriceColumn).not.toHaveBeenCalled()
+    expect(priceApi.saveSupplierPriceColumnItems).not.toHaveBeenCalled()
+
+    // 网格成功（该品牌已有价格表列）：此时才允许保存，且不应再新建列
+    await act(async () => {
+      resolveGrid(gridWithColumn())
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await flushAutosave()
+
+    expect(priceApi.addSupplierPriceColumn).not.toHaveBeenCalled()
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalled()
+    const [, , items] = priceApi.saveSupplierPriceColumnItems.mock.calls.at(
+      -1,
+    ) as [string, number, Array<Record<string, unknown>>]
+    expect(items).toContainEqual({
+      ...withoutBrand(ROW_A),
+      price: 3290,
+      priceStatus: 'NORMAL',
+    })
+  })
 })

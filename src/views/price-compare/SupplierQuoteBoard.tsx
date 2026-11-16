@@ -23,6 +23,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -796,6 +797,24 @@ export function SupplierQuoteBoard() {
     return map
   }, [candidateBrands, gridQueries])
 
+  /**
+   * 价格表是否已全部加载成功。
+   *
+   * <p>草稿恢复与自动保存都要等它：加载中 `byBrand` 里还没有列，`saveBrand` 会把
+   * 「还没读到」误判成「未建列」而去 `addSupplierPriceColumn` 新建（S13：慢网 5 秒内 4 次 POST）。</p>
+   */
+  const gridsReady = gridQueries.every((query) => query.isSuccess)
+
+  /** 品牌 → 该品牌价格表是否加载成功；saveBrand 的守卫读它（异步回调里读不到最新渲染值）。 */
+  const gridReadyByBrandRef = useRef(new Map<string, boolean>())
+  useEffect(() => {
+    const next = new Map<string, boolean>()
+    candidateBrands.forEach((brandName, index) => {
+      next.set(brandName, gridQueries[index]?.isSuccess === true)
+    })
+    gridReadyByBrandRef.current = next
+  }, [candidateBrands, gridQueries])
+
   /** 该供应商在这个品牌下的价格表列；没有则 null（= 该品牌尚未建列）。 */
   const columnOf = useCallback(
     (brandName: string): SupplierPriceColumn | null =>
@@ -1072,17 +1091,10 @@ export function SupplierQuoteBoard() {
       commitDrafts(stored)
       setRestoredDrafts(true)
       /*
-       * 恢复出来的草稿按"未保存改动"处理：立刻给每个有改动的品牌排一次自动保存。
-       *
-       * <p>原先只恢复内存草稿，而页面上**没有保存按钮**（提示文案却让用户去点保存），
-       * 用户以为已经存上了，刷新/关标签就全丢。scheduleSave 定义在本 effect 之后，
-       * 因此经 ref 调用（ref 在每次渲染后同步，见下方 scheduleSaveRef 赋值）。</p>
+       * 恢复出来的草稿按「未保存改动」处理，但**不能在这里立刻排保存**：
+       * 价格表还没加载完时 saveBrand 读不到列，会走 addSupplierPriceColumn 新建列
+       * （S13 慢网实测 4 次 POST）。排期改由下方 gridsReady 的 effect 负责。
        */
-      for (const brandName of Object.keys(stored)) {
-        if (draftCount(stored[brandName]) > 0) {
-          scheduleSaveRef.current(brandName)
-        }
-      }
     }
     setDraftsRestoredFor(supplierId)
   }, [commitDrafts, supplierId, draftsRestoredFor])
@@ -1173,6 +1185,12 @@ export function SupplierQuoteBoard() {
     if (collabListIdOf(brandName)) return
     const snapshot = draftsRef.current[brandName]
     if (draftCount(snapshot) === 0) return
+
+    /*
+     * 该品牌的价格表还没加载成功：此时无法判断「有没有列」，先不保存、保留草稿，
+     * 避免把一次「还没读到」误判成「未建列」而 addSupplierPriceColumn（S13）。
+     */
+    if (gridReadyByBrandRef.current.get(brandName) !== true) return
 
     const existing = byBrandRef.current.columns.get(brandName) ?? null
     const serverCells = byBrandRef.current.cells.get(brandName) ?? new Map()
@@ -1285,6 +1303,11 @@ export function SupplierQuoteBoard() {
   const scheduleSave = (brandName: string) => {
     // 协作表不经 REST 落库：连排期都免了，避免切到协作后还有迟到的整列 PUT
     if (collabListIdOf(brandName)) return
+    /*
+     * 价格表尚未全部加载成功前不排保存：此时 byBrand 里还没有列，saveBrand 会误走
+     * addSupplierPriceColumn 新建列（S13）。草稿留在内存/localStorage，加载成功后再排期。
+     */
+    if (!gridsReady) return
     const timers = timersRef.current
     const existing = timers.get(brandName)
     if (existing) clearTimeout(existing)
@@ -1297,7 +1320,31 @@ export function SupplierQuoteBoard() {
     )
   }
 
-  scheduleSaveRef.current = scheduleSave
+  /*
+   * 渲染期写 ref 会破坏并发渲染与 React Compiler 的优化假设（见「自动保存」段约束），
+   * 因此改到 layout effect 里同步：草稿恢复等子 effect 在 layout effect 之后执行，
+   * 调用 ref 时拿到的已是最新闭包。
+   */
+  useLayoutEffect(() => {
+    // 不写依赖数组：scheduleSave 是普通函数、每次渲染都会换身份；这里要的就是「每次渲染后同步最新闭包」。
+    // （写成 [scheduleSave] 会被 biome 的 useExhaustiveDependencies 判为不稳定依赖。）
+    scheduleSaveRef.current = scheduleSave
+  })
+
+  /*
+   * 草稿恢复后的自动保存要等价格表全部加载成功：否则 saveBrand 读不到列，
+   * 会把「还没读到」误判成「未建列」去 addSupplierPriceColumn 新建（S13）。
+   * gridsReady 由 false→true 或恢复完成时触发一次；之后的新编辑走 updateCell 的 scheduleSave。
+   */
+  useEffect(() => {
+    if (!supplierId || draftsRestoredFor !== supplierId) return
+    if (!gridsReady) return
+    for (const brandName of Object.keys(draftsRef.current)) {
+      if (draftCount(draftsRef.current[brandName]) > 0) {
+        scheduleSaveRef.current(brandName)
+      }
+    }
+  }, [draftsRestoredFor, gridsReady, supplierId])
 
   useEffect(() => {
     const timers = timersRef.current
@@ -2470,11 +2517,13 @@ export function SupplierQuoteBoard() {
                      * <p>只在焦点确实换了格时才写，避免同一格重复聚焦把多格选区缩成单格。</p>
                      */
                     setSelection((current) =>
+                      /*
+                       * 只比较 `focus`：浏览器顺序是 pointerdown（Shift 时先把选区扩成整块）
+                       * → focus；若连 `anchor` 也要求等于本格，整块会被收成单击的单格（S2）。
+                       */
                       current &&
                       current.category === group.categoryName &&
                       current.material === material &&
-                      current.anchor.row === rowIndex &&
-                      current.anchor.col === columnIndex &&
                       current.focus.row === rowIndex &&
                       current.focus.col === columnIndex
                         ? current
