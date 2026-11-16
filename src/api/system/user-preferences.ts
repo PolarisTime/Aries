@@ -1,6 +1,9 @@
 import { z } from 'zod'
 import { apiGet, apiPut } from '@/api/core/client'
-import { withIdempotencyKey } from '@/api/core/idempotency'
+import {
+  withIdempotencyKey,
+  withIdempotencyKeySuppressingErrors,
+} from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { UserColumnSettingsPayload } from '@/types/module-page'
 
@@ -98,8 +101,21 @@ export function getUserAccountSettings() {
  * 因此两条写通路并存也不会互相覆盖。</p>
  */
 export function saveUserAccountSettings(sections: UserAccountSettingsSections) {
-  return saveUserAccountSettingsUpdate({ sections })
+  return saveUserAccountSettingsUpdate(
+    { sections },
+    SETTINGS_SYNC_HANDLED_STATUSES,
+  )
 }
+
+/**
+ * 同步层自己处理的错误码，交给它自己提示，不再让全局拦截器重复 toast。
+ *
+ * <p>409（分片时间戳落后）由 `user-settings-sync` 采用服务端值并给一条
+ * 「设置在其它设备上更新过」，413（分片超限）由它停用该分片；若不禁用全局提示，
+ * 同一次冲突会连弹两条，且全局那条是后端的内部措辞
+ * （「设置已在其他设备更新，请采用服务端值：supplierQuote」），对用户毫无信息量。</p>
+ */
+const SETTINGS_SYNC_HANDLED_STATUSES = [409, 413] as const
 
 /**
  * PUT `/account/settings` 的统一出口：sections 分片与 pages 列设置可同时提交。
@@ -107,12 +123,20 @@ export function saveUserAccountSettings(sections: UserAccountSettingsSections) {
  * <p>服务端语义：`sections` 按分片 LWW（409 时整体不落库），`pages` 整段替换、不参与 LWW；
  * 两者都可选，缺失即保持原样。这样同步引擎（只传 sections）与列设置（只传 pages）
  * 各走各的字段，不会互相覆盖。</p>
+ *
+ * <p>`suppressStatuses` 只由**同步引擎**那条通路传：pages 自己没有 409 语义，
+ * 它的 413（列设置超限）仍需全局提示，不能被一并静音。</p>
  */
-function saveUserAccountSettingsUpdate(update: UserAccountSettingsUpdate) {
+function saveUserAccountSettingsUpdate(
+  update: UserAccountSettingsUpdate,
+  suppressStatuses?: readonly number[],
+) {
   return apiPut(
     ENDPOINTS.ACCOUNT_SETTINGS,
     userAccountSettingsSchema,
     update,
-    withIdempotencyKey(),
+    suppressStatuses
+      ? withIdempotencyKeySuppressingErrors(suppressStatuses)
+      : withIdempotencyKey(),
   )
 }

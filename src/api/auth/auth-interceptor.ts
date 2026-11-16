@@ -122,7 +122,7 @@ function attachResponseMetadataToError(
   source: {
     response?: {
       status?: unknown
-      data?: { code?: unknown; traceId?: string }
+      data?: Record<string, unknown> & { code?: unknown; traceId?: string }
       headers?: Record<string, unknown> & {
         get?: (name: string) => unknown
       }
@@ -136,6 +136,15 @@ function attachResponseMetadataToError(
   }
   if (code !== undefined) {
     ;(target as Error & { code: number }).code = code
+  }
+  /*
+   * 把 ProblemDetail **正文**一并挂到新错误上：拦截器会把 axios 错误重包成
+   * `new Error(description)`，只留 status/code，调用方就拿不到 `serverValue` 之类的
+   * 扩展字段了。设置同步的 409 需要它来做「采用服务端值」（见 user-settings-sync）。
+   */
+  const data = source.response?.data
+  if (data && typeof data === 'object') {
+    ;(target as Error & { details?: unknown }).details = data
   }
   attachTraceIdToError(target, extractBackendTraceId(source))
 }

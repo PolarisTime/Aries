@@ -14,7 +14,17 @@ vi.mock('@/api/core/client', () => ({
 }))
 
 vi.mock('@/api/core/idempotency', () => ({
-  withIdempotencyKey: () => ({
+  // 透传调用方 config：同步层要往请求里塞 suppressGlobalErrorStatuses，mock 不能把它吃掉
+  withIdempotencyKey: (config: Record<string, unknown> = {}) => ({
+    ...config,
+    headers: { 'X-Idempotency-Key': 'test-idempotency-key' },
+  }),
+  withIdempotencyKeySuppressingErrors: (
+    statuses: readonly number[],
+    config: Record<string, unknown> = {},
+  ) => ({
+    ...config,
+    suppressGlobalErrorStatuses: statuses,
     headers: { 'X-Idempotency-Key': 'test-idempotency-key' },
   }),
 }))
@@ -98,5 +108,19 @@ describe('user-preferences（/account/settings v2）', () => {
       },
     })
     expect(body).not.toHaveProperty('pages')
+  })
+
+  it('409/413 交给同步层提示：请求上声明抑制全局错误 toast，避免一次冲突弹两条', async () => {
+    apiPutMock.mockResolvedValueOnce(settingsPayload)
+
+    await saveUserAccountSettings({
+      ui: { value: { fontSize: 16 }, clientUpdatedAt: '2026-11-14T07:06:00Z' },
+    })
+
+    const [, , , config] = apiPutMock.mock.calls[0]
+    expect(config).toMatchObject({
+      suppressGlobalErrorStatuses: [409, 413],
+      headers: { 'X-Idempotency-Key': 'test-idempotency-key' },
+    })
   })
 })

@@ -349,6 +349,25 @@ function scheduleRetry(): void {
   }, delay)
 }
 
+/**
+ * 下一次提交用的 `clientUpdatedAt`。
+ *
+ * <p>正常就是"现在"。但服务端可能存着**未来时间**的历史脏数据（实测 dev 库里
+ * `ui.clientUpdatedAt = 2030-01-01T00:00:00Z`，早期联调写入）：此时用 `new Date()` 提交，
+ * 服务端判定 `incoming < existing` → 永远 409，客户端每次"采用服务端值 + 弹提示"，
+ * 该分片再也写不回去。所以取「现在」与「本地镜像时间戳 + 1ms」的较大者：409 之后本地镜像
+ * 已被服务端值覆盖，下一次提交就能带着时间戳单调追上，自愈而不必人工改库。</p>
+ */
+function nextClientUpdatedAt(section: string): string {
+  const now = Date.now()
+  const previous = state.sections[section]?.clientUpdatedAt
+  const previousMs =
+    typeof previous === 'string' ? Date.parse(previous) : Number.NaN
+  const candidate =
+    Number.isFinite(previousMs) && previousMs >= now ? previousMs + 1 : now
+  return new Date(candidate).toISOString()
+}
+
 /** 本地变更入口：先写本地，再排队提交（防抖合并）。 */
 export function patchUserSection(section: string, patch: SectionPatch): void {
   if (!section) return
@@ -359,7 +378,7 @@ export function patchUserSection(section: string, patch: SectionPatch): void {
       ? (patch as (value: unknown) => unknown)(current)
       : patch
   const merged = mergeUserSectionValues(section, current, next)
-  const clientUpdatedAt = new Date().toISOString()
+  const clientUpdatedAt = nextClientUpdatedAt(section)
   state.sections[section] = { value: merged, clientUpdatedAt }
   writeMirror()
 
@@ -429,18 +448,33 @@ function rememberSnapshot(snapshot: UserAccountSettings): void {
   // pages 走列设置自己的本地键；这里只维护共用快照，供列设置复用同一次 GET。
 }
 
+/**
+ * 取 HTTP 状态：优先 `response.status`（原始 axios 错误），其次错误对象上的 `status`
+ * （全局拦截器会把原始错误**重新包装**成 `new Error(description)`，只把 status/code 挂到
+ * 新错误上）。只看 `response` 会让真实的 409 落进"通用失败 → 指数退避重试"分支，
+ * 于是每 1/2/4…s 重试一次、每次都弹一次提示，设置却永远同步不上 —— 实测就是这样卡住的。
+ */
 function requestStatus(error: unknown): number | undefined {
-  const status = (error as { response?: { status?: unknown } } | null)?.response
-    ?.status
-  return typeof status === 'number' ? status : undefined
+  const responseStatus = (error as { response?: { status?: unknown } } | null)
+    ?.response?.status
+  if (typeof responseStatus === 'number') return responseStatus
+  const attached = (error as { status?: unknown } | null)?.status
+  return typeof attached === 'number' ? attached : undefined
+}
+
+/** 错误体：同样兼容"原始 axios 错误"与"拦截器包装后的错误"两种形状。 */
+function errorPayload(error: unknown): unknown {
+  const fromResponse = (error as { response?: { data?: unknown } } | null)
+    ?.response?.data
+  if (fromResponse !== undefined) return fromResponse
+  return (error as { details?: unknown } | null)?.details
 }
 
 /** 从错误响应里取出服务端回传的分片（409 冲突时以它为准），形状不可信需逐层校验。 */
 function errorResponseSections(
   error: unknown,
 ): { sections?: Record<string, UserAccountSettingsSectionInput> } | null {
-  const data = (error as { response?: { data?: unknown } } | null)?.response
-    ?.data
+  const data = errorPayload(error)
   if (!isPlainObject(data)) return null
   /*
    * 后端（leo `UserSettingsConflictException`）真实 409 形状：

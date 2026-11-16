@@ -58,3 +58,25 @@ export function withIdempotencyKey<
     headers,
   } as Config
 }
+
+/**
+ * 附幂等键，并声明「这些状态码由调用方自己提示」。
+ *
+ * <p>典型场景：设置同步的 409（分片时间戳落后）与 413（分片超限）由同步引擎自己处理并提示，
+ * 全局拦截器再 toast 一次就会连弹两条，而且那条是后端内部措辞
+ * （「设置已在其他设备更新，请采用服务端值：supplierQuote」）。</p>
+ *
+ * <p>放在 core 里而不是业务文件里：业务代码不允许直接 import `@/api/core/http` 的
+ * `ApiRequestConfig`（no-restricted-syntax 门禁），这里替它把类型收口。</p>
+ */
+export function withIdempotencyKeySuppressingErrors(
+  statuses: readonly number[],
+  config?: AxiosRequestConfig & {
+    suppressGlobalErrorStatuses?: readonly number[]
+  },
+): AxiosRequestConfig & { suppressGlobalErrorStatuses?: readonly number[] } {
+  return withIdempotencyKey({
+    ...config,
+    suppressGlobalErrorStatuses: statuses,
+  })
+}

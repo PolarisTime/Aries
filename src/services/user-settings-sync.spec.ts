@@ -249,6 +249,104 @@ describe('用户设置同步引擎', () => {
     expect(saveUserAccountSettingsMock).toHaveBeenCalledTimes(1)
   })
 
+  /*
+   * 服务端存着「未来时间戳」的脏数据（dev 库实测 ui.clientUpdatedAt = 2030-01-01）。
+   *
+   * 不加保护时：客户端用 new Date() 提交 → 服务端判 incoming < existing → 每次 409 →
+   * 每次都"采用服务端值 + 弹提示"，这个分片永远写不回去。契约：采用服务端值之后，
+   * 下一次提交的时间戳必须**严格大于**服务端那个未来时间戳，才能自愈。
+   */
+  it('服务端时间戳在未来（历史脏数据）时，下一次提交必须比它更新，否则该分片永久 409', async () => {
+    activateUserSettingsSync('u1')
+    await bootstrapUserSettings()
+    await settle()
+    saveUserAccountSettingsMock.mockClear()
+
+    saveUserAccountSettingsMock.mockRejectedValueOnce({
+      response: {
+        status: 409,
+        data: {
+          status: 409,
+          sections: ['ui'],
+          serverValue: {
+            ui: {
+              value: { fontSize: 20 },
+              clientUpdatedAt: '2030-01-01T00:00:00Z',
+            },
+          },
+        },
+      },
+    })
+
+    patchUserSection('ui', { fontSize: 16 })
+    await vi.advanceTimersByTimeAsync(1000)
+    await settle()
+    expect(readSection('ui')).toEqual({ fontSize: 20 })
+
+    // 采用服务端值后再改一次：时间戳必须追上 2030，否则服务端仍会 409
+    saveUserAccountSettingsMock.mockResolvedValue(emptySettings())
+    patchUserSection('ui', { fontSize: 18 })
+    await vi.advanceTimersByTimeAsync(1000)
+    await settle()
+
+    const sent = saveUserAccountSettingsMock.mock.calls.at(-1)?.[0] as Record<
+      string,
+      { clientUpdatedAt: string }
+    >
+    expect(Date.parse(sent.ui.clientUpdatedAt)).toBeGreaterThan(
+      Date.parse('2030-01-01T00:00:00Z'),
+    )
+  })
+
+  /*
+   * 真实链路上的 409 形状：全局拦截器（auth-interceptor）会把 axios 错误重包成
+   * `new Error(detail)`，只把 status / code / details 挂在新错误上 —— `response` 已经没了。
+   * 只读 `error.response.status` 的旧实现会把这个 409 当成"通用失败"，进入指数退避重试：
+   * 每 1/2/4… 秒发一次、每次弹一条提示，而设置永远同步不上去（实测就是这样）。
+   * 这里用**拦截器包装后的形状**钉住：要能识别 409、读到 serverValue、采用服务端值、只提示一次、不重试。
+   */
+  it('识别拦截器包装后的 409（status/details 挂在 Error 上）：采用服务端值且不重试', async () => {
+    activateUserSettingsSync('u1')
+    await bootstrapUserSettings()
+    await settle()
+    saveUserAccountSettingsMock.mockClear()
+
+    const wrapped = Object.assign(
+      new Error(
+        '设置已在其他设备更新，请采用服务端值：layoutTabs、supplierQuote',
+      ),
+      {
+        status: 409,
+        code: 4090,
+        details: {
+          status: 409,
+          sections: ['layoutTabs', 'supplierQuote'],
+          serverValue: {
+            supplierQuote: {
+              value: { openSupplierIds: ['srv-1'], activeSupplierId: 'srv-1' },
+              clientUpdatedAt: '2026-11-16T08:25:27.977Z',
+            },
+          },
+        },
+      },
+    )
+    saveUserAccountSettingsMock.mockRejectedValueOnce(wrapped)
+
+    patchUserSection('supplierQuote', { activeSupplierId: 'local-1' })
+    await vi.advanceTimersByTimeAsync(1000)
+    await settle()
+
+    expect(readSection('supplierQuote')).toMatchObject({
+      activeSupplierId: 'srv-1',
+    })
+    expect(messageWarningMock).toHaveBeenCalledTimes(1)
+    expect(getUserSettingsSyncSnapshot().dirty).toEqual([])
+
+    // 不再重试（旧行为会 1s/2s/4s 反复发）
+    await vi.advanceTimersByTimeAsync(4000)
+    expect(saveUserAccountSettingsMock).toHaveBeenCalledTimes(1)
+  })
+
   it('413 超限：停用该分片、本地仍可用、不再重试', async () => {
     activateUserSettingsSync('u1')
     await bootstrapUserSettings()
