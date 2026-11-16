@@ -1,11 +1,14 @@
+import type { BrandLowestQuote } from '@/api/market/supplier-price-lists'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import { substituteMaterialOf } from '@/utils/material-grade'
+import { importLowestQuotes } from './spot-from-price-list'
 import type {
   Brand,
   PriceData,
   PriceRow,
   PriceSheet,
   SheetInput,
+  SheetInputs,
   Variety,
 } from './types'
 
@@ -406,35 +409,98 @@ export function computeSummary(
 }
 
 /**
- * 统计"有网价但未填现货"的数量, 用于标签页角标。
+ * 现货价查询的缓存键（表格与批次角标共用同一份）。
  *
- * <p>只关心「有没有网价」，加价不影响 `undefined` 判定，因此这里固定传空表 + 0：
- * 不引入定尺主数据参数，避免调用方以为角标受加价配置影响。</p>
+ * <p>两处必须同键：否则同一份「供应商最低价」会被缓存两份、刷新节奏也可能不同，
+ * 表格显示有价而角标报缺价 —— 正是 P1-4 要消灭的口径分裂。</p>
  */
-export function countMissing(
-  data: PriceData | null,
+export const LOWEST_QUOTES_QUERY_KEY = ['supplier-price-lowest-quotes'] as const
+
+/**
+ * 现货价查询的刷新策略（单次查询只返回每格最低价，几百行，轮询成本可接受）。
+ *
+ * <p>全站默认 `refetchOnWindowFocus: false`，这里显式打开焦点刷新与重连刷新并加 60s 轮询：
+ * 供应商改价后报单比价要自动跟上；`staleTime` 压到 15s，切回标签页约 15s 内即更新。</p>
+ */
+export const LOWEST_QUOTES_QUERY_OPTIONS = {
+  staleTime: 15_000,
+  refetchOnWindowFocus: true,
+  refetchOnReconnect: true,
+  refetchInterval: 60_000,
+} as const
+
+export interface DeriveSheetPricingOptions {
+  /** 网价数据：缺价口径是「有网价但派生后没有现货价」，因此需要同一份 `PriceData`。 */
+  data?: PriceData | null
+  /** 抗震牌号代取开关（项目配置，与单据头一致）。 */
+  allowHrb400eFallback?: boolean
+  /** 实时行集合（表格侧来自受控 state）；缺省用 `sheet.rows`。 */
+  rows?: readonly PriceRow[]
+  /** 实时品牌列；缺省用 `sheet.brands`。 */
+  brands?: readonly Brand[]
+}
+
+export interface SheetPricing {
+  /** 渲染口径的唯一 inputs（实时派生）。 */
+  inputs: SheetInputs
+  /** 缺价数：有网价、但派生后该格没有现货价。 */
+  missingCount: number
+}
+
+/**
+ * 批次价格派生 + 缺价统计的**唯一出口**（表格与批次页签角标共用）。
+ *
+ * <p>为什么必须合并：表格显示的是 `importLowestQuotes` 的**实时派生**结果，而角标此前按
+ * `sheet.inputs`（持久化快照）统计缺价 —— 派生结果不落库，于是同一批次会出现
+ * 「表格里已经有价、角标却还在报缺价」，尤其是 HRB400E 代取命中的格子。现在两边都走
+ * 本函数：一次算出 `inputs` 与 `missingCount`，缺价数直接基于**派生后的** inputs。</p>
+ *
+ * <p>缺价口径与 {@link netPrice} 的 `undefined` 对齐：只有「该格有网价」才可能缺价，
+ * 没有网价的格子（隔断行、未选商品、行情缺该品牌/商品）都不算缺价。加价不影响
+ * `undefined` 判定，因此固定传空表 + 0（不引定尺主数据参数，避免调用方以为角标受加价配置影响）。</p>
+ *
+ * <p><b>依赖方向</b>：本函数需要 `importLowestQuotes`，因此 `core.ts` 与
+ * `spot-from-price-list.ts` 形成循环导入。两个模块顶层都只有类型/函数声明，
+ * 没有任何一方在初始化期读取对方的值，运行时安全；这样换来的好处是「派生 + 缺价」
+ * 只有一处实现，不会出现两个调用方各拼一遍的旧问题。</p>
+ */
+export function deriveSheetPricing(
   sheet: PriceSheet,
-  rows: PriceRow[],
-  brands: Brand[],
-): number {
-  let missing = 0
+  quotes: readonly BrandLowestQuote[],
+  options: DeriveSheetPricingOptions = {},
+): SheetPricing {
+  const data = options.data ?? null
+  const rows = options.rows ?? sheet.rows
+  const brands = options.brands ?? sheet.brands ?? []
+  const resolved: PriceSheet = {
+    ...sheet,
+    ...resolveRef(data, sheet),
+    rows: [...rows],
+    brands: [...brands],
+  }
+  const { inputs } = importLowestQuotes(resolved, quotes, {
+    allowHrb400eFallback: options.allowHrb400eFallback ?? false,
+  })
+
+  let missingCount = 0
   for (const row of rows) {
     for (const brand of brands) {
       const auto = netPrice(
         data,
-        sheet.refDate,
-        sheet.refPeriod,
+        resolved.refDate,
+        resolved.refPeriod,
         brand.name,
         row,
         EMPTY_LENGTH_PREMIUMS,
         0,
       )
       if (auto === undefined) continue
-      const spot = sheet.inputs[`${brand.name}:${row.id}`]?.spot
-      if (spot === undefined) missing += 1
+      if (inputs[`${brand.name}:${row.id}`]?.spot === undefined) {
+        missingCount += 1
+      }
     }
   }
-  return missing
+  return { inputs, missingCount }
 }
 
 /** 将 from 位置的元素移动到 to 位置(用于品牌列拖拽排序)。 */

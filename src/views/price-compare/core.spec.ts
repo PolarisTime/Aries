@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
+import type { BrandLowestQuote } from '@/api/market/supplier-price-lists'
 import {
   applyRowLock,
   buildVarietyOptions,
   canonicalCategory,
   categoriesOf,
   computeSummary,
-  countMissing,
   dataKeyOf,
+  deriveSheetPricing,
   filterVarieties,
   isSeparatorRow,
   LOCK_REASON_KEYS,
@@ -336,30 +337,132 @@ describe('netPriceWithFallback', () => {
   })
 })
 
-describe('countMissing', () => {
-  it('统计有网价但未填现货的数量', () => {
-    const sheet: PriceSheet = {
-      id: 's1',
-      name: 's',
-      projectId: '',
-      projectName: '',
-      orderDate: '2026-09-09',
-      refDate: '2026-09-10',
-      refPeriod: '9:30 上午',
-      lengthPremium: 30,
-      status: 'QUOTING',
-      rows: [],
-      inputs: {},
-    }
-    expect(countMissing(data, sheet, [row12, row12m], brands)).toBe(2)
-    expect(
-      countMissing(
-        data,
-        { ...sheet, inputs: { '中天:r1': { spot: 3280 } } },
-        [row12, row12m],
+describe('deriveSheetPricing（表格与批次角标共用的唯一出口）', () => {
+  const sheetOf = (overrides: Partial<PriceSheet> = {}): PriceSheet => ({
+    id: 's1',
+    name: 's',
+    projectId: '',
+    projectName: '',
+    orderDate: '2026-09-09',
+    refDate: '2026-09-10',
+    refPeriod: '9:30 上午',
+    lengthPremium: 30,
+    status: 'QUOTING',
+    rows: [],
+    inputs: {},
+    ...overrides,
+  })
+
+  const quoteOf = (
+    material: string,
+    spec: number,
+    price: number,
+  ): BrandLowestQuote => ({
+    brandName: '中天',
+    category: '螺纹钢',
+    material,
+    spec,
+    length: '9米',
+    price,
+    priceListId: '900',
+    supplierId: 's2',
+    supplierName: '河钢',
+    updatedAt: '2026-11-14T03:20:00Z',
+  })
+
+  it('报价命中：不缺价，inputs 带价格与供应商', () => {
+    const pricing = deriveSheetPricing(
+      sheetOf({ rows: [row12], brands }),
+      [quoteOf('HRB400E', 12, 3420)],
+      { data },
+    )
+
+    expect(pricing.missingCount).toBe(0)
+    expect(pricing.inputs['中天:r1']?.spot).toBe(3420)
+    expect(pricing.inputs['中天:r1']?.supplierName).toBe('河钢')
+  })
+
+  it('有网价但报价未命中：计 1 个缺价，且不保留快照里的旧价', () => {
+    const pricing = deriveSheetPricing(
+      sheetOf({
+        rows: [row12],
         brands,
-      ),
-    ).toBe(1)
+        inputs: { '中天:r1': { spot: 3300 } },
+      }),
+      [],
+      { data },
+    )
+
+    expect(pricing.missingCount).toBe(1)
+    expect(pricing.inputs['中天:r1']).toBeUndefined()
+  })
+
+  it('没有网价的格子不算缺价（口径是「有网价但没现货」）', () => {
+    const rowNoAuto: PriceRow = { ...row12, id: 'r2', material: 'HRB500' }
+    const pricing = deriveSheetPricing(
+      sheetOf({ rows: [row12, rowNoAuto], brands }),
+      [quoteOf('HRB400E', 12, 3420)],
+      { data },
+    )
+
+    expect(pricing.missingCount).toBe(0)
+    expect(pricing.inputs['中天:r2']).toBeUndefined()
+  })
+
+  it('HRB400E 代取命中时不算缺价 —— 与旧「持久化快照」口径不同', () => {
+    // 网价按 HRB400 存；供应商只报了 HRB400E（代取候选）
+    const dataHrb400: PriceData = {
+      '2026-09-10': {
+        '9:30 上午': {
+          中天: {
+            '螺纹钢|HRB400': { '12': 3300 },
+            '螺纹钢|HRB400E': { '12': 3320 },
+          },
+        },
+      },
+    }
+    const hrb400Row: PriceRow = { ...row12, id: 'h1', material: 'HRB400' }
+    // 持久化快照里没有价（派生结果不落库）—— 旧的 countMissing 会把它算成缺价
+    const sheet = sheetOf({ rows: [hrb400Row], brands, inputs: {} })
+
+    const strict = deriveSheetPricing(sheet, [quoteOf('HRB400E', 12, 3420)], {
+      data: dataHrb400,
+    })
+    expect(strict.missingCount).toBe(1)
+    expect(strict.inputs['中天:h1']).toBeUndefined()
+
+    const withFallback = deriveSheetPricing(
+      sheet,
+      [quoteOf('HRB400E', 12, 3420)],
+      { allowHrb400eFallback: true, data: dataHrb400 },
+    )
+    // 表格会显示代取价 → 角标不能再报缺价
+    expect(withFallback.missingCount).toBe(0)
+    expect(withFallback.inputs['中天:h1']?.spot).toBe(3420)
+    expect(withFallback.inputs['中天:h1']?.spotSourceMaterial).toBe('HRB400E')
+  })
+
+  it('显式 rows/brands 覆盖 sheet 快照（表格侧实时行）', () => {
+    const pricing = deriveSheetPricing(
+      sheetOf({ rows: [], brands: [] }),
+      [quoteOf('HRB400E', 12, 3420)],
+      { data, rows: [row12], brands },
+    )
+
+    expect(pricing.missingCount).toBe(0)
+    expect(pricing.inputs['中天:r1']?.spot).toBe(3420)
+  })
+
+  it('refDate/refPeriod 为空时按同一份 data 解析后才判缺价', () => {
+    const pricing = deriveSheetPricing(
+      sheetOf({ rows: [row12], brands, refDate: '', refPeriod: '' }),
+      [quoteOf('HRB400E', 12, 3420)],
+      { data },
+    )
+
+    // 解析到 2026-09-10 / 9:30 上午 → 有网价、有报价 → 不缺
+    expect(pricing.missingCount).toBe(0)
+    expect(pricing.inputs['中天:r1']?.spot).toBe(3420)
   })
 })
 

@@ -48,9 +48,12 @@ import type { CollabPeer } from './collab/collab-presence'
 import { CollabCellCursors } from './collab/RemoteCursors'
 import { useQuoteSheetCollab } from './collab/useQuoteSheetCollab'
 import {
+  deriveSheetPricing,
   EMPTY_LENGTH_PREMIUMS,
   filterVarieties,
   isSeparatorRow,
+  LOWEST_QUOTES_QUERY_KEY,
+  LOWEST_QUOTES_QUERY_OPTIONS,
   PRICE_COMPARE_COLUMN_SETTINGS_KEY,
   resolveRef,
   SHEET_HIDEABLE_COLUMN,
@@ -61,7 +64,6 @@ import {
   FallbackBadge,
 } from './sheet-columns'
 import { moveFocusTon } from './sheet-focus-navigation'
-import { importLowestQuotes } from './spot-from-price-list'
 import type {
   Brand,
   GridRow,
@@ -1258,21 +1260,30 @@ export function SheetPanel(props: Props) {
    * 需要立刻刷新时仍有工具栏「刷新现货价」按钮。</p>
    */
   const lowestQuotesQuery = useQuery({
-    queryKey: ['supplier-price-lowest-quotes'],
+    // 键与刷新策略来自 `core.ts`：批次页签角标用同一份缓存，避免两处各自取数/各自口径
+    queryKey: LOWEST_QUOTES_QUERY_KEY,
     queryFn: ({ signal }) => fetchLowestBrandQuotes(undefined, signal),
-    staleTime: 15_000,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchInterval: 60_000,
+    ...LOWEST_QUOTES_QUERY_OPTIONS,
   })
-  const liveInputs = useMemo(() => {
-    if (!lowestQuotesQuery.data) return sheet.inputs
-    return importLowestQuotes(
-      { ...sheet, rows, brands },
-      lowestQuotesQuery.data,
-      { allowHrb400eFallback },
-    ).inputs
-  }, [allowHrb400eFallback, brands, lowestQuotesQuery.data, rows, sheet])
+  /**
+   * 价格派生走 `deriveSheetPricing`（与批次页签角标**同一个出口**）。
+   *
+   * <p>没有报价数据时回退单据快照 `sheet.inputs`（此时工具栏会显示「当前为快照」），
+   * 与改动前一致；有数据时 `missingCount` 也一并算好，表格与角标不会再各算一遍。</p>
+   */
+  const sheetPricing = useMemo(
+    () =>
+      lowestQuotesQuery.data
+        ? deriveSheetPricing(sheet, lowestQuotesQuery.data, {
+            allowHrb400eFallback,
+            brands,
+            data,
+            rows,
+          })
+        : { inputs: sheet.inputs, missingCount: 0 },
+    [allowHrb400eFallback, brands, data, lowestQuotesQuery.data, rows, sheet],
+  )
+  const liveInputs = sheetPricing.inputs
   /** 渲染用快照：价格来自派生结果，其余字段与 sheet 一致。 */
   const sheetWithLivePrices = useMemo(
     () => ({ ...sheet, inputs: liveInputs }),

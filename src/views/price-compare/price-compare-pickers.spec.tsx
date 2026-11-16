@@ -1,16 +1,34 @@
 // @vitest-environment jsdom
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import i18n from 'i18next'
 import { act, createElement, type ReactElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { BrandLowestQuote } from '@/api/market/supplier-price-lists'
 import '@/i18n'
 import {
   PriceCompareBatchBar,
   PriceCompareProjectPicker,
 } from './price-compare-pickers'
 import { resolveProjectSelection } from './price-compare-support'
-import type { PriceData, PriceSheet, ProjectOption } from './types'
+import type {
+  Brand,
+  PriceData,
+  PriceRow,
+  PriceSheet,
+  ProjectOption,
+} from './types'
+
+/** 批次角标的缺价数据源：与表格共用同一份「供应商最低价」查询，因此这里 mock 接口。 */
+const lowestQuotesMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/api/market/supplier-price-lists', () => ({
+  fetchLowestBrandQuotes: (...args: unknown[]) => {
+    void args
+    return lowestQuotesMock()
+  },
+}))
 
 const projects: ProjectOption[] = [
   { id: 'p1', name: '稻米加工', abbr: '稻米加工' },
@@ -48,6 +66,38 @@ const projectGroups = [
 
 const emptyData = {} as PriceData
 
+/** 缺价角标用例：网价按 HRB400 存，供应商只报了 HRB400E（代取候选）。 */
+const hrb400Row: PriceRow = {
+  id: 'row-a',
+  category: '螺纹钢',
+  material: 'HRB400',
+  spec: 12,
+  length: '9米',
+}
+const hrb400Brands: Brand[] = [{ name: '中天', freight: 0 }]
+const hrb400Data: PriceData = {
+  '2026-10-14': {
+    上午: {
+      中天: {
+        '螺纹钢|HRB400': { '12': 3300 },
+        '螺纹钢|HRB400E': { '12': 3320 },
+      },
+    },
+  },
+}
+const hrb400eQuote: BrandLowestQuote = {
+  brandName: '中天',
+  category: '螺纹钢',
+  material: 'HRB400E',
+  spec: 12,
+  length: '9米',
+  price: 3420,
+  priceListId: '900',
+  supplierId: 's2',
+  supplierName: '河钢',
+  updatedAt: '2026-11-14T03:20:00Z',
+}
+
 /**
  * 项目/批次两行的交互契约。
  *
@@ -58,6 +108,7 @@ const emptyData = {} as PriceData
 describe('报单比价 项目/批次选择控件契约', () => {
   let container: HTMLDivElement
   let root: Root
+  let queryClient: QueryClient
 
   const render = (element: ReactElement) => act(() => root.render(element))
 
@@ -77,22 +128,44 @@ describe('报单比价 项目/批次选择控件契约', () => {
   /** 最近一次「重命名批次」回调的参数，供用例断言。 */
   let renameCalls: Array<{ id: string; name: string }> = []
 
-  const renderBatchBar = (sheets: PriceSheet[], activeId: string) =>
+  const renderBatchBar = async (
+    sheets: PriceSheet[],
+    activeId: string,
+    options: {
+      allowHrb400eFallback?: boolean
+      brands?: Brand[]
+      data?: PriceData
+    } = {},
+  ) => {
     render(
-      createElement(PriceCompareBatchBar, {
-        activeId,
-        brands: [],
-        currentGroup: { projectId: 'p1', projectName: '稻米加工', sheets },
-        data: emptyData,
-        sheets,
-        onSelectSheet: () => {},
-        onAddBatch: () => {},
-        onDeleteBatch: () => {},
-        onRenameBatch: (id, name) => {
-          renameCalls = [...renameCalls, { id, name }]
-        },
-      }),
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(PriceCompareBatchBar, {
+          activeId,
+          allowHrb400eFallback: options.allowHrb400eFallback,
+          brands: options.brands ?? [],
+          currentGroup: { projectId: 'p1', projectName: '稻米加工', sheets },
+          data: options.data ?? emptyData,
+          sheets,
+          onSelectSheet: () => {},
+          onAddBatch: () => {},
+          onDeleteBatch: () => {},
+          onRenameBatch: (id, name) => {
+            renameCalls = [...renameCalls, { id, name }]
+          },
+        }),
+      ),
     )
+    // 报价查询落地后才能算缺价角标（否则是"数据没来"）
+    await flushQuotes()
+  }
+
+  /** 等报价查询落地（react-query 至少需要一轮宏任务）。 */
+  const flushQuotes = () =>
+    act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
 
   beforeEach(async () => {
     ;(
@@ -120,6 +193,11 @@ describe('报单比价 项目/批次选择控件契约', () => {
       })
     }
     await i18n.changeLanguage('zh-CN')
+    lowestQuotesMock.mockReset()
+    lowestQuotesMock.mockResolvedValue([])
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    })
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
@@ -171,8 +249,8 @@ describe('报单比价 项目/批次选择控件契约', () => {
     )
   })
 
-  it('批次行是一排卡片页签, 一个批次一个页签且可访问名可区分', () => {
-    renderBatchBar(projectGroups[0].sheets, 's1')
+  it('批次行是一排卡片页签, 一个批次一个页签且可访问名可区分', async () => {
+    await renderBatchBar(projectGroups[0].sheets, 's1')
 
     expect(container.querySelectorAll('.ant-tabs-tab')).toHaveLength(2)
     expect(
@@ -190,8 +268,8 @@ describe('报单比价 项目/批次选择控件契约', () => {
     ).not.toBeNull()
   })
 
-  it('只剩一个批次时, 「更多」里的删除项被禁用(至少保留一个批次)', () => {
-    renderBatchBar([projectGroups[0].sheets[0]], 's1')
+  it('只剩一个批次时, 「更多」里的删除项被禁用(至少保留一个批次)', async () => {
+    await renderBatchBar([projectGroups[0].sheets[0]], 's1')
 
     const trigger = container.querySelector(
       '[aria-label="更多批次操作"]',
@@ -210,9 +288,9 @@ describe('报单比价 项目/批次选择控件契约', () => {
     expect(deleteItem?.getAttribute('aria-disabled')).toBe('true')
   })
 
-  it('「更多」里的「重命名批次」带出当前批次的名称', () => {
+  it('「更多」里的「重命名批次」带出当前批次的名称', async () => {
     renameCalls = []
-    renderBatchBar(projectGroups[0].sheets, 's1')
+    await renderBatchBar(projectGroups[0].sheets, 's1')
 
     const trigger = container.querySelector(
       '[aria-label="更多批次操作"]',
@@ -234,5 +312,40 @@ describe('报单比价 项目/批次选择控件契约', () => {
 
     const current = projectGroups[0].sheets.find((sheet) => sheet.id === 's1')
     expect(renameCalls).toEqual([{ id: 's1', name: current?.name }])
+  })
+
+  it('缺价角标与表格同口径: 代取命中的格子不算缺价', async () => {
+    lowestQuotesMock.mockResolvedValue([hrb400eQuote])
+    const sheet = { ...sheetOf('s1', 'p1', '批次 1'), rows: [hrb400Row] }
+
+    // 代取关闭：表格里该格没有价 → 角标报 1
+    await renderBatchBar([sheet], 's1', {
+      allowHrb400eFallback: false,
+      brands: hrb400Brands,
+      data: hrb400Data,
+    })
+    expect(container.querySelector('.ant-badge-count')?.textContent).toContain(
+      '1',
+    )
+
+    // 代取打开：表格显示 HRB400E 代取价 → 角标不再报缺价（旧「持久化快照」口径会继续报）
+    await renderBatchBar([sheet], 's1', {
+      allowHrb400eFallback: true,
+      brands: hrb400Brands,
+      data: hrb400Data,
+    })
+    expect(container.querySelector('.ant-badge-count')).toBeNull()
+  })
+
+  it('报价还没取到时不出缺价角标（不把「数据没来」误报成缺价）', async () => {
+    lowestQuotesMock.mockImplementation(() => new Promise(() => {}))
+    const sheet = { ...sheetOf('s1', 'p1', '批次 1'), rows: [hrb400Row] }
+
+    await renderBatchBar([sheet], 's1', {
+      allowHrb400eFallback: false,
+      brands: hrb400Brands,
+      data: hrb400Data,
+    })
+    expect(container.querySelector('.ant-badge-count')).toBeNull()
   })
 })

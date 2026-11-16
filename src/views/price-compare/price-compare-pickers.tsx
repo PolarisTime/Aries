@@ -4,10 +4,16 @@ import {
   MoreOutlined,
   PlusOutlined,
 } from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
 import { Badge, Button, Dropdown, Flex, Select, Tabs } from 'antd'
 import { useLayoutEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { countMissing, resolveRef } from './core'
+import { fetchLowestBrandQuotes } from '@/api/market/supplier-price-lists'
+import {
+  deriveSheetPricing,
+  LOWEST_QUOTES_QUERY_KEY,
+  LOWEST_QUOTES_QUERY_OPTIONS,
+} from './core'
 import { ProjectConfigModal } from './ProjectConfigModal'
 import { resolveProjectSelection } from './price-compare-support'
 import { PriceCompareTour } from './price-compare-tour'
@@ -132,6 +138,7 @@ export function PriceCompareProjectPicker({
 
 export function PriceCompareBatchBar({
   activeId,
+  allowHrb400eFallback = false,
   brands,
   currentGroup,
   data,
@@ -142,6 +149,13 @@ export function PriceCompareBatchBar({
   sheets,
 }: {
   activeId: string
+  /**
+   * 抗震牌号代取开关（项目配置 `hrb400eFallback`）。
+   *
+   * <p>缺价角标必须与表格同一口径：代取命中算「有价」，因此这里要与单据头/表格
+   * 用同一个布尔值。缺省 `false` 与项目配置默认值一致；上层若已拿到配置就显式传入。</p>
+   */
+  allowHrb400eFallback?: boolean
   brands: Brand[]
   currentGroup: ProjectGroup | undefined
   data: PriceData
@@ -157,6 +171,20 @@ export function PriceCompareBatchBar({
   const listLabel = t('priceCompare.picker.a11y.batchList')
   /** 当前批次。重命名要带出"原名"作弹层初始值，找不到时菜单项禁用。 */
   const activeSheet = sheets.find((sheet) => sheet.id === activeId)
+  /**
+   * 缺价角标的数据源：与 `SheetPanel` 共用 `LOWEST_QUOTES_QUERY_KEY`
+   * （同一份 react-query 缓存，不会多打一次接口），再交给 `deriveSheetPricing`
+   * 这个唯一出口算缺价。
+   *
+   * <p>报价还没取到（首屏加载中/查询失败）时**不显示角标**：此时任何"缺价"都只是在
+   * 报"数据还没来"，会把整批格子误标成缺价。</p>
+   */
+  const lowestQuotesQuery = useQuery({
+    queryKey: LOWEST_QUOTES_QUERY_KEY,
+    queryFn: ({ signal }) => fetchLowestBrandQuotes(undefined, signal),
+    ...LOWEST_QUOTES_QUERY_OPTIONS,
+  })
+  const quotes = lowestQuotesQuery.data
   /**
    * 批次切换条：一整行 antd 卡片页签（`type="card"`），右侧是「新建批次」与「更多」。
    *
@@ -202,12 +230,15 @@ export function PriceCompareBatchBar({
           activeKey={activeId}
           onChange={(key) => onSelectSheet(key)}
           items={(currentGroup?.sheets ?? []).map((sheet) => {
-            const missing = countMissing(
-              data,
-              { ...sheet, ...resolveRef(data, sheet) },
-              sheet.rows,
-              brands,
-            )
+            // 与表格同口径：派生后仍没有现货价的格子才算缺价（代取命中算有价）
+            const missing = quotes
+              ? deriveSheetPricing(sheet, quotes, {
+                  allowHrb400eFallback,
+                  brands,
+                  data,
+                  rows: sheet.rows,
+                }).missingCount
+              : 0
             return {
               key: sheet.id,
               label: (

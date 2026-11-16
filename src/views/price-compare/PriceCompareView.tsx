@@ -237,6 +237,7 @@ export function PriceCompareView() {
 
         <PriceCompareBatchBar
           activeId={activeId}
+          allowHrb400eFallback={config.hrb400eFallback}
           brands={brands}
           currentGroup={currentGroup}
           data={data}
