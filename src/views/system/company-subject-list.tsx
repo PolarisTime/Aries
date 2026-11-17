@@ -2,6 +2,7 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { Button, Card, Empty, Space, Tag, Typography } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { CompanySettingProfile } from '@/api/system/company-settings'
+import { getStatusText } from '@/constants/document-status'
 import { STATUS } from '@/constants/status-constants'
 
 interface CompanySubjectListProps {
@@ -63,7 +64,7 @@ export function CompanySubjectList({
                         item.status === STATUS.NORMAL ? 'processing' : 'default'
                       }
                     >
-                      {item.status || STATUS.NORMAL}
+                      {getStatusText(item.status || STATUS.NORMAL, t)}
                     </Tag>
                   </Space>
                   <Typography.Text type="secondary">

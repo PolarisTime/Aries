@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import i18n from 'i18next'
 import { act, createElement, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
+import { getSalesOrderDocumentFlow } from '@/api/sales/sales-order-document-flow'
 import type { ModuleRecord } from '@/types/module-page'
 import { PurchaseOrderDocumentFlowAction } from './PurchaseOrderDocumentFlowAction'
 import { SalesOrderDocumentFlowAction } from './SalesOrderDocumentFlowAction'
@@ -47,6 +49,7 @@ describe('单据流按钮显隐', () => {
     ;(
       globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true
+    vi.mocked(getSalesOrderDocumentFlow).mockReset()
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     })
@@ -101,4 +104,56 @@ describe('单据流按钮显隐', () => {
       expect(button?.getAttribute('aria-disabled')).toBe('true')
     })
   }
+
+  it('销售单据流的类型/关系标签跟随 locale，不把 type code 直接展示', async () => {
+    vi.mocked(getSalesOrderDocumentFlow).mockResolvedValue({
+      salesOrderId: 'row-1',
+      nodes: [
+        {
+          type: 'sales-order',
+          id: 'row-1',
+          no: 'SO-1',
+          status: 'AUDITED',
+        },
+        {
+          type: 'sales-outbound',
+          id: 'out-1',
+          no: 'OUT-1',
+          status: 'AUDITED',
+        },
+      ],
+      links: [
+        {
+          fromType: 'sales-order',
+          fromId: 'row-1',
+          toType: 'sales-outbound',
+          toId: 'out-1',
+          linkType: '出库',
+        },
+      ],
+    } as never)
+    render(
+      createElement(SalesOrderDocumentFlowAction, { selectedRows: rows(1) }),
+    )
+    const button = flowButton()
+    expect(button).not.toBeNull()
+    act(() => button?.click())
+    await vi.waitFor(() => {
+      expect(document.body.textContent).toContain('单据关系')
+    })
+
+    await act(async () => {
+      await i18n.changeLanguage('en-US')
+    })
+    await vi.waitFor(() => {
+      expect(document.body.textContent).toContain('Sales Order')
+    })
+    expect(document.body.textContent).toContain('Sales Outbound')
+    expect(document.body.textContent).toContain('Outbound')
+    expect(document.body.textContent).not.toContain('sales-order')
+    expect(document.body.textContent).not.toContain('sales-outbound')
+    await act(async () => {
+      await i18n.changeLanguage('zh-CN')
+    })
+  })
 })

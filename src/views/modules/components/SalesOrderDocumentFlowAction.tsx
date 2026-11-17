@@ -16,6 +16,10 @@ import { useMemo, useState } from 'react'
 import '@/styles/sales-doc-flow.css'
 import { useTranslation } from 'react-i18next'
 import { getSalesOrderDocumentFlow } from '@/api/sales/sales-order-document-flow'
+import {
+  documentFlowLinkTypeLabel,
+  documentFlowTypeLabel,
+} from '@/components/document-flow/document-flow-meta'
 import { getStatusText } from '@/constants/document-status'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import type {
@@ -134,7 +138,9 @@ function DocumentFlowNodeGroup({ group }: { group: NodeGroup }) {
   if (group.nodes.length === 0) {
     return (
       <div>
-        <Typography.Title level={5}>{group.type}</Typography.Title>
+        <Typography.Title level={5}>
+          {documentFlowTypeLabel(t, group.type)}
+        </Typography.Title>
         <Typography.Text type="secondary">
           {t('modules.pages.salesOrder.documentFlow.emptySection')}
         </Typography.Text>
@@ -143,7 +149,9 @@ function DocumentFlowNodeGroup({ group }: { group: NodeGroup }) {
   }
   return (
     <div>
-      <Typography.Title level={5}>{group.type}</Typography.Title>
+      <Typography.Title level={5}>
+        {documentFlowTypeLabel(t, group.type)}
+      </Typography.Title>
       {/* List 已废弃, 按官方说明迁到 Listy: dataSource→items、renderItem→itemRender,
           预设的 List.Item.Meta 用普通标记在 itemRender 内重组。 */}
       <Listy<SalesOrderDocumentFlowNode>
@@ -202,15 +210,23 @@ function DocumentFlowRelations({
         const toLabel = resolveLinkNodeLabel(link.toId, nodeById)
         return (
           <Space size="small" wrap>
-            {link.fromType ? <Tag>{link.fromType}</Tag> : null}
+            {link.fromType ? (
+              <Tag>{documentFlowTypeLabel(t, link.fromType)}</Tag>
+            ) : null}
             <Typography.Text>{fromLabel}</Typography.Text>
             <span className="aries-sr-only">
               {t('modules.pages.salesOrder.documentFlow.relationArrow')}
             </span>
             <ArrowRightOutlined aria-hidden="true" />
-            {link.toType ? <Tag>{link.toType}</Tag> : null}
+            {link.toType ? (
+              <Tag>{documentFlowTypeLabel(t, link.toType)}</Tag>
+            ) : null}
             <Typography.Text>{toLabel}</Typography.Text>
-            {link.linkType ? <Tag color="blue">{link.linkType}</Tag> : null}
+            {link.linkType ? (
+              <Tag color="blue">
+                {documentFlowLinkTypeLabel(t, link.linkType)}
+              </Tag>
+            ) : null}
           </Space>
         )
       }}

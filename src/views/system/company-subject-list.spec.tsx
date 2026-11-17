@@ -79,6 +79,8 @@ describe('CompanySubjectList 渲染冒烟', () => {
     renderList()
     expect(container.textContent).toContain('公司A')
     expect(container.textContent).toContain('TAX-A')
+    expect(container.textContent).toContain(i18n.t('modules.status.normal'))
+    expect(container.textContent).toContain(i18n.t('modules.status.disabled'))
     const activeItem = container.querySelector(
       '.company-subject-selector-item.is-active',
     )
