@@ -16,6 +16,7 @@ import {
 } from '@/api/finance/finance-document-record'
 import { saveAndCompleteSalesOrder } from '@/api/sales/document-flow-commands'
 import { fetchSalesOrderContractCheck } from '@/api/sales/sales-contracts'
+import { getStatusText } from '@/constants/document-status'
 import { useModuleQueryRefresh } from '@/hooks/useModuleQueryRefresh'
 import {
   resolveStatusChangeActionLabelKey,
@@ -365,7 +366,7 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
                   ? t('modules.editorFooter.confirmDeliveryVerificationContent')
                   : t('modules.editorFooter.statusActionConfirm', {
                       action: statusActionLabel,
-                      targetStatus: editorAuditTarget?.value || '',
+                      targetStatus: getStatusText(editorAuditTarget?.value, t),
                     }),
                 okText: confirmDeliveryVerification
                   ? t('modules.editorFooter.confirmDeliveryVerification')
