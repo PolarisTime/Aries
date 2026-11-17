@@ -1,3 +1,15 @@
+## [16.3.3](https://github.com/PolarisTime/Aries/compare/v16.3.2...v16.3.3) (2026-11-17)
+
+
+### Bug Fixes
+
+* **i18n:** 单据流与结算主体状态显示本地化文案 ([6f3cda2](https://github.com/PolarisTime/Aries/commit/6f3cda2686467b6c789c6b2d40121aa31d38c2cc))
+* **i18n:** 补齐客户对账单与对账关系的本地化文案 ([e8648a5](https://github.com/PolarisTime/Aries/commit/e8648a5fc40e0789a8e1ed9a75eb847a20c67672))
+* **modules:** 审核确认框使用本地化状态文案 ([91a7246](https://github.com/PolarisTime/Aries/commit/91a72462634e00f22c4c88d0a9af6d1726575305))
+* **price-compare:** 供应商报价表支持 Shift+方向键键盘框选，菜单内按键不再误清选区 ([606f96f](https://github.com/PolarisTime/Aries/commit/606f96fc2e5a0797b5318b018085cb18cc56c5c5))
+* **price-compare:** 保存状态移到表格下方 ([990a03c](https://github.com/PolarisTime/Aries/commit/990a03c47642e7dfbda4f7579407a89c49840c28))
+* **price-compare:** 框选后右键不再缩成单格，批量菜单恢复 ([c047fde](https://github.com/PolarisTime/Aries/commit/c047fde3d6857ff6a9d466b8eb70a5544b035f0f))
+
 ## [16.3.2](https://github.com/PolarisTime/Aries/compare/v16.3.1...v16.3.2) (2026-11-17)
 
 
