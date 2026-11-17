@@ -144,7 +144,7 @@ describe('单据流按钮显隐', () => {
           linkType: '对账',
         },
       ],
-    } as never)
+    })
     render(
       createElement(SalesOrderDocumentFlowAction, { selectedRows: rows(1) }),
     )
