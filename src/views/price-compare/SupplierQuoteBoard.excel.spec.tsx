@@ -739,6 +739,79 @@ describe('供应商报价表：Excel 式网格操作', () => {
     ).not.toBeNull()
   })
 
+  it('Shift+方向键键盘扩选：焦点不动、选区变 2 格，Shift+F10 能打开批量菜单', async () => {
+    await render()
+
+    const first = cellInput('中天 HRB400E 12 9米')
+    const selectedCount = () =>
+      container.querySelectorAll('.supplier-price-cell-selected').length
+    await act(async () => {
+      first?.focus()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(selectedCount()).toBe(1)
+
+    const down = await keyDown(first, 'ArrowDown', { shiftKey: true })
+    expect(down.defaultPrevented).toBe(true)
+    expect(selectedCount()).toBe(2)
+    // DOM 焦点留在原格：焦点一离开选区就会被收成单格
+    expect(document.activeElement).toBe(first)
+
+    // 反向收缩回单格，再扩回来（越界不回环由 supplier-quote-selection.spec 覆盖）
+    await keyDown(first, 'ArrowUp', { shiftKey: true })
+    expect(selectedCount()).toBe(1)
+    await keyDown(first, 'ArrowDown', { shiftKey: true })
+    expect(selectedCount()).toBe(2)
+
+    // 键盘调出上下文菜单 = 在焦点元素上派发 contextmenu
+    await openContextMenu(first)
+    expect(
+      document
+        .querySelector('.app-context-menu [role="menu"]')
+        ?.getAttribute('aria-label'),
+    ).toBe(
+      i18n.t('priceCompare.supplierPrice.selectionMenuLabel', { count: 2 }),
+    )
+  })
+
+  it('Shift+方向键：正在格内输入时让给输入框，不扩选也不移格', async () => {
+    await render()
+
+    const first = cellInput('中天 HRB400E 12 9米')
+    await act(async () => {
+      first?.focus()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await typeInto(first, '3290')
+
+    const event = await keyDown(first, 'ArrowDown', { shiftKey: true })
+    expect(event.defaultPrevented).toBe(false)
+    expect(
+      container.querySelectorAll('.supplier-price-cell-selected'),
+    ).toHaveLength(1)
+    expect(document.activeElement).toBe(first)
+  })
+
+  it('菜单内按 Esc / Delete 只作用于菜单：选区保留、价格不被清空', async () => {
+    await render()
+
+    await pointerDown(cellInput('中天 HRB400E 12 9米'))
+    await pointerDown(cellInput('中天 HRB400E 14 9米'), { shiftKey: true })
+    await openContextMenu(cellInput('中天 HRB400E 12 9米'))
+    const item = menuItems()[0] ?? null
+    expect(item, '框选后右键未弹出菜单').not.toBeNull()
+
+    // 菜单是 portal，按键会沿 React 树冒泡到表格容器的捕获处理
+    await keyDown(item, 'Delete')
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3280')
+    expect(feedback.message.success).not.toHaveBeenCalled()
+
+    await keyDown(item, 'Escape')
+    expect(
+      container.querySelectorAll('.supplier-price-cell-selected'),
+    ).toHaveLength(2)
+  })
+
   it('菜单「清空价格」清空选区：走既有清格逻辑（提示已清空格数）', async () => {
     await render()
 

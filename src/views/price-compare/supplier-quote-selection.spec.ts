@@ -11,6 +11,7 @@ import {
   nextCell,
   selectionBounds,
   selectSingle,
+  stepSelectionFocus,
 } from './supplier-quote-selection'
 
 /** 3×3 假网格：`holes` 里的坐标表示商品资料里不存在（渲染时没有输入框）。 */
@@ -52,6 +53,38 @@ describe('报价网格选区', () => {
     expect(extended.anchor).toEqual({ row: 2, col: 3 })
     expect(extended.focus).toEqual({ row: 4, col: 5 })
     expect(extended).not.toBe(single)
+  })
+
+  it('Shift+方向键：锚点不动、焦点端挪一格；越界原样返回同一对象', () => {
+    const size = { rows: 3, cols: 2 }
+    const single = selectSingle('直条', 'HRB400E', { row: 0, col: 0 })
+
+    const down = stepSelectionFocus(single, { row: 1, col: 0 }, size)
+    expect(down.anchor).toEqual({ row: 0, col: 0 })
+    expect(down.focus).toEqual({ row: 1, col: 0 })
+
+    const right = stepSelectionFocus(down, { row: 0, col: 1 }, size)
+    expect(selectionBounds(right)).toEqual({
+      top: 0,
+      bottom: 1,
+      left: 0,
+      right: 1,
+    })
+
+    // 反向收缩：焦点端回到锚点 = 单格
+    const back = stepSelectionFocus(down, { row: -1, col: 0 }, size)
+    expect(boundsCellCount(selectionBounds(back))).toBe(1)
+
+    // 四个方向越界：不回环、不新建对象
+    expect(stepSelectionFocus(single, { row: -1, col: 0 }, size)).toBe(single)
+    expect(stepSelectionFocus(single, { row: 0, col: -1 }, size)).toBe(single)
+    const corner = selectSingle('直条', 'HRB400E', { row: 2, col: 1 })
+    expect(stepSelectionFocus(corner, { row: 1, col: 0 }, size)).toBe(corner)
+    expect(stepSelectionFocus(corner, { row: 0, col: 1 }, size)).toBe(corner)
+    // 空表
+    expect(
+      stepSelectionFocus(single, { row: 1, col: 0 }, { rows: 0, cols: 0 }),
+    ).toBe(single)
   })
 
   it('listSelectionCells 行优先、跳过不存在的格子', () => {

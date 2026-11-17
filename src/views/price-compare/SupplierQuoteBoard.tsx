@@ -104,6 +104,7 @@ import {
   boundsContain,
   buildClearPlan,
   buildFillPlan,
+  type CellPoint,
   extendSelection,
   type GridAddress,
   type GridCellValue,
@@ -114,6 +115,7 @@ import {
   type SelectionBounds,
   selectionBounds,
   selectSingle,
+  stepSelectionFocus,
 } from './supplier-quote-selection'
 import {
   gridQueryKey,
@@ -260,6 +262,14 @@ const PREFERRED_CATEGORY_ORDER = ['直条', '盘螺']
  * `SheetCell` 是逐格渲染的热点路径。</p>
  */
 const EMPTY_COLLAB_PEERS: readonly CollabPeer[] = []
+
+/** Shift+方向键 → 选区焦点端的位移（行 / 列下标）。 */
+const SHIFT_ARROW_DELTAS: Readonly<Record<string, CellPoint>> = {
+  ArrowUp: { row: -1, col: 0 },
+  ArrowDown: { row: 1, col: 0 },
+  ArrowLeft: { row: 0, col: -1 },
+  ArrowRight: { row: 0, col: 1 },
+}
 
 /** 一个价格列 = 类别 + 品牌 + 材质 + 定尺；材质与定尺都已经进了表头。 */
 type CellColumn = {
@@ -515,12 +525,16 @@ function SheetCell({
       if (commitEditing({ keepOnFailure: true })) onMove(1)
       return
     }
-    if (event.key === 'ArrowDown') {
+    /*
+     * Shift+↑↓ 不是移格：不在编辑时由表格容器扩选（见 handleBoardKeyDown），
+     * 编辑时交给输入框的原生文本选择。这里一律放行，免得先移焦把选区收成单格。
+     */
+    if (event.key === 'ArrowDown' && !event.shiftKey) {
       commitEditing()
       if (onMove(1)) event.preventDefault()
       return
     }
-    if (event.key === 'ArrowUp') {
+    if (event.key === 'ArrowUp' && !event.shiftKey) {
       commitEditing()
       if (onMove(-1)) event.preventDefault()
       return
@@ -2059,6 +2073,27 @@ export function SupplierQuoteBoard() {
     )
   }
 
+  /**
+   * Shift+方向键扩选：右键批量菜单（Shift+F10）的**键盘等价入口**（WCAG 2.1.1）。
+   *
+   * <p>只挪选区的焦点端、不挪 DOM 焦点：焦点一旦离开选区，`onFocusCell` 就会把选区收成单格；
+   * 留在原格还让 Shift+F10 / Esc 有一个稳定的落点。与 Excel 一致，越过不存在的占位格也算一步。</p>
+   *
+   * @returns 是否处理了该按键（未处理时交还浏览器默认行为）
+   */
+  const extendSelectionByKey = (key: string): boolean => {
+    const delta = SHIFT_ARROW_DELTAS[key]
+    const target = selectionTarget()
+    if (!delta || !selection || !target) return false
+    const next = stepSelectionFocus(selection, delta, {
+      rows: target.sheet.rows.length,
+      cols: target.sheet.cellColumns.length,
+    })
+    if (next !== selection) setSelection(next)
+    // 撞到表格边界也吞掉按键：否则 ←→ 会落回输入框，变成"选中格内文字"
+    return true
+  }
+
   /* ---------------------------------------------------------------- 粘贴与撤销 */
 
   /**
@@ -2172,6 +2207,7 @@ export function SupplierQuoteBoard() {
    * <ul>
    *   <li>Ctrl+Z / Ctrl+Y：撤销 / 重做（与逐格输入、粘贴共用同一份草稿历史）；</li>
    *   <li>Ctrl+D / Ctrl+R：把选区首行向下 / 首列向右填满；</li>
+   *   <li>Shift+方向键：扩大 / 收缩选区（键盘框选，配合 Shift+F10 打开批量菜单）；</li>
    *   <li>Delete：清空选区内已有价格 —— **正在格子里输入时除外**（那时 Delete 只删字符，
    *       交给输入框的原生行为，否则敲到一半想删个字会把整块选区清空）。</li>
    *   <li>Esc：清掉选区 —— 否则「有选区时 Ctrl+D / Ctrl+R 被拦截」会一直生效，用户没有
@@ -2182,6 +2218,11 @@ export function SupplierQuoteBoard() {
    * 没有选区时把这两个键吞掉纯属添乱。按下 Esc 或点成单格即可恢复浏览器默认行为。</p>
    */
   const handleBoardKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    /*
+     * 右键菜单是 portal：React 合成事件沿组件树（不是 DOM 树）冒泡，菜单里的按键会先进到这里。
+     * 不排除的话，在菜单里按 Esc 会顺带清掉选区，按 Delete 会直接清空价格。
+     */
+    if (!event.currentTarget.contains(event.target as Node)) return
     /*
      * SheetCell 在有未提交文本时挂 `data-editing`：输入框自己的按键
      * （Ctrl+Z 原生撤销、Delete 删字符、Esc 放弃这段文本）不再由表格拦截（S9）。
@@ -2209,6 +2250,19 @@ export function SupplierQuoteBoard() {
         fillSelectedCells(key === 'd' ? 'down' : 'right')
         return
       }
+    }
+    // Shift+方向键扩选；正在输入时让给输入框（Shift+←→ 选中格内文字）
+    if (
+      event.shiftKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey &&
+      !editing &&
+      extendSelectionByKey(event.key)
+    ) {
+      // 阻止输入框的默认动作（移光标 / 选中格内文字）
+      event.preventDefault()
+      return
     }
     if (event.key !== 'Delete' && event.key !== 'Escape') return
     if (!selection) return

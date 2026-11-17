@@ -53,6 +53,24 @@ export function extendSelection(
   return { ...selection, focus: { ...point } }
 }
 
+/**
+ * Shift+方向键：锚点不动，焦点端沿 `delta` 挪一格（与 Excel 一致，可越过不存在的占位格）。
+ *
+ * <p>越出表格边界时**原样返回同一个对象**，调用方据此判断「没动」，不做无谓的状态更新。</p>
+ */
+export function stepSelectionFocus(
+  selection: GridSelection,
+  delta: CellPoint,
+  size: { rows: number; cols: number },
+): GridSelection {
+  const row = selection.focus.row + delta.row
+  const col = selection.focus.col + delta.col
+  if (row < 0 || col < 0 || row >= size.rows || col >= size.cols) {
+    return selection
+  }
+  return extendSelection(selection, { row, col })
+}
+
 export function selectionBounds(selection: GridSelection): SelectionBounds {
   const { anchor, focus } = selection
   return {
