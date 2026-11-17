@@ -1,3 +1,10 @@
+## [16.3.2](https://github.com/PolarisTime/Aries/compare/v16.3.1...v16.3.2) (2026-11-17)
+
+
+### Bug Fixes
+
+* **tabs:** 修复子路由分叉后地址栏再次来回跳转 ([6d6a607](https://github.com/PolarisTime/Aries/commit/6d6a607855939db4fcaf04a2a19b5e2103e56b9c))
+
 ## [16.3.1](https://github.com/PolarisTime/Aries/compare/v16.3.0...v16.3.1) (2026-11-16)
 
 
