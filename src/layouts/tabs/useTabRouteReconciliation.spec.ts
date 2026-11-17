@@ -17,6 +17,14 @@ vi.mock('@/layouts/tabs/tab-location-sync', () => ({
   pushExternalIntent: (tabId: string, href: string) => {
     pushExternalIntentMock(tabId, href)
   },
+  resolveTabHref: (tab: { id: string; pathname: string; search: string }) => {
+    const subHref = getTabRouterHrefMock(tab.id)
+    const ownHref = tab.search ? `${tab.pathname}?${tab.search}` : tab.pathname
+    if (subHref && subHref.split('?')[0].replace(/\/+$/, '') === tab.pathname) {
+      return subHref
+    }
+    return ownHref
+  },
 }))
 
 vi.mock('@/layouts/editor-session/request-close', () => ({
@@ -199,6 +207,25 @@ describe('useTabRouteReconciliation', () => {
     expect(pushExternalIntentMock).toHaveBeenCalledWith(
       INBOUND_TAB_ID,
       `/purchase-inbound?${PARENT_IMPORT_SEARCH}`,
+    )
+  })
+
+  it('子 Router 与标签分叉时收敛回标签 href，不把地址栏拉到别的页面', () => {
+    // 历史守卫拒绝改名后，子 Router 可能停在别的 pathname 且带自己的查询串。
+    // 协调层若把这段 href 当激活目标写回地址栏，就会与跟随 effect 形成来回跳转。
+    getTabRouterHrefMock.mockReturnValue('/sales-order?docNo=SO-1')
+    currentLocation = {
+      pathname: '/purchase-inbound',
+      searchStr: '',
+      href: '/purchase-inbound',
+    }
+
+    renderHook()
+
+    expect(replaceMock).not.toHaveBeenCalledWith('/sales-order?docNo=SO-1')
+    expect(pushExternalIntentMock).toHaveBeenCalledWith(
+      INBOUND_TAB_ID,
+      '/purchase-inbound',
     )
   })
 

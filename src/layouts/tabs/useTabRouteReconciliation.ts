@@ -7,6 +7,7 @@ import { notifyEvictedTabs } from '@/layouts/tabs/evicted-tabs'
 import {
   getTabRouterHref,
   pushExternalIntent,
+  resolveTabHref,
 } from '@/layouts/tabs/tab-location-sync'
 import { router as mainRouter } from '@/router'
 import {
@@ -117,8 +118,17 @@ export function useTabRouteReconciliation(): void {
       }
       pruneOtherContentTabs(existing.id)
       // 已挂载的 Tab 才存在子 Router 同步；未挂载 Tab 在挂载时用 Tab 保存的 href 对齐。
-      const subHref = getTabRouterHref(existing.id)
-      if (shouldAdoptMainSearchForUnmountedTab(subHref, location.searchStr)) {
+      // 子 Router 可能因历史守卫拒绝改名而与标签分叉，必须先收敛回标签自身 href，
+      // 不能把分叉后的 pathname/search 当成激活目标写回地址栏，否则会再次形成
+      // 「标签 A ↔ 子 Router B」的来回拉锯。
+      const rawSubHref = getTabRouterHref(existing.id)
+      const subHref = resolveTabHref(existing)
+      if (rawSubHref && rawSubHref !== subHref) {
+        pushExternalIntent(existing.id, subHref)
+      }
+      if (
+        shouldAdoptMainSearchForUnmountedTab(rawSubHref, location.searchStr)
+      ) {
         // 未挂载 Tab 必须先把主路由的查询串写回，否则本次跳转携带的一次性意图
         // （如采购订单 ->「创建采购入库」带入来源明细）会在挂载时被旧 href 覆盖而丢失。
         store.setTabLocation(existing.id, {
