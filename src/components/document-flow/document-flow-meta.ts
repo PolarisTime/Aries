@@ -46,6 +46,10 @@ export const DOCUMENT_FLOW_TYPE_META: Readonly<
     key: 'salesReturn',
     color: 'var(--ant-color-error, #ff4d4f)',
   },
+  'customer-statement': {
+    key: 'customerStatement',
+    color: 'var(--ant-purple-6, #722ed1)',
+  },
   'freight-bill': {
     key: 'freightBill',
     color: 'var(--ant-purple-6, #722ed1)',
@@ -128,6 +132,8 @@ export function documentFlowLinkTypeLabel(
       return t('documentFlow.linkTypes.outbound')
     case '退货':
       return t('documentFlow.linkTypes.returns')
+    case '对账':
+      return t('documentFlow.linkTypes.statement')
     case '物流':
       return t('documentFlow.linkTypes.freight')
     default:

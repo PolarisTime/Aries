@@ -2894,6 +2894,7 @@ export const enUS = {
       salesOrder: 'Sales Order',
       salesOutbound: 'Sales Outbound',
       salesReturn: 'Sales Return',
+      customerStatement: 'Customer Statement',
       freightBill: 'Freight Bill',
     },
     linkTypes: {
@@ -2901,6 +2902,7 @@ export const enUS = {
       sales: 'Sales',
       outbound: 'Outbound',
       returns: 'Return',
+      statement: 'Statement',
       freight: 'Freight',
     },
   },

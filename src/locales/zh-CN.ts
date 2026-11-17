@@ -2878,6 +2878,7 @@ export const zhCN = {
       salesOrder: '销售单',
       salesOutbound: '销售出库单',
       salesReturn: '销售退货单',
+      customerStatement: '客户对账单',
       freightBill: '物流单',
     },
     linkTypes: {
@@ -2885,6 +2886,7 @@ export const zhCN = {
       sales: '销售',
       outbound: '出库',
       returns: '退货',
+      statement: '对账',
       freight: '物流',
     },
   },

@@ -121,6 +121,12 @@ describe('单据流按钮显隐', () => {
           no: 'OUT-1',
           status: 'AUDITED',
         },
+        {
+          type: 'customer-statement',
+          id: 'st-1',
+          no: 'ST-1',
+          status: 'PENDING_CONFIRM',
+        },
       ],
       links: [
         {
@@ -129,6 +135,13 @@ describe('单据流按钮显隐', () => {
           toType: 'sales-outbound',
           toId: 'out-1',
           linkType: '出库',
+        },
+        {
+          fromType: 'sales-order',
+          fromId: 'row-1',
+          toType: 'customer-statement',
+          toId: 'st-1',
+          linkType: '对账',
         },
       ],
     } as never)
@@ -149,9 +162,12 @@ describe('单据流按钮显隐', () => {
       expect(document.body.textContent).toContain('Sales Order')
     })
     expect(document.body.textContent).toContain('Sales Outbound')
+    expect(document.body.textContent).toContain('Customer Statement')
     expect(document.body.textContent).toContain('Outbound')
+    expect(document.body.textContent).toContain('Statement')
     expect(document.body.textContent).not.toContain('sales-order')
     expect(document.body.textContent).not.toContain('sales-outbound')
+    expect(document.body.textContent).not.toContain('customer-statement')
     await act(async () => {
       await i18n.changeLanguage('zh-CN')
     })
