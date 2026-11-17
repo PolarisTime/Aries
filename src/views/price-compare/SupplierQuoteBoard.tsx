@@ -3212,20 +3212,11 @@ export function SupplierQuoteBoard() {
          * 未开启协作时 `CollabStatusBar` 渲染 null，页面与改动前一致。
          */
         left: (
-          <Flex align="center" gap={8}>
-            <CollabStatusBar
-              peers={collab.peers}
-              state={collab.state}
-              writable={collab.writable}
-            />
-            <PriceCompareSaveStatus
-              detail={aggregateSaveDetail}
-              onRetry={
-                failedBrandNames.length > 0 ? retryFailedBrands : undefined
-              }
-              status={aggregateSaveStatus}
-            />
-          </Flex>
+          <CollabStatusBar
+            peers={collab.peers}
+            state={collab.state}
+            writable={collab.writable}
+          />
         ),
         right: (
           <Select
@@ -3266,6 +3257,13 @@ export function SupplierQuoteBoard() {
   return (
     <Flex vertical gap={12} className="supplier-price-page">
       {supplierTabs}
+      <div className="price-compare-save-status-row">
+        <PriceCompareSaveStatus
+          detail={aggregateSaveDetail}
+          onRetry={failedBrandNames.length > 0 ? retryFailedBrands : undefined}
+          status={aggregateSaveStatus}
+        />
+      </div>
     </Flex>
   )
 }

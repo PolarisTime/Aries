@@ -1322,6 +1322,10 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
       container.querySelector('.price-compare-save-status')
     expect(statusNode()).not.toBeNull()
     expect(statusNode()?.getAttribute('role')).toBe('status')
+    expect(statusNode()?.closest('.ant-tabs-nav')).toBeNull()
+    expect(
+      statusNode()?.closest('.price-compare-save-status-row'),
+    ).not.toBeNull()
     expect(statusNode()?.textContent).toContain(
       i18n.t('priceCompare.saveStatus.idle'),
     )

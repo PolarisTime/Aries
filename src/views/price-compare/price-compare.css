@@ -115,6 +115,15 @@
   color: var(--text-primary);
 }
 
+/* 保存状态放在表格下方，别挤在标题/页签栏里。 */
+.price-compare-save-status-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 20px;
+  margin-top: var(--space-sm);
+}
+
 .price-compare-save-status-icon {
   display: inline-flex;
   align-items: center;

@@ -211,7 +211,6 @@ export function PriceCompareView() {
               version={active.version}
             />
           ) : null}
-          <PriceCompareSaveStatus onRetry={retrySave} status={saveStatus} />
         </span>
       </div>
 
@@ -307,6 +306,10 @@ export function PriceCompareView() {
             : undefined
         }
       />
+
+      <div className="price-compare-save-status-row">
+        <PriceCompareSaveStatus onRetry={retrySave} status={saveStatus} />
+      </div>
 
       <PriceCompareOverlays
         configOpen={configOpen}
