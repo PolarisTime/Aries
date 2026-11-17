@@ -2696,22 +2696,41 @@ export function SupplierQuoteBoard() {
                      *
                      * <p>只在焦点确实换了格时才写，避免同一格重复聚焦把多格选区缩成单格。</p>
                      */
-                    setSelection((current) =>
+                    setSelection((current) => {
+                      if (!current) {
+                        return selectSingle(group.categoryName, material, {
+                          row: rowIndex,
+                          col: columnIndex,
+                        })
+                      }
+                      if (
+                        current.category !== group.categoryName ||
+                        current.material !== material
+                      ) {
+                        return selectSingle(group.categoryName, material, {
+                          row: rowIndex,
+                          col: columnIndex,
+                        })
+                      }
                       /*
-                       * 只比较 `focus`：浏览器顺序是 pointerdown（Shift 时先把选区扩成整块）
-                       * → focus；若连 `anchor` 也要求等于本格，整块会被收成单击的单格（S2）。
+                       * 焦点落进当前选区（右键已选中的格子、点选已框选区域）时必须保留整块：
+                       * 右键会先触发 focus，若这里按“焦点换格”缩成单格，批量菜单就被 disabled 掉，
+                       * 用户看到的就是「框选后右键没反应」。只有焦点离开选区才重新开单格选区。
                        */
-                      current &&
-                      current.category === group.categoryName &&
-                      current.material === material &&
-                      current.focus.row === rowIndex &&
-                      current.focus.col === columnIndex
-                        ? current
-                        : selectSingle(group.categoryName, material, {
-                            row: rowIndex,
-                            col: columnIndex,
-                          }),
-                    )
+                      if (
+                        boundsContain(
+                          selectionBounds(current),
+                          rowIndex,
+                          columnIndex,
+                        )
+                      ) {
+                        return current
+                      }
+                      return selectSingle(group.categoryName, material, {
+                        row: rowIndex,
+                        col: columnIndex,
+                      })
+                    })
                     // 协作表：把光标共享给同房间的人（节流在 hook 内，80ms 一次）
                     if (collabListId && collabCell) {
                       collab.setCursor(collabListId, collabCell)

@@ -718,6 +718,27 @@ describe('供应商报价表：Excel 式网格操作', () => {
     ])
   })
 
+  it('框选后右键不会把多格选区缩成单格，菜单仍可打开', async () => {
+    await render()
+
+    await pointerDown(cellInput('中天 HRB400E 12 9米'))
+    await pointerDown(cellInput('中天 HRB400E 14 9米'), { shiftKey: true })
+    // 真实浏览器右键顺序：pointerdown → focus → contextmenu。
+    // focus 若把整块选区缩成单格，菜单会被 disabled，表现为「框选后右键没反应」。
+    await act(async () => {
+      cellInput('中天 HRB400E 12 9米')?.focus()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(
+      container.querySelectorAll('.supplier-price-cell-selected'),
+    ).toHaveLength(2)
+
+    await openContextMenu(cellInput('中天 HRB400E 12 9米'))
+    expect(
+      document.querySelector('.app-context-menu [role="menu"]'),
+    ).not.toBeNull()
+  })
+
   it('菜单「清空价格」清空选区：走既有清格逻辑（提示已清空格数）', async () => {
     await render()
 
