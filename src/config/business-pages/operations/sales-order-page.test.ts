@@ -167,3 +167,24 @@ describe('销售订单报单日期配置', () => {
     ).toBe('广东东钢供应链有限公司')
   })
 })
+
+/**
+ * 交付核定后不再显示「导入采购订单明细」（2026-11-19 用户反馈）。
+ *
+ * 交付核定与完成销售两个状态下明细已锁定，导入入口必须消失；其余状态行为不变。
+ */
+describe('销售订单导入采购订单入口的状态门禁', () => {
+  it('交付核定与完成销售状态隐藏导入入口', () => {
+    expect(salesOrdersPageConfig.parentImport?.hiddenStatuses).toEqual([
+      'DELIVERY_VERIFICATION',
+      'SALES_COMPLETED',
+    ])
+  })
+
+  it('状态门禁不依赖表单字段：status 不在 formFields 里注册', () => {
+    const keys = (salesOrdersPageConfig.formFields ?? []).map(
+      (field) => field.key,
+    )
+    expect(keys).not.toContain('status')
+  })
+})

@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { isParentImportedEditorLocked } from '@/module-system/adapter/module-adapter-editor'
 import { sortItemsByMaterialDefault } from '@/module-system/editor/module-editor-item-sort'
-import type { ModuleLineItem, ModulePageConfig } from '@/types/module-page'
+import type {
+  ModuleLineItem,
+  ModulePageConfig,
+  ModuleParentImportDefinition,
+} from '@/types/module-page'
 import type {
   FreightStatementSortDirection,
   FreightStatementSortMode,
@@ -30,6 +34,30 @@ interface Options {
   saving: boolean
   lineItemsLocked: boolean
   canEditItemColumns: boolean
+  /** 当前单据状态（编辑态取记录、新建态为空）；用于 parentImport.hiddenStatuses 判定。 */
+  recordStatus?: string
+}
+
+/**
+ * 「导入上级单据」入口是否可见 —— 唯一判定出口（导出供单测）。
+ *
+ * <p>三层 gate 依次生效：① 模块声明了 parentImport；② `visibleWhen`（表单字段维度）；
+ * ③ `hiddenStatuses`（单据状态维度，如销售订单的交付核定）。状态不在表单里注册，
+ * 所以不能只靠 `visibleWhen`。</p>
+ */
+export function isParentImportVisible(
+  definition: ModuleParentImportDefinition | undefined,
+  editorFormValues: Record<string, unknown>,
+  recordStatus: string | undefined,
+): boolean {
+  if (!definition) {
+    return false
+  }
+  if (definition.visibleWhen?.(editorFormValues) === false) {
+    return false
+  }
+  const status = recordStatus ?? ''
+  return !(definition.hiddenStatuses ?? []).includes(status)
 }
 
 /** 编辑器明细行的交互控制：可见性、选中/拖拽、列设置与上游导入锁定。 */
@@ -46,6 +74,7 @@ export function useModuleEditorItemControls({
   saving,
   lineItemsLocked,
   canEditItemColumns,
+  recordStatus,
 }: Options) {
   const parentImportedItemEditLocked = isParentImportedEditorLocked(
     moduleKey,
@@ -67,9 +96,10 @@ export function useModuleEditorItemControls({
     lineItemsLocked,
   })
   const editorItemBehavior = getModuleEditorItemBehavior(moduleKey)
-  const parentImportVisible = Boolean(
-    config.parentImport &&
-      (config.parentImport.visibleWhen?.(editorFormValues) ?? true),
+  const parentImportVisible = isParentImportVisible(
+    config.parentImport,
+    editorFormValues,
+    recordStatus,
   )
   // 附加费用 Tab：采购订单/销售订单/物流单启用（行为表注册）。
   const supportsExpenseTab =

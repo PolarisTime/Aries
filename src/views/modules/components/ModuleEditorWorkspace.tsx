@@ -349,6 +349,8 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     saving,
     lineItemsLocked,
     canEditItemColumns,
+    // 单据状态不在表单字段里注册（Form.useWatch 拿不到），显隐按记录状态单独判定
+    recordStatus: String(record?.status ?? ''),
   })
 
   /* 删除选中：二次确认 + toast 撤销（P1-4）。唯一实现见 use-confirmed-item-removal。 */

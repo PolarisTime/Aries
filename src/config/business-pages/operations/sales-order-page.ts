@@ -582,6 +582,15 @@ export const salesOrdersPageConfig: ModulePageConfig = {
     hiddenSelectorColumnKeys: ['status'],
     mapParentToDraft: mapPurchaseInboundToSalesOrderDraft,
     transformItems: transformPurchaseInboundItemsToSalesOrderItems,
+    /*
+     * 交付核定后明细已锁定（见 sales-order 的 lineItemLockStatuses / partiallyEditableStatuses），
+     * 完成销售是流程终点：这两种状态再显示「导入采购订单明细」只会让人以为还能改明细，
+     * 因此按状态隐藏入口（其余状态行为不变）。
+     */
+    hiddenStatuses: [
+      DOCUMENT_STATUS.DELIVERY_VERIFICATION,
+      DOCUMENT_STATUS.SALES_COMPLETED,
+    ],
     // 项目资料可维护「允许品牌/允许材质」与处理方式：BLOCK 挡在导入前，WARN 导入后再提示。
     // 前端拦截只是体验层，服务端保存时还会再判一次（见 SalesOrderProjectScopeGuard）。
     validateParentImport: validateSalesOrderPurchaseSourceImport,

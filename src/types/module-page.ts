@@ -119,6 +119,17 @@ export interface ModuleParentImportDefinition {
   useCandidateSnapshot?: boolean
   hiddenSelectorColumnKeys?: string[]
   visibleWhen?: (currentRecord: ModuleRecordInput) => boolean
+  /**
+   * 这些单据状态下隐藏「导入上级单据」入口。
+   *
+   * <p>与 {@link visibleWhen} 的分工：{@code visibleWhen} 判的是**表单字段**（如客户/项目），
+   * 拿不到单据状态（状态不在表单里注册）；状态维度的显隐统一走本字段，避免每个模块
+   * 在 visibleWhen 里读一个根本不存在的 form 值。</p>
+   *
+   * <p>典型场景：销售订单进入「交付核定」后明细已锁定，再显示"导入采购订单明细"只会
+   * 让人以为还能改明细。</p>
+   */
+  hiddenStatuses?: string[]
   resolveParentSelector?: (currentRecord: ModuleRecordInput) => {
     parentModuleKey: ModuleKey
     parentDisplayFieldKey: string
