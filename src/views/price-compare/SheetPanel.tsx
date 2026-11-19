@@ -24,7 +24,6 @@ import {
   Select,
   Space,
   Table,
-  Tag,
   Tooltip,
   Typography,
 } from 'antd'
@@ -752,7 +751,6 @@ function SheetHeader({
   onToggleBest,
   selectedCount,
   onRemoveSelected,
-  designatedBrands,
   allowHrb400eFallback = false,
   onToggleHrb400eFallback,
   readOnly = false,
@@ -775,7 +773,6 @@ function SheetHeader({
   onToggleBest: () => void
   selectedCount: number
   onRemoveSelected: () => void
-  designatedBrands?: string[]
   allowHrb400eFallback?: boolean
   onToggleHrb400eFallback?: () => void
   readOnly?: boolean
@@ -800,8 +797,6 @@ function SheetHeader({
         allowHrb400eFallback={allowHrb400eFallback}
         readOnly={readOnly}
       />
-
-      <SheetMetaRow designatedBrands={designatedBrands} />
 
       <SheetActionRow
         sheet={sheet}
@@ -959,36 +954,6 @@ function SheetDateFields({
           </Tooltip>
         ) : null}
       </Flex>
-    </Flex>
-  )
-}
-
-/** 表头第二行: 指定品牌（备注字段已从页面移除，行级备注仍在表格列里）。 */
-function SheetMetaRow({ designatedBrands }: { designatedBrands?: string[] }) {
-  const { t } = useTranslation()
-  return (
-    <Flex
-      gap="small"
-      align="center"
-      wrap="wrap"
-      className="price-compare-meta-row"
-    >
-      <Space size={4} align="center" className="price-compare-meta-field">
-        <span className="price-compare-sub">
-          {t('priceCompare.config.designatedBrands')}
-        </span>
-        {designatedBrands?.length ? (
-          <Flex gap={4} wrap="wrap" align="center">
-            {designatedBrands.map((brand) => (
-              <Tag key={brand} color="blue" style={{ marginInlineEnd: 0 }}>
-                {brand}
-              </Tag>
-            ))}
-          </Flex>
-        ) : (
-          <Text type="secondary">-</Text>
-        )}
-      </Space>
     </Flex>
   )
 }
@@ -1174,7 +1139,6 @@ type Props = {
   availability?: Record<string, string[]>
   chrome?: boolean
   spotRef: React.RefObject<HTMLSpanElement | null>
-  designatedBrands?: string[]
   /** 被他人签出编辑时只读(禁用编辑类交互) */
   readOnly?: boolean
 }
@@ -1203,7 +1167,6 @@ export function SheetPanel(props: Props) {
     availability = {},
     chrome = true,
     spotRef,
-    designatedBrands,
     readOnly: readOnlyProp = false,
   } = props
   const { t } = useTranslation()
@@ -1480,7 +1443,6 @@ export function SheetPanel(props: Props) {
         onToggleBest={() => setBestOn((value) => !value)}
         selectedCount={selectedIds.length}
         onRemoveSelected={removeSelected}
-        designatedBrands={designatedBrands}
         allowHrb400eFallback={allowHrb400eFallback}
         onToggleHrb400eFallback={onToggleHrb400eFallback}
         readOnly={readOnly}

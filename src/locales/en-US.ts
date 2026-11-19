@@ -1673,9 +1673,6 @@ export const enUS = {
           'When enabled, HRB400 quotes are used when HRB400E is missing (display only, marked with E)',
         quoteHrb400eFallbackOn: 'On',
         quoteHrb400eFallbackOff: 'Off',
-        quoteDesignatedBrands: 'Designated brands',
-        quoteDesignatedBrandsHint:
-          'Designated brands are shown in sales orders only and do not filter automatically',
         sectionOther: 'Other',
         allowedSpecHint:
           'Checked when sales orders import PO items, mismatches raise a warning',
@@ -3241,10 +3238,6 @@ export const enUS = {
         'Brands and categories in comparison (disabled categories are hidden)',
       brandsFromProject:
         "Available brands come from the project's allowed brands ({{count}}). Edit the project master data to change the brand scope.",
-      designatedBrands: 'Designated Brands',
-      designatedBrandsHint:
-        'Designated brands (display only, excluded from automatic filtering)',
-      designatedBadge: 'Designated',
       selectedCount: 'Selected {{selected}}/{{total}}',
       selectAll: 'Select All',
       clear: 'Clear',

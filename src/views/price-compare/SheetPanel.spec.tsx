@@ -105,48 +105,6 @@ describe('SheetPanel 指定品牌展示', () => {
     container.remove()
   })
 
-  function render(designatedBrands?: string[]) {
-    act(() => {
-      root.render(
-        createElement(
-          QueryClientProvider,
-          { client: queryClient },
-          createElement(SheetPanel, {
-            sheet: makeSheet(),
-            data: null,
-            varieties: [],
-            brands: [{ name: '中天', freight: 30 }],
-            rows: [],
-            density: 'small',
-            lengthPremium: 30,
-            patchSheet: () => {},
-            setRows: () => {},
-            onReorderBrands: () => {},
-            periods: [],
-            onRefresh: () => {},
-            chrome: false,
-            spotRef: { current: null },
-            designatedBrands,
-          }),
-        ),
-      )
-    })
-  }
-
-  it('在备注框后只读展示指定品牌', () => {
-    render(['中天', '沙钢'])
-    expect(container.textContent).toContain('指定品牌')
-    expect(container.textContent).toContain('中天')
-    expect(container.textContent).toContain('沙钢')
-  })
-
-  it('未配置指定品牌时仅展示占位符', () => {
-    render([])
-    expect(container.textContent).toContain('指定品牌')
-    expect(container.textContent).toContain('-')
-    expect(container.textContent).not.toContain('沙钢')
-  })
-
   const baseRow: PriceRow = {
     id: 'r1',
     category: '螺纹钢',

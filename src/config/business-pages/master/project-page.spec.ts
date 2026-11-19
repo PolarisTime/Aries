@@ -21,7 +21,6 @@ const QUOTE_FIELD_KEYS = [
   'quoteProducts',
   'quoteLengthPremium',
   'quoteHrb400eFallback',
-  'quoteDesignatedBrands',
 ] as const
 
 describe('项目资料：比价配置字段', () => {
@@ -75,11 +74,7 @@ describe('项目资料：比价配置字段', () => {
     const spanOf = (key: string) =>
       fields.find((item) => item.key === key)?.colSpan
     // 三个「清单型」字段（矩阵、商品键、指定品牌）各占整行；两个标量设置按 12 成对
-    for (const key of [
-      'quoteBrandCategories',
-      'quoteProducts',
-      'quoteDesignatedBrands',
-    ]) {
+    for (const key of ['quoteBrandCategories', 'quoteProducts']) {
       expect(spanOf(key), `${key} 必须整行`).toBe(24)
     }
     expect(spanOf('quoteLengthPremium')).toBe(12)
@@ -129,8 +124,6 @@ describe('i18n：新增文案两侧齐全', () => {
     'modules.pages.project.quoteHrb400eFallbackHint',
     'modules.pages.project.quoteHrb400eFallbackOn',
     'modules.pages.project.quoteHrb400eFallbackOff',
-    'modules.pages.project.quoteDesignatedBrands',
-    'modules.pages.project.quoteDesignatedBrandsHint',
     'priceCompare.config.freightOnlyHint',
     'priceCompare.config.gotoProject',
     'priceCompare.config.noBrands',

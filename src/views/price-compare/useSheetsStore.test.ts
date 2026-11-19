@@ -2461,7 +2461,6 @@ describe('比价配置保存载荷：只写运费（2026-11-16 定稿）', () =>
       lengthPremium: 45,
       hrb400eFallback: true,
       products: ['直条|HRB400E|12|9米'],
-      designatedBrands: ['中天'],
       remark: '只改运费',
     })
     expect(payload).toEqual({

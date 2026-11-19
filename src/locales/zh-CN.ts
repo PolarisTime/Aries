@@ -1687,8 +1687,6 @@ export const zhCN = {
           '开启后缺少 HRB400E 报价时参考 HRB400 报价（仅比价展示，表格中以 E 标记）',
         quoteHrb400eFallbackOn: '开启',
         quoteHrb400eFallbackOff: '关闭',
-        quoteDesignatedBrands: '指定品牌',
-        quoteDesignatedBrandsHint: '指定品牌仅用于报单展示，不参与自动过滤',
         sectionOther: '其他',
         allowedSpecHint: '销售订单导入采购订单明细时按此校验并预警',
         allowedSpecUnlimited: '不限制',
@@ -3223,9 +3221,6 @@ export const zhCN = {
       brandsHint: '参与比价的品牌与品种（未启用的品种该品牌不显示价格）',
       brandsFromProject:
         '候选品牌来自项目资料的「允许的品牌」（共 {{count}} 个）。如需调整品牌范围，请到项目资料修改。',
-      designatedBrands: '指定品牌',
-      designatedBrandsHint: '指定品牌（仅用于报单展示，不参与自动过滤）',
-      designatedBadge: '指定',
       selectedCount: '已选 {{selected}}/{{total}}',
       selectAll: '全选',
       clear: '清空',

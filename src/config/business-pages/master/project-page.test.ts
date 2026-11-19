@@ -30,7 +30,6 @@ describe('projectPageConfig', () => {
       // 其余三项按 12 栅格两两成对 —— 不再出现 12+6+6 那种一行三种宽度、竖边对不齐的排法
       ['quoteBrandCategories'],
       ['quoteProducts'],
-      ['quoteDesignatedBrands'],
       ['quoteLengthPremium', 'quoteHrb400eFallback'],
     ])
   })

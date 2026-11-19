@@ -23,7 +23,6 @@ const config = (): ProjectConfig => ({
   lengthPremium: 30,
   hrb400eFallback: false,
   products: ['直条|HRB400E|12|9米'],
-  designatedBrands: ['中天'],
 })
 
 describe('运费草稿', () => {
@@ -48,7 +47,6 @@ describe('运费草稿', () => {
     expect(next.lengthPremium).toBe(30)
     expect(next.hrb400eFallback).toBe(false)
     expect(next.products).toEqual(['直条|HRB400E|12|9米'])
-    expect(next.designatedBrands).toEqual(['中天'])
   })
 
   it('草稿缺运费时回退到配置值，配置也缺时用默认运费', () => {

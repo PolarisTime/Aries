@@ -42,8 +42,6 @@ export type ProjectConfig = {
   hrb400eFallback: boolean
   /** 可选择的商品键(类别|材质|规格|长度); 为空表示全部可选 */
   products?: string[]
-  /** 指定品牌(项目级, 仅用于报单展示, 不参与自动过滤) */
-  designatedBrands?: string[]
   /** 备注信息(项目级文本) */
   remark?: string
   /** 服务端乐观锁版本号(用于 X-Resource-Version) */

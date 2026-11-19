@@ -411,7 +411,6 @@ function PriceCompareSheetArea({
         onOpenConfig={onOpenConfig}
         availability={availability}
         spotRef={spotRef}
-        designatedBrands={config.designatedBrands}
         readOnly={readOnly}
       />
     </Watermark>

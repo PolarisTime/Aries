@@ -50,7 +50,6 @@ export type ProjectOption = {
   /** 抗震牌号（HRB400E）代取开关；未配置时按关闭处理。 */
   quoteHrb400eFallback?: boolean
   /** 指定品牌（仅用于报单展示，不参与自动过滤）。 */
-  quoteDesignatedBrands?: string[]
 }
 
 /**
@@ -154,7 +153,6 @@ type RawProjectOption = {
   quoteBrandCategories?: unknown
   quoteLengthPremium?: unknown
   quoteHrb400eFallback?: unknown
-  quoteDesignatedBrands?: unknown
 }
 
 type RawProjectPageRow = {
@@ -192,7 +190,6 @@ const projectOptionsResponseSchema = z.array(
       .optional(),
     quoteLengthPremium: z.union([z.string(), z.number()]).nullable().optional(),
     quoteHrb400eFallback: z.boolean().nullable().optional(),
-    quoteDesignatedBrands: z.array(z.string()).nullable().optional(),
   }),
 )
 
@@ -434,9 +431,6 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
     const quoteBrandCategories = normalizeBrandCategories(
       row.quoteBrandCategories,
     )
-    const quoteDesignatedBrands = normalizeAllowedSpec(
-      row.quoteDesignatedBrands,
-    )
     const quoteLengthPremiumNum = Number(row.quoteLengthPremium)
 
     return {
@@ -475,7 +469,6 @@ function normalizeProjectOptions(rows: RawProjectOption[]): ProjectOption[] {
       ...(typeof row.quoteHrb400eFallback === 'boolean'
         ? { quoteHrb400eFallback: row.quoteHrb400eFallback }
         : {}),
-      quoteDesignatedBrands,
     }
   })
 }

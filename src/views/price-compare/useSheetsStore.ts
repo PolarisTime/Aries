@@ -125,9 +125,6 @@ export function buildConfigFromRecord(
     lengthPremium: record.lengthPremium,
     hrb400eFallback: record.hrb400eFallback,
     ...(record.products.length ? { products: record.products } : {}),
-    ...(record.designatedBrands.length
-      ? { designatedBrands: record.designatedBrands }
-      : {}),
     ...(record.remark ? { remark: record.remark } : {}),
     version: record.version,
     ...(record.quoteSource ? { quoteSource: record.quoteSource } : {}),
