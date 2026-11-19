@@ -37,9 +37,9 @@ import {
 } from '@/views/modules/components/pricing-quote-labels'
 import { ProjectPriceRulesField } from '@/views/modules/components/project-price-rules-field'
 import {
-  PROJECT_VARIETY_OPTIONS,
   ProjectQuoteBrandCategoriesField,
   ProjectQuoteHrb400eFallbackField,
+  ProjectQuoteProductsField,
 } from '@/views/modules/components/project-quote-config-fields'
 import { actionSet, buildMasterOverview, statusMap } from '../shared/shared'
 import { masterStatusFilter } from '../shared/shared-filters'
@@ -670,8 +670,13 @@ const projectPageConfig: ModulePageConfig = {
       colSpan: 24,
       formStep: 2,
       label: i18next.t('modules.pages.project.quoteProducts'),
+      // 实际控件由 render 接管（类别 → 材质 → 规格 → 长度的树形多选）
       type: 'multiSelect',
-      options: PROJECT_VARIETY_OPTIONS,
+      render: (context) =>
+        createElement(ProjectQuoteProductsField, {
+          disabled: context.disabled,
+          label: context.label,
+        }),
       placeholder: i18next.t('modules.pages.project.quoteProductsPlaceholder'),
       tooltip: i18next.t('modules.pages.project.quoteProductsHint'),
       extra: i18next.t('modules.pages.project.quoteProductsHint'),

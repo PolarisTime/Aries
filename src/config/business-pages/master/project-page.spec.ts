@@ -43,16 +43,14 @@ describe('项目资料：比价配置字段', () => {
     expect(field?.colSpan).toBe(24)
   })
 
-  it('参与比价的商品规格是多选，且选项是「类别|材质|规格|长度」商品键', () => {
+  it('参与比价的商品规格由模块专属控件渲染（类别→材质→规格→长度树形多选）', () => {
     const field = (config?.formFields ?? []).find(
       (item) => item.key === 'quoteProducts',
     )
-    expect(field?.type).toBe('multiSelect')
-    const options = Array.isArray(field?.options) ? field.options : []
-    expect(options.length).toBeGreaterThan(0)
-    for (const option of options) {
-      expect(String(option.value).split('|')).toHaveLength(4)
-    }
+    // 2026-11-19 起不再用扁平多选：26 个商品键铺开会刷屏，改为树形多选（父节点=全选其下规格）
+    expect(typeof field?.render).toBe('function')
+    expect(field?.options).toBeUndefined()
+    expect(field?.colSpan).toBe(24)
   })
 
   it('抗震牌号代取的值是 boolean（接口契约），定尺加价是数字', () => {
