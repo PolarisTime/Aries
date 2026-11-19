@@ -1,3 +1,17 @@
+# [16.4.0](https://github.com/PolarisTime/Aries/compare/v16.3.3...v16.4.0) (2026-11-19)
+
+
+### Bug Fixes
+
+* **lint:** 修正新增 spec 的格式并让 biome 忽略本地 .playwright 产物 ([4f67957](https://github.com/PolarisTime/Aries/commit/4f67957a9fecd63b30c2814837110004831c01eb))
+* **sales-order:** 交付核定/完成销售后不再显示「导入采购订单明细」 ([8261932](https://github.com/PolarisTime/Aries/commit/8261932b7147fd8a831c338ffed31e051a622b3f))
+
+
+### Features
+
+* **project:** 「指定品牌」并入「允许品牌」，默认取允许品牌 ([dd9b2cd](https://github.com/PolarisTime/Aries/commit/dd9b2cd16132244ba4efa8990757fda765fd038d))
+* **project:** 比价配置区的选择控件改为 antd 树形多选 ([6b63163](https://github.com/PolarisTime/Aries/commit/6b631639e93d112a4f29f78fbad8c1c444b529f7))
+
 ## [16.3.3](https://github.com/PolarisTime/Aries/compare/v16.3.2...v16.3.3) (2026-11-17)
 
 
