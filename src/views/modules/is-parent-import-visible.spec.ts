@@ -34,12 +34,13 @@ describe('isParentImportVisible', () => {
   it('visibleWhen 返回 false 时隐藏（表单字段维度）', () => {
     const definition = {
       ...DEFINITION,
-      visibleWhen: (record: Record<string, unknown>) => Boolean(record.customerId),
+      visibleWhen: (record: Record<string, unknown>) =>
+        Boolean(record.customerId),
     }
     expect(isParentImportVisible(definition, {}, 'DRAFT')).toBe(false)
-    expect(isParentImportVisible(definition, { customerId: '1' }, 'DRAFT')).toBe(
-      true,
-    )
+    expect(
+      isParentImportVisible(definition, { customerId: '1' }, 'DRAFT'),
+    ).toBe(true)
   })
 
   it('hiddenStatuses 命中时隐藏（单据状态维度）', () => {
@@ -47,16 +48,19 @@ describe('isParentImportVisible', () => {
       ...DEFINITION,
       hiddenStatuses: ['DELIVERY_VERIFICATION', 'SALES_COMPLETED'],
     }
-    expect(
-      isParentImportVisible(definition, {}, 'DELIVERY_VERIFICATION'),
-    ).toBe(false)
+    expect(isParentImportVisible(definition, {}, 'DELIVERY_VERIFICATION')).toBe(
+      false,
+    )
     expect(isParentImportVisible(definition, {}, 'SALES_COMPLETED')).toBe(false)
     expect(isParentImportVisible(definition, {}, 'DRAFT')).toBe(true)
     expect(isParentImportVisible(definition, {}, 'AUDITED')).toBe(true)
   })
 
   it('recordStatus 缺省（新建态）不误伤：只按 visibleWhen 判定', () => {
-    const definition = { ...DEFINITION, hiddenStatuses: ['DELIVERY_VERIFICATION'] }
+    const definition = {
+      ...DEFINITION,
+      hiddenStatuses: ['DELIVERY_VERIFICATION'],
+    }
     expect(isParentImportVisible(definition, {}, undefined)).toBe(true)
     expect(isParentImportVisible(definition, {}, '')).toBe(true)
   })

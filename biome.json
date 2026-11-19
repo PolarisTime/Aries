@@ -10,6 +10,7 @@
       "!!**/node_modules",
       "!!**/.tmp-browser",
       "!!**/.rd-base",
+      "!!**/.playwright",
       "!!**/test-results",
       "!!**/playwright-report",
       "!!**/blob-report",
