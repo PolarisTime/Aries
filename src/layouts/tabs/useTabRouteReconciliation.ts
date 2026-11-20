@@ -176,6 +176,18 @@ export function useTabRouteReconciliation(): void {
     if (!activeTab) {
       return
     }
+    /*
+     * 协调 effect 可能在**同一个 commit**里刚把激活标签从 A 切到 B（地址栏已经是 B）。
+     * 此时本 effect 的闭包仍持有渲染时的旧 activeTab=A；若直接跟随，会把地址栏从
+     * B 拉回 A，下一轮协调又激活 B，形成 A↔B 来回跳。
+     * 先以 store 的最新 activeTab 校准：闭包已过期就交给下一轮渲染处理。
+     */
+    const currentActive = useLayoutTabsStore
+      .getState()
+      .tabs.find((tab) => tab.id === useLayoutTabsStore.getState().activeTabId)
+    if (!currentActive || currentActive.id !== activeTab.id) {
+      return
+    }
     if (followedTabIdRef.current === activeTab.id) {
       return
     }

@@ -233,6 +233,50 @@ describe('useTabRouteReconciliation', () => {
    * 单页模型下浏览器后退/前进会绕过 useTabOpen 直接改地址；当前页脏时必须先确认，
    * 否则离开即卸载编辑器、未保存内容静默丢失（真机复现过的缺陷）。
    */
+  it('主地址栏切到已存在的另一个标签时，不被旧激活标签把地址拉回', () => {
+    useLayoutTabsStore.setState({
+      tabs: [
+        {
+          id: 'tab-dashboard',
+          pathname: '/dashboard',
+          search: '',
+          pinned: true,
+          mountedOnce: true,
+          reloadKey: 0,
+        },
+        {
+          id: INBOUND_TAB_ID,
+          pathname: '/purchase-inbound',
+          search: '',
+          pinned: false,
+          mountedOnce: true,
+          reloadKey: 0,
+        },
+        {
+          id: 'tab-sales-order',
+          pathname: '/sales-order',
+          search: '',
+          pinned: false,
+          mountedOnce: true,
+          reloadKey: 0,
+        },
+      ],
+      activeTabId: INBOUND_TAB_ID,
+    })
+    currentLocation = {
+      pathname: '/sales-order',
+      searchStr: '',
+      href: '/sales-order',
+    }
+
+    renderHook()
+
+    expect(useLayoutTabsStore.getState().activeTabId).toBe('tab-sales-order')
+    // 跟随 effect 拿到的是渲染时的旧 activeTab（purchase-inbound），
+    // 不能因此把地址栏从新目标 /sales-order 拉回旧页。
+    expect(pushMock).not.toHaveBeenCalledWith('/purchase-inbound')
+  })
+
   it('从脏页面被浏览器后退带走时：先恢复地址并弹确认，放弃后才继续导航', () => {
     useLayoutTabsStore.setState({
       tabs: [
