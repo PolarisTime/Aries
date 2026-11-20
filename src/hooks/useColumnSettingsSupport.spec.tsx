@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import i18n from 'i18next'
-import { act, createElement, useState } from 'react'
+import { act, createElement, useEffect, useState } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/i18n'
@@ -52,9 +52,7 @@ function Harness({
   columnKeys?: string[]
   legacyPageKey?: string
 }) {
-  renderCount += 1
   const [, setTick] = useState(0)
-  bump = () => setTick((value) => value + 1)
   const state = useColumnSettingsSupport(
     pageKey,
     undefined,
@@ -62,7 +60,15 @@ function Harness({
     columnKeys,
     legacyPageKey,
   )
-  lastVisibility = state.columnVisibility
+  /*
+   * 测试观测值在 effect 里写：渲染期改模块级变量是副作用，
+   * React Compiler 的 react-hooks/globals 会判定 rerender 不可预测并报错。
+   */
+  useEffect(() => {
+    renderCount += 1
+    bump = () => setTick((value) => value + 1)
+    lastVisibility = state.columnVisibility
+  })
   return null
 }
 
