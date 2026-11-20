@@ -106,6 +106,20 @@ export const SHEET_HIDEABLE_COLUMN = {
  */
 export const PRICE_COMPARE_COLUMN_SETTINGS_KEY = 'price-compare-sheet'
 
+/**
+ * 报单比价列设置的**项目级**存储 key：一个项目一份（未指定项目归到 `unassigned`）。
+ *
+ * <p>2026-11-20 用户定稿：列显示（备注列 + 各品牌列）原本全局一份，切换项目时沿用同一套显隐，
+ * 但不同项目参与比价的品牌本来就不同，隐藏某品牌在另一个项目里往往是误伤。改为按 `projectId`
+ * 分别保存；`PRICE_COMPARE_COLUMN_SETTINGS_KEY` 作为旧版共享 key 保留，仅用于首次继承。</p>
+ */
+export function priceCompareColumnSettingsKey(
+  projectId?: string | null,
+): string {
+  const project = String(projectId ?? '').trim()
+  return `${PRICE_COMPARE_COLUMN_SETTINGS_KEY}:${project || 'unassigned'}`
+}
+
 export const SHEET_COLUMN_WIDTH = {
   remark: 140,
   category: 72,

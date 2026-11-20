@@ -34,15 +34,63 @@ vi.mock('@/utils/logger', () => ({
 }))
 
 const PAGE_KEY = 'page-columns'
+
+/** 渲染计数、容器与手动重渲染触发器（跨 describe 共享，便于两处 describe 复用同一 Harness）。 */
+let renderCount = 0
+let bump: (() => void) | null = null
+let container: HTMLDivElement
+let root: Root
+
+function Harness({
+  pageKey,
+  totalColumnCount,
+  columnKeys,
+  legacyPageKey,
+}: {
+  pageKey: string
+  totalColumnCount: number
+  columnKeys?: string[]
+  legacyPageKey?: string
+}) {
+  renderCount += 1
+  const [, setTick] = useState(0)
+  bump = () => setTick((value) => value + 1)
+  const state = useColumnSettingsSupport(
+    pageKey,
+    undefined,
+    totalColumnCount,
+    columnKeys,
+    legacyPageKey,
+  )
+  lastVisibility = state.columnVisibility
+  return null
+}
+
+const render = (
+  pageKey: string,
+  totalColumnCount: number,
+  columnKeys?: string[],
+  legacyPageKey?: string,
+) => {
+  act(() => {
+    root.render(
+      createElement(Harness, {
+        pageKey,
+        totalColumnCount,
+        columnKeys,
+        legacyPageKey,
+      }),
+    )
+  })
+}
+
+/** Harness 渲染出的列显隐快照（跨 describe 共享，供「按维度隔离」用例断言）。 */
+let lastVisibility: Record<string, boolean> = {}
 const RESET_TIP =
   '检测到该页面的列显示设置异常，已恢复为默认列显示，可在列设置里重新调整'
 
 describe('useColumnSettingsSupport 列设置异常重置', () => {
-  let container: HTMLDivElement
-  let root: Root
   let warnings: string[]
-  let bump: (() => void) | null
-  let renderCount: number
 
   beforeEach(async () => {
     await i18n.changeLanguage('zh-CN')
@@ -88,34 +136,6 @@ describe('useColumnSettingsSupport 列设置异常重置', () => {
     act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
-
-  function Harness({
-    pageKey,
-    totalColumnCount,
-    columnKeys,
-  }: {
-    pageKey: string
-    totalColumnCount: number
-    columnKeys?: string[]
-  }) {
-    renderCount += 1
-    const [, setTick] = useState(0)
-    bump = () => setTick((value) => value + 1)
-    useColumnSettingsSupport(pageKey, undefined, totalColumnCount, columnKeys)
-    return null
-  }
-
-  const render = (
-    pageKey: string,
-    totalColumnCount: number,
-    columnKeys?: string[],
-  ) => {
-    act(() => {
-      root.render(
-        createElement(Harness, { pageKey, totalColumnCount, columnKeys }),
-      )
-    })
-  }
 
   const seed = (settings: ListColumnSettings) =>
     setListColumnSettings(PAGE_KEY, settings, 'anonymous')
@@ -214,5 +234,82 @@ describe('useColumnSettingsSupport 列设置异常重置', () => {
     expect(apiMock.saveUserColumnSettings).toHaveBeenCalledWith({
       pages: { [PAGE_KEY]: { orderedKeys: [], hiddenKeys: [] } },
     })
+  })
+})
+
+/**
+ * 列设置按项目分别保存（2026-11-20 用户定稿）。
+ *
+ * <p>报单比价原本全局一份列设置：不同项目参与比价的品牌不同，隐藏某品牌在另一个项目里
+ * 会变成误伤。改成 `pageKey = price-compare-sheet:<projectId>` 后必须满足：
+ * ① 两个项目的显隐互不影响；② 老用户首次进入新 key 时继承旧全局设置一次；③ 新 key
+ * 已有设置时不再被旧 key 覆盖。</p>
+ */
+describe('useColumnSettingsSupport 按维度隔离 + 旧 key 继承', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('zh-CN')
+    localStorage.clear()
+    authState.user = null
+    lastVisibility = {}
+    resetUserSettingsSyncForTests()
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('切项目时按新 key 重读：两个项目的隐藏列互不影响', async () => {
+    setListColumnSettings(
+      'price-compare-sheet:proj-a',
+      { orderedKeys: [], hiddenKeys: ['brand:中天'] },
+      'anonymous',
+    )
+    render('price-compare-sheet:proj-a', 5)
+    expect(lastVisibility['brand:中天']).toBe(false)
+
+    render('price-compare-sheet:proj-b', 5)
+    // pageKey 变化后由 hook 的重读 effect 刷新状态，断言前先让 effect 跑完
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    // B 项目没保存过：走默认（全部可见），不继承 A 的隐藏
+    expect(lastVisibility['brand:中天']).not.toBe(false)
+    expect(lastVisibility.remark).not.toBe(false)
+  })
+
+  it('新 key 没有设置时继承旧全局 key（老用户不会突然看到默认列）', () => {
+    setListColumnSettings(
+      'price-compare-sheet',
+      { orderedKeys: [], hiddenKeys: ['brand:亚新', 'remark'] },
+      'anonymous',
+    )
+    render('price-compare-sheet:proj-a', 5, undefined, 'price-compare-sheet')
+
+    expect(lastVisibility['brand:亚新']).toBe(false)
+    expect(lastVisibility.remark).toBe(false)
+  })
+
+  it('新 key 已有设置时不被旧全局 key 覆盖', () => {
+    setListColumnSettings(
+      'price-compare-sheet',
+      { orderedKeys: [], hiddenKeys: ['brand:亚新'] },
+      'anonymous',
+    )
+    setListColumnSettings(
+      'price-compare-sheet:proj-a',
+      { orderedKeys: [], hiddenKeys: ['brand:万泰'] },
+      'anonymous',
+    )
+    render('price-compare-sheet:proj-a', 5, undefined, 'price-compare-sheet')
+
+    expect(lastVisibility['brand:万泰']).toBe(false)
+    expect(lastVisibility['brand:亚新']).not.toBe(false)
   })
 })

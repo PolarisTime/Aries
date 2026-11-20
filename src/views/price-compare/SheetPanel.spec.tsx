@@ -49,9 +49,21 @@ function makeSheet(): PriceSheet {
   }
 }
 
-/** 列显示偏好的本地存储 key(未登录时 userKey 为 anonymous, 与 useColumnSettingsSupport 一致)。 */
+/**
+ * 列显示偏好的本地存储 key：**按项目各一份**（2026-11-20 起）。
+ * 这里锁的是 makeSheet() 的项目 `p1`；未登录时 userKey 为 anonymous。
+ */
 const COLUMN_SETTINGS_KEY =
-  'aries-list-column-settings:anonymous:price-compare-sheet'
+  'aries-list-column-settings:anonymous:price-compare-sheet:p1'
+
+/** 清掉本页所有项目的列设置（含旧版全局 key），用例之间才互不影响。 */
+function clearColumnSettings() {
+  for (const key of Object.keys(window.localStorage)) {
+    if (key.includes('price-compare-sheet')) {
+      window.localStorage.removeItem(key)
+    }
+  }
+}
 
 describe('SheetPanel 指定品牌展示', () => {
   let container: HTMLDivElement
@@ -61,9 +73,7 @@ describe('SheetPanel 指定品牌展示', () => {
   beforeEach(async () => {
     // 列显隐已改为用户偏好持久化(本地存储): 上一个用例隐藏过的列会带到这里,
     // 因此每个用例开始前清掉本页的列设置, 保证用例之间互相隔离。
-    window.localStorage.removeItem(
-      'aries-list-column-settings:anonymous:price-compare-sheet',
-    )
+    clearColumnSettings()
     await i18n.changeLanguage('zh-CN')
     if (!window.matchMedia) {
       window.matchMedia = (query: string) => ({
@@ -949,9 +959,7 @@ describe('SheetPanel 差价最优并列高亮', () => {
   let queryClient: QueryClient
 
   beforeEach(async () => {
-    window.localStorage.removeItem(
-      'aries-list-column-settings:anonymous:price-compare-sheet',
-    )
+    clearColumnSettings()
     await i18n.changeLanguage('zh-CN')
     if (!window.matchMedia) {
       window.matchMedia = (query: string) => ({
@@ -1117,9 +1125,7 @@ describe('SheetPanel 现货价实时派生', () => {
   })
 
   beforeEach(async () => {
-    window.localStorage.removeItem(
-      'aries-list-column-settings:anonymous:price-compare-sheet',
-    )
+    clearColumnSettings()
     await i18n.changeLanguage('zh-CN')
     lowestQuotesMock.mockReset()
     lowestQuotesMock.mockResolvedValue([])

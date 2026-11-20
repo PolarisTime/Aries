@@ -111,12 +111,19 @@ function resolveInitialSettings(
   defaultSettings: ListColumnSettings | null,
   totalColumnCount: number,
   columnKeys?: readonly string[],
+  /**
+   * 旧版共享 key：该页面从「全局一份」改成「按维度各一份」时，老用户首次进入新 key
+   * 读不到设置，会突然看到默认列。传入旧 key 后先继承一次，后续改动只写新 key。
+   */
+  legacyPageKey?: string,
 ): ResolvedInitialSettings {
   // config 未就绪时跳过本地存储读取，避免应用旧页面的列设置
   if (totalColumnCount <= 0) {
     return { settings: defaultSettings, resetByAbnormalHidden: false }
   }
-  const saved = getListColumnSettings(pageKey, userKey)
+  const saved =
+    getListColumnSettings(pageKey, userKey) ??
+    (legacyPageKey ? getListColumnSettings(legacyPageKey, userKey) : null)
   if (!saved) {
     return { settings: defaultSettings, resetByAbnormalHidden: false }
   }
@@ -163,6 +170,8 @@ export function useColumnSettingsSupport(
    * 行为与改造前完全一致 —— 便于逐个页面接入。</p>
    */
   columnKeys?: readonly string[],
+  /** 旧版共享 key（见 {@link resolveInitialSettings}）。 */
+  legacyPageKey?: string,
 ) {
   const { t } = useTranslation()
   const user = useAuthStore((state) => state.user)
@@ -180,6 +189,7 @@ export function useColumnSettingsSupport(
     buildDefaultSettings(defaultHiddenKeys),
     totalColumnCount,
     columnKeys,
+    legacyPageKey,
   )
   const initialSettings = resolvedInitialSettings.settings
   /**
@@ -215,6 +225,35 @@ export function useColumnSettingsSupport(
   useEffect(() => {
     columnSizesRef.current = columnSizes
   }, [columnSizes])
+  /*
+   * pageKey 变化（例如报单比价从「全局一份」改成「按项目各一份」后切项目）时，
+   * useState 的初始化不会再跑，必须显式按新 key 重读本地设置；否则会沿用上一个项目的显隐。
+   * 只比较 key，不因 defaultHiddenKeys 等内联参数变化而重置。
+   */
+  const pageKeyRef = useRef(pageKey)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: 仅在 pageKey/legacyPageKey 变化时重读；columnKeys 以内容签名参与
+  useEffect(() => {
+    if (pageKeyRef.current === pageKey) return
+    pageKeyRef.current = pageKey
+    userChangedRef.current = false
+    const settings = resolveInitialSettings(
+      pageKey,
+      userKey,
+      buildDefaultSettings(defaultHiddenKeys),
+      totalColumnCount,
+      columnKeys,
+      legacyPageKey,
+    ).settings
+    const nextOrder = toColumnOrderState(settings)
+    const nextVisibility = toVisibilityState(settings)
+    const nextSizes = toColumnSizesState(settings)
+    columnOrderRef.current = nextOrder
+    columnVisibilityRef.current = nextVisibility
+    columnSizesRef.current = nextSizes
+    setColumnOrder(nextOrder)
+    setColumnVisibility(nextVisibility)
+    setColumnSizes(nextSizes)
+  }, [pageKey, legacyPageKey, userKey, totalColumnCount, columnKeysSignature])
   const remoteLoadedRef = useRef(false)
   const userChangedRef = useRef(false)
   const [retryTimers] = useState<Set<ReturnType<typeof setTimeout>>>(
@@ -246,8 +285,17 @@ export function useColumnSettingsSupport(
         }
 
         remotePagesRef.current = accountSettings?.pages || {}
-        const remoteSettings = accountSettings?.pages?.[pageKey] || null
+        const remoteSettings =
+          accountSettings?.pages?.[pageKey] ||
+          (legacyPageKey
+            ? accountSettings?.pages?.[legacyPageKey]
+            : undefined) ||
+          null
         if (remoteSettings) {
+          // 从旧共享 key 继承来的设置立刻落到新 key，下次进入不再依赖旧 key
+          if (!accountSettings?.pages?.[pageKey]) {
+            setListColumnSettings(pageKey, remoteSettings, userKey)
+          }
           /*
            * 远端也可能存着旧列结构下的顺序（同一账号在多台设备/多个版本用过）。
            * 处理与本地一致：只清顺序、保留显隐；同步回存，避免每次加载都重算。
@@ -327,7 +375,7 @@ export function useColumnSettingsSupport(
     return () => {
       cancelled = true
     }
-  }, [pageKey, userKey, totalColumnCount, columnKeysSignature])
+  }, [pageKey, legacyPageKey, userKey, totalColumnCount, columnKeysSignature])
 
   const persist = async (
     order: ColumnOrderState,

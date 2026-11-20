@@ -54,6 +54,7 @@ import {
   LOWEST_QUOTES_QUERY_KEY,
   LOWEST_QUOTES_QUERY_OPTIONS,
   PRICE_COMPARE_COLUMN_SETTINGS_KEY,
+  priceCompareColumnSettingsKey,
   resolveRef,
   SHEET_HIDEABLE_COLUMN,
 } from './core'
@@ -1182,12 +1183,16 @@ export function SheetPanel(props: Props) {
    * 品牌列头菜单与持久化各写一套字符串。</p>
    */
   const columnSettings = useColumnSettingsSupport(
-    PRICE_COMPARE_COLUMN_SETTINGS_KEY,
+    // 按项目分别保存：不同项目参与比价的品牌不同，共用一套显隐会互相误伤
+    priceCompareColumnSettingsKey(sheet.projectId),
     [],
     /* 分母是表格的**总列数**(勾选+拖拽/备注/类别/规格/报单吨位 + 每个品牌 4 列) ——
        它是 hook 判定「隐藏比例异常」的基数。传「可显隐列数」会把正常操作误判成脏数据:
        例如 3 个品牌时隐藏备注与两个品牌组就是 3/5, 直接触发静默重置。 */
     5 + brands.length * 4,
+    undefined,
+    // 旧版全局 key：首次进入新 key 时继承一次，老用户不会突然看到默认列
+    PRICE_COMPARE_COLUMN_SETTINGS_KEY,
   )
   const columnVisibility = columnSettings.columnVisibility
   const setColumnVisible = (key: string, visible: boolean) =>
