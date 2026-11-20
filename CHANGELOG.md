@@ -1,3 +1,16 @@
+# [16.5.0](https://github.com/PolarisTime/Aries/compare/v16.4.0...v16.5.0) (2026-11-20)
+
+
+### Bug Fixes
+
+* **price-compare:** 项目配置弹层写明运费口径（列头 + 单位 + 说明） ([2424abc](https://github.com/PolarisTime/Aries/commit/2424abc9d85ebd1435ef1c01b7cc816f236cbdf3))
+* **tabs:** 修复切换标签后地址栏被旧激活页拉回 ([64b78e3](https://github.com/PolarisTime/Aries/commit/64b78e342104cf781736bbce6ef1821bc2e3426c))
+
+
+### Features
+
+* **price-compare:** 列显示改为按项目分别保存 ([4371ee7](https://github.com/PolarisTime/Aries/commit/4371ee7c72a49d8ba298094863a3878569eb2f41))
+
 # [16.4.0](https://github.com/PolarisTime/Aries/compare/v16.3.3...v16.4.0) (2026-11-19)
 
 
