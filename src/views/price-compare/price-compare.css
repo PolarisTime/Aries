@@ -649,7 +649,33 @@
 .pc-field {
   min-width: 0;
 }
+.pc-freight-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+/* 列头与数据行共用同一套栅格，品牌列自适应、运费列固定 180px，竖边才对得齐 */
+.pc-freight-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: var(--space-sm);
+  padding: 0 var(--space-sm);
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: var(--app-font-size-xs, 12px);
+}
+.pc-freight-head-value {
+  text-align: right;
+}
+.pc-freight-unit {
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: var(--app-font-size-xs, 12px);
+  white-space: nowrap;
+}
 .pc-brand-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  align-items: center;
+  gap: var(--space-sm);
   padding: var(--space-xs) var(--space-sm);
   border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
   border-radius: 8px;
@@ -657,6 +683,15 @@
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
+}
+.pc-brand-name {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pc-freight-input {
+  width: 100%;
 }
 .pc-brand-row:hover {
   border-color: var(--ant-color-primary-border-hover, #4096ff);

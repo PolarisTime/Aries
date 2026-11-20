@@ -98,6 +98,25 @@ describe('ProjectConfigModal：品牌只读 + 只写运费', () => {
     expect(document.querySelectorAll('[role="tab"]')).toHaveLength(0)
   })
 
+  it('运费列有明确口径：列头「品牌 / 运费(元/吨)」，输入框后缀单位，顶部说明运费计入比价', () => {
+    render()
+    const head = document.querySelector('.pc-freight-head')
+    expect(head?.textContent).toContain(
+      i18n.t('priceCompare.config.freightColumnBrand'),
+    )
+    // 列头写清「运费(元/吨)」，不再是一排没有口径的数字
+    expect(head?.textContent).toContain('运费(元/吨)')
+    // 输入框内还有单位后缀，截屏/打印时也能看出量纲
+    expect(
+      document.querySelectorAll('.pc-freight-unit').length,
+    ).toBeGreaterThan(0)
+    expect(document.body.textContent ?? '').toContain(
+      i18n.t('priceCompare.config.freightIntro'),
+    )
+    // 列头不算数据行：品牌行仍是 2 条
+    expect(document.querySelectorAll('.pc-brand-row')).toHaveLength(2)
+  })
+
   it('顶部提示与「去项目资料维护」入口', () => {
     render()
     const text = document.body.textContent ?? ''

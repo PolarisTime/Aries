@@ -99,6 +99,8 @@ export function ProjectConfigModal({ open, config, onClose, onSave }: Props) {
     >
       <Flex gap={8} vertical>
         <Text type="secondary">{t('priceCompare.config.freightOnlyHint')}</Text>
+        {/* 只有数字没有计量口径时，用户不知道「30」是运费、加价还是别的什么 */}
+        <Text type="secondary">{t('priceCompare.config.freightIntro')}</Text>
         <Button
           className="price-compare-config-goto-project"
           href="/project"
@@ -112,6 +114,13 @@ export function ProjectConfigModal({ open, config, onClose, onSave }: Props) {
           <Text type="secondary">{t('priceCompare.config.noBrands')}</Text>
         ) : (
           <div className="pc-freight-table">
+            {/* 列头：品牌 / 运费(元/吨)。没有它，输入框里的 30.00 看不出是什么口径 */}
+            <div className="pc-freight-head">
+              <span>{t('priceCompare.config.freightColumnBrand')}</span>
+              <span className="pc-freight-head-value">
+                {t('priceCompare.config.freight')}
+              </span>
+            </div>
             {draft.brands.map((brand) => (
               <div className="pc-brand-row" key={brand}>
                 <Text className="pc-brand-name" title={brand}>
@@ -123,6 +132,11 @@ export function ProjectConfigModal({ open, config, onClose, onSave }: Props) {
                   min={0}
                   precision={2}
                   step={1}
+                  suffix={
+                    <span className="pc-freight-unit">
+                      {t('priceCompare.config.freightUnit')}
+                    </span>
+                  }
                   value={draft.freightMap[brand] ?? DEFAULT_FREIGHT}
                   onChange={(value) => setFreight(brand, value)}
                 />

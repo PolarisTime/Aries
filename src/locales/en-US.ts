@@ -3220,6 +3220,10 @@ export const enUS = {
       title: 'Project Settings',
       freightOnlyHint:
         'Brands, categories, products, length premium, seismic fallback and designated brands are maintained in Master Data → Projects; only freight per brand is edited here.',
+      freightIntro:
+        'Freight is counted per ton in the comparison (CNY/ton); brands come from Master Data → Projects and cannot be added or removed here.',
+      freightColumnBrand: 'Brand',
+      freightUnit: 'CNY/t',
       gotoProject: 'Open project master data',
       noBrands:
         'This project has no brand configuration yet; maintain allowed brands in project master data',

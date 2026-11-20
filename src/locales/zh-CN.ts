@@ -3206,6 +3206,10 @@ export const zhCN = {
       title: '项目配置',
       freightOnlyHint:
         '品牌、品种、规格、定尺加价、抗震代取、指定品牌请在「基础数据 → 项目资料」维护；此处只维护每品牌运费。',
+      freightIntro:
+        '运费按吨计入比价差价（元/吨）；品牌清单取自「项目资料 → 允许品牌」，此处不可增删。',
+      freightColumnBrand: '品牌',
+      freightUnit: '元/吨',
       gotoProject: '去项目资料维护',
       noBrands: '该项目还没有品牌配置，请先在「项目资料」中维护允许品牌',
       tabs: {
