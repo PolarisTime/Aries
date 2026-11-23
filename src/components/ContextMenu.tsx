@@ -190,9 +190,10 @@ export function ContextMenu({
       })
   }, [])
 
-  /** 记录弹层节点; 焦点迁移统一在下面延后执行(见注释)。 */
+  /** 记录弹层节点并在同步挂载时立即补写软禁用项的 aria-disabled。 */
   const attachPopup = (node: HTMLDivElement | null) => {
     popupRef.current = node
+    if (node) markSoftDisabledItems()
   }
 
   const handleMenuClick: MenuProps['onClick'] = (info) => {
@@ -207,6 +208,7 @@ export function ContextMenu({
     if (!open) return
     interactedRef.current = false
     openerRef.current = (document.activeElement as HTMLElement) ?? null
+    markSoftDisabledItems()
     /*
      * antd 不会替上下文菜单移动焦点; 少了它方向键会落到页面其它控件上, Escape 也收不到。
      * 两件事必须同时做, 否则线上仍会失效:

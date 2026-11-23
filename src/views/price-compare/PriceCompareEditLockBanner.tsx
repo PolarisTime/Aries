@@ -1,4 +1,5 @@
 import { Alert, Button, Popconfirm, Space } from 'antd'
+import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import type { EditLockView } from './useSheetsStore'
 
@@ -13,10 +14,38 @@ type Props = {
   onDiscardLocal: () => void
 }
 
+function resolveLockBannerContent(
+  lock: EditLockView | null,
+  conflict: boolean,
+  collabTonRemarkWritable: boolean,
+  t: TFunction,
+): { message: string; type: 'success' | 'info' | 'warning' } {
+  const mine = Boolean(lock?.mine)
+  if (conflict) {
+    return { message: t('priceCompare.view.lockConflict'), type: 'warning' }
+  }
+  if (mine) {
+    return { message: t('priceCompare.view.editingByMe'), type: 'success' }
+  }
+  if (collabTonRemarkWritable) {
+    const message = lock?.ownerName
+      ? t('priceCompare.view.editingByOtherWithCollab', {
+          name: lock.ownerName,
+        })
+      : t('priceCompare.view.editingByOtherUnknownWithCollab')
+    return { message, type: 'info' }
+  }
+  const message = lock?.ownerName
+    ? t('priceCompare.view.editingByOther', { name: lock.ownerName })
+    : t('priceCompare.view.editingByOtherUnknown')
+  return { message, type: 'warning' }
+}
+
 /**
  * 批次编辑签出状态横幅:
  * - 本人签出: success;
- * - 他人占用: warning + 「申请接管」;
+ * - 他人占用（实时协作可写吨位/备注）: info + 「申请接管」;
+ * - 他人占用（只读）: warning + 「申请接管」;
  * - 保存遇到锁冲突(409): warning, 并额外提供「放弃我的改动并重新加载」——
  *   否则本地改动会一直挡住服务端刷新(静默 skipped), 用户既看不到说明也没有出口。
  */
@@ -29,33 +58,27 @@ export function PriceCompareEditLockBanner({
 }: Props) {
   const { t } = useTranslation()
   const mine = Boolean(lock?.mine)
-  const message = conflict
-    ? t('priceCompare.view.lockConflict')
-    : mine
-      ? t('priceCompare.view.editingByMe')
-      : collabTonRemarkWritable
-        ? lock?.ownerName
-          ? t('priceCompare.view.editingByOtherWithCollab', {
-              name: lock.ownerName,
-            })
-          : t('priceCompare.view.editingByOtherUnknownWithCollab')
-        : lock?.ownerName
-          ? t('priceCompare.view.editingByOther', { name: lock.ownerName })
-          : t('priceCompare.view.editingByOtherUnknown')
+  const { message, type } = resolveLockBannerContent(
+    lock,
+    conflict,
+    collabTonRemarkWritable,
+    t,
+  )
+  const showTakeover = !(mine && !conflict)
 
   return (
     <Alert
       className="price-compare-edit-lock"
-      type={mine && !conflict ? 'success' : 'warning'}
+      type={type}
       showIcon
       title={message}
       action={
         <Space size="small">
-          {mine && !conflict ? null : (
+          {showTakeover ? (
             <Button size="small" onClick={onTakeover}>
               {t('priceCompare.view.requestTakeover')}
             </Button>
-          )}
+          ) : null}
           {conflict ? (
             <Popconfirm
               cancelText={t('common.cancel')}

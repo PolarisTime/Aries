@@ -1,3 +1,9 @@
+import {
+  QuestionCircleOutlined,
+  RedoOutlined,
+  UndoOutlined,
+  WarningOutlined,
+} from '@ant-design/icons'
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { MenuProps } from 'antd'
 import {
@@ -6,6 +12,7 @@ import {
   Flex,
   Input,
   Modal,
+  Popover,
   Select,
   Skeleton,
   Table,
@@ -2410,6 +2417,23 @@ export function SupplierQuoteBoard() {
         t('priceCompare.supplierPrice.pasteDropped', { count: dropped }),
       )
     }
+    let outlierCount = 0
+    for (const item of plan) {
+      if (item.value === null || item.value <= 0) continue
+      const warning = detectPriceOutlier({
+        price: item.value,
+        peerPrices:
+          peerPricesByBrandRowKey.get(item.brandName)?.get(item.rowKey) ?? [],
+      })
+      if (warning) outlierCount += 1
+    }
+    if (outlierCount > 0) {
+      message.warning(
+        t('priceCompare.supplierPrice.pasteOutlierWarning', {
+          count: outlierCount,
+        }),
+      )
+    }
   }
 
   /** Ctrl+Z / Ctrl+Y 撤销重做（与逐格输入、粘贴共用同一份草稿历史）。 */
@@ -3183,6 +3207,99 @@ export function SupplierQuoteBoard() {
    * <p>选区动作也放这里：选区天然只属于**一个品类**（`selection.category`），
    * 独立蓝条会平白多占一行，而且不在选区所属品类的行上，用户得来回看。</p>
    */
+  /** 按品牌逐列统计非今日更新的品牌，避免多品牌下被最新一列掩盖其它滞后品牌。 */
+  const staleBrands = useMemo(() => {
+    const list: { brandName: string; lastEdit: string }[] = []
+    for (const brandName of brandNames) {
+      const column = byBrand.columns.get(brandName)
+      const raw = column?.updatedAt ?? column?.quotedOn ?? null
+      if (!isQuoteStale(raw)) continue
+      const formatted = formatLastEdit(raw)
+      if (formatted) list.push({ brandName, lastEdit: formatted })
+    }
+    return list
+  }, [brandNames, byBrand.columns])
+
+  /** 全表触发异常价预警的单元格定位键集合，供顶部「N 处异常价」按钮轮询跳转聚焦。 */
+  const outlierCellIds: string[] = []
+  for (const group of categoryGroups) {
+    for (const sheet of group.sheets) {
+      for (const row of sheet.rows) {
+        sheet.cellColumns.forEach((column, columnIndex) => {
+          if (
+            !catalogHas(
+              group.category,
+              column.brandName,
+              column.material,
+              row.spec,
+              column.length,
+            )
+          ) {
+            return
+          }
+          const leaf = leafOfSpec(column, row.spec)
+          const rowKey = quoteRowKey(leaf)
+          const value = effectiveCellValue(column.brandName, rowKey)
+          if (value === null || value <= 0) return
+          const warning = detectPriceOutlier({
+            price: value,
+            peerPrices:
+              peerPricesByBrandRowKey.get(column.brandName)?.get(rowKey) ?? [],
+          })
+          if (warning) {
+            outlierCellIds.push(cellKey(columnIndex, rowKey))
+          }
+        })
+      }
+    }
+  }
+  const outlierCursorRef = useRef(-1)
+  const jumpToNextOutlier = () => {
+    if (!outlierCellIds.length) return
+    const nextIndex = (outlierCursorRef.current + 1) % outlierCellIds.length
+    outlierCursorRef.current = nextIndex
+    const targetId = outlierCellIds[nextIndex]
+    if (targetId) focusGridCell(targetId)
+  }
+
+  const canUndo =
+    collab.mode === 'collab' ? collab.canUndo : history.past.length > 0
+  const canRedo =
+    collab.mode === 'collab' ? collab.canRedo : history.future.length > 0
+
+  const staleTag = (() => {
+    if (staleBrands.length === 0) return null
+    if (brandNames.length <= 1) {
+      return (
+        <Tooltip
+          title={t('priceCompare.supplierPrice.staleQuoteHint', {
+            time: staleBrands[0]?.lastEdit ?? '',
+          })}
+        >
+          <Tag color="warning" className="supplier-price-stale-tag">
+            {t('priceCompare.supplierPrice.staleQuoteBadge')}
+          </Tag>
+        </Tooltip>
+      )
+    }
+    const details = staleBrands
+      .map((item) => `${item.brandName}（${item.lastEdit}）`)
+      .join('、')
+    return (
+      <Tooltip
+        title={t('priceCompare.supplierPrice.staleBrandsHint', {
+          details,
+        })}
+      >
+        <Tag color="warning" className="supplier-price-stale-tag">
+          {t('priceCompare.supplierPrice.staleBrandsBadge', {
+            count: staleBrands.length,
+          })}
+        </Tag>
+      </Tooltip>
+    )
+  })()
+
   const materialTabExtrasOf = (group: CategoryGroup, groupIndex: number) => {
     /** 选区只属于一个品类：动作只出现在该品类的 tab 栏上。 */
     const selectionHere = selection?.category === group.categoryName
@@ -3199,7 +3316,7 @@ export function SupplierQuoteBoard() {
         </span>
       ),
       /*
-       * 右侧：选区动作（只在选区所属品类）+ 最后编辑（只在第一行）。
+       * 右侧：选区动作（只在选区所属品类）+ 快捷工具/状态（只在第一行）。
        * 两者都没有时整个 right 不传，tab 栏不会留空位。
        */
       ...(selectionHere || groupIndex === 0
@@ -3209,6 +3326,7 @@ export function SupplierQuoteBoard() {
                 align="center"
                 className="supplier-price-tabs-extras"
                 gap={8}
+                wrap="wrap"
               >
                 {selectionHere ? (
                   <>
@@ -3231,6 +3349,36 @@ export function SupplierQuoteBoard() {
                 ) : null}
                 {groupIndex === 0 ? (
                   <>
+                    {canEdit ? (
+                      <>
+                        <Tooltip
+                          title={t('priceCompare.supplierPrice.undoTooltip')}
+                        >
+                          <Button
+                            aria-label={t(
+                              'priceCompare.supplierPrice.undoTooltip',
+                            )}
+                            disabled={!canUndo}
+                            icon={<UndoOutlined />}
+                            size="small"
+                            onClick={undo}
+                          />
+                        </Tooltip>
+                        <Tooltip
+                          title={t('priceCompare.supplierPrice.redoTooltip')}
+                        >
+                          <Button
+                            aria-label={t(
+                              'priceCompare.supplierPrice.redoTooltip',
+                            )}
+                            disabled={!canRedo}
+                            icon={<RedoOutlined />}
+                            size="small"
+                            onClick={redo}
+                          />
+                        </Tooltip>
+                      </>
+                    ) : null}
                     {canUpdate && brandNames.length === 1 ? (
                       <Button
                         size="small"
@@ -3260,6 +3408,22 @@ export function SupplierQuoteBoard() {
                         </Button>
                       </ContextMenu>
                     ) : null}
+                    {outlierCellIds.length > 0 ? (
+                      <Tooltip
+                        title={t('priceCompare.supplierPrice.outlierJumpHint')}
+                      >
+                        <Button
+                          className="supplier-price-outlier-btn"
+                          icon={<WarningOutlined />}
+                          size="small"
+                          onClick={jumpToNextOutlier}
+                        >
+                          {t('priceCompare.supplierPrice.outlierCountBadge', {
+                            count: outlierCellIds.length,
+                          })}
+                        </Button>
+                      </Tooltip>
+                    ) : null}
                     <Tooltip
                       title={t('priceCompare.supplierPrice.lastEditedHint')}
                     >
@@ -3272,20 +3436,7 @@ export function SupplierQuoteBoard() {
                           t('priceCompare.supplierPrice.neverEdited')}
                       </Typography.Text>
                     </Tooltip>
-                    {isQuoteStale(lastEdited) ? (
-                      <Tooltip
-                        title={t('priceCompare.supplierPrice.staleQuoteHint', {
-                          time: formatLastEdit(lastEdited) ?? '',
-                        })}
-                      >
-                        <Tag
-                          color="warning"
-                          className="supplier-price-stale-tag"
-                        >
-                          {t('priceCompare.supplierPrice.staleQuoteBadge')}
-                        </Tag>
-                      </Tooltip>
-                    ) : null}
+                    {staleTag}
                     {savedFlash ? (
                       <Typography.Text
                         className="supplier-price-saved-hint"
@@ -3294,6 +3445,48 @@ export function SupplierQuoteBoard() {
                         {t('priceCompare.supplierPrice.saved')}
                       </Typography.Text>
                     ) : null}
+                    <Popover
+                      content={
+                        <ul className="supplier-price-shortcuts-list">
+                          <li>
+                            {t('priceCompare.supplierPrice.shortcutFormula')}
+                          </li>
+                          <li>
+                            {t('priceCompare.supplierPrice.shortcutSelect')}
+                          </li>
+                          <li>
+                            {t('priceCompare.supplierPrice.shortcutFill')}
+                          </li>
+                          <li>
+                            {t('priceCompare.supplierPrice.shortcutClear')}
+                          </li>
+                          <li>
+                            {t('priceCompare.supplierPrice.shortcutUndo')}
+                          </li>
+                          <li>
+                            {t('priceCompare.supplierPrice.shortcutBaseRule')}
+                          </li>
+                        </ul>
+                      }
+                      placement="bottomRight"
+                      title={t('priceCompare.supplierPrice.shortcutsHelpTitle')}
+                      trigger="click"
+                    >
+                      <Tooltip
+                        title={t(
+                          'priceCompare.supplierPrice.shortcutsHelpTitle',
+                        )}
+                      >
+                        <Button
+                          aria-label={t(
+                            'priceCompare.supplierPrice.shortcutsHelpAria',
+                          )}
+                          icon={<QuestionCircleOutlined />}
+                          size="small"
+                          type="text"
+                        />
+                      </Tooltip>
+                    </Popover>
                   </>
                 ) : null}
               </Flex>
@@ -3491,12 +3684,47 @@ export function SupplierQuoteBoard() {
       <SupplierBasePriceRuleModal
         brandName={baseRuleBrand ?? ''}
         onClose={() => setBaseRuleBrand(null)}
-        onSaved={(saved) =>
+        onSaved={(saved) => {
           queryClient.setQueryData(
             basePriceRulesQueryKey(supplierId, saved.brandName),
             saved,
           )
-        }
+          // 若基价规格已有有效报价，保存新规则后立刻按规则补全空格（不覆盖已有价格）
+          if (!canEdit || !saved.base) return
+          const brandRows = specRowsForBrand(saved.brandName)
+          const baseRow = brandRows.find(
+            (row) =>
+              row.material === saved.base?.material &&
+              row.spec === saved.base?.spec &&
+              row.lengths.includes(saved.base.length),
+          )
+          if (!baseRow) return
+          const baseRowKey = `${baseRow.category}|${saved.base.material}|${saved.base.spec}|${saved.base.length}`
+          const basePrice = effectiveCellValue(saved.brandName, baseRowKey)
+          if (basePrice === null || basePrice <= 0) return
+          const fillPlan = buildBasePriceFillPlan({
+            base: saved.base,
+            basePrice,
+            items: saved.items,
+            specRows: brandRows,
+            isFilled: (candidateKey) =>
+              candidateKey === baseRowKey ||
+              effectiveCellValue(saved.brandName, candidateKey) !== null,
+          })
+          if (!fillPlan.length) return
+          applyBulkValues(
+            fillPlan.map((cell) => ({
+              brandName: saved.brandName,
+              rowKey: cell.rowKey,
+              value: cell.value,
+            })),
+          )
+          message.success(
+            t('priceCompare.supplierPrice.autoFilled', {
+              count: fillPlan.length,
+            }),
+          )
+        }}
         open={baseRuleBrand !== null}
         rows={baseRuleBrand ? specRowsForBrand(baseRuleBrand) : []}
         supplierId={supplierId}

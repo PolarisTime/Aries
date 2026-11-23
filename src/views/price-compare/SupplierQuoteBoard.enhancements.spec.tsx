@@ -332,6 +332,186 @@ describe('SupplierQuoteBoard 批1与批3增强能力', () => {
     expect(feedback.message.warning).toHaveBeenCalledWith(
       expect.stringContaining('高于同行最低价'),
     )
+
+    // 顶部出现可点击「1 处异常价」定位按钮，点击直接聚焦异常格
+    const outlierBtn = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent?.includes('1 处异常价'),
+    )
+    expect(outlierBtn).toBeTruthy()
+    act(() => {
+      outlierBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(document.activeElement).toBe(cellInput('中天 HRB400E 12 9米'))
+
+    // 可见撤销按钮与快捷键说明 Popover 可操作
+    const undoBtn = container.querySelector<HTMLButtonElement>(
+      `button[aria-label="${i18n.t('priceCompare.supplierPrice.undoTooltip')}"]`,
+    )
+    expect(undoBtn?.disabled).toBe(false)
+    act(() => {
+      undoBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3200')
+
+    const helpBtn = container.querySelector<HTMLButtonElement>(
+      `button[aria-label="${i18n.t('priceCompare.supplierPrice.shortcutsHelpAria')}"]`,
+    )
+    expect(helpBtn).not.toBeNull()
+    await act(async () => {
+      helpBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+    expect(document.body.textContent).toContain('快捷键与算式说明')
+  })
+
+  it('粘贴含异常价时触发汇总预警，且多品牌部分过期仍显示过期数量', async () => {
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const todayIso = now.toISOString()
+    supplierApi.fetchSupplierOptions.mockResolvedValue([
+      { ...SUPPLIER, brands: ['中天', '沙钢'] },
+    ])
+    priceApi.fetchSpecRows.mockResolvedValue([
+      ROW_12,
+      { ...ROW_12, brand: '沙钢' },
+    ])
+    priceApi.fetchSupplierPriceGrid.mockImplementation((brandName: string) =>
+      Promise.resolve(
+        brandName === '中天'
+          ? makeGrid({
+              brandName: '中天',
+              columns: [
+                {
+                  ...makeGrid().columns[0],
+                  quotedOn: today,
+                  updatedAt: todayIso,
+                },
+                makeGrid().columns[1],
+              ],
+            })
+          : makeGrid({
+              brandName: '沙钢',
+              columns: [
+                {
+                  listId: 'l2',
+                  supplierId: 's1',
+                  supplierName: SUPPLIER.supplierName,
+                  quotedOn: '2026-10-20',
+                  updatedAt: '2026-10-20T09:00:00Z',
+                  warehouse: null,
+                  version: 1,
+                },
+              ],
+              rows: [
+                {
+                  category: ROW_12.category,
+                  material: ROW_12.material,
+                  spec: ROW_12.spec,
+                  length: ROW_12.length,
+                  prices: { l2: 3220 },
+                  priceStatuses: {},
+                  remarks: {},
+                },
+              ],
+            }),
+      ),
+    )
+
+    renderPage()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3200')
+
+    // 中天为今日、沙钢为过期 → 顶部依然提示「1 个品牌非今日报价」
+    expect(
+      container.querySelector('.supplier-price-stale-tag')?.textContent,
+    ).toBe('1 个品牌非今日报价')
+
+    // 聚焦中天 12 9米并粘贴异常高价 4000 → 触发粘贴异常价汇总提醒
+    const input = cellInput('中天 HRB400E 12 9米')
+    act(() => {
+      input?.focus()
+    })
+    const board = container.querySelector('.supplier-price-board')
+    act(() => {
+      const pasteEvent = new Event('paste', {
+        bubbles: true,
+        cancelable: true,
+      }) as ClipboardEvent
+      Object.defineProperty(pasteEvent, 'clipboardData', {
+        value: { getData: () => '4000' },
+      })
+      board?.dispatchEvent(pasteEvent)
+    })
+    expect(feedback.message.warning).toHaveBeenCalledWith(
+      i18n.t('priceCompare.supplierPrice.pasteOutlierWarning', { count: 1 }),
+    )
+  })
+
+  it('保存基价加价规则时若基价格已有价格，立即自动填充空格', async () => {
+    const savedRules: SupplierBasePriceRules = {
+      supplierId: 's1',
+      brandName: '中天',
+      base: { material: 'HRB400E', spec: 12, length: '9米' },
+      items: [
+        { material: 'HRB400E', spec: 12, length: '9米', delta: 0 },
+        { material: 'HRB400E', spec: 14, length: '9米', delta: 50 },
+      ],
+      version: '1',
+    }
+    baseRulesApi.saveSupplierBasePriceRules.mockResolvedValue(savedRules)
+
+    renderPage()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3200')
+    expect(cellInput('中天 HRB400E 14 9米')?.value).toBe('')
+
+    // 打开基价加价弹层
+    const ruleBtn = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent?.includes('基价加价'),
+    )
+    await act(async () => {
+      ruleBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 40))
+    })
+
+    // 选中 Φ12 9米为基价并给 Φ14 9米填 +50 后保存
+    const baseRadio = document.body.querySelector<HTMLInputElement>(
+      `input[aria-label="${i18n.t('priceCompare.supplierPrice.basePriceA11y', {
+        material: 'HRB400E',
+        spec: 12,
+        length: '9米',
+      })}"]`,
+    )
+    const delta14 = document.body.querySelector<HTMLInputElement>(
+      `input[aria-label="${i18n.t('priceCompare.supplierPrice.deltaA11y', {
+        material: 'HRB400E',
+        spec: 14,
+        length: '9米',
+      })}"]`,
+    )
+    await act(async () => {
+      baseRadio?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.call(delta14, '50')
+      delta14?.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    const saveBtn = Array.from(
+      document.body.querySelectorAll('.workspace-overlay-footer button'),
+    ).find((btn) =>
+      btn.textContent?.includes(
+        i18n.t('priceCompare.supplierPrice.basePriceRuleSave'),
+      ),
+    )
+    await act(async () => {
+      saveBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+
+    expect(cellInput('中天 HRB400E 14 9米')?.value).toBe('3250')
+    expect(feedback.message.success).toHaveBeenCalledWith(
+      i18n.t('priceCompare.supplierPrice.autoFilled', { count: 1 }),
+    )
   })
 
   it('收到 409 COLLAB_ACTIVE（4093）时提示并中止 REST 重试', async () => {

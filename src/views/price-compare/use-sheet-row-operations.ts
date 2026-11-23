@@ -65,7 +65,11 @@ export function useSheetRowOperations({
       return moveItem(list, from, insert)
     })
 
-  const addRow = () => setRows((list) => [...list, makeRow()])
+  const addRow = () => {
+    const next = makeRow()
+    setRows((list) => [...list, next])
+    return next.id
+  }
 
   const addSeparator = () => setRows((list) => [...list, makeSeparatorRow()])
 

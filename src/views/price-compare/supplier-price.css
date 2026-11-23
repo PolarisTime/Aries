@@ -102,8 +102,7 @@
  * 内边距必须带 `!important`：antd 6 的表格内边距是 css-in-js 注入的，与本节选择器同特异性时
  * 它后注入会赢（实测 padding 一直是 8px，旧规则从未生效）。这里只覆盖 padding，不用它改颜色字体。
  */
-.supplier-price-sheet,
-.supplier-price-transposed {
+.supplier-price-sheet {
   --supplier-price-em: var(--app-font-size, 14px);
   --supplier-price-row-height: calc(var(--supplier-price-em) * 2);
   --supplier-price-cell-pad-block: calc(var(--supplier-price-em) * 0.1);
@@ -111,9 +110,7 @@
 }
 
 .supplier-price-sheet .ant-table-wrapper .ant-table-thead > tr > th,
-.supplier-price-transposed .ant-table-wrapper .ant-table-thead > tr > th,
-.supplier-price-sheet .ant-table-wrapper .ant-table-tbody > tr > td,
-.supplier-price-transposed .ant-table-wrapper .ant-table-tbody > tr > td {
+.supplier-price-sheet .ant-table-wrapper .ant-table-tbody > tr > td {
   padding: var(--supplier-price-cell-pad-block)
     var(--supplier-price-cell-pad-inline) !important;
   /* 垂直居中：价格输入框与「类别 / 材质」合并格在同一水平线上 */
@@ -129,31 +126,26 @@
  * 又抢不过 antd 的规则，所以把**变量本身**在这个表格实例上改写。
  * 变量声明在 `.ant-table-css-var` 上（antd 就是在这里注入 token 的），因此需要同元素选择器。
  */
-.supplier-price-sheet .ant-table-css-var,
-.supplier-price-transposed .ant-table-css-var {
+.supplier-price-sheet .ant-table-css-var {
   --ant-table-border-color: var(
     --supplier-price-grid,
     var(--ant-color-border, #d9d9d9)
   );
 }
 
-.supplier-price-sheet .ant-input-number,
-.supplier-price-transposed .ant-input-number {
+.supplier-price-sheet .ant-input-number {
   width: 100%;
 }
 
 /* 输入框高度跟行高同一个变量：字号变大时两者一起长，不会出现"行变高、框没变" */
 .supplier-price-sheet .ant-input-number,
-.supplier-price-sheet .ant-input-number-input,
-.supplier-price-transposed .ant-input-number,
-.supplier-price-transposed .ant-input-number-input {
+.supplier-price-sheet .ant-input-number-input {
   height: var(--supplier-price-row-height, 25px);
   line-height: var(--supplier-price-row-height, 25px);
   font-size: inherit;
 }
 
-.supplier-price-sheet .ant-input-number-input,
-.supplier-price-transposed .ant-input-number-input {
+.supplier-price-sheet .ant-input-number-input {
   padding-block: 0;
   /* 输入框内边距压到 0.25em：5 位数在 76px 列宽里不裁字 */
   padding-inline: 0.25em;
@@ -184,10 +176,6 @@
 
 .supplier-price-brand-handle:active {
   cursor: grabbing;
-}
-
-.supplier-price-brand-meta {
-  white-space: nowrap;
 }
 
 /*
@@ -337,54 +325,9 @@
   text-decoration: line-through;
 }
 
-/*
- * 基价模式下自动算出来的格子：视觉上要与可编辑格区分开（浅底 + 虚线边），
- * 否则用户会一直去点它、以为能改。
- */
-.supplier-price-sheet .supplier-price-computed-cell .ant-input-number {
-  background: var(--theme-surface-hover, #fafafa);
-  border-style: dashed;
-}
-
 /* 基价规格：用左色条标出「这格是基价」，不再在窄列里塞 Tag 挤占输入宽度 */
 .supplier-price-sheet .ant-input-number.supplier-price-base-cell {
   border-inline-start: 3px solid var(--theme-primary);
-}
-
-/* 品牌多选：只显示一行标签，超出用「+N」收起，避免工具栏被撑高 */
-.supplier-price-brand-picker .ant-select-selection-overflow {
-  flex-wrap: nowrap;
-}
-
-/* 基价规格标记：窄标签，不挤占价格输入宽度 */
-.supplier-price-base-tag {
-  flex: none;
-  margin-inline-end: 0;
-  padding-inline: 4px;
-  font-size: var(--app-font-size-2xs);
-  line-height: 1.45;
-}
-
-/* 规格横置视图：品牌分块 → 品类块（规格作列）→ 行 = 材质 + 定尺 */
-.supplier-price-transposed {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.supplier-price-transposed-brand {
-  padding: var(--space-sm) var(--space-md) var(--space-md);
-  border: 1px solid var(--ant-color-border-secondary);
-  border-radius: 8px;
-  background: var(--ant-color-bg-container);
-}
-
-.supplier-price-transposed-head {
-  margin-bottom: var(--space-xs);
-}
-
-.supplier-price-transposed-block + .supplier-price-transposed-block {
-  margin-top: var(--space-sm);
 }
 
 /*
@@ -424,16 +367,6 @@
   font-weight: 650;
   letter-spacing: 0.3px;
   color: var(--ant-color-text);
-}
-
-.supplier-price-transposed-empty {
-  padding-inline-end: var(--space-xs);
-  color: var(--ant-color-text-quaternary);
-}
-
-/* 基价规格：左侧蓝条，窄列里不额外占位 */
-.supplier-price-transposed-base {
-  box-shadow: inset 3px 0 0 var(--ant-color-primary);
 }
 
 /*
@@ -503,10 +436,33 @@
   --supplier-price-na-text: #cbd3df;
   --supplier-price-sel-bg: #e8f2ff;
   --supplier-price-sel-border: #7cb0ff;
+  --supplier-price-outlier-bg: #fffbe6;
+  --supplier-price-saved-flash: #ecfdf3;
+  --supplier-price-error-flash: #fff1f0;
   /* 交互反馈色：待保存 / 保存成功 / 输入错误 */
   --supplier-price-dirty: #faad14;
   --supplier-price-saved: #52c41a;
   --supplier-price-error: #ff4d4f;
+}
+
+[data-theme="dark"] .supplier-price-board {
+  --supplier-price-grid: #30363d;
+  --supplier-price-grid-strong: #424a54;
+  --supplier-price-header-bg: #1d222b;
+  --supplier-price-corner-bg: #181c24;
+  --supplier-price-spec-bg: #1a1f28;
+  --supplier-price-row-hover: #242b36;
+  --supplier-price-head-text: rgb(255 255 255 / 88%);
+  --supplier-price-head-muted: rgb(255 255 255 / 62%);
+  --supplier-price-spec-text: rgb(255 255 255 / 85%);
+  --supplier-price-na-bg-a: #1a1e26;
+  --supplier-price-na-bg-b: #222731;
+  --supplier-price-na-text: rgb(255 255 255 / 28%);
+  --supplier-price-sel-bg: rgb(22 119 255 / 22%);
+  --supplier-price-sel-border: #3c89e8;
+  --supplier-price-outlier-bg: rgb(250 173 20 / 16%);
+  --supplier-price-saved-flash: rgb(82 196 26 / 20%);
+  --supplier-price-error-flash: rgb(255 77 79 / 20%);
 }
 
 /*
@@ -614,7 +570,7 @@
 /* 表头：浅灰底 + 深色品牌名；第一列（材质/规格）再浅一档 */
 .supplier-price-board .ant-table-thead > tr > th {
   background: var(--supplier-price-header-bg, #f8fafc);
-  color: #48505e;
+  color: var(--supplier-price-head-text, #48505e);
   font-weight: 600;
   border-color: var(--supplier-price-grid, #e3e7ee);
 }
@@ -768,7 +724,7 @@
 
 @keyframes supplier-price-saved-flash {
   0% {
-    background-color: #ecfdf3;
+    background-color: var(--supplier-price-saved-flash, #ecfdf3);
     box-shadow: inset 0 0 0 1px var(--supplier-price-saved, #52c41a);
   }
 
@@ -800,7 +756,7 @@
   background: linear-gradient(
     225deg,
     var(--ant-color-warning, #faad14) 0 6px,
-    #fffbe6 6px
+    var(--supplier-price-outlier-bg, #fffbe6) 6px
   );
 }
 
@@ -810,9 +766,9 @@
   box-shadow: inset 0 0 0 2px var(--ant-color-warning, #faad14);
 }
 
-/* 报价过期列头：非今日更新的品牌列用琥珀虚线下划线 + 柔和提示底纹 */
+/* 报价过期列头：非今日更新的品牌列用高对比琥珀色 + 虚线下划线 */
 .supplier-price-brand-head-stale .supplier-price-brand-head-title {
-  color: var(--ant-color-warning-text, #ad6800);
+  color: var(--status-tag-gold-text, #874d00);
   text-decoration: underline dashed var(--ant-color-warning, #faad14);
   text-underline-offset: 3px;
 }
@@ -821,9 +777,23 @@
   margin-inline-end: 0;
 }
 
+.supplier-price-outlier-btn {
+  color: var(--status-tag-gold-text, #874d00);
+  border-color: var(--ant-color-warning-border, #ffe58f);
+  background: var(--supplier-price-outlier-bg, #fffbe6);
+}
+
+.supplier-price-shortcuts-list {
+  margin: 0;
+  padding-inline-start: 16px;
+  max-width: 340px;
+  font-size: var(--app-font-size-xs);
+  line-height: 1.75;
+}
+
 @keyframes supplier-price-error-flash {
   0% {
-    background-color: #fff1f0;
+    background-color: var(--supplier-price-error-flash, #fff1f0);
     box-shadow: inset 0 0 0 2px var(--supplier-price-error, #ff4d4f);
   }
 

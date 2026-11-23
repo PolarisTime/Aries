@@ -65,10 +65,13 @@ describe('ColumnHeaderMenu 列头右键菜单', () => {
       isLast?: boolean
       withSettings?: boolean
       withExtraItems?: boolean
+      withStepMove?: boolean
     } = {},
   ) => {
     const onHide = vi.fn()
     const onMoveFirst = vi.fn()
+    const onMoveLeft = vi.fn()
+    const onMoveRight = vi.fn()
     const onMoveLast = vi.fn()
     const onRequestSettings = vi.fn()
     const onExtraItem = vi.fn()
@@ -90,6 +93,8 @@ describe('ColumnHeaderMenu 列头右键菜单', () => {
         onExtraItem={onExtraItem}
         onHide={onHide}
         onMoveFirst={onMoveFirst}
+        onMoveLeft={options.withStepMove ? onMoveLeft : undefined}
+        onMoveRight={options.withStepMove ? onMoveRight : undefined}
         onMoveLast={onMoveLast}
       >
         <span className="column-title">品牌</span>
@@ -111,6 +116,8 @@ describe('ColumnHeaderMenu 列头右键菜单', () => {
     return {
       onHide,
       onMoveFirst,
+      onMoveLeft,
+      onMoveRight,
       onMoveLast,
       onRequestSettings,
       onExtraItem,
@@ -398,6 +405,30 @@ describe('ColumnHeaderMenu 列头右键菜单', () => {
    * default 导出，deep import 会被 antd:lint 判 performance 违规）。
    * 这里只锁定「非测量行」的常态语义，接管行为见 useMeasureRowA11y.spec.tsx。
    */
+  it('传入 onMoveLeft / onMoveRight 时渲染左移/右移一列并支持边界禁用与派发', async () => {
+    const handlers = render({
+      isFirst: true,
+      isLast: false,
+      withStepMove: true,
+    })
+    await openMenu()
+    expect(menuItems()).toEqual([
+      { text: '隐藏该列', disabled: false },
+      { text: '移到最前（已在最前）', disabled: true },
+      { text: '左移一列（已在最前）', disabled: true },
+      { text: '右移一列', disabled: false },
+      { text: '移到最后', disabled: false },
+    ])
+
+    await clickItem('右移一列')
+    expect(handlers.onMoveRight).toHaveBeenCalledTimes(1)
+
+    const mid = render({ isFirst: false, isLast: false, withStepMove: true })
+    await openMenu()
+    await clickItem('左移一列')
+    expect(mid.onMoveLeft).toHaveBeenCalledTimes(1)
+  })
+
   it('常态下列头触发器保持可聚焦的 role=button 语义', () => {
     render()
     const node = trigger()

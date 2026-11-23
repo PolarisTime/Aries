@@ -316,9 +316,13 @@ export const enUS = {
       hide: 'Hide column',
       hidden: 'Hidden "{{column}}". You can restore it in Column Settings.',
       moveFirst: 'Move to first',
+      moveLeft: 'Move left',
+      moveRight: 'Move right',
       moveLast: 'Move to last',
       /* Disabled items stay focusable (APG); the label carries the reason for screen readers. */
       moveFirstDisabled: 'Move to first (already first)',
+      moveLeftDisabled: 'Move left (already first)',
+      moveRightDisabled: 'Move right (already last)',
       moveLastDisabled: 'Move to last (already last)',
       settings: 'Column settings…',
     },
@@ -3051,8 +3055,36 @@ export const enUS = {
       staleQuoteBadge: 'Outdated',
       staleQuoteHint:
         'Last edited at {{time}} (not today); confirm whether an update is needed',
+      staleBrandsBadge: '{{count}} brand(s) outdated',
+      staleBrandsHint: 'Brands not updated today: {{details}}',
       collabActiveConflict:
         'This brand price list is currently in live collaboration; REST write stopped, syncing via live collab',
+      clearRulesConfirmTitle: 'Clear base price rules for this brand?',
+      clearRulesConfirmDesc:
+        'Other specs will no longer auto-fill from the base price; already entered prices are kept.',
+      rulesDiscardTitle: 'Discard unsaved rule changes?',
+      rulesDiscardContent:
+        'You have unsaved changes to the base price rules. Closing will discard them.',
+      rulesDiscardOk: 'Discard and close',
+      rulesFilterAll: 'All',
+      rulesSearchPlaceholder: 'Filter by spec or length…',
+      pasteOutlierWarning:
+        '{{count}} pasted cell(s) triggered outlier price alerts; please review highlighted cells',
+      outlierCountBadge: '{{count}} outlier(s)',
+      outlierJumpHint: 'Click to cycle and focus outlier cells',
+      undoTooltip: 'Undo (Ctrl+Z)',
+      redoTooltip: 'Redo (Ctrl+Y)',
+      shortcutsHelpTitle: 'Shortcuts & formulas',
+      shortcutsHelpAria: 'View shortcuts and formula help',
+      shortcutFormula:
+        'Formulas: type 3200+50, +50, -30, or *1.02 and press Enter',
+      shortcutSelect:
+        'Selection: drag or Shift+click/arrows to select, right-click for batch adjust',
+      shortcutFill: 'Fill: Ctrl+D fills down, Ctrl+R fills right',
+      shortcutClear: 'Clear: press Delete to clear selection',
+      shortcutUndo: 'Undo/Redo: Ctrl+Z to undo, Ctrl+Y / Ctrl+Shift+Z to redo',
+      shortcutBaseRule:
+        'Base price: right-click a brand header to set base & premiums for auto-fill',
     },
     view: {
       title: 'Order Price Comparison',
@@ -3117,6 +3149,8 @@ export const enUS = {
       renameSame: 'Name unchanged',
       renameSuccess: 'Batch renamed to "{{name}}"',
       deleteCurrentBatch: 'Delete current batch',
+      missingSpotBadgeHint:
+        '{{count}} cell(s) missing spot price in this batch',
       a11y: {
         project: 'Project switch',
         batchList: 'Batch tabs',
@@ -3189,8 +3223,11 @@ export const enUS = {
       columnSettings: 'Columns',
       columnSettingsHidden: 'Columns ({{n}} hidden)',
       columnPanelShowAll: 'Show all',
+      columnPanelResetOrder: 'Reset order',
       columnPanelFixed: 'Fixed columns',
       columnPanelBrands: 'Brand columns',
+      undoTooltip: 'Undo (Ctrl+Z)',
+      redoTooltip: 'Redo (Ctrl+Y)',
       addSeparator: 'Add separator',
       separator: 'Separator',
       removeSelectedTitle: 'Delete {{selected}} selected row(s)?',
@@ -3770,6 +3807,8 @@ export const enUS = {
       readonly: 'Read-only collaboration',
       reconnecting: 'Reconnecting…',
       offline: 'Offline; changes sync after reconnect',
+      offlineCachedHint:
+        'Changes are cached locally in your browser and will sync automatically on reconnect',
       authFailed: 'Collaboration auth failed; local saving restored',
       unavailable: 'Collaboration is off; local saving restored',
       disabled: 'Collaboration off',

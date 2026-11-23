@@ -89,6 +89,16 @@ describe('PriceCompareEditLockBanner', () => {
     expect(buttonByText('放弃我的改动并重新加载')).toBeUndefined()
   })
 
+  it('他人持锁但实时协作可写: 渲染 info 提示而非 warning', () => {
+    render({
+      collabTonRemarkWritable: true,
+      lock: { mine: false, locked: true, sheetId: '9001', ownerName: '李四' },
+    })
+    expect(container.querySelector('.ant-alert-info')).not.toBeNull()
+    expect(container.querySelector('.ant-alert-warning')).toBeNull()
+    expect(container.textContent).toContain('实时协同编辑报单吨位与备注')
+  })
+
   it('锁冲突(锁可能已不在本机): 说明原因并提供「放弃我的改动并重新加载」', async () => {
     render({ conflict: true, lock: null })
     expect(container.textContent).toContain('本批次的改动已停止自动保存')

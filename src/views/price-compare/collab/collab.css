@@ -32,12 +32,20 @@
   position: absolute;
   top: -18px;
   left: -1px;
+  z-index: 4;
   padding: 0 4px;
-  font-size: 10px;
+  font-size: var(--app-font-size-3xs);
   line-height: 16px;
   color: #fff;
   white-space: nowrap;
   border-radius: 2px;
+}
+
+/* 首行单元格上方紧贴表头，人名标签向下翻转避免被表头或卡片 overflow: hidden 裁切 */
+.ant-table-tbody > tr:first-child .collab-cell-cursor-name,
+.ant-table-tbody > tr.ant-table-measure-row + tr .collab-cell-cursor-name {
+  top: auto;
+  bottom: -18px;
 }
 
 /* 连接状态徽标 + 在线名单：与 tab 栏文字同基线，不额外撑高 */
@@ -53,7 +61,7 @@
 }
 
 .collab-status__online {
-  font-size: 12px;
+  font-size: var(--app-font-size-xs);
   color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
 }
 
@@ -65,7 +73,7 @@
 
 .collab-status__peer {
   padding: 0 6px;
-  font-size: 12px;
+  font-size: var(--app-font-size-xs);
   line-height: 18px;
   color: var(--ant-color-text, rgb(0 0 0 / 88%));
   border: 1px solid;
@@ -73,15 +81,6 @@
 }
 
 /* 报单比价：协作状态条的行内留白（与 tab 栏/卡片贴边布局一致，只加纵向节奏） */
-.price-compare-collab-status {
-  display: flex;
-  align-items: center;
-  padding: var(--space-sm, 12px) var(--space-md, 16px) 0;
-}
-
-/*
- * 报单比价：协作状态条的行内留白（与 tab 栏/卡片贴边布局一致，只补纵向节奏）。
- */
 .price-compare-collab-status {
   display: flex;
   align-items: center;

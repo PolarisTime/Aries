@@ -784,6 +784,7 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
           <LockReason reason={lockReason}>
             <div
               className="price-compare-variety-cell"
+              data-variety-row={row.rowId}
               title={outOfScope ? varietyOption?.title : undefined}
             >
               <Select
@@ -858,6 +859,23 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                     spec: target.spec,
                     length: target.length,
                   })
+                  // 选完规格后若该行尚未填吨位且未锁，自动把焦点流转到报单吨位输入，减少鼠标切格
+                  if (
+                    current.ton === undefined &&
+                    !collabFieldsReadOnly &&
+                    !quantityLocked &&
+                    !current.locked
+                  ) {
+                    window.requestAnimationFrame(() => {
+                      const ton = document.querySelector<HTMLInputElement>(
+                        `input[data-ton="${row.rowId}"]`,
+                      )
+                      if (ton && !ton.disabled) {
+                        ton.focus()
+                        ton.select()
+                      }
+                    })
+                  }
                 }}
               />
             </div>
@@ -867,255 +885,271 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     },
     buildTonColumn(tonColumnCtx),
 
-    ...brands.flatMap(
-      (brand, brandIndex): ColumnsType<GridRow> =>
-        hiddenBrandSet.has(brand.name)
-          ? []
-          : [
-              {
-                title: (
-                  // 表头标题节点: 保留原有拖拽换序, 菜单本身复用共享列头基元
-                  // (隐藏该列 / 移到最前或最后)。
-                  <ColumnHeaderMenu
-                    ariaLabel={t('priceCompare.sheet.contextMenu.brandLabel', {
-                      brand: brand.name,
-                    })}
-                    columnTitle={brand.name}
-                    isFirst={brand.name === visibleBrandNames[0]}
-                    isLast={brand.name === visibleBrandNames.at(-1)}
-                    onHide={() => ctx.onToggleBrand(brand.name, false)}
-                    onMoveFirst={() =>
-                      onReorderBrands(
-                        brandIndex,
-                        brands.findIndex(
-                          (item) => item.name === visibleBrandNames[0],
-                        ),
+    ...brands.flatMap((brand, brandIndex): ColumnsType<GridRow> => {
+      if (hiddenBrandSet.has(brand.name)) return []
+      const visibleIndex = visibleBrandNames.indexOf(brand.name)
+      const prevVisibleBrand =
+        visibleIndex > 0 ? visibleBrandNames[visibleIndex - 1] : undefined
+      const nextVisibleBrand =
+        visibleIndex >= 0 && visibleIndex < visibleBrandNames.length - 1
+          ? visibleBrandNames[visibleIndex + 1]
+          : undefined
+      const showStepMove = visibleBrandNames.length > 2
+      return [
+        {
+          title: (
+            // 表头标题节点: 保留原有拖拽换序, 菜单本身复用共享列头基元
+            // (隐藏该列 / 移到最前 / 3+ 品牌时左移右移 / 移到最后)。
+            <ColumnHeaderMenu
+              ariaLabel={t('priceCompare.sheet.contextMenu.brandLabel', {
+                brand: brand.name,
+              })}
+              columnTitle={brand.name}
+              isFirst={brand.name === visibleBrandNames[0]}
+              isLast={brand.name === visibleBrandNames.at(-1)}
+              onHide={() => ctx.onToggleBrand(brand.name, false)}
+              onMoveFirst={() =>
+                onReorderBrands(
+                  brandIndex,
+                  brands.findIndex(
+                    (item) => item.name === visibleBrandNames[0],
+                  ),
+                )
+              }
+              onMoveLeft={
+                showStepMove
+                  ? () => {
+                      if (!prevVisibleBrand) return
+                      const targetIndex = brands.findIndex(
+                        (item) => item.name === prevVisibleBrand,
                       )
+                      if (targetIndex >= 0) {
+                        onReorderBrands(brandIndex, targetIndex)
+                      }
                     }
-                    onMoveLast={() =>
-                      onReorderBrands(
-                        brandIndex,
-                        brands.findIndex(
-                          (item) =>
-                            item.name ===
-                            visibleBrandNames[visibleBrandNames.length - 1],
-                        ),
+                  : undefined
+              }
+              onMoveRight={
+                showStepMove
+                  ? () => {
+                      if (!nextVisibleBrand) return
+                      const targetIndex = brands.findIndex(
+                        (item) => item.name === nextVisibleBrand,
                       )
+                      if (targetIndex >= 0) {
+                        onReorderBrands(brandIndex, targetIndex)
+                      }
+                    }
+                  : undefined
+              }
+              onMoveLast={() =>
+                onReorderBrands(
+                  brandIndex,
+                  brands.findIndex(
+                    (item) =>
+                      item.name ===
+                      visibleBrandNames[visibleBrandNames.length - 1],
+                  ),
+                )
+              }
+            >
+              <span
+                className="price-compare-brand-name price-compare-drag"
+                draggable
+                title={t('priceCompare.sheet.dragBrand')}
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = 'move'
+                  event.dataTransfer.setData('text/plain', String(brandIndex))
+                }}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault()
+                  const from = Number(event.dataTransfer.getData('text/plain'))
+                  if (!Number.isNaN(from)) onReorderBrands(from, brandIndex)
+                }}
+              >
+                {brand.name}
+              </span>
+            </ColumnHeaderMenu>
+          ),
+          children: [
+            cellOf(
+              t('priceCompare.sheet.columns.net'),
+              widths.net,
+              (_, row) => {
+                const resolved = isCategoryEnabled(brand, row.row.category)
+                  ? netPriceWithFallback(
+                      data,
+                      refDate,
+                      refPeriod,
+                      brand.name,
+                      row.row,
+                      lengthPremiums,
+                      allowHrb400eFallback,
+                      lengthPremium,
+                    )
+                  : { value: undefined, fallback: false }
+                const price = resolved.value
+                return price === undefined ? null : (
+                  <div
+                    className={`price-compare-net price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}${resolved.fallback ? ' price-compare-fallback' : ''}`}
+                  >
+                    {resolved.fallback ? (
+                      <Tooltip title={t('priceCompare.sheet.fallbackTooltip')}>
+                        <span className="price-compare-fallback-value">
+                          {price}
+                          {/* 角标渲染统一走 FallbackBadge（网价/现货/图例共用一处） */}
+                          <FallbackBadge
+                            label={t('priceCompare.sheet.fallbackBadgeLabel', {
+                              material:
+                                fallbackBadgeMaterial(row.row.material) ?? '',
+                            })}
+                          />
+                        </span>
+                      </Tooltip>
+                    ) : (
+                      price
+                    )}
+                  </div>
+                )
+              },
+            ),
+            cellOf(
+              t('priceCompare.sheet.columns.spot'),
+              widths.spot,
+              (_, row) => {
+                const current = row.row
+                const spot = getSpot(brand.name, current.id)
+                const isFirst =
+                  attachSpotRef &&
+                  brandIndex === 0 &&
+                  current.id === rows[0]?.id
+                const spotInput = getInput(brand.name, current.id)
+                // 代取来源的唯一判据出口（导入写入、重开回显）；手工改价已禁止，
+                // 因此不再有"会话内行级开关"这条来源（见 core.resolveSpotSourceMaterial）。
+                const spotSource = resolveSpotSourceMaterial({
+                  input: spotInput,
+                })
+                const spotBadgeLabel = spotSource
+                  ? t('priceCompare.sheet.spotSubstitutedLabel', {
+                      material: spotSource,
+                      supplier: spotInput?.supplierName ?? '',
+                    })
+                  : ''
+                /*
+                 * 现货价只读：唯一来源是**供应商价格表实时派生**，格子里不接受任何
+                 * 手工输入（默认禁止手动改价，无例外）。`data-spot` 保留在原位置，
+                 * 供 e2e 与测试按「品牌:行」定位；空格子显示「—」。
+                 *
+                 * 悬停提示 = 价格 ｜ 供应商 ｜ 该价最后修改时间：实时派生后价格不再是
+                 * "我导入时的快照"，用户必须能判断这个价是供应商什么时候报的。
+                 */
+                const spotUpdatedLabel = spotInput?.spotUpdatedAt
+                  ? t('priceCompare.sheet.spotUpdatedAt', {
+                      time: formatSpotUpdatedAt(spotInput.spotUpdatedAt),
+                    })
+                  : undefined
+                // 简称优先：全称是「浙江企坤集团有限公司（融诚支付）」这种长串，挤在一格里读不出重点
+                const supplierLabel =
+                  spotInput?.supplierShortName ||
+                  spotInput?.supplierName ||
+                  undefined
+                const spotTitle = [
+                  spot === undefined ? undefined : String(spot),
+                  supplierLabel,
+                  spotUpdatedLabel,
+                ]
+                  .filter(Boolean)
+                  .join(' ｜ ')
+                const spotNode = (
+                  <span
+                    className={`price-compare-spot price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}${spot === undefined ? ' price-compare-empty' : ''}`}
+                    data-spot={`${brand.name}:${current.id}`}
+                    title={spotTitle || undefined}
+                  >
+                    {spot === undefined ? null : spot}
+                    {spotSource ? (
+                      <FallbackBadge label={spotBadgeLabel} />
+                    ) : null}
+                  </span>
+                )
+                return isFirst ? (
+                  <span ref={ctx.spotRef}>{spotNode}</span>
+                ) : (
+                  spotNode
+                )
+              },
+            ),
+            cellOf(
+              t('priceCompare.sheet.columns.diff'),
+              widths.diff,
+              (_, row) => {
+                const price = isCategoryEnabled(brand, row.row.category)
+                  ? netPriceWithFallback(
+                      data,
+                      refDate,
+                      refPeriod,
+                      brand.name,
+                      row.row,
+                      lengthPremiums,
+                      allowHrb400eFallback,
+                      lengthPremium,
+                    ).value
+                  : undefined
+                const spot = getSpot(brand.name, row.row.id)
+                if (price === undefined || spot === undefined) {
+                  return null
+                }
+                const diff = price - spot - brand.freight
+                const cls =
+                  diff > 0 ? 'is-pos' : diff < 0 ? 'is-neg' : 'is-zero'
+                const best = bestOf(row)
+                return (
+                  <Tooltip
+                    title={
+                      diff >= 0
+                        ? t('priceCompare.sheet.spotBetter')
+                        : t('priceCompare.sheet.netBetter')
                     }
                   >
                     <span
-                      className="price-compare-brand-name price-compare-drag"
-                      draggable
-                      title={t('priceCompare.sheet.dragBrand')}
-                      onDragStart={(event) => {
-                        event.dataTransfer.effectAllowed = 'move'
-                        event.dataTransfer.setData(
-                          'text/plain',
-                          String(brandIndex),
-                        )
-                      }}
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={(event) => {
-                        event.preventDefault()
-                        const from = Number(
-                          event.dataTransfer.getData('text/plain'),
-                        )
-                        if (!Number.isNaN(from))
-                          onReorderBrands(from, brandIndex)
-                      }}
+                      className={`price-compare-diff ${cls}${best.has(brand.name) ? ' is-best' : ''}${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
                     >
-                      {brand.name}
+                      {diff > 0 ? '+' : ''}
+                      {diff}
                     </span>
-                  </ColumnHeaderMenu>
-                ),
-                children: [
-                  cellOf(
-                    t('priceCompare.sheet.columns.net'),
-                    widths.net,
-                    (_, row) => {
-                      const resolved = isCategoryEnabled(
-                        brand,
-                        row.row.category,
-                      )
-                        ? netPriceWithFallback(
-                            data,
-                            refDate,
-                            refPeriod,
-                            brand.name,
-                            row.row,
-                            lengthPremiums,
-                            allowHrb400eFallback,
-                            lengthPremium,
-                          )
-                        : { value: undefined, fallback: false }
-                      const price = resolved.value
-                      return price === undefined ? null : (
-                        <div
-                          className={`price-compare-net price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}${resolved.fallback ? ' price-compare-fallback' : ''}`}
-                        >
-                          {resolved.fallback ? (
-                            <Tooltip
-                              title={t('priceCompare.sheet.fallbackTooltip')}
-                            >
-                              <span className="price-compare-fallback-value">
-                                {price}
-                                {/* 角标渲染统一走 FallbackBadge（网价/现货/图例共用一处） */}
-                                <FallbackBadge
-                                  label={t(
-                                    'priceCompare.sheet.fallbackBadgeLabel',
-                                    {
-                                      material:
-                                        fallbackBadgeMaterial(
-                                          row.row.material,
-                                        ) ?? '',
-                                    },
-                                  )}
-                                />
-                              </span>
-                            </Tooltip>
-                          ) : (
-                            price
-                          )}
-                        </div>
-                      )
-                    },
-                  ),
-                  cellOf(
-                    t('priceCompare.sheet.columns.spot'),
-                    widths.spot,
-                    (_, row) => {
-                      const current = row.row
-                      const spot = getSpot(brand.name, current.id)
-                      const isFirst =
-                        attachSpotRef &&
-                        brandIndex === 0 &&
-                        current.id === rows[0]?.id
-                      const spotInput = getInput(brand.name, current.id)
-                      // 代取来源的唯一判据出口（导入写入、重开回显）；手工改价已禁止，
-                      // 因此不再有"会话内行级开关"这条来源（见 core.resolveSpotSourceMaterial）。
-                      const spotSource = resolveSpotSourceMaterial({
-                        input: spotInput,
-                      })
-                      const spotBadgeLabel = spotSource
-                        ? t('priceCompare.sheet.spotSubstitutedLabel', {
-                            material: spotSource,
-                            supplier: spotInput?.supplierName ?? '',
-                          })
-                        : ''
-                      /*
-                       * 现货价只读：唯一来源是**供应商价格表实时派生**，格子里不接受任何
-                       * 手工输入（默认禁止手动改价，无例外）。`data-spot` 保留在原位置，
-                       * 供 e2e 与测试按「品牌:行」定位；空格子显示「—」。
-                       *
-                       * 悬停提示 = 价格 ｜ 供应商 ｜ 该价最后修改时间：实时派生后价格不再是
-                       * "我导入时的快照"，用户必须能判断这个价是供应商什么时候报的。
-                       */
-                      const spotUpdatedLabel = spotInput?.spotUpdatedAt
-                        ? t('priceCompare.sheet.spotUpdatedAt', {
-                            time: formatSpotUpdatedAt(spotInput.spotUpdatedAt),
-                          })
-                        : undefined
-                      // 简称优先：全称是「浙江企坤集团有限公司（融诚支付）」这种长串，挤在一格里读不出重点
-                      const supplierLabel =
-                        spotInput?.supplierShortName ||
-                        spotInput?.supplierName ||
-                        undefined
-                      const spotTitle = [
-                        spot === undefined ? undefined : String(spot),
-                        supplierLabel,
-                        spotUpdatedLabel,
-                      ]
-                        .filter(Boolean)
-                        .join(' ｜ ')
-                      const spotNode = (
-                        <span
-                          className={`price-compare-spot price-compare-num${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}${spot === undefined ? ' price-compare-empty' : ''}`}
-                          data-spot={`${brand.name}:${current.id}`}
-                          title={spotTitle || undefined}
-                        >
-                          {spot === undefined ? null : spot}
-                          {spotSource ? (
-                            <FallbackBadge label={spotBadgeLabel} />
-                          ) : null}
-                        </span>
-                      )
-                      return isFirst ? (
-                        <span ref={ctx.spotRef}>{spotNode}</span>
-                      ) : (
-                        spotNode
-                      )
-                    },
-                  ),
-                  cellOf(
-                    t('priceCompare.sheet.columns.diff'),
-                    widths.diff,
-                    (_, row) => {
-                      const price = isCategoryEnabled(brand, row.row.category)
-                        ? netPriceWithFallback(
-                            data,
-                            refDate,
-                            refPeriod,
-                            brand.name,
-                            row.row,
-                            lengthPremiums,
-                            allowHrb400eFallback,
-                            lengthPremium,
-                          ).value
-                        : undefined
-                      const spot = getSpot(brand.name, row.row.id)
-                      if (price === undefined || spot === undefined) {
-                        return null
-                      }
-                      const diff = price - spot - brand.freight
-                      const cls =
-                        diff > 0 ? 'is-pos' : diff < 0 ? 'is-neg' : 'is-zero'
-                      const best = bestOf(row)
-                      return (
-                        <Tooltip
-                          title={
-                            diff >= 0
-                              ? t('priceCompare.sheet.spotBetter')
-                              : t('priceCompare.sheet.netBetter')
-                          }
-                        >
-                          <span
-                            className={`price-compare-diff ${cls}${best.has(brand.name) ? ' is-best' : ''}${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                          >
-                            {diff > 0 ? '+' : ''}
-                            {diff}
-                          </span>
-                        </Tooltip>
-                      )
-                    },
-                  ),
-                  cellOf(
-                    t('priceCompare.sheet.columns.supplierShort'),
-                    widths.supplier,
-                    (_, row) => {
-                      /*
-                       * 供应商只读：与现货价同源（供应商价格表实时派生），格子里不提供下拉。
-                       *
-                       * 展示**简称**（md_supplier.short_name），全称放 title：列宽有限，
-                       * 「浙江企坤集团有限公司（融诚支付）」这种全称在「简称」列里会把列撑开、
-                       * 也读不出是哪家；没有简称时回退全称，不留空白。
-                       */
-                      const supplierInput = getInput(brand.name, row.row.id)
-                      const supplierName = supplierInput?.supplierName
-                      const supplierShortName = supplierInput?.supplierShortName
-                      return (
-                        <span
-                          className={`price-compare-supplier${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
-                          title={supplierName || undefined}
-                        >
-                          {supplierShortName || supplierName || null}
-                        </span>
-                      )
-                    },
-                  ),
-                ],
+                  </Tooltip>
+                )
               },
-            ],
-    ),
+            ),
+            cellOf(
+              t('priceCompare.sheet.columns.supplierShort'),
+              widths.supplier,
+              (_, row) => {
+                /*
+                 * 供应商只读：与现货价同源（供应商价格表实时派生），格子里不提供下拉。
+                 *
+                 * 展示**简称**（md_supplier.short_name），全称放 title：列宽有限，
+                 * 「浙江企坤集团有限公司（融诚支付）」这种全称在「简称」列里会把列撑开、
+                 * 也读不出是哪家；没有简称时回退全称，不留空白。
+                 */
+                const supplierInput = getInput(brand.name, row.row.id)
+                const supplierName = supplierInput?.supplierName
+                const supplierShortName = supplierInput?.supplierShortName
+                return (
+                  <span
+                    className={`price-compare-supplier${isDimmed(row, brand.name) ? ' price-compare-dim' : ''}`}
+                    title={supplierName || undefined}
+                  >
+                    {supplierShortName || supplierName || null}
+                  </span>
+                )
+              },
+            ),
+          ],
+        },
+      ]
+    }),
     {
       /*
        * 填充列 —— **有意保留, 不是残留**(审查报告 P2-8 说的「409px 空表头 + 空单元格」即此列,

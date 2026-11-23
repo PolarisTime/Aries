@@ -4,10 +4,12 @@ import {
   LockOutlined,
   MinusOutlined,
   PlusOutlined,
+  RedoOutlined,
   ReloadOutlined,
   SettingOutlined,
   SwapOutlined,
   TrophyOutlined,
+  UndoOutlined,
   UnlockOutlined,
 } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
@@ -519,11 +521,15 @@ function ColumnSettingsButton({
   hideRemark,
   brands,
   hiddenBrands,
+  hasCustomOrder = false,
+  onResetOrder,
   onToggle,
 }: {
   hideRemark: boolean
   brands: Brand[]
   hiddenBrands: string[]
+  hasCustomOrder?: boolean
+  onResetOrder?: () => void
   onToggle: (key: string, visible: boolean) => void
 }) {
   const { t } = useTranslation()
@@ -566,11 +572,18 @@ function ColumnSettingsButton({
             className="price-compare-column-panel-head"
           >
             <Text strong>{t('priceCompare.sheet.columnSettings')}</Text>
-            {hiddenCount > 0 ? (
-              <Button type="link" size="small" onClick={showAll}>
-                {t('priceCompare.sheet.columnPanelShowAll')}
-              </Button>
-            ) : null}
+            <Space size={8}>
+              {hasCustomOrder && onResetOrder ? (
+                <Button type="link" size="small" onClick={onResetOrder}>
+                  {t('priceCompare.sheet.columnPanelResetOrder')}
+                </Button>
+              ) : null}
+              {hiddenCount > 0 ? (
+                <Button type="link" size="small" onClick={showAll}>
+                  {t('priceCompare.sheet.columnPanelShowAll')}
+                </Button>
+              ) : null}
+            </Space>
           </Flex>
 
           <div className="price-compare-column-panel">
@@ -754,8 +767,13 @@ function SheetHeader({
   selectedCount,
   onRemoveSelected,
   allowHrb400eFallback = false,
+  hrb400eFallbackLoading = false,
   onToggleHrb400eFallback,
   readOnly = false,
+  canUndo = false,
+  canRedo = false,
+  onUndo,
+  onRedo,
   columnSettingsSlot,
   spotUpdatedAt,
   spotPricesFailed,
@@ -776,8 +794,13 @@ function SheetHeader({
   selectedCount: number
   onRemoveSelected: () => void
   allowHrb400eFallback?: boolean
+  hrb400eFallbackLoading?: boolean
   onToggleHrb400eFallback?: () => void
   readOnly?: boolean
+  canUndo?: boolean
+  canRedo?: boolean
+  onUndo?: () => void
+  onRedo?: () => void
   /** 列显示设置按钮: 由 SheetPanel 构造后作为节点下传(不再逐层透传 5 个 props)。 */
   columnSettingsSlot: React.ReactNode
   /** 现货价实时派生：最新修改时间 + 刷新入口（替代原来的手动「导入」）。 */
@@ -817,7 +840,12 @@ function SheetHeader({
         refreshingSpotPrices={refreshingSpotPrices}
         onRefreshSpotPrices={onRefreshSpotPrices}
         allowHrb400eFallback={allowHrb400eFallback}
+        hrb400eFallbackLoading={hrb400eFallbackLoading}
         onToggleHrb400eFallback={onToggleHrb400eFallback}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={onUndo}
+        onRedo={onRedo}
       />
     </Flex>
   )
@@ -960,7 +988,107 @@ function SheetDateFields({
   )
 }
 
-/** 表头操作行: 锁定/最优/刷新/列设置/配置 + 选中行批量操作。 */
+/** 工具栏撤销/重做图标按钮组（与 Ctrl+Z / Ctrl+Y 共用同一状态）。 */
+function SheetUndoRedoButtons({
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+}: {
+  canUndo: boolean
+  canRedo: boolean
+  onUndo?: () => void
+  onRedo?: () => void
+}) {
+  const { t } = useTranslation()
+  if (!onUndo && !onRedo) return null
+  return (
+    <>
+      <Divider
+        className="price-compare-toolbar-divider"
+        orientation="vertical"
+      />
+      {onUndo ? (
+        <Tooltip title={t('priceCompare.sheet.undoTooltip')}>
+          <Button
+            aria-label={t('priceCompare.sheet.undoTooltip')}
+            disabled={!canUndo}
+            icon={<UndoOutlined />}
+            onClick={onUndo}
+          />
+        </Tooltip>
+      ) : null}
+      {onRedo ? (
+        <Tooltip title={t('priceCompare.sheet.redoTooltip')}>
+          <Button
+            aria-label={t('priceCompare.sheet.redoTooltip')}
+            disabled={!canRedo}
+            icon={<RedoOutlined />}
+            onClick={onRedo}
+          />
+        </Tooltip>
+      ) : null}
+    </>
+  )
+}
+
+/** 现货价查询失败时的内联状态与重试按钮。 */
+function SpotPricesErrorNotice({
+  failed,
+  onRetry,
+}: {
+  failed: boolean
+  onRetry: () => void
+}) {
+  const { t } = useTranslation()
+  if (!failed) return null
+  return (
+    <Flex align="center" gap={4} className="price-compare-spot-error">
+      <Text type="warning" role="status">
+        {t('priceCompare.sheet.spotPricesFailed', {
+          defaultValue: '现货价获取失败，当前为快照',
+        })}
+      </Text>
+      <Button size="small" onClick={onRetry}>
+        {t('priceCompare.sheet.spotPricesRetry', { defaultValue: '重试' })}
+      </Button>
+    </Flex>
+  )
+}
+
+/** 抗震牌号参考价切换按钮（带防连点 loading 与提示）。 */
+function Hrb400eFallbackButton({
+  enabled,
+  loading,
+  readOnly,
+  onToggle,
+}: {
+  enabled: boolean
+  loading: boolean
+  readOnly: boolean
+  onToggle?: () => void
+}) {
+  const { t } = useTranslation()
+  if (!onToggle) return null
+  return (
+    <Tooltip title={t('priceCompare.sheet.hrb400eFallbackHint')}>
+      <Button
+        aria-pressed={enabled}
+        icon={<SwapOutlined />}
+        loading={loading}
+        type={enabled ? 'primary' : 'default'}
+        disabled={readOnly}
+        onClick={onToggle}
+      >
+        {enabled
+          ? t('priceCompare.sheet.hrb400eFallbackOff')
+          : t('priceCompare.sheet.fillHrb400e')}
+      </Button>
+    </Tooltip>
+  )
+}
+
+/** 表头操作行: 锁定 | 分析与取价 | 撤销重做 | 列设置与配置 + 选中行批量操作。 */
 function SheetActionRow({
   sheet,
   readOnly,
@@ -978,7 +1106,12 @@ function SheetActionRow({
   refreshingSpotPrices,
   onRefreshSpotPrices,
   allowHrb400eFallback,
+  hrb400eFallbackLoading,
   onToggleHrb400eFallback,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
 }: {
   sheet: PriceSheet
   readOnly: boolean
@@ -998,7 +1131,12 @@ function SheetActionRow({
   refreshingSpotPrices: boolean
   onRefreshSpotPrices: () => void
   allowHrb400eFallback: boolean
+  hrb400eFallbackLoading: boolean
   onToggleHrb400eFallback?: () => void
+  canUndo: boolean
+  canRedo: boolean
+  onUndo?: () => void
+  onRedo?: () => void
 }) {
   const { t } = useTranslation()
 
@@ -1013,6 +1151,10 @@ function SheetActionRow({
         sheet={sheet}
         readOnly={readOnly}
         patchSheet={patchSheet}
+      />
+      <Divider
+        className="price-compare-toolbar-divider"
+        orientation="vertical"
       />
       <Button
         aria-pressed={bestOn}
@@ -1040,41 +1182,16 @@ function SheetActionRow({
       >
         {t('priceCompare.sheet.refreshSpotPrices')}
       </Button>
-      {/*
-       * 现货价查询失败：价格会回退到单据里的快照值（`liveInputs` 用 sheet.inputs），
-       * 界面看起来"一切正常"，用户不会知道价格其实没刷新。所以失败必须在工具栏说清
-       * 「当前为快照」并给一次性重试入口，而不是只依赖 toast / 控制台。
-       *
-       * role="status" 让读屏在失败发生时念出来；重试按钮保持键盘可达（antd Button 原生）。
-       * 文案 key 由 Lead 统一补 zh/en，本分支先用 defaultValue 兜底，避免界面露出原始 key。
-       */}
-      {spotPricesFailed ? (
-        <Flex align="center" gap={4} className="price-compare-spot-error">
-          <Text type="warning" role="status">
-            {t('priceCompare.sheet.spotPricesFailed', {
-              defaultValue: '现货价获取失败，当前为快照',
-            })}
-          </Text>
-          <Button size="small" onClick={onRefreshSpotPrices}>
-            {t('priceCompare.sheet.spotPricesRetry', { defaultValue: '重试' })}
-          </Button>
-        </Flex>
-      ) : null}
-      {onToggleHrb400eFallback ? (
-        <Tooltip title={t('priceCompare.sheet.hrb400eFallbackHint')}>
-          <Button
-            aria-pressed={allowHrb400eFallback}
-            icon={<SwapOutlined />}
-            type={allowHrb400eFallback ? 'primary' : 'default'}
-            disabled={readOnly}
-            onClick={onToggleHrb400eFallback}
-          >
-            {allowHrb400eFallback
-              ? t('priceCompare.sheet.hrb400eFallbackOff')
-              : t('priceCompare.sheet.fillHrb400e')}
-          </Button>
-        </Tooltip>
-      ) : null}
+      <SpotPricesErrorNotice
+        failed={spotPricesFailed}
+        onRetry={onRefreshSpotPrices}
+      />
+      <Hrb400eFallbackButton
+        enabled={allowHrb400eFallback}
+        loading={hrb400eFallbackLoading}
+        readOnly={readOnly}
+        onToggle={onToggleHrb400eFallback}
+      />
       {spotUpdatedAt ? (
         <Text type="secondary" className="price-compare-spot-updated-at">
           {t('priceCompare.sheet.spotUpdatedAt', {
@@ -1082,6 +1199,16 @@ function SheetActionRow({
           })}
         </Text>
       ) : null}
+      <SheetUndoRedoButtons
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={onUndo}
+        onRedo={onRedo}
+      />
+      <Divider
+        className="price-compare-toolbar-divider"
+        orientation="vertical"
+      />
       {columnSettingsSlot}
       {onOpenConfig ? (
         <Button icon={<SettingOutlined />} onClick={onOpenConfig}>
@@ -1108,6 +1235,8 @@ function SheetActionRow({
 export type SheetCollabBridge = {
   active: boolean
   writable: boolean
+  canUndo: boolean
+  canRedo: boolean
   undo: () => void
   redo: () => void
 }
@@ -1160,6 +1289,8 @@ type Props = {
   refreshing?: boolean
   onOpenConfig?: () => void
   allowHrb400eFallback?: boolean
+  /** 切换 HRB400E 参考价的 PATCH 请求进行中：防止连点竞态。 */
+  hrb400eFallbackLoading?: boolean
   /**
    * 切换「HRB400 缺精确现货价时用 HRB400E 现货价填入」。
    *
@@ -1173,6 +1304,11 @@ type Props = {
   spotRef: React.RefObject<HTMLSpanElement | null>
   /** 被他人签出编辑时只读(禁用编辑类交互) */
   readOnly?: boolean
+  /** 工具栏可见撤销/重做入口（与 Ctrl+Z/Ctrl+Y 共用同一状态）。 */
+  canUndo?: boolean
+  canRedo?: boolean
+  onUndo?: () => void
+  onRedo?: () => void
   /** 上报实时协作连接态与撤销/重做句柄，供页面级编辑锁横幅和快捷键联动。 */
   onCollabStateChange?: (bridge: SheetCollabBridge | null) => void
 }
@@ -1196,12 +1332,17 @@ export function SheetPanel(props: Props) {
     refreshing = false,
     onOpenConfig,
     allowHrb400eFallback = false,
+    hrb400eFallbackLoading = false,
     onToggleHrb400eFallback,
     allowedProducts = [],
     availability = {},
     chrome = true,
     spotRef,
     readOnly: readOnlyProp = false,
+    canUndo = false,
+    canRedo = false,
+    onUndo,
+    onRedo,
     onCollabStateChange,
   } = props
   const { t } = useTranslation()
@@ -1232,6 +1373,10 @@ export function SheetPanel(props: Props) {
     () => applyOrderedBrands(brands, columnSettings.columnOrder),
     [brands, columnSettings.columnOrder],
   )
+  const hasCustomBrandOrder = columnSettings.columnOrder.length > 0
+  const handleResetBrandOrder = () => {
+    columnSettings.handleColumnOrderChange([])
+  }
   const handleReorderBrands = (from: number, to: number) => {
     const next = moveItem(orderedBrands, from, to)
     columnSettings.handleColumnOrderChange(next.map((brand) => brand.name))
@@ -1408,13 +1553,21 @@ export function SheetPanel(props: Props) {
     onCollabStateChange({
       active: collabActive,
       writable: quoteSheetCollab.writable,
+      canUndo: quoteSheetCollab.canUndo,
+      canRedo: quoteSheetCollab.canRedo,
       undo: () => collabUndoRef.current(),
       redo: () => collabRedoRef.current(),
     })
     return () => {
       onCollabStateChange(null)
     }
-  }, [collabActive, onCollabStateChange, quoteSheetCollab.writable])
+  }, [
+    collabActive,
+    onCollabStateChange,
+    quoteSheetCollab.canRedo,
+    quoteSheetCollab.canUndo,
+    quoteSheetCollab.writable,
+  ])
 
   /**
    * 行级写入的统一入口（唯一的「协作还是 REST」分岔点）。
@@ -1466,6 +1619,23 @@ export function SheetPanel(props: Props) {
     patchSheet,
     setSelectedIds,
   })
+
+  /** 添加新行后自动聚焦到新行的商品规格下拉，减少鼠标回点。 */
+  const pendingFocusRowIdRef = useRef<string | null>(null)
+  const handleAddRow = () => {
+    pendingFocusRowIdRef.current = addRow()
+  }
+  const latestRowId = rows.at(-1)?.id
+  useEffect(() => {
+    const targetId = pendingFocusRowIdRef.current
+    if (!targetId || latestRowId !== targetId) return
+    const input = document.querySelector<HTMLInputElement>(
+      `[data-variety-row="${targetId}"] input`,
+    )
+    if (!input) return
+    pendingFocusRowIdRef.current = null
+    input.focus()
+  }, [latestRowId])
 
   const columnWidths = useSheetColumnWidths()
 
@@ -1531,8 +1701,13 @@ export function SheetPanel(props: Props) {
         selectedCount={selectedIds.length}
         onRemoveSelected={removeSelected}
         allowHrb400eFallback={allowHrb400eFallback}
+        hrb400eFallbackLoading={hrb400eFallbackLoading}
         onToggleHrb400eFallback={onToggleHrb400eFallback}
         readOnly={readOnly}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={onUndo}
+        onRedo={onRedo}
         spotUpdatedAt={spotUpdatedAt}
         // 用 `error != null` 而不是 `isError`：初次取数失败与「已取到数据后轮询/手动刷新失败」
         // 都要提示，否则屏幕上留着上一轮价格、用户完全不知道这次没取到新价。
@@ -1544,6 +1719,8 @@ export function SheetPanel(props: Props) {
             hideRemark={hideRemark}
             brands={orderedBrands}
             hiddenBrands={hiddenBrands}
+            hasCustomOrder={hasCustomBrandOrder}
+            onResetOrder={handleResetBrandOrder}
             onToggle={setColumnVisible}
           />
         }
@@ -1574,7 +1751,7 @@ export function SheetPanel(props: Props) {
         }
         onCollabRowFocus={collabActive ? quoteSheetCollab.setCursor : undefined}
         onReorderRow={reorderRow}
-        onAddRow={addRow}
+        onAddRow={handleAddRow}
         onAddSeparator={addSeparator}
       />
     </>

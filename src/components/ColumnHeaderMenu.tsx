@@ -19,8 +19,10 @@ export interface ColumnHeaderMenuProps {
   isLast?: boolean
   /** 隐藏该列; 表格不支持列显隐时不传, 对应项不渲染 */
   onHide?: () => void
-  /** 移到最前/最后; 表格不支持列排序时不传, 对应项不渲染 */
+  /** 移到最前/左移/右移/最后; 表格不支持对应排序时不传, 对应项不渲染 */
   onMoveFirst?: () => void
+  onMoveLeft?: () => void
+  onMoveRight?: () => void
   onMoveLast?: () => void
   /** 追加业务自定义菜单项(渲染在「隐藏该列」之前) */
   extraItems?: MenuProps['items']
@@ -49,6 +51,8 @@ export function ColumnHeaderMenu({
   isLast,
   onHide,
   onMoveFirst,
+  onMoveLeft,
+  onMoveRight,
   onMoveLast,
   extraItems,
   onExtraItem,
@@ -62,6 +66,8 @@ export function ColumnHeaderMenu({
   const items = buildColumnHeaderMenuItems({
     onHide,
     onMoveFirst,
+    onMoveLeft,
+    onMoveRight,
     onMoveLast,
     isFirst,
     isLast,
@@ -86,6 +92,8 @@ export function ColumnHeaderMenu({
         resolveColumnHeaderMenuAction(String(key), {
           onHide,
           onMoveFirst,
+          onMoveLeft,
+          onMoveRight,
           onMoveLast,
           onRequestColumnSettings: requestColumnSettings ?? undefined,
           onExtraItem,

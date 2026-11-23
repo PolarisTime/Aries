@@ -1,4 +1,6 @@
 import {
+  ArrowLeftOutlined,
+  ArrowRightOutlined,
   EyeInvisibleOutlined,
   SettingOutlined,
   VerticalAlignBottomOutlined,
@@ -15,15 +17,17 @@ import type { TFunction } from 'i18next'
  * 只是「按可用动作拼条目 → 按 key 分发 → 判断按键是否等价于打开菜单」。
  * 抽成纯函数后组件只负责渲染与受控开关，分支数大幅下降，且这三块可以直接单测。</p>
  *
- * <p>注意：这里只搬运判断，不改变任何行为——条目顺序（业务追加项 → 隐藏 → 移到最前/最后 →
+ * <p>注意：这里只搬运判断，不改变任何行为——条目顺序（业务追加项 → 隐藏 → 移到最前/左移/右移/最后 →
  * 列设置）、分隔线的插入条件、边界项的禁用与文案回退完全保持原样。</p>
  */
 
 export interface ColumnHeaderMenuItemsInput {
   /** 隐藏该列; 表格不支持列显隐时不传, 对应项不渲染 */
   onHide?: () => void
-  /** 移到最前/最后; 表格不支持列排序时不传, 对应项不渲染 */
+  /** 移到最前/左移/右移/最后; 表格不支持对应排序时不传, 对应项不渲染 */
   onMoveFirst?: () => void
+  onMoveLeft?: () => void
+  onMoveRight?: () => void
   onMoveLast?: () => void
   /** 该列已经是第一/最后一列: 对应项禁用而不是隐藏, 让读屏用户能发现边界 */
   isFirst?: boolean
@@ -35,9 +39,74 @@ export interface ColumnHeaderMenuItemsInput {
   t: TFunction
 }
 
+function buildMoveMenuItems({
+  onMoveFirst,
+  onMoveLeft,
+  onMoveRight,
+  onMoveLast,
+  isFirst,
+  isLast,
+  t,
+}: Pick<
+  ColumnHeaderMenuItemsInput,
+  | 'onMoveFirst'
+  | 'onMoveLeft'
+  | 'onMoveRight'
+  | 'onMoveLast'
+  | 'isFirst'
+  | 'isLast'
+  | 't'
+>): NonNullable<MenuProps['items']> {
+  const moveItems: NonNullable<MenuProps['items']> = []
+  if (onMoveFirst) {
+    moveItems.push({
+      key: 'move-first',
+      icon: <VerticalAlignTopOutlined />,
+      // 已在最前时不禁用隐藏, 而是保留条目并在文案里说明原因(禁用项由 ContextMenu 保证可聚焦)
+      label: isFirst
+        ? t('common.columnMenu.moveFirstDisabled')
+        : t('common.columnMenu.moveFirst'),
+      disabled: Boolean(isFirst),
+    })
+  }
+  if (onMoveLeft) {
+    moveItems.push({
+      key: 'move-left',
+      icon: <ArrowLeftOutlined />,
+      label: isFirst
+        ? t('common.columnMenu.moveLeftDisabled')
+        : t('common.columnMenu.moveLeft'),
+      disabled: Boolean(isFirst),
+    })
+  }
+  if (onMoveRight) {
+    moveItems.push({
+      key: 'move-right',
+      icon: <ArrowRightOutlined />,
+      label: isLast
+        ? t('common.columnMenu.moveRightDisabled')
+        : t('common.columnMenu.moveRight'),
+      disabled: Boolean(isLast),
+    })
+  }
+  if (onMoveLast) {
+    moveItems.push({
+      key: 'move-last',
+      icon: <VerticalAlignBottomOutlined />,
+      label: isLast
+        ? t('common.columnMenu.moveLastDisabled')
+        : t('common.columnMenu.moveLast'),
+      disabled: Boolean(isLast),
+    })
+  }
+  return moveItems
+}
+
 export function buildColumnHeaderMenuItems({
   onHide,
   onMoveFirst,
+  onMoveLeft,
+  onMoveRight,
   onMoveLast,
   isFirst,
   isLast,
@@ -58,30 +127,19 @@ export function buildColumnHeaderMenuItems({
       label: t('common.columnMenu.hide'),
     })
   }
-  // 只有支持列排序的表才出现这两项(基础数据/资料表只能隐藏, 不能换序)
-  if (onMoveFirst || onMoveLast) {
+  // 只有支持列排序的表才出现移动项(基础数据/资料表只能隐藏, 不能换序)
+  const moveItems = buildMoveMenuItems({
+    onMoveFirst,
+    onMoveLeft,
+    onMoveRight,
+    onMoveLast,
+    isFirst,
+    isLast,
+    t,
+  })
+  if (moveItems.length) {
     if (items.length) items.push({ type: 'divider' })
-    if (onMoveFirst) {
-      items.push({
-        key: 'move-first',
-        icon: <VerticalAlignTopOutlined />,
-        // 已在最前时不禁用隐藏, 而是保留条目并在文案里说明原因(禁用项由 ContextMenu 保证可聚焦)
-        label: isFirst
-          ? t('common.columnMenu.moveFirstDisabled')
-          : t('common.columnMenu.moveFirst'),
-        disabled: Boolean(isFirst),
-      })
-    }
-    if (onMoveLast) {
-      items.push({
-        key: 'move-last',
-        icon: <VerticalAlignBottomOutlined />,
-        label: isLast
-          ? t('common.columnMenu.moveLastDisabled')
-          : t('common.columnMenu.moveLast'),
-        disabled: Boolean(isLast),
-      })
-    }
+    items.push(...moveItems)
   }
   if (hasColumnSettings) {
     if (items.length) items.push({ type: 'divider' })
@@ -97,6 +155,8 @@ export function buildColumnHeaderMenuItems({
 export interface ColumnHeaderMenuActionHandlers {
   onHide?: () => void
   onMoveFirst?: () => void
+  onMoveLeft?: () => void
+  onMoveRight?: () => void
   onMoveLast?: () => void
   onRequestColumnSettings?: () => void
   /** 追加项(非基元内部 key)的点击回调 */
@@ -109,25 +169,23 @@ export function resolveColumnHeaderMenuAction(
   {
     onHide,
     onMoveFirst,
+    onMoveLeft,
+    onMoveRight,
     onMoveLast,
     onRequestColumnSettings,
     onExtraItem,
   }: ColumnHeaderMenuActionHandlers,
 ) {
-  if (itemKey === 'hide') {
-    onHide?.()
-    return
+  const handlers: Record<string, (() => void) | undefined> = {
+    hide: onHide,
+    'move-first': onMoveFirst,
+    'move-left': onMoveLeft,
+    'move-right': onMoveRight,
+    'move-last': onMoveLast,
+    settings: onRequestColumnSettings,
   }
-  if (itemKey === 'move-first') {
-    onMoveFirst?.()
-    return
-  }
-  if (itemKey === 'move-last') {
-    onMoveLast?.()
-    return
-  }
-  if (itemKey === 'settings') {
-    onRequestColumnSettings?.()
+  if (itemKey in handlers) {
+    handlers[itemKey]?.()
     return
   }
   onExtraItem?.(itemKey)

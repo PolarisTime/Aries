@@ -327,6 +327,11 @@ describe('报单比价 项目/批次选择控件契约', () => {
     expect(container.querySelector('.ant-badge-count')?.textContent).toContain(
       '1',
     )
+    expect(
+      container
+        .querySelector('.price-compare-missing-badge')
+        ?.getAttribute('aria-label'),
+    ).toBe('本批次有 1 格缺少现货价')
 
     // 代取打开：表格显示 HRB400E 代取价 → 角标不再报缺价（旧「持久化快照」口径会继续报）
     await renderBatchBar([sheet], 's1', {

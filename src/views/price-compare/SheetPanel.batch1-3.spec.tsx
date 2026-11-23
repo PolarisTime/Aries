@@ -148,6 +148,12 @@ describe('SheetPanel 品牌列排序持久化与协作/编辑锁协同', () => {
   const renderPanel = (options?: {
     readOnly?: boolean
     onCollabStateChange?: (bridge: SheetCollabBridge | null) => void
+    hrb400eFallbackLoading?: boolean
+    onToggleHrb400eFallback?: () => void
+    canUndo?: boolean
+    canRedo?: boolean
+    onUndo?: () => void
+    onRedo?: () => void
   }) => {
     function Harness() {
       const [rows, setRows] = useState<PriceRow[]>([{ ...ROW }])
@@ -167,6 +173,12 @@ describe('SheetPanel 品牌列排序持久化与协作/编辑锁协同', () => {
         spotRef: { current: null },
         readOnly: options?.readOnly ?? false,
         onCollabStateChange: options?.onCollabStateChange,
+        hrb400eFallbackLoading: options?.hrb400eFallbackLoading,
+        onToggleHrb400eFallback: options?.onToggleHrb400eFallback,
+        canUndo: options?.canUndo,
+        canRedo: options?.canRedo,
+        onUndo: options?.onUndo,
+        onRedo: options?.onRedo,
       })
     }
     act(() => {
@@ -180,7 +192,7 @@ describe('SheetPanel 品牌列排序持久化与协作/编辑锁协同', () => {
     })
   }
 
-  it('品牌列顺序从用户列偏好恢复，刷新后不回弹', () => {
+  it('品牌列顺序从用户列偏好恢复，支持在列设置里「恢复默认顺序」', async () => {
     const storageKey =
       'aries-list-column-settings:anonymous:price-compare-sheet:p-order'
     window.localStorage.setItem(
@@ -193,10 +205,112 @@ describe('SheetPanel 品牌列排序持久化与协作/编辑锁协同', () => {
 
     renderPanel()
 
-    const headerText =
+    const headerTextBefore =
       container.querySelector('.ant-table-thead')?.textContent ?? ''
-    expect(headerText.indexOf('永钢')).toBeLessThan(headerText.indexOf('中天'))
-    expect(headerText.indexOf('中天')).toBeLessThan(headerText.indexOf('沙钢'))
+    expect(headerTextBefore.indexOf('永钢')).toBeLessThan(
+      headerTextBefore.indexOf('中天'),
+    )
+    expect(headerTextBefore.indexOf('中天')).toBeLessThan(
+      headerTextBefore.indexOf('沙钢'),
+    )
+
+    // 打开列显示面板并点击「恢复默认顺序」
+    const settingsBtn = container.querySelector<HTMLButtonElement>(
+      `button[aria-label="${i18n.t('priceCompare.sheet.columnSettings')}"]`,
+    )
+    await act(async () => {
+      settingsBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+    const resetOrderBtn = Array.from(
+      document.body.querySelectorAll('.ant-popover button'),
+    ).find((btn) => btn.textContent?.includes('恢复默认顺序'))
+    expect(resetOrderBtn).toBeTruthy()
+    await act(async () => {
+      resetOrderBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+
+    const headerTextAfter =
+      container.querySelector('.ant-table-thead')?.textContent ?? ''
+    expect(headerTextAfter.indexOf('中天')).toBeLessThan(
+      headerTextAfter.indexOf('沙钢'),
+    )
+    expect(headerTextAfter.indexOf('沙钢')).toBeLessThan(
+      headerTextAfter.indexOf('永钢'),
+    )
+  })
+
+  it('3 品牌表头右键菜单提供左移/右移一列，且工具栏支持撤销/重做/HRB400E loading/新增行自动聚焦', async () => {
+    const onUndo = vi.fn()
+    const onRedo = vi.fn()
+    renderPanel({
+      hrb400eFallbackLoading: true,
+      onToggleHrb400eFallback: vi.fn(),
+      canUndo: true,
+      canRedo: false,
+      onUndo,
+      onRedo,
+    })
+
+    // 工具栏撤销/重做按钮状态与派发
+    const undoBtn = container.querySelector<HTMLButtonElement>(
+      `button[aria-label="${i18n.t('priceCompare.sheet.undoTooltip')}"]`,
+    )
+    const redoBtn = container.querySelector<HTMLButtonElement>(
+      `button[aria-label="${i18n.t('priceCompare.sheet.redoTooltip')}"]`,
+    )
+    expect(undoBtn?.disabled).toBe(false)
+    expect(redoBtn?.disabled).toBe(true)
+    act(() => {
+      undoBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(onUndo).toHaveBeenCalledTimes(1)
+
+    // HRB400E 按钮处于 loading 状态
+    const hrbBtn = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent?.includes('HRB400E'),
+    )
+    expect(hrbBtn?.className).toContain('ant-btn-loading')
+
+    // 3 品牌右键「沙钢」列头：含左移一列/右移一列，点击左移后沙钢排在中天之前
+    const shagangHead = Array.from(
+      container.querySelectorAll<HTMLElement>('.price-compare-brand-name'),
+    ).find((node) => node.textContent?.trim() === '沙钢')
+    await act(async () => {
+      shagangHead?.dispatchEvent(
+        new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 60))
+    })
+    const moveLeftItem = Array.from(
+      document.body.querySelectorAll<HTMLElement>(
+        '.ant-dropdown:not(.ant-dropdown-hidden) .ant-dropdown-menu-item',
+      ),
+    ).find((node) => node.textContent?.trim() === '左移一列')
+    expect(moveLeftItem).toBeTruthy()
+    await act(async () => {
+      moveLeftItem?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    const headerAfterMove =
+      container.querySelector('.ant-table-thead')?.textContent ?? ''
+    expect(headerAfterMove.indexOf('沙钢')).toBeLessThan(
+      headerAfterMove.indexOf('中天'),
+    )
+
+    // 点击「添加一行」自动聚焦到新行的商品选择输入框
+    const addRowBtn = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent?.includes('添加一行'),
+    )
+    await act(async () => {
+      addRowBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    const varietyCells = container.querySelectorAll('[data-variety-row]')
+    expect(varietyCells.length).toBe(2)
+    const lastRowInput = varietyCells[1]?.querySelector('input')
+    expect(document.activeElement).toBe(lastRowInput)
   })
 
   it('他人持编辑锁(readOnly=true)但实时协作可写时，吨位与备注仍可协同编辑，结构操作保持禁用', () => {

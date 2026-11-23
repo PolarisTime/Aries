@@ -35,6 +35,23 @@
   --price-compare-spec-text: #3c4553;
 }
 
+[data-theme="dark"] .price-compare-page {
+  --price-compare-grid: #30363d;
+  --price-compare-grid-strong: #424a54;
+  --price-compare-header-bg: #1d222b;
+  --price-compare-corner-bg: #181c24;
+  --price-compare-spec-bg: #1a1f28;
+  --price-compare-row-hover: #242b36;
+  --price-compare-head-text: rgb(255 255 255 / 88%);
+  --price-compare-head-muted: rgb(255 255 255 / 62%);
+  --price-compare-spec-text: rgb(255 255 255 / 85%);
+}
+
+.price-compare-toolbar-divider {
+  margin-inline: 2px;
+  height: 14px;
+}
+
 .price-compare-head {
   display: flex;
   align-items: center;
@@ -711,7 +728,7 @@
   cursor: pointer;
 }
 .price-compare-fallback {
-  color: var(--ant-color-warning-text, #ad6800);
+  color: var(--status-tag-gold-text, #874d00);
 }
 .price-compare-fallback-value {
   display: inline-flex;
@@ -728,7 +745,7 @@
   font-size: var(--app-font-size-3xs);
   font-weight: 600;
   line-height: 1;
-  color: var(--ant-color-warning-text, #ad6800);
+  color: var(--status-tag-gold-text, #874d00);
   background: var(--ant-color-warning-bg, #fffbe6);
   border: 1px solid var(--ant-color-warning-border, #ffe58f);
   border-radius: 4px;

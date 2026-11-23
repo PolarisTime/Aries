@@ -33,10 +33,17 @@ vi.mock('@/utils/antd-app', () => ({
   modal: { confirm: vi.fn() },
 }))
 
+import { modal } from '@/utils/antd-app'
 import { SupplierBasePriceRuleModal } from './SupplierBasePriceRuleModal'
 import type { SpecRow } from './supplier-quote-grid'
 
 const ROWS: SpecRow[] = [
+  {
+    category: '螺纹钢',
+    material: 'HRB400',
+    spec: 10,
+    lengths: ['9米'],
+  },
   {
     category: '螺纹钢',
     material: 'HRB400E',
@@ -204,17 +211,37 @@ describe('基价加价规则弹窗', () => {
     )
   })
 
-  it('清空规则：提交 base=null、items=[]', async () => {
+  it('清空规则需二次确认，确认后提交 base=null、items=[]', async () => {
     await render()
 
-    const clear = Array.from(document.body.querySelectorAll('button')).find(
-      (button) =>
-        (button.textContent ?? '').includes(
-          i18n.t('priceCompare.supplierPrice.clearRules'),
-        ),
+    // 操作按钮落在 WorkspaceOverlay 的 footer 槽位，不随长表格滚动消失
+    expect(
+      document.body.querySelector('.workspace-overlay-footer'),
+    ).not.toBeNull()
+
+    const clear = Array.from(
+      document.body.querySelectorAll('.workspace-overlay-footer button'),
+    ).find((button) =>
+      (button.textContent ?? '').includes(
+        i18n.t('priceCompare.supplierPrice.clearRules'),
+      ),
     )
     await act(async () => {
       clear?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    })
+
+    // 未点确认前不提交
+    expect(rulesApi.saveSupplierBasePriceRules).not.toHaveBeenCalled()
+    const popover = document.body.querySelector('.ant-popover')
+    expect(popover?.textContent).toContain(
+      i18n.t('priceCompare.supplierPrice.clearRulesConfirmTitle'),
+    )
+    const confirmBtn = popover?.querySelector<HTMLButtonElement>(
+      '.ant-popconfirm-buttons .ant-btn-primary',
+    )
+    await act(async () => {
+      confirmBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
     await flush()
@@ -222,6 +249,67 @@ describe('基价加价规则弹窗', () => {
     expect(rulesApi.saveSupplierBasePriceRules).toHaveBeenCalledWith(
       { supplierId: 's1', brandName: '中天', base: null, items: [] },
       '3',
+    )
+  })
+
+  it('支持按材质与关键字筛选规格行，未保存改动关闭时弹确认', async () => {
+    vi.mocked(modal.confirm).mockClear()
+    await render()
+
+    // 按材质筛选 HRB400：只留 HRB400 Φ10 9米
+    const hrb400Seg = Array.from(
+      document.body.querySelectorAll('.ant-segmented-item'),
+    ).find((node) => node.textContent?.trim() === 'HRB400')
+    await act(async () => {
+      hrb400Seg?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(radioFor(10, '9米')).toBeNull()
+
+    // 切回「全部」并用关键字筛选 12
+    const allSeg = Array.from(
+      document.body.querySelectorAll('.ant-segmented-item'),
+    ).find((node) => node.textContent?.trim() === '全部')
+    await act(async () => {
+      allSeg?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const search = document.body.querySelector<HTMLInputElement>(
+      `input[aria-label="${i18n.t('priceCompare.supplierPrice.rulesSearchPlaceholder')}"]`,
+    )
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.call(search, '12米')
+      search?.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(radioFor(10, '12米')).not.toBeNull()
+    expect(radioFor(12, '9米')).toBeNull()
+
+    // 产生未保存改动后点「取消」：触发离开确认弹窗
+    await act(async () => {
+      radioFor(10, '12米')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    const cancel = Array.from(
+      document.body.querySelectorAll('.workspace-overlay-footer button'),
+    ).find((button) =>
+      (button.textContent ?? '')
+        .replace(/\s+/g, '')
+        .includes(i18n.t('common.cancel')),
+    )
+    await act(async () => {
+      cancel?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(modal.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: i18n.t('priceCompare.supplierPrice.rulesDiscardTitle'),
+      }),
     )
   })
 })

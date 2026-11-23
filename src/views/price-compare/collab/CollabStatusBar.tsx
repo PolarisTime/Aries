@@ -1,4 +1,4 @@
-import { Tag } from 'antd'
+import { Tag, Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { type CollabPeer, uniquePeerUsers } from './collab-presence'
 import {
@@ -49,14 +49,23 @@ export function CollabStatusBar({
     count: users.length + 1,
   })
 
+  const badge = (
+    <Tag
+      className="collab-status__badge"
+      color={TONE_COLOR[collabStatusTone(state, writable)]}
+    >
+      {t(collabStatusLabelKey(state, writable))}
+    </Tag>
+  )
+  const needsOfflineCacheHint = state === 'offline' || state === 'reconnecting'
+
   return (
     <div className="collab-status" role="status" aria-live="polite">
-      <Tag
-        className="collab-status__badge"
-        color={TONE_COLOR[collabStatusTone(state, writable)]}
-      >
-        {t(collabStatusLabelKey(state, writable))}
-      </Tag>
+      {needsOfflineCacheHint ? (
+        <Tooltip title={t('collab.status.offlineCachedHint')}>{badge}</Tooltip>
+      ) : (
+        badge
+      )}
       <span className="collab-status__online">{onlineLabel}</span>
       {users.length ? (
         <span className="collab-status__peers">

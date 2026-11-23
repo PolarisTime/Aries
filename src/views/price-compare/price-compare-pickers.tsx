@@ -5,10 +5,11 @@ import {
   PlusOutlined,
 } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { Badge, Button, Dropdown, Flex, Select, Tabs } from 'antd'
+import { Badge, Button, Flex, Select, Tabs, Tooltip } from 'antd'
 import { useLayoutEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchLowestBrandQuotes } from '@/api/market/supplier-price-lists'
+import { ContextMenu } from '@/components/ContextMenu'
 import {
   deriveSheetPricing,
   LOWEST_QUOTES_QUERY_KEY,
@@ -239,18 +240,32 @@ export function PriceCompareBatchBar({
                   rows: sheet.rows,
                 }).missingCount
               : 0
+            const missingHint =
+              missing > 0
+                ? t('priceCompare.picker.missingSpotBadgeHint', {
+                    count: missing,
+                  })
+                : undefined
             return {
               key: sheet.id,
               label: (
                 <span>
                   {sheet.name}
                   {missing > 0 ? (
-                    <Badge
-                      count={missing}
-                      size="small"
-                      color="var(--color-warning)"
-                      style={{ marginLeft: 6 }}
-                    />
+                    <Tooltip title={missingHint}>
+                      <span
+                        aria-label={missingHint}
+                        className="price-compare-missing-badge"
+                        role="img"
+                      >
+                        <Badge
+                          count={missing}
+                          size="small"
+                          color="var(--color-warning)"
+                          style={{ marginLeft: 6 }}
+                        />
+                      </span>
+                    </Tooltip>
                   ) : null}
                 </span>
               ),
@@ -267,34 +282,32 @@ export function PriceCompareBatchBar({
       >
         {t('priceCompare.picker.newBatch')}
       </Button>
-      <Dropdown
-        trigger={['click']}
-        menu={{
-          'aria-label': t('priceCompare.picker.a11y.more'),
-          items: [
-            {
-              key: 'rename',
-              icon: <EditOutlined />,
-              /* 文案带省略号: 点了会打开弹层，让用户先知道（AGENTS.md 上下文菜单契约） */
-              label: t('priceCompare.picker.renameCurrentBatch'),
-              disabled: !activeSheet,
-            },
-            {
-              key: 'delete',
-              icon: <DeleteOutlined />,
-              label: t('priceCompare.picker.deleteCurrentBatch'),
-              danger: true,
-              disabled: !canDelete,
-            },
-          ],
-          onClick: ({ key }) => {
-            if (key === 'rename' && activeSheet) {
-              onRenameBatch(activeId, activeSheet.name)
-            }
-            if (key === 'delete' && canDelete) {
-              onDeleteBatch(activeId)
-            }
+      <ContextMenu
+        ariaLabel={t('priceCompare.picker.a11y.more')}
+        triggers={['click']}
+        items={[
+          {
+            key: 'rename',
+            icon: <EditOutlined />,
+            /* 文案带省略号: 点了会打开弹层，让用户先知道（AGENTS.md 上下文菜单契约） */
+            label: t('priceCompare.picker.renameCurrentBatch'),
+            disabled: !activeSheet,
           },
+          {
+            key: 'delete',
+            icon: <DeleteOutlined />,
+            label: t('priceCompare.picker.deleteCurrentBatch'),
+            danger: true,
+            disabled: !canDelete,
+          },
+        ]}
+        onClick={({ key }) => {
+          if (key === 'rename' && activeSheet) {
+            onRenameBatch(activeId, activeSheet.name)
+          }
+          if (key === 'delete' && canDelete) {
+            onDeleteBatch(activeId)
+          }
         }}
       >
         <Button
@@ -303,7 +316,7 @@ export function PriceCompareBatchBar({
           icon={<MoreOutlined />}
           aria-label={t('priceCompare.picker.a11y.more')}
         />
-      </Dropdown>
+      </ContextMenu>
     </Flex>
   )
 }
