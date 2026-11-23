@@ -11,6 +11,7 @@ import {
   type QuoteProjectConfigPayload,
   type QuoteProjectConfigRecord,
   saveQuoteProjectConfig,
+  updateQuoteProjectHrb400eFallback,
 } from '@/api/market/quote-project-configs'
 import {
   addQuoteSheetItem,
@@ -237,6 +238,8 @@ export type SheetsStore = {
   /** 放弃本地未落库改动并重新从服务端加载(用于解开 409 造成的刷新停摆) */
   discardLocalChangesAndReload: (sheetId: string) => void
   setConfig: (patch: Partial<ProjectConfig>) => void
+  /** 切换项目资料中的 HRB400E 代取开关（直连 PATCH 接口持久化，不再走假保存 PUT）。 */
+  setHrb400eFallback: (enabled: boolean) => Promise<void>
   setBrands: (value: Brand[] | ((current: Brand[]) => Brand[])) => void
   canUndo: boolean
   canRedo: boolean
@@ -2032,6 +2035,68 @@ export function useSheetsStore(options?: {
     scheduleSaveConfig(projectId)
   }
 
+  /**
+   * 切换项目「HRB400E 代取」快捷开关：乐观更新界面，并直接调用 PATCH 持久化到项目资料
+   * (`md_project.quote_hrb400e_fallback`)；失败时回滚，避免刷新或 30s 轮询后弹回。
+   */
+  const setHrb400eFallback = useCallback(
+    async (enabled: boolean) => {
+      const activeSheet =
+        stateRef.current.sheets.find(
+          (sheet) => sheet.id === stateRef.current.activeId,
+        ) ?? stateRef.current.sheets[0]
+      const projectId = activeSheet?.projectId ?? ''
+      if (!projectId) return
+      const previous =
+        stateRef.current.configs[projectId]?.hrb400eFallback ?? false
+      if (previous === enabled) return
+      mutate((current) => {
+        const prev = current.configs[projectId] ?? emptyConfig()
+        return {
+          ...current,
+          configs: {
+            ...current.configs,
+            [projectId]: { ...prev, hrb400eFallback: enabled },
+          },
+        }
+      })
+      if (!token) return
+      await runSerialized(`config:${projectId}`, async () => {
+        try {
+          const saved = await updateQuoteProjectHrb400eFallback(
+            projectId,
+            enabled,
+          )
+          mutate((current) => ({
+            ...current,
+            configs: {
+              ...current.configs,
+              [projectId]: buildConfigFromRecord(saved),
+            },
+          }))
+          broadcastSaved()
+        } catch (error) {
+          mutate((current) => {
+            const prev = current.configs[projectId] ?? emptyConfig()
+            return {
+              ...current,
+              configs: {
+                ...current.configs,
+                [projectId]: { ...prev, hrb400eFallback: previous },
+              },
+            }
+          })
+          message.error(
+            error instanceof Error
+              ? `${i18next.t('priceCompareStore.saveConfigFailed')}：${error.message}`
+              : i18next.t('priceCompareStore.saveConfigFailed'),
+          )
+        }
+      })
+    },
+    [broadcastSaved, mutate, runSerialized, token],
+  )
+
   const setBrands = (value: Brand[] | ((current: Brand[]) => Brand[])) => {
     const projectId = active?.projectId ?? ''
     if (!projectId) return
@@ -2256,6 +2321,7 @@ export function useSheetsStore(options?: {
     retrySave,
     discardLocalChangesAndReload,
     setConfig,
+    setHrb400eFallback,
     setBrands,
     canUndo: canUndo && !readOnly && !active?.specQuantityLocked,
     canRedo: canRedo && !readOnly && !active?.specQuantityLocked,

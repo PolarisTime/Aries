@@ -783,6 +783,44 @@
   animation: supplier-price-saved-flash 900ms ease-out;
 }
 
+/* 报价表：基价规格（左主题色细条，兼容扁平文本输入框） */
+.supplier-price-board
+.ant-input.supplier-price-sheet-input.supplier-price-base-cell {
+  box-shadow: inset 3px 0 0 var(--ant-color-primary, #1677ff);
+}
+
+.supplier-price-board
+  .ant-input.supplier-price-sheet-input.supplier-price-base-cell:focus {
+  box-shadow: inset 0 0 0 2px var(--ant-color-primary, #1677ff);
+}
+
+/* 异常价预警：柔和琥珀底 + 右上角斜角三角（配 Tooltip，不靠颜色单打独斗） */
+.supplier-price-board
+.ant-input.supplier-price-sheet-input.supplier-price-cell-outlier {
+  background: linear-gradient(
+    225deg,
+    var(--ant-color-warning, #faad14) 0 6px,
+    #fffbe6 6px
+  );
+}
+
+.supplier-price-board
+  .ant-input.supplier-price-sheet-input.supplier-price-cell-outlier:focus {
+  background: var(--ant-color-bg-container, #fff);
+  box-shadow: inset 0 0 0 2px var(--ant-color-warning, #faad14);
+}
+
+/* 报价过期列头：非今日更新的品牌列用琥珀虚线下划线 + 柔和提示底纹 */
+.supplier-price-brand-head-stale .supplier-price-brand-head-title {
+  color: var(--ant-color-warning-text, #ad6800);
+  text-decoration: underline dashed var(--ant-color-warning, #faad14);
+  text-underline-offset: 3px;
+}
+
+.supplier-price-stale-tag {
+  margin-inline-end: 0;
+}
+
 @keyframes supplier-price-error-flash {
   0% {
     background-color: #fff1f0;

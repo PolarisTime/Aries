@@ -325,15 +325,40 @@ function normalizeSheet(
   }
 }
 
-/** 报单比价单据分页(返回已归一化的记录)。 */
+const QUOTE_SHEETS_PAGE_SIZE = 200
+const QUOTE_SHEETS_MAX_PAGES = 50
+
+/**
+ * 拉取全部报单比价单据（按 200/页自动翻页聚合，消除旧版单页 200 条硬截断）。
+ *
+ * <p>上限 50 页（10,000 条）做异常保护，避免后端分页元数据异常时陷入死循环。</p>
+ */
 export async function fetchQuoteSheets(
   signal?: AbortSignal,
 ): Promise<QuoteSheetRecord[]> {
-  const response = await apiGet(ENDPOINTS.QUOTE_SHEETS, sheetPageSchema, {
-    params: { page: 0, size: 200 },
-    ...(signal ? { signal } : {}),
-  })
-  return response.content.map(normalizeSheet)
+  const records: QuoteSheetRecord[] = []
+  const seenIds = new Set<string>()
+  for (let page = 0; page < QUOTE_SHEETS_MAX_PAGES; page += 1) {
+    const response = await apiGet(ENDPOINTS.QUOTE_SHEETS, sheetPageSchema, {
+      params: { page, size: QUOTE_SHEETS_PAGE_SIZE },
+      ...(signal ? { signal } : {}),
+    })
+    for (const raw of response.content) {
+      const normalized = normalizeSheet(raw, records.length)
+      if (seenIds.has(normalized.id)) continue
+      seenIds.add(normalized.id)
+      records.push(normalized)
+    }
+    if (response.content.length === 0) break
+    if (response.hasMore === false) break
+    if (
+      typeof response.totalPages === 'number' &&
+      page + 1 >= response.totalPages
+    ) {
+      break
+    }
+  }
+  return records
 }
 
 /** 单据详情。 */

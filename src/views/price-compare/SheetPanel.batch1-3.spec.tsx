@@ -1,0 +1,254 @@
+// @vitest-environment jsdom
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import i18n from 'i18next'
+import { act, createElement, useState } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import '@/i18n'
+import type { QuoteSheetCollab } from './collab/useQuoteSheetCollab'
+import {
+  applyOrderedBrands,
+  type SheetCollabBridge,
+  SheetPanel,
+} from './SheetPanel'
+import type { Brand, PriceRow, PriceSheet, Variety } from './types'
+
+const collabMockState = vi.hoisted((): { current: QuoteSheetCollab } => ({
+  current: {
+    mode: 'rest',
+    state: 'disabled',
+    writable: false,
+    peers: [],
+    peersOfRow: () => [],
+    patchItem: vi.fn(),
+    setCursor: vi.fn(),
+    undo: vi.fn(),
+    redo: vi.fn(),
+    canUndo: false,
+    canRedo: false,
+  },
+}))
+
+vi.mock('@/api/market/supplier-price-lists', () => ({
+  fetchLowestBrandQuotes: () => Promise.resolve([]),
+}))
+
+vi.mock('./collab/useQuoteSheetCollab', () => ({
+  useQuoteSheetCollab: () => collabMockState.current,
+}))
+
+const VARIETY: Variety = {
+  category: '螺纹钢',
+  material: 'HRB400E',
+  spec: 12,
+  length: '9米',
+  label: '螺纹钢 HRB400E 12 9米',
+}
+
+const SHEET: PriceSheet = {
+  id: 's1',
+  serverId: '1001',
+  name: '批次 1',
+  status: 'QUOTING',
+  projectId: 'p-order',
+  projectName: '测试项目',
+  orderDate: '2026-11-23',
+  refDate: '2026-11-23',
+  refPeriod: '上午',
+  lengthPremium: 30,
+  inputs: {},
+  rows: [],
+}
+
+const ROW: PriceRow = {
+  id: 'r1',
+  category: '螺纹钢',
+  material: 'HRB400E',
+  spec: 12,
+  length: '9米',
+  ton: 10,
+  remark: '初始备注',
+}
+
+const BRANDS: Brand[] = [
+  { name: '中天', freight: 30 },
+  { name: '沙钢', freight: 25 },
+  { name: '永钢', freight: 20 },
+]
+
+describe('applyOrderedBrands（纯函数）', () => {
+  it('按保存顺序排列，新品牌按原序追加，已移除旧名忽略', () => {
+    expect(
+      applyOrderedBrands(BRANDS, ['永钢', '已删除品牌', '中天']).map(
+        (b) => b.name,
+      ),
+    ).toEqual(['永钢', '中天', '沙钢'])
+  })
+})
+
+describe('SheetPanel 品牌列排序持久化与协作/编辑锁协同', () => {
+  let container: HTMLDivElement
+  let root: Root
+  let queryClient: QueryClient
+
+  beforeEach(async () => {
+    window.localStorage.clear()
+    await i18n.changeLanguage('zh-CN')
+    collabMockState.current = {
+      mode: 'rest',
+      state: 'disabled',
+      writable: false,
+      peers: [],
+      peersOfRow: () => [],
+      patchItem: vi.fn(),
+      setCursor: vi.fn(),
+      undo: vi.fn(),
+      redo: vi.fn(),
+      canUndo: false,
+      canRedo: false,
+    }
+    if (!window.matchMedia) {
+      window.matchMedia = (query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      })
+    }
+    if (!globalThis.ResizeObserver) {
+      globalThis.ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    }
+    ;(
+      globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    })
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(async () => {
+    act(() => root.unmount())
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    container.remove()
+  })
+
+  const renderPanel = (options?: {
+    readOnly?: boolean
+    onCollabStateChange?: (bridge: SheetCollabBridge | null) => void
+  }) => {
+    function Harness() {
+      const [rows, setRows] = useState<PriceRow[]>([{ ...ROW }])
+      return createElement(SheetPanel, {
+        sheet: SHEET,
+        data: null,
+        varieties: [VARIETY],
+        brands: BRANDS,
+        rows,
+        density: 'small',
+        lengthPremium: 30,
+        patchSheet: () => {},
+        setRows,
+        periods: [],
+        onRefresh: () => {},
+        chrome: false,
+        spotRef: { current: null },
+        readOnly: options?.readOnly ?? false,
+        onCollabStateChange: options?.onCollabStateChange,
+      })
+    }
+    act(() => {
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(Harness),
+        ),
+      )
+    })
+  }
+
+  it('品牌列顺序从用户列偏好恢复，刷新后不回弹', () => {
+    const storageKey =
+      'aries-list-column-settings:anonymous:price-compare-sheet:p-order'
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        orderedKeys: ['永钢', '中天', '沙钢'],
+        hiddenKeys: [],
+      }),
+    )
+
+    renderPanel()
+
+    const headerText =
+      container.querySelector('.ant-table-thead')?.textContent ?? ''
+    expect(headerText.indexOf('永钢')).toBeLessThan(headerText.indexOf('中天'))
+    expect(headerText.indexOf('中天')).toBeLessThan(headerText.indexOf('沙钢'))
+  })
+
+  it('他人持编辑锁(readOnly=true)但实时协作可写时，吨位与备注仍可协同编辑，结构操作保持禁用', () => {
+    const patchItem = vi.fn()
+    collabMockState.current = {
+      mode: 'collab',
+      state: 'connected',
+      writable: true,
+      peers: [],
+      peersOfRow: () => [],
+      patchItem,
+      setCursor: vi.fn(),
+      undo: vi.fn(),
+      redo: vi.fn(),
+      canUndo: false,
+      canRedo: false,
+    }
+    const bridgeSpy = vi.fn()
+
+    renderPanel({ readOnly: true, onCollabStateChange: bridgeSpy })
+
+    // 上报给 PriceCompareView 的协作桥接表明可协同写 ton/remark
+    expect(bridgeSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ active: true, writable: true }),
+    )
+
+    // 吨位与备注保持可编辑
+    const tonInput = container.querySelector<HTMLInputElement>(
+      'input[data-ton="r1"]',
+    )
+    const remarkInput = container.querySelector<HTMLInputElement>(
+      'input.price-compare-row-remark',
+    )
+    expect(tonInput?.disabled).toBe(false)
+    expect(remarkInput?.disabled).toBe(false)
+
+    // 结构操作（添加一行）仍然因编辑锁保持禁用
+    const addRowBtn = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent?.includes('添加一行'),
+    )
+    expect(addRowBtn?.disabled).toBe(true)
+
+    // 修改备注走协作 patchItem，不走 REST
+    act(() => {
+      const setValue = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.bind(remarkInput)
+      setValue?.('协同备注')
+      remarkInput?.dispatchEvent(new Event('input', { bubbles: true }))
+      remarkInput?.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    expect(patchItem).toHaveBeenCalledWith('r1', { remark: '协同备注' })
+  })
+})

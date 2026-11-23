@@ -111,6 +111,8 @@ export const QUERY_KEYS = {
      */
     lengthPremiums: ['master-options', 'length-premiums'] as const,
     supplier: ['master-options', 'supplier'] as const,
+    supplierBrandSpecs: (supplierId: string) =>
+      ['master-options', 'supplier-brand-specs', supplierId] as const,
     warehouse: ['master-options', 'warehouse'] as const,
   },
 
@@ -118,6 +120,8 @@ export const QUERY_KEYS = {
   priceCompare: {
     /** 比价页项目选择器：项目是业务主数据，来自后端而非随包清单。 */
     projects: ['price-compare', 'projects'] as const,
+    /** 比价页商品规格清单：来自商品主数据（替代静态打包 varieties.json）。 */
+    varieties: ['price-compare', 'varieties'] as const,
     materialBrands: ['price-compare', 'material-brands'] as const,
     purchaseOrderTonnages: [
       'price-compare',

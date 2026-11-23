@@ -1,18 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { apiGetMock, apiPutMock } = vi.hoisted(() => ({
+const { apiGetMock, apiPutMock, apiPatchMock } = vi.hoisted(() => ({
   apiGetMock: vi.fn(),
   apiPutMock: vi.fn(),
+  apiPatchMock: vi.fn(),
 }))
 
 vi.mock('@/api/core/client', () => ({
   apiGet: apiGetMock,
   apiPut: apiPutMock,
+  apiPatch: apiPatchMock,
 }))
 
 import {
   fetchQuoteProjectConfig,
   saveQuoteProjectConfig,
+  updateQuoteProjectHrb400eFallback,
 } from './quote-project-configs'
 
 const configResponse = {
@@ -42,8 +45,10 @@ describe('项目级比价配置保存的幂等键(X-Idempotency-Key)', () => {
   beforeEach(() => {
     apiGetMock.mockReset()
     apiPutMock.mockReset()
+    apiPatchMock.mockReset()
     apiGetMock.mockResolvedValue(configResponse)
     apiPutMock.mockResolvedValue(configResponse)
+    apiPatchMock.mockResolvedValue({ ...configResponse, hrb400eFallback: true })
   })
 
   it('PUT 保存带非空幂等键, 并与版本头共存', async () => {
@@ -91,5 +96,21 @@ describe('项目级比价配置保存的幂等键(X-Idempotency-Key)', () => {
       | { headers?: Record<string, string> }
       | undefined
     expect(idempotencyKeyOf(config)).toBeUndefined()
+  })
+
+  it('PATCH 切换 HRB400E 代取开关走独立端点并携带幂等键', async () => {
+    const updated = await updateQuoteProjectHrb400eFallback(
+      '100000000000000001',
+      true,
+    )
+
+    expect(updated.hrb400eFallback).toBe(true)
+    expect(apiPatchMock).toHaveBeenCalledTimes(1)
+    const [url, , payload, config] = apiPatchMock.mock.calls[0]
+    expect(url).toBe(
+      '/quote-project-configs/100000000000000001/hrb400e-fallback',
+    )
+    expect(payload).toEqual({ hrb400eFallback: true })
+    expect(idempotencyKeyOf(config)).toBeTruthy()
   })
 })

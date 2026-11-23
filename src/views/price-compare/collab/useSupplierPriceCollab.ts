@@ -23,6 +23,7 @@ import {
   writeCollabCell,
   writeCollabMeta,
 } from './collab-doc'
+import { attachIndexedDbPersistence } from './collab-indexeddb'
 import {
   type CollabPeer,
   type CollabPeerEdit,
@@ -91,6 +92,8 @@ export type UseSupplierPriceCollabOptions = {
   requestSession?: (listId: string) => Promise<CollabSessionOutcome>
   /** 测试注入：时钟。 */
   now?: () => number
+  /** 是否启用浏览器 IndexedDB 离线持久化（默认 true；无 indexedDB 环境自动降级 no-op）。 */
+  enableOfflinePersistence?: boolean
 }
 
 export type SupplierPriceCollab = {
@@ -270,6 +273,7 @@ export function useSupplierPriceCollab(
           nowRef,
           localEditsRef,
           setLastPeerEdit,
+          enableOfflinePersistence: options.enableOfflinePersistence !== false,
         })
         created.push(entry)
         entriesRef.current = [...entriesRef.current, entry]
@@ -289,7 +293,14 @@ export function useSupplierPriceCollab(
       bump()
     }
     // targets 用 targetsKey 代表（数组每次渲染都是新身份）；localUser 已由 useMemo 稳定
-  }, [bump, enabled, localUser, supplierId, targetsKey])
+  }, [
+    bump,
+    enabled,
+    localUser,
+    options.enableOfflinePersistence,
+    supplierId,
+    targetsKey,
+  ])
 
   // 卸载：清计时器 + 销毁所有连接
   useEffect(() => {
@@ -393,9 +404,13 @@ function createEntry(args: {
   nowRef: { current: () => number }
   localEditsRef: { current: Map<string, number> }
   setLastPeerEdit: (edit: CollabPeerEdit | null) => void
+  enableOfflinePersistence: boolean
 }): CollabEntry {
   const { target, session, supplierId, factory } = args
   const doc = new Y.Doc()
+  const offline = args.enableOfflinePersistence
+    ? attachIndexedDbPersistence(session.room, doc)
+    : null
   writeCollabMeta(doc, {
     listId: target.listId,
     supplierId,
@@ -478,6 +493,7 @@ function createEntry(args: {
     undoManager.off('stack-item-added', onStack)
     undoManager.off('stack-item-popped', onStack)
     undoManager.destroy()
+    offline?.destroy()
     transport.destroy()
     doc.destroy()
   }

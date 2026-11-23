@@ -130,6 +130,48 @@ describe('quote-sheets API', () => {
     })
   })
 
+  it('分页拉取超过 200 条报单时持续翻页并按 id 去重', async () => {
+    apiGetMock
+      .mockResolvedValueOnce({
+        ...page,
+        content: [
+          { ...page.content[0], id: '700500000000000130', name: '第1页-1' },
+          { ...page.content[0], id: '700500000000000131', name: '第1页-2' },
+        ],
+        totalElements: 3,
+        totalPages: 2,
+        currentPage: 0,
+        hasMore: true,
+      })
+      .mockResolvedValueOnce({
+        ...page,
+        content: [
+          // 翻页期间可能出现重复记录：应按 id 去重
+          { ...page.content[0], id: '700500000000000131', name: '第1页-2' },
+          { ...page.content[0], id: '700500000000000132', name: '第2页-1' },
+        ],
+        totalElements: 3,
+        totalPages: 2,
+        currentPage: 1,
+        hasMore: false,
+      })
+
+    const records = await fetchQuoteSheets()
+
+    expect(apiGetMock).toHaveBeenCalledTimes(2)
+    expect(apiGetMock.mock.calls[0][2]).toMatchObject({
+      params: { page: 0, size: 200 },
+    })
+    expect(apiGetMock.mock.calls[1][2]).toMatchObject({
+      params: { page: 1, size: 200 },
+    })
+    expect(records.map((item) => item.id)).toEqual([
+      '700500000000000130',
+      '700500000000000131',
+      '700500000000000132',
+    ])
+  })
+
   /*
    * 现货价「按抗震牌号代取」的来源材质必须原样透传，且三态可区分：
    *   有值 → 字符串；后端明确未代取 → `null`；字段缺失 → `undefined`（key 不存在）。

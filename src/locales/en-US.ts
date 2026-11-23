@@ -3040,6 +3040,19 @@ export const enUS = {
         'A leading + - * / adjusts the current price; otherwise every filled cell is set to that price (blank cells are skipped)',
       batchAdjustApplied: 'Adjusted {{count}} cell(s)',
       batchAdjustNothing: 'No prices to adjust in the selection',
+      basePriceRuleButton: 'Base price rules',
+      basePriceRuleConfigured: 'Set',
+      basePriceCellHint:
+        'Base price spec: entering a price auto-fills empty cells by premiums',
+      outlierHigh: 'Outlier price: {{percent}}% above lowest peer ({{ref}})',
+      outlierLow: 'Outlier price: {{percent}}% below peer median ({{ref}})',
+      outlierRange:
+        'Outlier price: {{price}} is outside the typical price range; please double-check',
+      staleQuoteBadge: 'Outdated',
+      staleQuoteHint:
+        'Last edited at {{time}} (not today); confirm whether an update is needed',
+      collabActiveConflict:
+        'This brand price list is currently in live collaboration; REST write stopped, syncing via live collab',
     },
     view: {
       title: 'Order Price Comparison',
@@ -3053,6 +3066,10 @@ export const enUS = {
       editingByMe: 'You are editing this batch',
       editingByOther: '{{name}} is editing this batch',
       editingByOtherUnknown: 'Another user is editing this batch',
+      editingByOtherWithCollab:
+        '{{name}} holds structural edit lock; you can still collaboratively edit tonnage and remarks',
+      editingByOtherUnknownWithCollab:
+        'Another user holds structural edit lock; you can still collaboratively edit tonnage and remarks',
       requestTakeover: 'Request takeover',
       lockConflict:
         'Automatic saving has stopped for this batch: the edit lock was taken over. Request takeover, or discard your local changes and reload.',

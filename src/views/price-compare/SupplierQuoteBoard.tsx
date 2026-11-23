@@ -10,6 +10,7 @@ import {
   Skeleton,
   Table,
   Tabs,
+  Tag,
   Tooltip,
   Typography,
 } from 'antd'
@@ -32,6 +33,11 @@ import {
 import { useTranslation } from 'react-i18next'
 import { readRequestError } from '@/api/core/request-errors'
 import {
+  basePriceRulesQueryKey,
+  fetchSupplierBasePriceRules,
+  type SupplierBasePriceRules,
+} from '@/api/market/supplier-base-price-rules'
+import {
   addSupplierPriceColumn,
   fetchSpecRows,
   fetchSupplierPriceGrid,
@@ -40,6 +46,7 @@ import {
   type SupplierPriceGrid,
   saveSupplierPriceColumnItems,
 } from '@/api/market/supplier-price-lists'
+import { fetchSupplierBrandSpecs } from '@/api/master/supplier-brand-specs'
 import { fetchSupplierOptions } from '@/api/master/supplier-options'
 import { ContextMenu } from '@/components/ContextMenu'
 import { EmptyState } from '@/components/EmptyState'
@@ -48,6 +55,7 @@ import {
   type PriceCompareSaveStatusValue,
 } from '@/components/PriceCompareSaveStatus'
 import { QUERY_KEYS } from '@/constants/query-keys'
+import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
 import { useHasPermission } from '@/hooks/usePermission'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import { message, notification } from '@/utils/antd-app'
@@ -66,6 +74,7 @@ import {
   useSupplierPriceCollab,
 } from './collab/useSupplierPriceCollab'
 import { SHEET_WIDTH_BASE_FONT_SIZE, scaleSheetColumnWidth } from './core'
+import { SupplierBasePriceRuleModal } from './SupplierBasePriceRuleModal'
 import {
   type BrandDraft,
   buildBrandCatalog,
@@ -94,9 +103,16 @@ import {
   isPlainPriceText,
 } from './supplier-quote-formula'
 import {
+  buildBasePriceFillPlan,
+  detectPriceOutlier,
+  type SpecRow as GridSpecRow,
+  groupSpecRows,
+  isQuoteStale,
   materialRankOf,
+  type PriceOutlierWarning,
   parseClipboardGrid,
   roundPrice,
+  ruleKeyOfRef,
   templateLengthsOf,
   templateSpecsOf,
 } from './supplier-quote-grid'
@@ -724,6 +740,8 @@ export function SupplierQuoteBoard() {
   /** 批量调价弹窗。 */
   const [batchOpen, setBatchOpen] = useState(false)
   const [batchText, setBatchText] = useState('')
+  /** 正在配置基价加价规则的品牌（null = 关闭弹窗）。 */
+  const [baseRuleBrand, setBaseRuleBrand] = useState<string | null>(null)
   /**
    * 切换 / 关闭供应商前的三选一弹窗：只有「草稿保存失败」时才会出现。
    * 保存成功 / 无需保存时直接放行，不再像旧实现那样一律弹「放弃草稿」确认。
@@ -876,6 +894,42 @@ export function SupplierQuoteBoard() {
       : [],
   })
 
+  /** 供应商品牌规格白名单（md_supplier_brand_spec）：未配置或接口异常时降级空数组（展示全量商品规格）。 */
+  const brandSpecsQuery = useQuery({
+    queryKey: QUERY_KEYS.masterOptions.supplierBrandSpecs(supplierId ?? ''),
+    queryFn: ({ signal }) =>
+      supplierId
+        ? fetchSupplierBrandSpecs(supplierId, signal, {
+            suppressGlobalErrorToast: true,
+          }).catch(() => [])
+        : Promise.resolve([]),
+    enabled: Boolean(supplierId),
+    staleTime: STALE_MASTER_OPTIONS,
+  })
+
+  /** 各品牌的基价加价规则：录入基价规格后按规则自动填充空格。 */
+  const basePriceRuleQueries = useQueries({
+    queries: supplierId
+      ? candidateBrands.map((brandName) => ({
+          queryKey: basePriceRulesQueryKey(supplierId, brandName),
+          queryFn: ({ signal }: { signal: AbortSignal }) =>
+            fetchSupplierBasePriceRules(supplierId, brandName, signal, {
+              suppressGlobalErrorToast: true,
+            }).catch(() => null),
+          staleTime: STALE_MASTER_OPTIONS,
+        }))
+      : [],
+  })
+
+  const baseRulesByBrand = useMemo(() => {
+    const map = new Map<string, SupplierBasePriceRules>()
+    candidateBrands.forEach((brandName, index) => {
+      const data = basePriceRuleQueries[index]?.data
+      if (data) map.set(brandName, data)
+    })
+    return map
+  }, [basePriceRuleQueries, candidateBrands])
+
   /** 品牌 → 网格。以 Map 传递，避免下游还要按下标回查 candidateBrands。 */
   const gridByBrand = useMemo(() => {
     const map = new Map<string, SupplierPriceGrid | undefined>()
@@ -970,8 +1024,84 @@ export function SupplierQuoteBoard() {
     [specsQuery.data],
   )
 
-  /** 商品资料按品牌切好的目录：行 = 规格，列 = 品牌 × 材质 × 定尺（唯一口径，见 buildBrandCatalog）。 */
-  const catalog = useMemo(() => buildBrandCatalog(allRows), [allRows])
+  /** 商品资料按品牌切好的目录（叠加供应商品牌规格白名单，唯一口径，见 buildBrandCatalog）。 */
+  const catalog = useMemo(
+    () => buildBrandCatalog(allRows, brandSpecsQuery.data),
+    [allRows, brandSpecsQuery.data],
+  )
+
+  /** 某品牌允许维护的规格行（供基价加价配置弹层与自动带价共用，天然遵循品牌规格白名单）。 */
+  const specRowsForBrand = useCallback(
+    (brandName: string): GridSpecRow[] => {
+      const rows: QuoteRow[] = []
+      for (const [categoryName, categoryCatalog] of catalog) {
+        const brandCatalog = categoryCatalog.byBrand.get(brandName)
+        if (!brandCatalog) continue
+        for (const [material, lengths] of brandCatalog.materials) {
+          for (const [length, specs] of lengths) {
+            for (const spec of specs) {
+              rows.push({
+                brand: brandName,
+                category: categoryName,
+                material,
+                spec,
+                length,
+              })
+            }
+          }
+        }
+      }
+      return groupSpecRows(rows)
+    },
+    [catalog],
+  )
+
+  /** 同品牌同规格的其它供应商有效报价，用于异常价防误录横向对比。 */
+  const peerPricesByBrandRowKey = useMemo(() => {
+    const result = new Map<string, Map<string, number[]>>()
+    for (const brandName of brandNames) {
+      const grid = byBrand.grids.get(brandName)
+      const currentListId = byBrand.columns.get(brandName)?.listId
+      const rowMap = new Map<string, number[]>()
+      for (const row of grid?.rows ?? []) {
+        const peers: number[] = []
+        for (const [listId, price] of Object.entries(row.prices)) {
+          if (listId === currentListId) continue
+          if (
+            typeof price === 'number' &&
+            Number.isFinite(price) &&
+            price > 0
+          ) {
+            peers.push(price)
+          }
+        }
+        if (peers.length > 0) rowMap.set(quoteRowKey(row), peers)
+      }
+      result.set(brandName, rowMap)
+    }
+    return result
+  }, [brandNames, byBrand.columns, byBrand.grids])
+
+  const formatOutlierMessage = useCallback(
+    (warning: PriceOutlierWarning): string => {
+      if (warning.kind === 'range') {
+        return t('priceCompare.supplierPrice.outlierRange', {
+          price: warning.price,
+        })
+      }
+      if (warning.kind === 'high') {
+        return t('priceCompare.supplierPrice.outlierHigh', {
+          percent: warning.diffPercent,
+          ref: warning.referencePrice,
+        })
+      }
+      return t('priceCompare.supplierPrice.outlierLow', {
+        percent: warning.diffPercent,
+        ref: warning.referencePrice,
+      })
+    },
+    [t],
+  )
 
   /** 表格行：只有规格（材质与定尺都已经在表头里）。 */
   type SpecRow = { spec: number }
@@ -1391,11 +1521,20 @@ export function SupplierQuoteBoard() {
       setSaveState((current) => ({ ...current, [brandName]: 'error' }))
       /*
        * 失败分类（S6）：
+       * - 409 COLLAB_ACTIVE（4093）：该列正在实时协作中，禁止 REST 重试覆写，提示并刷新网格；
        * - 无 HTTP 状态（网络错误）或 5xx：可重试，按 2 → 4 → 8 → 16 → 30s 退避，最多 5 次；
-       * - 4xx（400/409/412/422…）：用户可修复（例如负价），自动重试没有意义，
-       *   等用户改完再走正常保存，避免「一格负价让整列永久失败并持续重发」。
+       * - 其余 4xx（400/409/412/422…）：用户可修复（例如负价），自动重试没有意义。
        */
-      const status = readRequestError(error).status
+      const reqError = readRequestError(error)
+      if (reqError.code === 4093) {
+        saveRetryRef.current.delete(brandName)
+        message.warning(t('priceCompare.supplierPrice.collabActiveConflict'))
+        void queryClient.invalidateQueries({
+          queryKey: gridQueryKey(brandName),
+        })
+        return 'failed'
+      }
+      const status = reqError.status
       const transient = status === undefined || status >= 500
       if (transient) {
         const attempt = (saveRetryRef.current.get(brandName) ?? 0) + 1
@@ -1497,26 +1636,98 @@ export function SupplierQuoteBoard() {
     }
   }, [])
 
+  /** 一格当前有效价格（协作态优先读 Y.Doc，其余读草稿 → 已保存 → 服务端）。 */
+  const effectiveCellValue = (
+    brandName: string,
+    rowKey: string,
+  ): number | null => {
+    const collabListId = collabListIdOf(brandName)
+    if (collabListId) {
+      const collabPrice = collab.priceOf(
+        collabListId,
+        collabCellKeyOfRowKey(rowKey),
+      )
+      if (collabPrice !== undefined) return collabPrice
+    }
+    return cellValueAt({ brandName, rowKey })
+  }
+
   const updateCell = (
     brandName: string,
     rowKey: string,
     value: number | null,
   ) => {
     const collabListId = collabListIdOf(brandName)
+    if (collabListId && !collab.writable) return
+
+    // 录入基价规格的正数价格时，按该品牌的「基价 + 加价」规则自动补全其它空格（不覆盖已有价格）
+    let fillPlan: { rowKey: string; value: number }[] = []
+    const rules = baseRulesByBrand.get(brandName)
+    if (value !== null && value > 0 && rules?.base) {
+      const [, material, specText, ...lengthParts] = rowKey.split('|')
+      const length = lengthParts.join('|')
+      const spec = Number(specText)
+      if (
+        material &&
+        Number.isInteger(spec) &&
+        ruleKeyOfRef(rules.base) === `${material}|${spec}|${length}`
+      ) {
+        fillPlan = buildBasePriceFillPlan({
+          base: rules.base,
+          basePrice: value,
+          items: rules.items,
+          specRows: specRowsForBrand(brandName),
+          isFilled: (candidateKey) =>
+            candidateKey === rowKey ||
+            effectiveCellValue(brandName, candidateKey) !== null,
+        })
+      }
+    }
+
     if (collabListId) {
       // 协作表：改的是本地 Y.Doc（离线也即时生效），不再排 REST 自动保存
-      if (collab.writable) {
-        collab.setPrice(collabListId, collabCellKeyOfRowKey(rowKey), value)
+      collab.setPrice(collabListId, collabCellKeyOfRowKey(rowKey), value)
+      for (const cell of fillPlan) {
+        collab.setPrice(
+          collabListId,
+          collabCellKeyOfRowKey(cell.rowKey),
+          cell.value,
+        )
       }
-      return
+    } else {
+      let nextBrandDraft = setDraftPrice(
+        draftsRef.current[brandName],
+        rowKey,
+        value,
+      )
+      for (const cell of fillPlan) {
+        nextBrandDraft = setDraftPrice(nextBrandDraft, cell.rowKey, cell.value)
+      }
+      applyDrafts({
+        ...draftsRef.current,
+        [brandName]: nextBrandDraft,
+      })
+      // 用户重新编辑 = 新意图：清掉上轮失败留下的退避计数，按正常防抖保存
+      saveRetryRef.current.delete(brandName)
+      scheduleSave(brandName)
     }
-    applyDrafts({
-      ...draftsRef.current,
-      [brandName]: setDraftPrice(draftsRef.current[brandName], rowKey, value),
-    })
-    // 用户重新编辑 = 新意图：清掉上轮失败留下的退避计数，按正常防抖保存
-    saveRetryRef.current.delete(brandName)
-    scheduleSave(brandName)
+
+    if (fillPlan.length > 0) {
+      message.success(
+        t('priceCompare.supplierPrice.autoFilled', { count: fillPlan.length }),
+      )
+    }
+
+    // 异常价纯预警不阻断保存：偏离常规区间或偏离同行报价超 10% 时及时提醒
+    if (value !== null && value > 0) {
+      const outlier = detectPriceOutlier({
+        price: value,
+        peerPrices: peerPricesByBrandRowKey.get(brandName)?.get(rowKey) ?? [],
+      })
+      if (outlier) {
+        message.warning(formatOutlierMessage(outlier))
+      }
+    }
   }
 
   /* ---------------------------------------------------------------- 操作 */
@@ -1572,6 +1783,7 @@ export function SupplierQuoteBoard() {
     setSelection(null)
     setBatchOpen(false)
     setBatchText('')
+    setBaseRuleBrand(null)
   }
 
   /** 把当前供应商所有品牌草稿保存完；返回是否全部成功（skipped = 无需保存，视为成功）。 */
@@ -2476,29 +2688,49 @@ export function SupplierQuoteBoard() {
    */
   const brandHeaderOf = (brandName: string) => {
     const column = byBrand.columns.get(brandName) ?? null
-    const lastEdit = formatLastEdit(
-      column?.updatedAt ?? column?.quotedOn ?? null,
-    )
+    const rawLastEdit = column?.updatedAt ?? column?.quotedOn ?? null
+    const lastEdit = formatLastEdit(rawLastEdit)
+    const stale = isQuoteStale(rawLastEdit)
+    const baseTitle = lastEdit
+      ? `${t('priceCompare.supplierPrice.lastEdited')} ${lastEdit}`
+      : t('priceCompare.supplierPrice.notQuotedHint')
+    const fullTitle =
+      stale && lastEdit
+        ? `${baseTitle} · ${t('priceCompare.supplierPrice.staleQuoteHint', { time: lastEdit })}`
+        : baseTitle
     /*
-     * 品牌列头只有品牌名：状态点、⋯ 菜单、列宽把手全部移除（列宽固定）。
-     * 最后编辑 / 未报价仍可通过品牌名 tooltip 读到，不占表头空间。
+     * 品牌列头保持简洁（只显示品牌名，无状态点/⋯/列宽把手）：
+     * 最后编辑与过期提醒挂在 title 上，右键列头可快捷打开「基价加价…」配置弹层。
      */
-    return (
+    const head = (
       <span
-        className="supplier-price-brand-head"
+        className={
+          stale
+            ? 'supplier-price-brand-head supplier-price-brand-head-stale'
+            : 'supplier-price-brand-head'
+        }
+        data-brand-stale={stale ? 'true' : undefined}
         data-brand-status={lastEdit ? 'saved' : 'not-quoted'}
       >
-        <span
-          className="supplier-price-brand-head-title"
-          title={
-            lastEdit
-              ? `${t('priceCompare.supplierPrice.lastEdited')} ${lastEdit}`
-              : t('priceCompare.supplierPrice.notQuotedHint')
-          }
-        >
+        <span className="supplier-price-brand-head-title" title={fullTitle}>
           {brandName}
         </span>
       </span>
+    )
+    if (!canUpdate) return head
+    return (
+      <ContextMenu
+        ariaLabel={`${brandName} · ${t('priceCompare.supplierPrice.basePriceRuleTitle')}`}
+        items={[
+          {
+            key: 'base-rules',
+            label: t('priceCompare.supplierPrice.basePriceRuleMenu'),
+          },
+        ]}
+        onClick={() => setBaseRuleBrand(brandName)}
+      >
+        {head}
+      </ContextMenu>
     )
   }
 
@@ -2712,11 +2944,34 @@ export function SupplierQuoteBoard() {
                 selection.category === group.categoryName &&
                 selection.material === material &&
                 boundsContain(selectedBounds, rowIndex, columnIndex)
+              const rules = baseRulesByBrand.get(brandName)
+              const isBaseCell = Boolean(
+                rules?.base &&
+                  ruleKeyOfRef(rules.base) ===
+                    `${material}|${row.spec}|${length}`,
+              )
+              const outlier = detectPriceOutlier({
+                price: value,
+                peerPrices:
+                  peerPricesByBrandRowKey.get(brandName)?.get(rowKey) ?? [],
+              })
+              const tooltipParts: string[] = []
+              if (outlier) tooltipParts.push(formatOutlierMessage(outlier))
+              if (isBaseCell) {
+                tooltipParts.push(
+                  t('priceCompare.supplierPrice.basePriceCellHint'),
+                )
+              }
+              const cellTooltip = tooltipParts.length
+                ? tooltipParts.join('；')
+                : undefined
               const className = [
                 'supplier-price-sheet-input',
                 isSelected ? 'supplier-price-cell-selected' : '',
                 dirty ? 'supplier-price-cell-dirty' : '',
                 flashing ? 'supplier-price-cell-saved' : '',
+                isBaseCell ? 'supplier-price-base-cell' : '',
+                outlier ? 'supplier-price-cell-outlier' : '',
               ]
                 .filter(Boolean)
                 .join(' ')
@@ -2726,6 +2981,7 @@ export function SupplierQuoteBoard() {
                   cellId={cellKey(columnIndex, rowKey)}
                   className={className}
                   disabled={!canEdit}
+                  tooltip={cellTooltip}
                   onBlurCell={() => {
                     // 离开格子：清掉自己的光标，别人的描边随之消失
                     if (collabListId) collab.setCursor(collabListId, null)
@@ -2975,6 +3231,35 @@ export function SupplierQuoteBoard() {
                 ) : null}
                 {groupIndex === 0 ? (
                   <>
+                    {canUpdate && brandNames.length === 1 ? (
+                      <Button
+                        size="small"
+                        onClick={() => setBaseRuleBrand(brandNames[0])}
+                      >
+                        {t('priceCompare.supplierPrice.basePriceRuleButton')}
+                        {baseRulesByBrand.get(brandNames[0])?.base
+                          ? `（${t('priceCompare.supplierPrice.basePriceRuleConfigured')}）`
+                          : ''}
+                      </Button>
+                    ) : canUpdate && brandNames.length > 1 ? (
+                      <ContextMenu
+                        ariaLabel={t(
+                          'priceCompare.supplierPrice.basePriceRuleTitle',
+                        )}
+                        items={brandNames.map((name) => ({
+                          key: name,
+                          label: baseRulesByBrand.get(name)?.base
+                            ? `${name}（${t('priceCompare.supplierPrice.basePriceRuleConfigured')}）`
+                            : name,
+                        }))}
+                        onClick={({ key }) => setBaseRuleBrand(String(key))}
+                        triggers={['click']}
+                      >
+                        <Button size="small">
+                          {t('priceCompare.supplierPrice.basePriceRuleButton')}
+                        </Button>
+                      </ContextMenu>
+                    ) : null}
                     <Tooltip
                       title={t('priceCompare.supplierPrice.lastEditedHint')}
                     >
@@ -2987,6 +3272,20 @@ export function SupplierQuoteBoard() {
                           t('priceCompare.supplierPrice.neverEdited')}
                       </Typography.Text>
                     </Tooltip>
+                    {isQuoteStale(lastEdited) ? (
+                      <Tooltip
+                        title={t('priceCompare.supplierPrice.staleQuoteHint', {
+                          time: formatLastEdit(lastEdited) ?? '',
+                        })}
+                      >
+                        <Tag
+                          color="warning"
+                          className="supplier-price-stale-tag"
+                        >
+                          {t('priceCompare.supplierPrice.staleQuoteBadge')}
+                        </Tag>
+                      </Tooltip>
+                    ) : null}
                     {savedFlash ? (
                       <Typography.Text
                         className="supplier-price-saved-hint"
@@ -3189,6 +3488,19 @@ export function SupplierQuoteBoard() {
           </Typography.Text>
         </Flex>
       </Modal>
+      <SupplierBasePriceRuleModal
+        brandName={baseRuleBrand ?? ''}
+        onClose={() => setBaseRuleBrand(null)}
+        onSaved={(saved) =>
+          queryClient.setQueryData(
+            basePriceRulesQueryKey(supplierId, saved.brandName),
+            saved,
+          )
+        }
+        open={baseRuleBrand !== null}
+        rows={baseRuleBrand ? specRowsForBrand(baseRuleBrand) : []}
+        supplierId={supplierId}
+      />
 
       {brandNames.length === 0 ? (
         <Typography.Text type="secondary">

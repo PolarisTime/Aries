@@ -53,6 +53,7 @@ import {
   isSeparatorRow,
   LOWEST_QUOTES_QUERY_KEY,
   LOWEST_QUOTES_QUERY_OPTIONS,
+  moveItem,
   PRICE_COMPARE_COLUMN_SETTINGS_KEY,
   priceCompareColumnSettingsKey,
   resolveRef,
@@ -1101,6 +1102,35 @@ function SheetActionRow({
 
 /* ------------------------------------------------------------------- 主体 */
 
+/**
+ * 报单比价实时协作状态桥接：供外层 {@link PriceCompareView} 协调编辑锁提示文案与撤销/重做快捷键。
+ */
+export type SheetCollabBridge = {
+  active: boolean
+  writable: boolean
+  undo: () => void
+  redo: () => void
+}
+
+/**
+ * 按用户保存的品牌列顺序排列品牌：新加入的品牌按原顺序追加，已移除的旧名自动忽略。
+ */
+export function applyOrderedBrands(
+  brands: readonly Brand[],
+  orderedNames: readonly string[],
+): Brand[] {
+  if (!orderedNames.length || brands.length <= 1) return [...brands]
+  const rank = new Map(orderedNames.map((name, index) => [name, index]))
+  return [...brands].sort((left, right) => {
+    const leftRank = rank.get(left.name) ?? Number.POSITIVE_INFINITY
+    const rightRank = rank.get(right.name) ?? Number.POSITIVE_INFINITY
+    if (leftRank === rightRank) {
+      return brands.indexOf(left) - brands.indexOf(right)
+    }
+    return leftRank - rightRank
+  })
+}
+
 type Props = {
   sheet: PriceSheet
   data: PriceData | null
@@ -1123,7 +1153,8 @@ type Props = {
     coalesceKey?: string,
   ) => void
   setRows: (updater: (rows: PriceRow[]) => PriceRow[]) => void
-  onReorderBrands: (from: number, to: number) => void
+  /** 可选扩展回调：列顺序本身已由 SheetPanel 通过用户列偏好持久化，此回调保留给测试与外层联动。 */
+  onReorderBrands?: (from: number, to: number) => void
   periods: string[]
   onRefresh: () => void
   refreshing?: boolean
@@ -1142,6 +1173,8 @@ type Props = {
   spotRef: React.RefObject<HTMLSpanElement | null>
   /** 被他人签出编辑时只读(禁用编辑类交互) */
   readOnly?: boolean
+  /** 上报实时协作连接态与撤销/重做句柄，供页面级编辑锁横幅和快捷键联动。 */
+  onCollabStateChange?: (bridge: SheetCollabBridge | null) => void
 }
 
 /** 单个报单: 一张扁平表格展示全部行; 现货价与供应商由「从供应商价格表导入」统一写入。 */
@@ -1169,6 +1202,7 @@ export function SheetPanel(props: Props) {
     chrome = true,
     spotRef,
     readOnly: readOnlyProp = false,
+    onCollabStateChange,
   } = props
   const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -1194,6 +1228,15 @@ export function SheetPanel(props: Props) {
     // 旧版全局 key：首次进入新 key 时继承一次，老用户不会突然看到默认列
     PRICE_COMPARE_COLUMN_SETTINGS_KEY,
   )
+  const orderedBrands = useMemo(
+    () => applyOrderedBrands(brands, columnSettings.columnOrder),
+    [brands, columnSettings.columnOrder],
+  )
+  const handleReorderBrands = (from: number, to: number) => {
+    const next = moveItem(orderedBrands, from, to)
+    columnSettings.handleColumnOrderChange(next.map((brand) => brand.name))
+    onReorderBrands?.(from, to)
+  }
   const columnVisibility = columnSettings.columnVisibility
   const setColumnVisible = (key: string, visible: boolean) =>
     columnSettings.handleColumnVisibilityChange((current) => ({
@@ -1201,7 +1244,7 @@ export function SheetPanel(props: Props) {
       [key]: visible,
     }))
   const hideRemark = columnVisibility[SHEET_HIDEABLE_COLUMN.remark] === false
-  const hiddenBrands = brands
+  const hiddenBrands = orderedBrands
     .filter(
       (brand) =>
         columnVisibility[SHEET_HIDEABLE_COLUMN.brand(brand.name)] === false,
@@ -1256,12 +1299,19 @@ export function SheetPanel(props: Props) {
       lowestQuotesQuery.data
         ? deriveSheetPricing(sheet, lowestQuotesQuery.data, {
             allowHrb400eFallback,
-            brands,
+            brands: orderedBrands,
             data,
             rows,
           })
         : { inputs: sheet.inputs, missingCount: 0 },
-    [allowHrb400eFallback, brands, data, lowestQuotesQuery.data, rows, sheet],
+    [
+      allowHrb400eFallback,
+      data,
+      lowestQuotesQuery.data,
+      orderedBrands,
+      rows,
+      sheet,
+    ],
   )
   const liveInputs = sheetPricing.inputs
   /** 渲染用快照：价格来自派生结果，其余字段与 sheet 一致。 */
@@ -1332,12 +1382,39 @@ export function SheetPanel(props: Props) {
   })
   const collabActive = quoteSheetCollab.mode === 'collab'
   /**
-   * 只读判定：原有「他人签出」+ 协作票据 `writable=false`（只读席位）。
+   * 结构只读判定：原有「他人签出」+ 协作票据 `writable=false`（只读席位）。
    *
-   * <p>合并成一处再往下传：吨位/备注输入、行操作、增删行都会跟着只读，
-   * 不会出现"能加行却改不了吨位"的半截只读。</p>
+   * <p>行增删、改规格、表头日期/锁定等结构变更始终受编辑锁保护。</p>
    */
   const readOnly = readOnlyProp || (collabActive && !quoteSheetCollab.writable)
+  /**
+   * 协作字段（报单吨位 / 行备注）只读判定：
+   * 实时协作已连接且票据可写时，即使他人持有结构编辑锁也允许协同编辑吨位与备注；
+   * 未进入协作时与 `readOnlyProp` 保持完全一致。
+   */
+  const collabFieldsReadOnly = collabActive
+    ? !quoteSheetCollab.writable
+    : readOnlyProp
+
+  const collabUndoRef = useRef(quoteSheetCollab.undo)
+  const collabRedoRef = useRef(quoteSheetCollab.redo)
+  useEffect(() => {
+    collabUndoRef.current = quoteSheetCollab.undo
+    collabRedoRef.current = quoteSheetCollab.redo
+  })
+
+  useEffect(() => {
+    if (!onCollabStateChange) return
+    onCollabStateChange({
+      active: collabActive,
+      writable: quoteSheetCollab.writable,
+      undo: () => collabUndoRef.current(),
+      redo: () => collabRedoRef.current(),
+    })
+    return () => {
+      onCollabStateChange(null)
+    }
+  }, [collabActive, onCollabStateChange, quoteSheetCollab.writable])
 
   /**
    * 行级写入的统一入口（唯一的「协作还是 REST」分岔点）。
@@ -1384,7 +1461,7 @@ export function SheetPanel(props: Props) {
     rows,
     selectedIds,
     setRows,
-    brands,
+    brands: orderedBrands,
     sheet,
     patchSheet,
     setSelectedIds,
@@ -1404,12 +1481,12 @@ export function SheetPanel(props: Props) {
     varietyByLabel,
     data,
     varieties,
-    brands,
+    brands: orderedBrands,
     density,
     getSpot,
     getInput,
     patchRow,
-    onReorderBrands,
+    onReorderBrands: handleReorderBrands,
     onToggleBrand: toggleBrandVisible,
     contextMenuRowId,
     onContextMenuRowChange: setContextMenuRowId,
@@ -1423,10 +1500,15 @@ export function SheetPanel(props: Props) {
     allowedProducts,
     spotRef,
     readOnly,
+    collabFieldsReadOnly,
     hideRemark,
     hiddenBrands,
-    varietyOptionsFlat: filterVarieties(varieties, brands, allowedProducts),
-    visibleBrandCount: brands.reduce(
+    varietyOptionsFlat: filterVarieties(
+      varieties,
+      orderedBrands,
+      allowedProducts,
+    ),
+    visibleBrandCount: orderedBrands.reduce(
       (count, brand) => (hiddenBrandSet.has(brand.name) ? count : count + 1),
       0,
     ),
@@ -1460,7 +1542,7 @@ export function SheetPanel(props: Props) {
         columnSettingsSlot={
           <ColumnSettingsButton
             hideRemark={hideRemark}
-            brands={brands}
+            brands={orderedBrands}
             hiddenBrands={hiddenBrands}
             onToggle={setColumnVisible}
           />

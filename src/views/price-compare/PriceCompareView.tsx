@@ -1,13 +1,12 @@
 import { Empty, Flex, Skeleton, Watermark } from 'antd'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PriceCompareSaveStatus } from '@/components/PriceCompareSaveStatus'
 import { useLengthPremiumOptions } from '@/hooks/useLengthPremiumOptions'
 import { useMaterialBrands } from '@/hooks/useMaterialBrands'
 import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
-import { moveItem } from './core'
 import { PriceCompareEditLockBanner } from './PriceCompareEditLockBanner'
 import { PriceCompareSheetMeta } from './PriceCompareSheetMeta'
 import {
@@ -24,7 +23,7 @@ import {
   useUndoRedoShortcuts,
 } from './price-compare-view-hooks'
 import { RenameBatchModal } from './RenameBatchModal'
-import { SheetPanel } from './SheetPanel'
+import { type SheetCollabBridge, SheetPanel } from './SheetPanel'
 import { usePriceCompareReferenceSync } from './use-price-compare-reference-sync'
 import {
   useActiveProjectQuoteConfig,
@@ -57,10 +56,10 @@ export function PriceCompareView() {
     config,
     configLoaded,
     setConfig,
+    setHrb400eFallback,
     undo,
     redo,
     setRows,
-    setBrands,
     setActiveId,
     patchSheet,
     addSheet,
@@ -86,9 +85,37 @@ export function PriceCompareView() {
 
   const [configOpen, setConfigOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
+  const [collabTonRemarkWritable, setCollabTonRemarkWritable] = useState(false)
+  const collabBridgeRef = useRef<SheetCollabBridge | null>(null)
   const spotRef = useRef<HTMLSpanElement>(null)
   const urlParamsApplied = useRef(false)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+
+  const handleCollabStateChange = useCallback(
+    (bridge: SheetCollabBridge | null) => {
+      collabBridgeRef.current = bridge
+      setCollabTonRemarkWritable(Boolean(bridge?.active && bridge.writable))
+    },
+    [],
+  )
+
+  const handleUndo = useCallback(() => {
+    const bridge = collabBridgeRef.current
+    if (bridge?.active && bridge.writable) {
+      bridge.undo()
+      return
+    }
+    undo()
+  }, [undo])
+
+  const handleRedo = useCallback(() => {
+    const bridge = collabBridgeRef.current
+    if (bridge?.active && bridge.writable) {
+      bridge.redo()
+      return
+    }
+    redo()
+  }, [redo])
 
   const projectAllowedBrands = useProjectAllowedBrands(
     projects,
@@ -102,8 +129,12 @@ export function PriceCompareView() {
 
   useInitialProjectAssignment(projects, assignProjectToUnassigned, setTourOpen)
   usePriceCompareEditorSession(hasUnsavedChanges)
-  // 只读态(他人签出)禁用撤销/重做快捷键
-  useUndoRedoShortcuts(undo, redo, !readOnly)
+  // 协作可写时支持仅撤销自己的 ton/remark 改动；非协作只读态禁用快捷键
+  useUndoRedoShortcuts(
+    handleUndo,
+    handleRedo,
+    !readOnly || collabTonRemarkWritable,
+  )
 
   // 支持从「行情同步」页跳转携带 refDate/refPeriod
   useEffect(() => {
@@ -270,6 +301,7 @@ export function PriceCompareView() {
        */}
       {active && (lockConflict || (editLock && !editLock.mine)) ? (
         <PriceCompareEditLockBanner
+          collabTonRemarkWritable={collabTonRemarkWritable}
           conflict={Boolean(lockConflict)}
           lock={editLock}
           onDiscardLocal={() => discardLocalChangesAndReload(active.id)}
@@ -289,9 +321,6 @@ export function PriceCompareView() {
         lengthPremiums={premiumByLength}
         patchSheet={patchSheet}
         setRows={setRows}
-        onReorderBrands={(from, to) =>
-          setBrands((current) => moveItem(current, from, to))
-        }
         refPeriods={refPeriods}
         onRefreshPrice={onRefreshPrice}
         refreshing={refreshing}
@@ -300,9 +329,12 @@ export function PriceCompareView() {
         availability={availability}
         spotRef={spotRef}
         readOnly={readOnly}
+        onCollabStateChange={handleCollabStateChange}
         onToggleHrb400eFallback={
           configLoaded
-            ? () => setConfig({ hrb400eFallback: !config.hrb400eFallback })
+            ? () => {
+                void setHrb400eFallback(!config.hrb400eFallback)
+              }
             : undefined
         }
       />
@@ -340,7 +372,6 @@ function PriceCompareSheetArea({
   lengthPremiums,
   patchSheet,
   setRows,
-  onReorderBrands,
   refPeriods,
   onRefreshPrice,
   refreshing,
@@ -349,6 +380,7 @@ function PriceCompareSheetArea({
   availability,
   spotRef,
   readOnly,
+  onCollabStateChange,
   onToggleHrb400eFallback,
 }: {
   active: ReturnType<typeof useSheetsStore>['active']
@@ -362,7 +394,6 @@ function PriceCompareSheetArea({
   lengthPremiums: React.ComponentProps<typeof SheetPanel>['lengthPremiums']
   patchSheet: React.ComponentProps<typeof SheetPanel>['patchSheet']
   setRows: React.ComponentProps<typeof SheetPanel>['setRows']
-  onReorderBrands: React.ComponentProps<typeof SheetPanel>['onReorderBrands']
   refPeriods: string[]
   onRefreshPrice: () => Promise<void> | void
   refreshing: boolean
@@ -371,6 +402,7 @@ function PriceCompareSheetArea({
   availability: React.ComponentProps<typeof SheetPanel>['availability']
   spotRef: React.ComponentProps<typeof SheetPanel>['spotRef']
   readOnly: boolean
+  onCollabStateChange?: (bridge: SheetCollabBridge | null) => void
   /** 项目配置已加载后可切换 HRB400E 参考价；加载中不展示按钮。 */
   onToggleHrb400eFallback?: () => void
 }) {
@@ -399,7 +431,6 @@ function PriceCompareSheetArea({
         lengthPremiums={lengthPremiums}
         patchSheet={patchSheet}
         setRows={setRows}
-        onReorderBrands={onReorderBrands}
         periods={refPeriods}
         onRefresh={() => {
           void onRefreshPrice()
@@ -412,6 +443,7 @@ function PriceCompareSheetArea({
         availability={availability}
         spotRef={spotRef}
         readOnly={readOnly}
+        onCollabStateChange={onCollabStateChange}
       />
     </Watermark>
   )

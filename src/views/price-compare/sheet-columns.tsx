@@ -88,6 +88,11 @@ export type ColumnContext = {
   /** 当前字号下的列宽表(见 core.sheetColumnWidths), 所有列宽只能从这里取。 */
   widths: Record<keyof typeof SHEET_COLUMN_WIDTH, number>
   readOnly: boolean
+  /**
+   * 实时协作字段（报单吨位 / 备注）的只读态；缺省回退 {@link readOnly}。
+   * 协作已连接且票据可写时为 false，即使他人持有结构编辑锁也不阻断协同编辑吨位与备注。
+   */
+  collabFieldsReadOnly?: boolean
   refDate: string
   refPeriod: string
   /**
@@ -521,10 +526,11 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
     ),
   )
   /** 报单吨位列的构建上下文(列宽取整张宽度表, 不另设参数)。 */
+  const collabFieldsReadOnly = ctx.collabFieldsReadOnly ?? readOnly
   const tonColumnCtx = {
     t,
     sheetSpecQuantityLocked: Boolean(sheet.specQuantityLocked),
-    readOnly,
+    readOnly: collabFieldsReadOnly,
     widths,
     quantityLockClass,
     moveFocusTon: ctx.moveFocusTon,
@@ -706,7 +712,7 @@ export function buildSheetColumns(ctx: ColumnContext): ColumnsType<GridRow> {
                   className="price-compare-row-remark"
                   size="small"
                   variant="borderless"
-                  disabled={readOnly}
+                  disabled={collabFieldsReadOnly}
                   maxLength={255}
                   defaultValue={row.row.remark ?? ''}
                   onBlur={(event) =>

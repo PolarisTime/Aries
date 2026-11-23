@@ -7,6 +7,8 @@ type Props = {
   lock: EditLockView | null
   /** 保存遇到 409 锁冲突: 本地改动未落库且刷新被挡住, 需要给用户出口。 */
   conflict: boolean
+  /** 实时协作已连上且可写：他人持有结构编辑锁时，当前用户仍可协同编辑吨位与备注。 */
+  collabTonRemarkWritable?: boolean
   onTakeover: () => void
   onDiscardLocal: () => void
 }
@@ -19,6 +21,7 @@ type Props = {
  *   否则本地改动会一直挡住服务端刷新(静默 skipped), 用户既看不到说明也没有出口。
  */
 export function PriceCompareEditLockBanner({
+  collabTonRemarkWritable = false,
   conflict,
   lock,
   onDiscardLocal,
@@ -30,9 +33,15 @@ export function PriceCompareEditLockBanner({
     ? t('priceCompare.view.lockConflict')
     : mine
       ? t('priceCompare.view.editingByMe')
-      : lock?.ownerName
-        ? t('priceCompare.view.editingByOther', { name: lock.ownerName })
-        : t('priceCompare.view.editingByOtherUnknown')
+      : collabTonRemarkWritable
+        ? lock?.ownerName
+          ? t('priceCompare.view.editingByOtherWithCollab', {
+              name: lock.ownerName,
+            })
+          : t('priceCompare.view.editingByOtherUnknownWithCollab')
+        : lock?.ownerName
+          ? t('priceCompare.view.editingByOther', { name: lock.ownerName })
+          : t('priceCompare.view.editingByOtherUnknown')
 
   return (
     <Alert

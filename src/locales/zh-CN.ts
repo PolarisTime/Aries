@@ -3025,6 +3025,16 @@ export const zhCN = {
         '以 + - * / 开头表示在当前价上调整；否则把所有已填格子设为该价（空格跳过）',
       batchAdjustApplied: '已调整 {{count}} 格',
       batchAdjustNothing: '选区内没有可调整的价格',
+      basePriceRuleButton: '基价加价',
+      basePriceRuleConfigured: '已配',
+      basePriceCellHint: '基价规格：输入价格后自动按加价填充空格',
+      outlierHigh: '异常价：高于同行最低价 {{percent}}%（最低 {{ref}}）',
+      outlierLow: '异常价：低于同行中位价 {{percent}}%（中位 {{ref}}）',
+      outlierRange: '异常价：{{price}} 偏离常规单价区间，请核对是否误录',
+      staleQuoteBadge: '非今日报价',
+      staleQuoteHint: '最后编辑于 {{time}}，非今日行情，请确认是否需要更新',
+      collabActiveConflict:
+        '该品牌价格表正处于实时协作中，REST 写入已中止，请通过实时协作同步',
     },
     view: {
       title: '报单比价',
@@ -3037,6 +3047,10 @@ export const zhCN = {
       editingByMe: '你正在编辑该批次',
       editingByOther: '{{name}} 正在编辑该批次',
       editingByOtherUnknown: '他人正在编辑该批次',
+      editingByOtherWithCollab:
+        '{{name}} 持有结构编辑权，你仍可实时协同编辑报单吨位与备注',
+      editingByOtherUnknownWithCollab:
+        '他人持有结构编辑权，你仍可实时协同编辑报单吨位与备注',
       requestTakeover: '申请接管',
       lockConflict:
         '本批次的改动已停止自动保存：编辑锁已被他人接管，请申请接管或放弃本地改动后重新加载。',

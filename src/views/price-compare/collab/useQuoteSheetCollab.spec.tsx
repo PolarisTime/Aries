@@ -293,4 +293,65 @@ describe('useQuoteSheetCollab', () => {
     // 让 afterEach 的 unmount 有根可卸
     root = createRoot(container)
   })
+
+  it('协作撤销/重做只撤销自己的改动，不影响同行协作伙伴的修改', async () => {
+    const network = createFakeCollabNetwork()
+    const probeA: Probe = { collab: null, rows: [] }
+    const probeB: Probe = { collab: null, rows: [] }
+    const containerB = document.createElement('div')
+    document.body.appendChild(containerB)
+    const rootB = createRoot(containerB)
+    const options = {
+      transportFactory: network.createTransport,
+      enableOfflinePersistence: false,
+    }
+
+    act(() => {
+      root.render(
+        createElement(ProbeComponent, {
+          initialRows: rowsOf(),
+          options: baseOptions(options),
+          probe: probeA,
+        }),
+      )
+    })
+    act(() => {
+      rootB.render(
+        createElement(ProbeComponent, {
+          initialRows: rowsOf(),
+          options: baseOptions({
+            ...options,
+            localUser: { id: 'u2', name: '李四' },
+          }),
+          probe: probeB,
+        }),
+      )
+    })
+    await flush()
+
+    // A 改 r1 吨位，B 改 r2 备注
+    act(() => probeA.collab?.patchItem('r1', { ton: 55 }))
+    act(() => probeB.collab?.patchItem('r2', { remark: '李四备注' }))
+    await flush()
+
+    expect(probeA.collab?.canUndo).toBe(true)
+    expect(probeA.rows[0]?.ton).toBe(55)
+    expect(probeA.rows[1]?.remark).toBe('李四备注')
+
+    // A 执行 undo：只撤回 A 自己的 r1 吨位，不撤销 B 对 r2 的备注
+    act(() => probeA.collab?.undo())
+    await flush()
+    expect(probeA.rows[0]?.ton).toBe(12.5)
+    expect(probeA.rows[1]?.remark).toBe('李四备注')
+    expect(probeB.rows[0]?.ton).toBe(12.5)
+
+    // A 执行 redo：恢复 r1 吨位到 55
+    expect(probeA.collab?.canRedo).toBe(true)
+    act(() => probeA.collab?.redo())
+    await flush()
+    expect(probeA.rows[0]?.ton).toBe(55)
+
+    act(() => rootB.unmount())
+    containerB.remove()
+  })
 })

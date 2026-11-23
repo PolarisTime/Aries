@@ -8,8 +8,10 @@ import {
   buildMatrixPastePlan,
   buildMatrixSlots,
   buildSheetMatrix,
+  detectPriceOutlier,
   filterSpecRows,
   groupSpecRows,
+  isQuoteStale,
   isRealLength,
   lengthRank,
   matrixCellKeyOf,
@@ -652,5 +654,49 @@ describe('基价加价：只填空格子', () => {
         isFilled: () => false,
       }),
     ).toEqual([])
+  })
+})
+
+describe('异常价防误录检测与报价过期判定', () => {
+  it('偏离常规区间（少敲/多敲一位）返回 range 预警；0 元与正常价不误报', () => {
+    expect(detectPriceOutlier({ price: 328, peerPrices: [] })).toEqual({
+      kind: 'range',
+      price: 328,
+    })
+    expect(detectPriceOutlier({ price: 32800, peerPrices: [] })).toEqual({
+      kind: 'range',
+      price: 32800,
+    })
+    expect(detectPriceOutlier({ price: 0, peerPrices: [3200] })).toBeNull()
+    expect(detectPriceOutlier({ price: null, peerPrices: [3200] })).toBeNull()
+    expect(
+      detectPriceOutlier({ price: 3330, peerPrices: [3280, 3300] }),
+    ).toBeNull()
+  })
+
+  it('高于同行最低价 >10% 返回 high，低于同行中位价 >10% 返回 low', () => {
+    expect(
+      detectPriceOutlier({ price: 3600, peerPrices: [3200, 3300] }),
+    ).toEqual({
+      kind: 'high',
+      diffPercent: 13,
+      referencePrice: 3200,
+    })
+    expect(
+      detectPriceOutlier({ price: 2800, peerPrices: [3200, 3300, 3400] }),
+    ).toEqual({
+      kind: 'low',
+      diffPercent: 15,
+      referencePrice: 3300,
+    })
+  })
+
+  it('最后编辑早于当日零点视为过期，今日与未报价不误报', () => {
+    const now = new Date('2026-11-23T14:00:00+08:00')
+    expect(isQuoteStale('2026-11-22', now)).toBe(true)
+    expect(isQuoteStale('2026-11-22T23:59:00+08:00', now)).toBe(true)
+    expect(isQuoteStale('2026-11-23', now)).toBe(false)
+    expect(isQuoteStale('2026-11-23T09:30:00+08:00', now)).toBe(false)
+    expect(isQuoteStale(null, now)).toBe(false)
   })
 })

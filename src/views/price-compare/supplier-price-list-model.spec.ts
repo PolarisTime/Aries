@@ -5,7 +5,9 @@ import type {
 } from '@/api/market/supplier-price-lists'
 import {
   brandColumnOrder,
+  buildBrandCatalog,
   buildColumnSavePlan,
+  catalogHas,
   draftCount,
   draftPrice,
   mergeQuoteRows,
@@ -276,5 +278,58 @@ describe('行集合与网格取值', () => {
 
   it('没有列时返回空映射（新列还没有服务端价格）', () => {
     expect(serverCellsOf(undefined, null).size).toBe(0)
+  })
+})
+
+describe('buildBrandCatalog：叠加供应商品牌规格白名单', () => {
+  const rows: QuoteRow[] = [
+    {
+      brand: '中天',
+      category: '直条',
+      material: 'HRB400E',
+      spec: 12,
+      length: '9米',
+    },
+    {
+      brand: '中天',
+      category: '直条',
+      material: 'HRB400E',
+      spec: 14,
+      length: '9米',
+    },
+    {
+      brand: '永钢',
+      category: '直条',
+      material: 'HRB400E',
+      spec: 12,
+      length: '9米',
+    },
+    {
+      brand: '永钢',
+      category: '直条',
+      material: 'HRB400E',
+      spec: 14,
+      length: '9米',
+    },
+  ]
+
+  it('已配置白名单的品牌收敛到允许规格，未配置品牌保留全量，且直条与螺纹钢等价匹配', () => {
+    const catalog = buildBrandCatalog(rows, [
+      {
+        brandName: '中天',
+        // 白名单存规范名「螺纹钢」，商品行是「直条」也必须命中
+        category: '螺纹钢',
+        material: 'HRB400E',
+        spec: 12,
+        length: '9米',
+      },
+    ])
+
+    const straight = catalog.get('直条')
+    expect(catalogHas(straight, '中天', 'HRB400E', 12, '9米')).toBe(true)
+    expect(catalogHas(straight, '中天', 'HRB400E', 14, '9米')).toBe(false)
+    // 永钢未在白名单中配置 → 保持商品资料全量
+    expect(catalogHas(straight, '永钢', 'HRB400E', 12, '9米')).toBe(true)
+    expect(catalogHas(straight, '永钢', 'HRB400E', 14, '9米')).toBe(true)
   })
 })

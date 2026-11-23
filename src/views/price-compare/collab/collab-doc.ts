@@ -1,4 +1,5 @@
 import * as Y from 'yjs'
+import { COLLAB_INDEXEDDB_ORIGIN } from './collab-indexeddb'
 
 /**
  * 供应商价格表实时协作的**文档 schema**（设计文档 §4）。
@@ -286,10 +287,11 @@ export function observeCollabCells(
     events: Y.YEvent<Y.AbstractType<unknown>>[],
     transaction: Y.Transaction,
   ) => {
-    // 播种既不是用户操作、也不是远端协作，按本地处理（见 COLLAB_SEED_ORIGIN）
+    // 播种与本地 IndexedDB 回放既不是用户新编辑、也不是远端协作，按非远端处理
     const remote =
       transaction.origin !== COLLAB_LOCAL_ORIGIN &&
-      transaction.origin !== COLLAB_SEED_ORIGIN
+      transaction.origin !== COLLAB_SEED_ORIGIN &&
+      transaction.origin !== COLLAB_INDEXEDDB_ORIGIN
     const cellKeys = new Set<string>()
     for (const event of events) {
       // 嵌套事件（改格内字段）：path[0] 就是 cells 表里的格键

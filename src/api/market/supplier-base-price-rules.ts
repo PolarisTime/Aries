@@ -99,6 +99,7 @@ export async function fetchSupplierBasePriceRules(
   supplierId: EntityId,
   brandName: string,
   signal?: AbortSignal,
+  options?: { suppressGlobalErrorToast?: boolean },
 ): Promise<SupplierBasePriceRules> {
   const normalized = parseEntityId(supplierId, 'supplierId')
   const response = await apiGet(
@@ -107,6 +108,9 @@ export async function fetchSupplierBasePriceRules(
     {
       params: { supplierId: normalized, brandName },
       ...(signal ? { signal } : {}),
+      ...(options?.suppressGlobalErrorToast
+        ? { suppressGlobalErrorToast: true }
+        : {}),
     },
   )
   return normalizeRules(response, normalized, brandName)

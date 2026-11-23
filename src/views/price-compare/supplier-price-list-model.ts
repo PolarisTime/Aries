@@ -5,6 +5,11 @@ import type {
   SupplierPriceRow,
   SupplierPriceSpecRow,
 } from '@/api/market/supplier-price-lists'
+import {
+  type SupplierBrandSpecItem,
+  supplierBrandSpecKey,
+} from '@/api/master/supplier-brand-specs'
+import { canonicalCategory } from './core'
 
 /** 一行 = 一个商品规格；键与后端条目键同构（类别|材质|规格|定尺）。 */
 export type QuoteRow = SupplierPriceSpecRow
@@ -124,19 +129,48 @@ export type CategoryCatalog = {
  * 从商品资料构建按品牌切分的报价目录 —— 报价表的行/列口径**唯一来源**。
  *
  * <p>商品资料的每条记录都带 `brand`，所以「某品牌经营哪些 材质 × 定尺 × 规格」是确切已知的。
- * 之前只按「全体商品的并集」建表，于是万泰的 HRB400 格子、中天没有的 36/40 规格都会出现，
- * 用户面对一堆永远填不了的格子。这里改成本地化口径：<b>商品资料里没有的组合，连列/格子都不出现</b>。</p>
- *
- * <p>没有品牌的记录（历史脏数据）会被忽略：它们无法归属到任何一个品牌列；但它们的旧报价仍由
- * {@link buildColumnSavePlan} 的「服务端条目并集」保留，不会因为看不见就被删掉。</p>
+ * 叠加 {@code brandSpecs}（`md_supplier_brand_spec`，供应商品牌规格白名单）时遵循单一口径：</p>
+ * <ul>
+ *   <li>某品牌在 {@code brandSpecs} 里**没有任何条目** = 未限定，沿用商品资料里该品牌全量组合；</li>
+ *   <li>某品牌在 {@code brandSpecs} 里**有配置条目** = 只允许白名单内的 `(品牌, 类别, 材质, 规格, 定尺)`
+ *       进入目录（其余格在界面标不可填，历史已存报价仍由 {@link buildColumnSavePlan} 保留）。</li>
+ * </ul>
  */
 export function buildBrandCatalog(
   rows: readonly QuoteRow[],
+  brandSpecs?: readonly SupplierBrandSpecItem[],
 ): Map<string, CategoryCatalog> {
+  const configuredBrands = new Set<string>()
+  const allowedKeys = new Set<string>()
+  for (const spec of brandSpecs ?? []) {
+    const brandName = spec.brandName.trim()
+    if (!brandName) continue
+    configuredBrands.add(brandName)
+    allowedKeys.add(
+      supplierBrandSpecKey({
+        brandName,
+        category: canonicalCategory(spec.category.trim()),
+        material: spec.material.trim(),
+        spec: spec.spec,
+        length: spec.length.trim(),
+      }),
+    )
+  }
+
   const result = new Map<string, CategoryCatalog>()
   for (const row of rows) {
     const brand = (row.brand ?? '').trim()
     if (!brand) continue
+    if (configuredBrands.has(brand)) {
+      const key = supplierBrandSpecKey({
+        brandName: brand,
+        category: canonicalCategory(row.category.trim()),
+        material: row.material.trim(),
+        spec: row.spec,
+        length: row.length.trim(),
+      })
+      if (!allowedKeys.has(key)) continue
+    }
     let category = result.get(row.category)
     if (!category) {
       category = { category: row.category, specs: [], byBrand: new Map() }

@@ -110,12 +110,18 @@ export function normalizeSupplierBrandSpecs(
 export async function fetchSupplierBrandSpecs(
   supplierId: EntityId,
   signal?: AbortSignal,
+  options?: { suppressGlobalErrorToast?: boolean },
 ): Promise<SupplierBrandSpecItem[]> {
   const id = parseEntityId(supplierId, 'supplierId')
   const payload = await apiGet(
     ENDPOINTS.SUPPLIER_BRAND_SPECS(id),
     supplierBrandSpecListSchema,
-    { ...(signal ? { signal } : {}) },
+    {
+      ...(signal ? { signal } : {}),
+      ...(options?.suppressGlobalErrorToast
+        ? { suppressGlobalErrorToast: true }
+        : {}),
+    },
   )
   return normalizeSupplierBrandSpecs(payload)
 }

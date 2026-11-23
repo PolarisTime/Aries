@@ -1,5 +1,6 @@
 import * as Y from 'yjs'
 import { COLLAB_LOCAL_ORIGIN, COLLAB_SEED_ORIGIN } from './collab-doc'
+import { COLLAB_INDEXEDDB_ORIGIN } from './collab-indexeddb'
 
 /**
  * 报单比价（报价单）的协作文档模型（设计文档 §14.1 的「范围更小」版本）。
@@ -212,10 +213,11 @@ export function observeQuoteSheetItems(
     events: Y.YEvent<Y.AbstractType<unknown>>[],
     transaction: Y.Transaction,
   ) => {
-    // 播种既不是用户操作、也不是远端协作，按本地处理
+    // 播种与本地 IndexedDB 回放既不是用户操作、也不是远端协作，按本地处理
     const remote =
       transaction.origin !== COLLAB_LOCAL_ORIGIN &&
-      transaction.origin !== COLLAB_SEED_ORIGIN
+      transaction.origin !== COLLAB_SEED_ORIGIN &&
+      transaction.origin !== COLLAB_INDEXEDDB_ORIGIN
     const itemIds = new Set<string>()
     for (const event of events) {
       const [pathRoot] = event.path

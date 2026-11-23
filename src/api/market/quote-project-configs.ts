@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { apiGet, apiPut } from '@/api/core/client'
+import { apiGet, apiPatch, apiPut } from '@/api/core/client'
 import { withIdempotencyKey } from '@/api/core/idempotency'
 import { ENDPOINTS } from '@/constants/endpoints'
 import type { EntityId } from '@/types/entity-id'
@@ -128,6 +128,25 @@ export async function saveQuoteProjectConfig(
     configSchema,
     payload,
     withIdempotencyKey(withConcurrencyHeaders(expectedVersion), idempotencyKey),
+  )
+  return normalizeConfig(response, normalized)
+}
+
+/**
+ * 切换项目资料中的「HRB400E 代取」开关（不覆写运费配置）。
+ * 返回最新项目比价配置投影，避免报单比价快捷按钮假保存或在刷新后弹回。
+ */
+export async function updateQuoteProjectHrb400eFallback(
+  projectId: EntityId,
+  hrb400eFallback: boolean,
+  idempotencyKey?: string,
+): Promise<QuoteProjectConfigRecord> {
+  const normalized = parseEntityId(projectId, 'projectId')
+  const response = await apiPatch(
+    ENDPOINTS.QUOTE_PROJECT_HRB400E_FALLBACK(normalized),
+    configSchema,
+    { hrb400eFallback },
+    withIdempotencyKey(undefined, idempotencyKey),
   )
   return normalizeConfig(response, normalized)
 }

@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { roundAmount } from '@/utils/money'
 import { lengthRank } from './core'
 import type { QuoteRow } from './supplier-price-list-model'
@@ -773,4 +774,91 @@ export function buildBasePriceColumnPrices(args: {
     isFilled: () => false,
   })
   return new Map(plan.map((cell) => [cell.rowKey, cell.value]))
+}
+
+/** 异常价预警阈值（唯一口径：高于同行最低价或偏离同行中位价超过 10% 即提醒；0 元不触发区间预警）。 */
+export const OUTLIER_DEVIATION_RATIO = 0.1
+export const OUTLIER_MIN_TYPICAL_PRICE = 1000
+export const OUTLIER_MAX_TYPICAL_PRICE = 15000
+
+export type PriceOutlierWarning =
+  | {
+      kind: 'range'
+      price: number
+    }
+  | {
+      kind: 'high'
+      diffPercent: number
+      referencePrice: number
+    }
+  | {
+      kind: 'low'
+      diffPercent: number
+      referencePrice: number
+    }
+
+/**
+ * 供应商报价异常检测 —— **防误录预警的唯一纯函数**。
+ *
+ * <p>两层兜底，纯预警不阻断保存：</p>
+ * <ol>
+ *   <li>常规单价区间防少敲/多敲一位数（如 328 或 32800，即 &lt; 1000 或 &gt; 15000；0 除外）；</li>
+ *   <li>横向对比同品牌同规格其它供应商报价：高于同行最低价超过 10%，或低于同行中位价超过 10%。</li>
+ * </ol>
+ */
+export function detectPriceOutlier(args: {
+  price: number | null | undefined
+  peerPrices: readonly number[]
+}): PriceOutlierWarning | null {
+  const { price, peerPrices } = args
+  if (price === null || price === undefined || !Number.isFinite(price)) {
+    return null
+  }
+  if (
+    price > 0 &&
+    (price < OUTLIER_MIN_TYPICAL_PRICE || price > OUTLIER_MAX_TYPICAL_PRICE)
+  ) {
+    return { kind: 'range', price }
+  }
+  const validPeers = peerPrices
+    .filter((item) => Number.isFinite(item) && item > 0)
+    .sort((left, right) => left - right)
+  if (validPeers.length === 0 || price <= 0) return null
+
+  const minPeer = validPeers[0]
+  if (price > minPeer * (1 + OUTLIER_DEVIATION_RATIO)) {
+    return {
+      kind: 'high',
+      diffPercent: Math.round(((price - minPeer) / minPeer) * 100),
+      referencePrice: minPeer,
+    }
+  }
+  const mid = Math.floor(validPeers.length / 2)
+  const medianPeer =
+    validPeers.length % 2 === 1
+      ? validPeers[mid]
+      : (validPeers[mid - 1] + validPeers[mid]) / 2
+  if (price < medianPeer * (1 - OUTLIER_DEVIATION_RATIO)) {
+    return {
+      kind: 'low',
+      diffPercent: Math.round(((medianPeer - price) / medianPeer) * 100),
+      referencePrice: roundPrice(medianPeer),
+    }
+  }
+  return null
+}
+
+/**
+ * 报价过期判定 —— **唯一口径**：钢材行情按日更新，最后编辑/报价时间早于当日零点即为过期。
+ *
+ * <p>从未报价（null/undefined）返回 false，不与「未建列/未报价」混为一谈。</p>
+ */
+export function isQuoteStale(
+  lastEdit: string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!lastEdit) return false
+  const parsed = dayjs(lastEdit)
+  if (!parsed.isValid()) return false
+  return parsed.isBefore(dayjs(now).startOf('day'))
 }

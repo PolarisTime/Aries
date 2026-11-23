@@ -10,6 +10,8 @@ import * as Y from 'yjs'
 import { useAuthStore } from '@/stores/authStore'
 import type { PriceRow } from '../types'
 import { COLLAB_CURSOR_THROTTLE_MS } from './collab-config'
+import { COLLAB_LOCAL_ORIGIN } from './collab-doc'
+import { attachIndexedDbPersistence } from './collab-indexeddb'
 import {
   type CollabPeer,
   type CollabUser,
@@ -72,6 +74,8 @@ export type UseQuoteSheetCollabOptions = {
   transportFactory?: CollabTransportFactory
   /** 测试注入：取票据函数（默认打 quote-sheets 接口）。 */
   requestSession?: CollabSessionRequest
+  /** 是否启用浏览器 IndexedDB 离线持久化（默认 true；无 indexedDB 环境自动降级 no-op）。 */
+  enableOfflinePersistence?: boolean
 }
 
 export type QuoteSheetCollab = {
@@ -87,12 +91,18 @@ export type QuoteSheetCollab = {
   patchItem: (itemId: string, patch: QuoteSheetItemPatch) => void
   /** 上报自己的行光标（节流）；`null` = 离开行。 */
   setCursor: (itemId: string | null) => void
+  /** 协作模式撤销/重做（仅撤销自己的 ton/remark 改动，不影响他人）。 */
+  undo: () => void
+  redo: () => void
+  canUndo: boolean
+  canRedo: boolean
 }
 
 type QuoteSheetRoom = {
   sheetId: string
   doc: Y.Doc
   transport: CollabTransport
+  undoManager: Y.UndoManager
   awareable: boolean
   writable: boolean
   state: CollabEntryState
@@ -225,6 +235,10 @@ export function useQuoteSheetCollab(
       if (cancelled) return
 
       const doc = new Y.Doc()
+      const offline =
+        options.enableOfflinePersistence !== false
+          ? attachIndexedDbPersistence(outcome.session.room, doc)
+          : null
       writeQuoteSheetMeta(doc, { sheetId })
       const transport = factory({
         doc,
@@ -232,15 +246,25 @@ export function useQuoteSheetCollab(
         token: createSessionRefresher(sheetId, requestSessionRef.current),
         url: outcome.session.url,
       })
+      const itemsMap = doc.getMap('items')
+      const undoManager = new Y.UndoManager(itemsMap, {
+        // 只撤销当前用户自己的 ton/remark 改动，远端 update 不进入本地撤销栈
+        trackedOrigins: new Set([COLLAB_LOCAL_ORIGIN]),
+      })
       const created: QuoteSheetRoom = {
         sheetId,
         doc,
         transport,
+        undoManager,
         awareable: Boolean(transport.awareness),
         writable: outcome.session.writable,
         state: 'connecting',
         cleanup: () => {},
       }
+
+      const onStack = () => bump()
+      undoManager.on('stack-item-added', onStack)
+      undoManager.on('stack-item-popped', onStack)
 
       const awareness = transport.awareness
       if (awareness) {
@@ -271,6 +295,10 @@ export function useQuoteSheetCollab(
         unsubscribe()
         stopObserve()
         awareness?.off('change', bump)
+        undoManager.off('stack-item-added', onStack)
+        undoManager.off('stack-item-popped', onStack)
+        undoManager.destroy()
+        offline?.destroy()
         transport.destroy()
         doc.destroy()
       }
@@ -289,7 +317,14 @@ export function useQuoteSheetCollab(
       setRoom(null)
       bump()
     }
-  }, [applyChanges, bump, enabled, localUser, sheetId])
+  }, [
+    applyChanges,
+    bump,
+    enabled,
+    localUser,
+    options.enableOfflinePersistence,
+    sheetId,
+  ])
 
   /*
    * 行集合变化（增行/删行/换单）后给文档补缺失行：
@@ -351,6 +386,18 @@ export function useQuoteSheetCollab(
     }, COLLAB_CURSOR_THROTTLE_MS)
   }
 
+  const undo = () => {
+    const current = roomRef.current
+    if (!current || current.state !== 'connected' || !current.writable) return
+    current.undoManager.undo()
+  }
+
+  const redo = () => {
+    const current = roomRef.current
+    if (!current || current.state !== 'connected' || !current.writable) return
+    current.undoManager.redo()
+  }
+
   return {
     mode: connected ? 'collab' : 'rest',
     state: summarizeCollabState(room ? [room.state] : [], fallbackRef.current),
@@ -363,6 +410,10 @@ export function useQuoteSheetCollab(
       ),
     patchItem,
     setCursor,
+    undo,
+    redo,
+    canUndo: Boolean(connected && room?.writable && room.undoManager.canUndo()),
+    canRedo: Boolean(connected && room?.writable && room.undoManager.canRedo()),
   }
 }
 
