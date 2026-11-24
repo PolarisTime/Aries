@@ -1,3 +1,17 @@
+# [16.6.0](https://github.com/PolarisTime/Aries/compare/v16.5.0...v16.6.0) (2026-11-24)
+
+
+### Bug Fixes
+
+* **price-compare:** 切回报单比价页时默认恢复上一个项目 ([0d85bde](https://github.com/PolarisTime/Aries/commit/0d85bdea07b4f5e6dc131daa24b51510af4e74da))
+* **price-compare:** 完善报单比价与供应商价格表交互、无障碍及深色模式体验 ([919fd8a](https://github.com/PolarisTime/Aries/commit/919fd8ad525cd430c821af9b20a02913875d8f2e))
+
+
+### Features
+
+* **price-compare:** 供应商报价表公司名称页签改为 antd 单选下拉框 ([852d0b1](https://github.com/PolarisTime/Aries/commit/852d0b11f25c6ed44c72c0d7a0d0f657360e2066))
+* **price-compare:** 修复比价假保存、接入报价表白名单与基价规则并加固协作 ([5ae783d](https://github.com/PolarisTime/Aries/commit/5ae783d845bdd24e0fe90f50177e3efe16105561))
+
 # [16.5.0](https://github.com/PolarisTime/Aries/compare/v16.4.0...v16.5.0) (2026-11-20)
 
 
