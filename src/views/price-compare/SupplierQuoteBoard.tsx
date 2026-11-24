@@ -66,6 +66,7 @@ import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
 import { useHasPermission } from '@/hooks/usePermission'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import { message, notification } from '@/utils/antd-app'
+import { createPinyinFilterOption } from '@/utils/pinyin-search'
 import { CollabStatusBar } from './collab/CollabStatusBar'
 import { isCollabFeatureEnabled } from './collab/collab-config'
 import {
@@ -159,6 +160,12 @@ type BrandSaveOutcome = 'saved' | 'skipped' | 'failed'
 
 /** 自动保存的防抖时长：打字停顿这么久就落库。 */
 const AUTOSAVE_DELAY_MS = 800
+
+/** 顶部供应商单选下拉框 DOM id（与可见 label 的 htmlFor 关联）。 */
+const SUPPLIER_SELECT_ID = 'supplier-quote-supplier-select'
+
+/** 供应商下拉拼音/中文过滤函数（模块级常量，避免每次渲染重建）。 */
+const filterSupplierOption = createPinyinFilterOption()
 
 /**
  * 保存失败后的重试退避（毫秒）：只在网络错误 / 5xx 时使用。
@@ -658,18 +665,14 @@ export function SupplierQuoteBoard() {
    */
   const collabEnabled = isCollabFeatureEnabled()
 
-  /** 已打开的供应商标签页（key = supplierId）；按需打开、可关闭，并持久化到本地。 */
-  const [openSupplierIds, setOpenSupplierIds] = useState<string[]>([])
   /**
-   * 是否已完成「页签恢复判断」。
+   * 是否已完成「上次选中供应商的恢复判断」。
    *
-   * <p>供应商列表是异步加载的，恢复必须在列表就绪后进行，且**只能做一次**：
-   * 否则用户手动关掉所有页签后，这个 effect 又会把第一个供应商塞回来
-   * （用户会以为"关不掉"）。同理，写回本地也只在恢复完成后才开始，
-   * 避免首帧的空数组把上次的存档覆盖成空。</p>
+   * <p>供应商列表是异步加载的，恢复必须在列表就绪后进行，且**只能做一次**；
+   * 写回本地也只在恢复完成后才开始，避免首帧的空值把上次存档冲掉。</p>
    */
-  const [supplierTabsHydrated, setSupplierTabsHydrated] = useState(false)
-  /** 当前激活的供应商标签页。 */
+  const [supplierRestored, setSupplierRestored] = useState(false)
+  /** 当前选中的供应商（单选下拉框受控值）。 */
   const [activeSupplierId, setActiveSupplierId] = useState<string>()
   /**
    * 每个品类当前选中的材质 tab（直条 → HRB400 / HRB400E / HRB500E，盘螺 → HRB400 / HRB400E）。
@@ -750,11 +753,10 @@ export function SupplierQuoteBoard() {
   /** 正在配置基价加价规则的品牌（null = 关闭弹窗）。 */
   const [baseRuleBrand, setBaseRuleBrand] = useState<string | null>(null)
   /**
-   * 切换 / 关闭供应商前的三选一弹窗：只有「草稿保存失败」时才会出现。
+   * 切换供应商前的三选一弹窗：只有「草稿保存失败」时才会出现。
    * 保存成功 / 无需保存时直接放行，不再像旧实现那样一律弹「放弃草稿」确认。
    */
   const [pendingLeave, setPendingLeave] = useState<{
-    kind: 'switch' | 'close'
     run: () => void
   } | null>(null)
   /** 批量操作令牌：自增后让所有格子丢掉正在输入的算式文本（见 {@link SheetCell}）。 */
@@ -798,47 +800,32 @@ export function SupplierQuoteBoard() {
   }, [])
 
   /*
-   * 页签恢复：供应商列表就绪后，优先恢复上次打开的供应商页签与激活项；
-   * 没有存档（或存档里的供应商都已不存在）才退回「打开第一个供应商」。
-   *
-   * <p>标签是按需打开/关闭的（antd 规范：只有 card 类型支持添加与关闭）。
-   * 恢复必须**只做一次**：否则用户手动关掉全部页签后会被立即塞回第一个供应商。</p>
+   * 上次选中的供应商恢复：供应商列表就绪后只执行一次，优先恢复上次的 `activeSupplierId`
+   * （兼容早期多页签存档的 `openSupplierIds`）；无存档或已失效则默认选中第一个供应商。
    */
   useEffect(() => {
-    if (suppliers.length === 0 || supplierTabsHydrated) return
+    if (suppliers.length === 0 || supplierRestored) return
     const validIds = new Set(suppliers.map((option) => option.value))
     const stored = readSupplierTabs()
-    const restored = (stored?.openSupplierIds ?? []).filter((id) =>
-      validIds.has(id),
-    )
-    if (restored.length > 0) {
-      setOpenSupplierIds(restored)
-      const storedActive = stored?.activeSupplierId
-      setActiveSupplierId(
-        storedActive && restored.includes(storedActive)
-          ? storedActive
-          : restored[0],
-      )
-    } else {
-      // 没有存档，或存档里的供应商全被删除/停用：回到「默认第一个」
-      const first = suppliers[0].value
-      setOpenSupplierIds([first])
-      setActiveSupplierId(first)
-    }
-    setSupplierTabsHydrated(true)
-  }, [supplierTabsHydrated, suppliers])
+    const restoredId =
+      stored?.activeSupplierId && validIds.has(stored.activeSupplierId)
+        ? stored.activeSupplierId
+        : stored?.openSupplierIds.find((id) => validIds.has(id))
+    setActiveSupplierId(restoredId ?? suppliers[0].value)
+    setSupplierRestored(true)
+  }, [supplierRestored, suppliers])
 
   /*
-   * 页签变化写回本地。只在恢复完成后生效 —— 首帧 `openSupplierIds` 还是空数组，
-   * 提前写会把上次的存档冲掉。
+   * 选中的供应商写回本地与跨端同步分片（沿用 `supplierQuote` 结构，保持历史/跨端兼容）。
+   * 只在恢复完成后生效，避免首帧空值覆盖存档。
    */
   useEffect(() => {
-    if (!supplierTabsHydrated) return
+    if (!supplierRestored || !activeSupplierId) return
     writeSupplierTabs({
-      openSupplierIds,
-      ...(activeSupplierId ? { activeSupplierId } : {}),
+      openSupplierIds: [activeSupplierId],
+      activeSupplierId,
     })
-  }, [activeSupplierId, openSupplierIds, supplierTabsHydrated])
+  }, [activeSupplierId, supplierRestored])
 
   /*
    * 恢复该供应商上次停留的材质 tab：切供应商后 resetBoardState 已清空，这里读回存档。
@@ -1806,19 +1793,19 @@ export function SupplierQuoteBoard() {
   }
 
   /**
-   * 切换 / 关闭供应商前先保存（P1-1）。
+   * 切换供应商前先保存（P1-1）。
    *
-   * <p>成功或无需保存 → 直接执行离开动作；仍有失败 → 弹「重试 / 放弃 / 取消」，
+   * <p>成功或无需保存 → 直接执行切换动作；仍有失败 → 弹「重试 / 放弃并切换 / 取消」，
    * 不再静默丢草稿，也不再像旧实现那样无论有没有改动都先弹一次「放弃草稿」。</p>
    */
-  const requestLeave = (kind: 'switch' | 'close', run: () => void) => {
+  const requestLeave = (run: () => void) => {
     void (async () => {
       const saved = await saveDraftsBeforeLeave()
       if (saved) {
         run()
         return
       }
-      setPendingLeave({ kind, run })
+      setPendingLeave({ run })
     })()
   }
 
@@ -1832,37 +1819,13 @@ export function SupplierQuoteBoard() {
     setPendingLeave(null)
   }
 
-  /** 切换供应商标签：有未保存草稿时先确认（切页会丢弃草稿）。 */
-  const switchSupplierTab = (nextSupplierId: string) => {
-    if (nextSupplierId === supplierId) return
-    requestLeave('switch', () => {
+  /** 下拉切换供应商：有未保存草稿时先尝试保存，失败才弹三选一确认。 */
+  const switchSupplier = (nextSupplierId: string) => {
+    if (!nextSupplierId || nextSupplierId === supplierId) return
+    requestLeave(() => {
       resetBoardState()
       setActiveSupplierId(nextSupplierId)
     })
-  }
-
-  /** 打开（或激活）某个供应商的标签页。 */
-  const openSupplierTab = (nextSupplierId: string) => {
-    setOpenSupplierIds((current) =>
-      current.includes(nextSupplierId) ? current : [...current, nextSupplierId],
-    )
-    switchSupplierTab(nextSupplierId)
-  }
-
-  /** 关闭标签页：关掉当前页时按 antd 示例切到左邻，没有左邻就切第一个。 */
-  const closeSupplierTab = (closingId: string) => {
-    const close = () => {
-      const remaining = openSupplierIds.filter((id) => id !== closingId)
-      setOpenSupplierIds(remaining)
-      if (closingId !== activeSupplierId) return
-      const closedIndex = openSupplierIds.indexOf(closingId)
-      const nextActive = remaining[Math.max(0, closedIndex - 1)] ?? remaining[0]
-      resetBoardState()
-      setActiveSupplierId(nextActive)
-    }
-    // 只有关闭当前供应商才需要先保存；关后台页签不涉及本屏草稿
-    if (closingId === activeSupplierId) requestLeave('close', close)
-    else close()
   }
 
   /* ------------------------------------------------------------ Excel 式选区操作 */
@@ -3142,12 +3105,6 @@ export function SupplierQuoteBoard() {
     return { columns, totalWidth }
   }
 
-  /** 还没打开的供应商（「添加」下拉的候选）。 */
-  const openedSupplierIds = new Set(openSupplierIds)
-  const unopenedSuppliers = suppliers.filter(
-    (option) => !openedSupplierIds.has(option.value),
-  )
-
   /*
    * 一张材质表（材质卡片 + antd Table）。
    *
@@ -3559,11 +3516,6 @@ export function SupplierQuoteBoard() {
     )
   }
 
-  /*
-   * 表格内容整体作为 Tabs 的 `items[].children`：这是 antd 的原生结构 ——
-   * 页签与内容面板连成一体（editable-card 的选中页签不会再像浮空胶囊），
-   * 切换供应商时由 antd 负责卸载/挂载面板。
-   */
   const failedBrandNames = brandNames.filter(
     (brandName) => saveState[brandName] === 'error',
   )
@@ -3596,12 +3548,9 @@ export function SupplierQuoteBoard() {
     }
   }
 
-  const boardContent = (
+  const boardModals = (
     <>
-      {/*
-       * 切换 / 关闭供应商前的三选一：只有草稿保存失败才会出现。
-       * 关闭页签用独立文案（closeTab*），不与「切换供应商会丢弃…」混用。
-       */}
+      {/* 切换供应商前的三选一：只有草稿保存失败才会出现。 */}
       <Modal
         cancelText={t('common.cancel')}
         footer={[
@@ -3616,9 +3565,7 @@ export function SupplierQuoteBoard() {
               setPendingLeave(null)
             }}
           >
-            {pendingLeave?.kind === 'close'
-              ? t('priceCompare.supplierPrice.closeTabDiscardOk')
-              : t('priceCompare.supplierPrice.discardOk')}
+            {t('priceCompare.supplierPrice.discardOk')}
           </Button>,
           <Button
             key="retry"
@@ -3630,16 +3577,10 @@ export function SupplierQuoteBoard() {
         ]}
         onCancel={() => setPendingLeave(null)}
         open={Boolean(pendingLeave)}
-        title={
-          pendingLeave?.kind === 'close'
-            ? t('priceCompare.supplierPrice.closeTabDiscardTitle')
-            : t('priceCompare.supplierPrice.discardTitle')
-        }
+        title={t('priceCompare.supplierPrice.discardTitle')}
       >
         <Typography.Text>
-          {pendingLeave?.kind === 'close'
-            ? t('priceCompare.supplierPrice.closeTabDiscardContent')
-            : t('priceCompare.supplierPrice.discardContent')}
+          {t('priceCompare.supplierPrice.discardContent')}
         </Typography.Text>
         {failedBrandNames.length > 0 ? (
           <Typography.Text
@@ -3729,137 +3670,112 @@ export function SupplierQuoteBoard() {
         rows={baseRuleBrand ? specRowsForBrand(baseRuleBrand) : []}
         supplierId={supplierId}
       />
-
-      {brandNames.length === 0 ? (
-        <Typography.Text type="secondary">
-          {t('priceCompare.supplierPrice.noBrands')}
-        </Typography.Text>
-      ) : specsQuery.isError ? (
-        <Empty description={t('priceCompare.supplierPrice.specsLoadFailed')} />
-      ) : gridsError ? (
-        <EmptyState
-          primaryAction={{
-            label: t('common.retry'),
-            onClick: () => {
-              for (const query of gridQueries) void query.refetch()
-            },
-          }}
-          title={t('common.loadFailed')}
-          type="error"
-        />
-      ) : !gridsReady ? (
-        <div aria-busy="true" className="supplier-price-grid-skeleton">
-          <Skeleton active paragraph={{ rows: 6 }} />
-        </div>
-      ) : categoryGroups.every((group) =>
-          group.sheets.every((sheet) => sheet.rows.length === 0),
-        ) ? (
-        <Empty description={t('priceCompare.supplierPrice.empty')} />
-      ) : (
-        /*
-         * 必须套上 `supplier-price-sheet` 这两层：紧凑行高、单元格内边距、框线颜色、
-         * 输入框高度全部写在那套 CSS 里（行高 = 字号 × 1.8，约 25px）。重做工作台时
-         * 漏了这几个类名，表格退回 antd 默认内边距 —— 行高翻倍、列被容器拉宽，
-         * 一屏只能看到二十来行，就是「不像 Excel」的直接原因。
-         */
-        <div
-          className="supplier-price-sheet supplier-price-sheet-shell supplier-price-board"
-          onKeyDownCapture={handleBoardKeyDown}
-          onPaste={handlePaste}
-        >
-          <div className="supplier-price-sheet-body supplier-price-board-columns">
-            {categoryGroups.map((group, groupIndex) => (
-              <div
-                className="supplier-price-sheet-category"
-                key={group.categoryName}
-              >
-                {/*
-                 * demo：所有品类都改为平铺（材质不再用 tab 切换）。
-                 * 只有一个材质时就是「分区标题 + 一张表」，多个材质时并排 + 竖向分隔线。
-                 */}
-                {group.sheets.length > 0
-                  ? materialRowOf(group, groupIndex)
-                  : materialTabsOf(group, groupIndex)}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </>
   )
 
+  const boardContent =
+    brandNames.length === 0 ? (
+      <Typography.Text type="secondary">
+        {t('priceCompare.supplierPrice.noBrands')}
+      </Typography.Text>
+    ) : specsQuery.isError ? (
+      <Empty description={t('priceCompare.supplierPrice.specsLoadFailed')} />
+    ) : gridsError ? (
+      <EmptyState
+        primaryAction={{
+          label: t('common.retry'),
+          onClick: () => {
+            for (const query of gridQueries) void query.refetch()
+          },
+        }}
+        title={t('common.loadFailed')}
+        type="error"
+      />
+    ) : !gridsReady ? (
+      <div aria-busy="true" className="supplier-price-grid-skeleton">
+        <Skeleton active paragraph={{ rows: 6 }} />
+      </div>
+    ) : categoryGroups.every((group) =>
+        group.sheets.every((sheet) => sheet.rows.length === 0),
+      ) ? (
+      <Empty description={t('priceCompare.supplierPrice.empty')} />
+    ) : (
+      /*
+       * 必须套上 `supplier-price-sheet` 这两层：紧凑行高、单元格内边距、框线颜色、
+       * 输入框高度全部写在那套 CSS 里（行高 = 字号 × 1.8，约 25px）。重做工作台时
+       * 漏了这几个类名，表格退回 antd 默认内边距 —— 行高翻倍、列被容器拉宽，
+       * 一屏只能看到二十来行，就是「不像 Excel」的直接原因。
+       */
+      <div
+        className="supplier-price-sheet supplier-price-sheet-shell supplier-price-board"
+        onKeyDownCapture={handleBoardKeyDown}
+        onPaste={handlePaste}
+      >
+        <div className="supplier-price-sheet-body supplier-price-board-columns">
+          {categoryGroups.map((group, groupIndex) => (
+            <div
+              className="supplier-price-sheet-category"
+              key={group.categoryName}
+            >
+              {/*
+               * demo：所有品类都改为平铺（材质不再用 tab 切换）。
+               * 只有一个材质时就是「分区标题 + 一张表」，多个材质时并排 + 竖向分隔线。
+               */}
+              {group.sheets.length > 0
+                ? materialRowOf(group, groupIndex)
+                : materialTabsOf(group, groupIndex)}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+
   /*
-   * 标签页管理按 antd 规范来：**只有 `editable-card` 类型支持添加与关闭**，
-   * 溢出由内置的 `more`（省略号）自动折叠，不用自己算宽度。
-   *
-   * 「添加」不用 `onEdit('add')` 弹菜单：供应商四十多家，菜单会铺成一整屏（用户已反馈过）。
-   * 改成标签栏右侧一个**可搜索的 Select**，输入公司名即时过滤，选中即打开标签。
-   *
-   * 内容通过 `items[].children` 交给 Tabs（只有当前供应商对应的页签有内容）：
-   * 这是 antd 的原生结构，页签与内容面板连成一体；切换供应商时 antd 会卸载上一家、
-   * 挂载下一家，与「切换供应商即重置本屏临时状态」的行为一致。
+   * 顶部供应商切换栏：单选 antd Select（支持中文与拼音搜索）+ 协作状态栏。
+   * 取代原多公司页签栏，避免供应商较多时页签行拥挤与「已开页签 / 添加下拉」两套入口并存。
    */
-  const supplierTabs = (
-    <Tabs
-      activeKey={supplierId}
-      className="supplier-price-supplier-tabs"
-      hideAdd
-      items={openSupplierIds.map((id) => ({
-        key: id,
-        label: suppliers.find((option) => option.value === id)?.label ?? id,
-        children: id === supplierId ? boardContent : null,
-      }))}
-      onChange={switchSupplierTab}
-      onEdit={(
-        targetKey: React.MouseEvent | React.KeyboardEvent | string,
-        action: 'add' | 'remove',
-      ) => {
-        if (action === 'remove' && typeof targetKey === 'string') {
-          closeSupplierTab(targetKey)
-        }
-      }}
-      style={{ width: '100%' }}
-      tabBarExtraContent={{
-        /*
-         * 协作状态与在线名单放 tab 栏左侧：与页签同基线，不额外占一行；
-         * 未开启协作时 `CollabStatusBar` 渲染 null，页面与改动前一致。
-         */
-        left: (
-          <CollabStatusBar
-            peers={collab.peers}
-            state={collab.state}
-            writable={collab.writable}
-          />
-        ),
-        right: (
-          <Select
-            aria-label={t('priceCompare.supplierPrice.addSupplierTab')}
-            loading={suppliersQuery.isPending}
-            notFoundContent={
-              unopenedSuppliers.length
-                ? undefined
-                : t('priceCompare.supplierPrice.allSuppliersOpened')
-            }
-            onChange={(value: string) => openSupplierTab(value)}
-            options={unopenedSuppliers.map((option) => ({
-              value: option.value,
-              label: option.label,
-            }))}
-            placeholder={t('priceCompare.supplierPrice.addSupplierTab')}
-            showSearch={{ optionFilterProp: 'label' }}
-            style={{ width: 220 }}
-            value={null}
-          />
-        ),
-      }}
-      type="editable-card"
-    />
+  const supplierSelector = (
+    <Flex
+      align="center"
+      className="supplier-price-supplier-bar"
+      gap={12}
+      wrap="wrap"
+    >
+      <Flex align="center" className="supplier-price-supplier-field" gap={8}>
+        <label
+          className="supplier-price-supplier-label"
+          htmlFor={SUPPLIER_SELECT_ID}
+        >
+          {t('priceCompare.supplierPrice.supplier')}
+        </label>
+        <Select<string, { value: string; label: string }>
+          aria-label={t('priceCompare.supplierPrice.supplier')}
+          className="supplier-price-supplier-select"
+          id={SUPPLIER_SELECT_ID}
+          loading={suppliersQuery.isPending}
+          onChange={switchSupplier}
+          options={suppliers.map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+          placeholder={t('priceCompare.supplierPrice.supplierPlaceholder')}
+          popupMatchSelectWidth={false}
+          showSearch={{ filterOption: filterSupplierOption }}
+          value={supplierId}
+        />
+      </Flex>
+      <CollabStatusBar
+        peers={collab.peers}
+        state={collab.state}
+        writable={collab.writable}
+      />
+    </Flex>
   )
 
   if (!supplierId) {
     return (
       <Flex vertical gap={12} className="supplier-price-page">
-        {supplierTabs}
+        {supplierSelector}
         <Typography.Text type="secondary">
           {t('priceCompare.supplierPrice.pickSupplier')}
         </Typography.Text>
@@ -3869,7 +3785,11 @@ export function SupplierQuoteBoard() {
 
   return (
     <Flex vertical gap={12} className="supplier-price-page">
-      {supplierTabs}
+      {supplierSelector}
+      {/* 按 supplierId 重挂载报价表主体，确保切换供应商后格内临时编辑态不会跨供应商残留。 */}
+      <div className="supplier-price-board-container" key={supplierId}>
+        {boardContent}
+      </div>
       <div className="price-compare-save-status-row">
         <PriceCompareSaveStatus
           detail={aggregateSaveDetail}
@@ -3877,6 +3797,7 @@ export function SupplierQuoteBoard() {
           status={aggregateSaveStatus}
         />
       </div>
+      {boardModals}
     </Flex>
   )
 }

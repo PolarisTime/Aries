@@ -5,67 +5,49 @@
  * 表格边框由 antd 的 `bordered` 提供，这里只补密度与数字排版。</p>
  */
 .supplier-price-page {
-  /* 页面本身是纵向 flex：标签栏固定，表格区吃掉剩余高度，表体自己滚动，表头固定 */
+  /* 页面本身是纵向 flex：顶部供应商选择器固定，表格区吃掉剩余高度，表体自己滚动，表头固定 */
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   /*
-   * 页内留白：报价表与供应商标签栏不再贴着内容区左边缘。
+   * 页内留白：报价表与供应商选择栏不再贴着内容区左边缘。
    * 左右 16px 与其它业务页一致，顶部 12px 承接面包屑，底部 24px 给最后一行留呼吸。
    */
   padding: var(--space-sm, 12px) var(--space-md, 16px) var(--space-lg, 24px);
 }
 
-/*
- * 高度接力：内容现在放在 antd Tabs 的 `items[].children` 里（原生页签 + 内容面板），
- * 中间多了三层 DOM，必须把「撑满剩余高度」一路传下去，否则表格退回自然高度、
- * 整个页面被裁掉底部（实测 Tabs 内容区只按内容撑开，`.supplier-price-sheet-shell` 的 flex:1 失效）。
- *
- * 类名是 antd 6 的结构（v5 的 content-holder/tabpane 已改成 body-holder/body/content），
- * 若以后升级 antd 再跟着调整。
- */
-.supplier-price-page > .ant-tabs {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-height: 0;
+/* 顶部供应商单选下拉栏：左放「供应商 + 单选 Select」，右侧按需跟随协作状态。 */
+.supplier-price-supplier-bar {
+  flex: 0 0 auto;
+  min-width: 0;
 }
 
-.supplier-price-page > .ant-tabs > .ant-tabs-body-holder {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-height: 0;
+.supplier-price-supplier-field {
+  min-width: 0;
+  max-width: 100%;
 }
 
-.supplier-price-page > .ant-tabs > .ant-tabs-body-holder > .ant-tabs-body {
-  display: flex;
-  /* 必须纵向：每个供应商页签各有一个 `.ant-tabs-content`，横向排会把非激活页签
-     （空内容）挤在左边、把当前表格推到右侧（实测开两家供应商时表格整体右移 592px）。 */
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
+.supplier-price-supplier-label {
+  flex: 0 0 auto;
+  color: var(--ant-color-text-secondary, rgb(0 0 0 / 65%));
+  font-size: var(--app-font-size);
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
-/*
- * 页签内容容器：还原原 `.supplier-price-page` 的纵向间距（工具栏 / 选区栏 / 表格之间 12px），
- * 同时把剩余高度继续传给表格外壳。
- *
- * <p><b>只能选激活面板</b>（`.ant-tabs-content-active`）。antd 6 里每个供应商页签各是一个
- * `.ant-tabs-content`，非激活的那个靠 `.ant-tabs-content-hidden { display: none }` 不占位；
- * 而 `.supplier-price-page .ant-tabs-content`（两个类）**特异性高于** antd 的那条单类规则，
- * 会把 display 改回 flex —— 隐藏页签于是照样占高度，把当前页签整块往下推。</p>
- *
- * <p>实测症状：只开一个供应商时正常；开第二个后当前报价表整体下移约 340px，
- * 看起来像"整页内容垂直居中"（其实是隐藏面板占了上半屏）。同款写法见
- * `master-host-tabs.css`，那里已经把「只拉伸激活面板」写成约定。</p>
- */
-.supplier-price-page .ant-tabs-content-active {
+.supplier-price-supplier-select {
+  min-width: 260px;
+  max-width: 100%;
+}
+
+/* 主体容器：承接页面剩余高度并向下传给报价表外壳，让表体在容器内滚动。 */
+.supplier-price-board-container {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
   gap: var(--space-sm, 12px);
+  min-width: 0;
   min-height: 0;
 }
 

@@ -274,6 +274,45 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
   const cellInput = (label: string) =>
     container.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`)
 
+  const supplierSelect = () =>
+    container.querySelector<HTMLElement>('.supplier-price-supplier-select')
+
+  const supplierCombobox = () =>
+    container.querySelector<HTMLInputElement>(
+      '#supplier-quote-supplier-select[role="combobox"]',
+    )
+
+  const selectedSupplierText = () =>
+    supplierSelect()?.querySelector('.ant-select-content')?.textContent?.trim()
+
+  async function openSupplierDropdown() {
+    const select = supplierSelect()
+    expect(select, '未找到供应商下拉选择器').not.toBeNull()
+    await act(async () => {
+      select?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      select?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+  }
+
+  async function selectSupplierByLabel(label: string) {
+    await openSupplierDropdown()
+    await waitFor(() =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>('.ant-select-item-option'),
+      ).some((option) => option.textContent?.includes(label)),
+    )
+    const option = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-select-item-option'),
+    ).find((node) => node.textContent?.includes(label))
+    expect(option, `下拉列表中未找到供应商选项：${label}`).toBeDefined()
+    await act(async () => {
+      option?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      option?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+  }
+
   async function typePrice(label: string, value: string) {
     const input = cellInput(label)
     expect(input, `未找到价格输入框 ${label}`).not.toBeNull()
@@ -502,8 +541,8 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
    * 盘螺不分定尺、直条分 9米/12米。混在一张表里时盘螺行在 9米/12米 上永远是空格，
    * 表头宽度还要按两类定尺的并集算。拆成两张表后，每张表只保留自己用得到的定尺列。
    */
-  /** 标签页管理（antd：只有 `editable-card` 支持添加与关闭，溢出用内置 more 折叠）。 */
-  it('供应商标签页可关闭，添加入口是可搜索的选择器', async () => {
+  /** 供应商切换：公司名称不再渲染 tab 行，改为 antd 可搜索单选下拉框（支持中文与拼音搜索）。 */
+  it('顶部公司名称改为 antd 单选下拉框，无公司 tab 行且支持中文与拼音搜索', async () => {
     supplierApi.fetchSupplierOptions.mockResolvedValue([
       SUPPLIER,
       { ...SUPPLIER, id: 's2', value: 's2', label: '杭州中金钢铁有限公司' },
@@ -511,15 +550,62 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
 
     await render()
 
-    const tab = () =>
-      document.querySelector('.supplier-price-supplier-tabs .ant-tabs-tab')
-    expect(tab()?.textContent).toContain('浙江铁都钢材有限公司')
-    expect(tab()?.querySelector('.ant-tabs-tab-remove')).not.toBeNull()
-    // 添加是 Select（可搜索），不是把四十多家铺成菜单
-    expect(
-      document.querySelector('.supplier-price-supplier-tabs .ant-select'),
-    ).not.toBeNull()
-    expect(container.textContent).not.toContain('杭州中金钢铁有限公司')
+    // 不再渲染公司名称页签行
+    expect(document.querySelector('.supplier-price-supplier-tabs')).toBeNull()
+    expect(container.querySelectorAll('.ant-tabs-tab')).toHaveLength(0)
+
+    // 单选 Select 存在、带关联 label 与可访问名，默认选中第一个供应商
+    const labelEl = container.querySelector<HTMLLabelElement>(
+      'label[for="supplier-quote-supplier-select"]',
+    )
+    expect(labelEl?.textContent).toBe(
+      i18n.t('priceCompare.supplierPrice.supplier'),
+    )
+    const combobox = supplierCombobox()
+    expect(combobox).not.toBeNull()
+    expect(combobox?.getAttribute('aria-label')).toBe(
+      i18n.t('priceCompare.supplierPrice.supplier'),
+    )
+    expect(supplierSelect()?.className).toContain('ant-select-single')
+    expect(selectedSupplierText()).toBe('浙江铁都钢材有限公司')
+
+    // 展开下拉看到全部供应商
+    await openSupplierDropdown()
+    await waitFor(
+      () => document.querySelectorAll('.ant-select-item-option').length === 2,
+    )
+    const optionTexts = () =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>('.ant-select-item-option'),
+      ).map((node) => node.textContent?.trim())
+    expect(optionTexts()).toEqual([
+      '浙江铁都钢材有限公司',
+      '杭州中金钢铁有限公司',
+    ])
+
+    // 支持拼音首字母过滤（hzzj → 杭州中金钢铁有限公司）
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.call(combobox, 'hzzj')
+      combobox?.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(optionTexts()).toEqual(['杭州中金钢铁有限公司'])
+  })
+
+  it('刷新后恢复上次选中的供应商（兼容历史存档 activeSupplierId）', async () => {
+    supplierApi.fetchSupplierOptions.mockResolvedValue([SUPPLIER, SUPPLIER2])
+    writeSupplierTabs({
+      openSupplierIds: ['s1', 's2'],
+      activeSupplierId: 's2',
+    })
+
+    await render()
+
+    await waitFor(() => selectedSupplierText() === SUPPLIER2.label)
+    expect(selectedSupplierText()).toBe(SUPPLIER2.label)
   })
 
   /** 回归：只属于不成列品牌（如商品资料 brand='圆钢'）的规格不该变成空行。 */
@@ -809,30 +895,27 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
   })
 
   /*
-   * P1-1：关闭页签前先保存；只有保存失败才弹「重试 / 放弃 / 取消」，
-   * 且关闭页签使用独立文案（closeTab* key 由 task-18 统一补）。
-   * S14：选「放弃」必须同时清掉 localStorage 草稿，切回时不再提示恢复。
+   * P1-1：下拉切换供应商前先保存；只有保存失败才弹「重试 / 放弃并切换 / 取消」，
+   * 选「取消」留在当前供应商并保留草稿；选「放弃并切换」清掉 localStorage 草稿并切到目标供应商（S14）。
    */
-  it('关闭页签前先保存：失败才弹三选一，放弃会清掉本地草稿', async () => {
+  it('切换供应商前先保存：失败才弹三选一，取消留原位，放弃会清掉本地草稿并切换', async () => {
+    supplierApi.fetchSupplierOptions.mockResolvedValue([SUPPLIER, SUPPLIER2])
     writeDrafts('s1', { 中天: { [quoteRowKey(ROW_A)]: 3290 } })
     // 4xx：不可自动修复，必须先让用户决定
     priceApi.saveSupplierPriceColumnItems.mockRejectedValue(
       Object.assign(new Error('价格不能为负'), { status: 422 }),
     )
     await render()
-    await waitFor(() => Boolean(document.querySelector('.ant-tabs-tab-remove')))
+    await waitFor(() => selectedSupplierText() === SUPPLIER.label)
 
-    await act(async () => {
-      document
-        .querySelector<HTMLElement>('.ant-tabs-tab-remove')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 50))
-    })
+    await selectSupplierByLabel(SUPPLIER2.label)
 
-    // 关闭页签独立文案（不用「切换供应商会丢弃…」）
+    // 保存失败：弹出三选一确认框，且当前受控下拉框仍停留在原供应商
     expect(document.body.textContent).toContain(
-      i18n.t('priceCompare.supplierPrice.closeTabDiscardTitle'),
+      i18n.t('priceCompare.supplierPrice.discardTitle'),
     )
+    expect(selectedSupplierText()).toBe(SUPPLIER.label)
+
     const dialog = document.querySelector('.ant-modal')
     const buttons = Array.from(
       dialog?.querySelectorAll<HTMLButtonElement>('button') ?? [],
@@ -843,23 +926,42 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
       .join('|')
     expect(labels).toContain(i18n.t('common.cancel').replace(/\s/g, ''))
     expect(labels).toContain(
-      i18n.t('priceCompare.supplierPrice.closeTabDiscardOk').replace(/\s/g, ''),
+      i18n.t('priceCompare.supplierPrice.discardOk').replace(/\s/g, ''),
     )
     expect(labels).toContain(
       i18n.t('priceCompare.supplierPrice.retry').replace(/\s/g, ''),
     )
 
-    const discard = buttons.find((button) =>
+    // 先点「取消」：留在 s1 且本地草稿不丢失
+    const cancelBtn = buttons.find(
+      (button) =>
+        button.textContent?.replace(/\s/g, '') ===
+        i18n.t('common.cancel').replace(/\s/g, ''),
+    )
+    await act(async () => {
+      cancelBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(selectedSupplierText()).toBe(SUPPLIER.label)
+    expect(readDrafts('s1')).not.toEqual({})
+
+    // 再次尝试切换并点「放弃并切换」：清空本地草稿并切换到 s2
+    await selectSupplierByLabel(SUPPLIER2.label)
+    const discard = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('.ant-modal button'),
+    ).find((button) =>
       button.textContent?.includes(
-        i18n.t('priceCompare.supplierPrice.closeTabDiscardOk'),
+        i18n.t('priceCompare.supplierPrice.discardOk'),
       ),
     )
     await act(async () => {
       discard?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 20))
     })
 
     expect(readDrafts('s1')).toEqual({})
+    await waitFor(() => selectedSupplierText() === SUPPLIER2.label)
+    expect(selectedSupplierText()).toBe(SUPPLIER2.label)
   }, 10000)
 
   /*
@@ -1384,39 +1486,23 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
   }, 10000)
 
   /*
-   * P1-1：切换供应商前先保存；保存成功直接切换，不再无条件弹「放弃草稿」。
+   * P1-1：下拉切换供应商前先保存；保存成功直接切换，不再无条件弹「放弃草稿」。
    */
   it('切换供应商前先保存：成功即直接切换，不弹放弃确认', async () => {
     supplierApi.fetchSupplierOptions.mockResolvedValue([SUPPLIER, SUPPLIER2])
-    writeSupplierTabs({
-      openSupplierIds: ['s1', 's2'],
-      activeSupplierId: 's1',
-    })
     await render()
     await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
 
     await typePrice('中天 HRB400E 12 9米', '3290')
     await pressKey(cellInput('中天 HRB400E 12 9米'), 'Enter')
 
-    const targetTab = Array.from(
-      container.querySelectorAll<HTMLElement>('.ant-tabs-tab'),
-    ).find((tab) => tab.textContent?.includes(SUPPLIER2.label))
-    expect(targetTab).toBeDefined()
-    await act(async () => {
-      targetTab?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      await new Promise((resolve) => setTimeout(resolve, 50))
-    })
+    await selectSupplierByLabel(SUPPLIER2.label)
 
     expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalled()
     expect(document.body.textContent).not.toContain(
       i18n.t('priceCompare.supplierPrice.discardTitle'),
     )
-    await waitFor(() =>
-      Boolean(
-        container
-          .querySelector('.ant-tabs-tab-active')
-          ?.textContent?.includes(SUPPLIER2.label),
-      ),
-    )
+    await waitFor(() => selectedSupplierText() === SUPPLIER2.label)
+    expect(selectedSupplierText()).toBe(SUPPLIER2.label)
   }, 10000)
 })

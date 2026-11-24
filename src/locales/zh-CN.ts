@@ -2924,17 +2924,11 @@ export const zhCN = {
       saveNothing: '没有需要保存的改动',
       material: '材质',
       specNo: '规格',
-      addSupplierTab: '添加供应商',
-      allSuppliersOpened: '已全部打开',
       length: '定尺',
       viewModeBrands: '品牌成列',
       viewModeSpecs: '规格横置',
       materialColumn: '材质',
       specColumn: '规格',
-      closeTabDiscardTitle: '关闭页签前保存失败',
-      closeTabDiscardContent:
-        '该供应商还有未保存的报价；关闭页签会丢弃这些改动。',
-      closeTabDiscardOk: '放弃并关闭',
       basePriceRuleTitle: '基价加价',
       basePriceRuleMenu: '基价加价…',
       basePriceRuleHint:

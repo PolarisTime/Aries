@@ -2940,17 +2940,11 @@ export const enUS = {
       saveNothing: 'Nothing to save',
       material: 'Material',
       specNo: 'Size',
-      addSupplierTab: 'Add supplier',
-      allSuppliersOpened: 'All suppliers opened',
       length: 'Length',
       viewModeBrands: 'Brands as columns',
       viewModeSpecs: 'Specs across columns',
       materialColumn: 'Material',
       specColumn: 'Spec',
-      closeTabDiscardTitle: 'Save failed before closing',
-      closeTabDiscardContent:
-        'This supplier still has unsaved quotes; closing the tab will discard them.',
-      closeTabDiscardOk: 'Discard and close',
       basePriceRuleTitle: 'Base price & premiums',
       basePriceRuleMenu: 'Base price & premiums…',
       basePriceRuleHint:
