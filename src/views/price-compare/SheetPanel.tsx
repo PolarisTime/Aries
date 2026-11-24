@@ -4,12 +4,10 @@ import {
   LockOutlined,
   MinusOutlined,
   PlusOutlined,
-  RedoOutlined,
   ReloadOutlined,
   SettingOutlined,
   SwapOutlined,
   TrophyOutlined,
-  UndoOutlined,
   UnlockOutlined,
 } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
@@ -770,10 +768,6 @@ function SheetHeader({
   hrb400eFallbackLoading = false,
   onToggleHrb400eFallback,
   readOnly = false,
-  canUndo = false,
-  canRedo = false,
-  onUndo,
-  onRedo,
   columnSettingsSlot,
   spotUpdatedAt,
   spotPricesFailed,
@@ -797,10 +791,6 @@ function SheetHeader({
   hrb400eFallbackLoading?: boolean
   onToggleHrb400eFallback?: () => void
   readOnly?: boolean
-  canUndo?: boolean
-  canRedo?: boolean
-  onUndo?: () => void
-  onRedo?: () => void
   /** 列显示设置按钮: 由 SheetPanel 构造后作为节点下传(不再逐层透传 5 个 props)。 */
   columnSettingsSlot: React.ReactNode
   /** 现货价实时派生：最新修改时间 + 刷新入口（替代原来的手动「导入」）。 */
@@ -842,10 +832,6 @@ function SheetHeader({
         allowHrb400eFallback={allowHrb400eFallback}
         hrb400eFallbackLoading={hrb400eFallbackLoading}
         onToggleHrb400eFallback={onToggleHrb400eFallback}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndo={onUndo}
-        onRedo={onRedo}
       />
     </Flex>
   )
@@ -988,50 +974,6 @@ function SheetDateFields({
   )
 }
 
-/** 工具栏撤销/重做图标按钮组（与 Ctrl+Z / Ctrl+Y 共用同一状态）。 */
-function SheetUndoRedoButtons({
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
-}: {
-  canUndo: boolean
-  canRedo: boolean
-  onUndo?: () => void
-  onRedo?: () => void
-}) {
-  const { t } = useTranslation()
-  if (!onUndo && !onRedo) return null
-  return (
-    <>
-      <Divider
-        className="price-compare-toolbar-divider"
-        orientation="vertical"
-      />
-      {onUndo ? (
-        <Tooltip title={t('priceCompare.sheet.undoTooltip')}>
-          <Button
-            aria-label={t('priceCompare.sheet.undoTooltip')}
-            disabled={!canUndo}
-            icon={<UndoOutlined />}
-            onClick={onUndo}
-          />
-        </Tooltip>
-      ) : null}
-      {onRedo ? (
-        <Tooltip title={t('priceCompare.sheet.redoTooltip')}>
-          <Button
-            aria-label={t('priceCompare.sheet.redoTooltip')}
-            disabled={!canRedo}
-            icon={<RedoOutlined />}
-            onClick={onRedo}
-          />
-        </Tooltip>
-      ) : null}
-    </>
-  )
-}
-
 /** 现货价查询失败时的内联状态与重试按钮。 */
 function SpotPricesErrorNotice({
   failed,
@@ -1088,7 +1030,7 @@ function Hrb400eFallbackButton({
   )
 }
 
-/** 表头操作行: 锁定 | 分析与取价 | 撤销重做 | 列设置与配置 + 选中行批量操作。 */
+/** 表头操作行: 锁定 | 分析与取价 | 列设置与配置 + 选中行批量操作。 */
 function SheetActionRow({
   sheet,
   readOnly,
@@ -1108,10 +1050,6 @@ function SheetActionRow({
   allowHrb400eFallback,
   hrb400eFallbackLoading,
   onToggleHrb400eFallback,
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
 }: {
   sheet: PriceSheet
   readOnly: boolean
@@ -1133,10 +1071,6 @@ function SheetActionRow({
   allowHrb400eFallback: boolean
   hrb400eFallbackLoading: boolean
   onToggleHrb400eFallback?: () => void
-  canUndo: boolean
-  canRedo: boolean
-  onUndo?: () => void
-  onRedo?: () => void
 }) {
   const { t } = useTranslation()
 
@@ -1199,12 +1133,6 @@ function SheetActionRow({
           })}
         </Text>
       ) : null}
-      <SheetUndoRedoButtons
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndo={onUndo}
-        onRedo={onRedo}
-      />
       <Divider
         className="price-compare-toolbar-divider"
         orientation="vertical"
@@ -1304,11 +1232,6 @@ type Props = {
   spotRef: React.RefObject<HTMLSpanElement | null>
   /** 被他人签出编辑时只读(禁用编辑类交互) */
   readOnly?: boolean
-  /** 工具栏可见撤销/重做入口（与 Ctrl+Z/Ctrl+Y 共用同一状态）。 */
-  canUndo?: boolean
-  canRedo?: boolean
-  onUndo?: () => void
-  onRedo?: () => void
   /** 上报实时协作连接态与撤销/重做句柄，供页面级编辑锁横幅和快捷键联动。 */
   onCollabStateChange?: (bridge: SheetCollabBridge | null) => void
 }
@@ -1339,10 +1262,6 @@ export function SheetPanel(props: Props) {
     chrome = true,
     spotRef,
     readOnly: readOnlyProp = false,
-    canUndo = false,
-    canRedo = false,
-    onUndo,
-    onRedo,
     onCollabStateChange,
   } = props
   const { t } = useTranslation()
@@ -1704,10 +1623,6 @@ export function SheetPanel(props: Props) {
         hrb400eFallbackLoading={hrb400eFallbackLoading}
         onToggleHrb400eFallback={onToggleHrb400eFallback}
         readOnly={readOnly}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndo={onUndo}
-        onRedo={onRedo}
         spotUpdatedAt={spotUpdatedAt}
         // 用 `error != null` 而不是 `isError`：初次取数失败与「已取到数据后轮询/手动刷新失败」
         // 都要提示，否则屏幕上留着上一轮价格、用户完全不知道这次没取到新价。

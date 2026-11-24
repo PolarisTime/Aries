@@ -122,6 +122,8 @@ export const QUERY_KEYS = {
     projects: ['price-compare', 'projects'] as const,
     /** 比价页商品规格清单：来自商品主数据（替代静态打包 varieties.json）。 */
     varieties: ['price-compare', 'varieties'] as const,
+    /** 供应商报价表：当前已有有效报价的供应商摘要（下拉排序与有价图标的唯一数据源）。 */
+    quotedSuppliers: ['price-compare', 'quoted-suppliers'] as const,
     materialBrands: ['price-compare', 'material-brands'] as const,
     purchaseOrderTonnages: [
       'price-compare',

@@ -150,10 +150,6 @@ describe('SheetPanel 品牌列排序持久化与协作/编辑锁协同', () => {
     onCollabStateChange?: (bridge: SheetCollabBridge | null) => void
     hrb400eFallbackLoading?: boolean
     onToggleHrb400eFallback?: () => void
-    canUndo?: boolean
-    canRedo?: boolean
-    onUndo?: () => void
-    onRedo?: () => void
   }) => {
     function Harness() {
       const [rows, setRows] = useState<PriceRow[]>([{ ...ROW }])
@@ -175,10 +171,6 @@ describe('SheetPanel 品牌列排序持久化与协作/编辑锁协同', () => {
         onCollabStateChange: options?.onCollabStateChange,
         hrb400eFallbackLoading: options?.hrb400eFallbackLoading,
         onToggleHrb400eFallback: options?.onToggleHrb400eFallback,
-        canUndo: options?.canUndo,
-        canRedo: options?.canRedo,
-        onUndo: options?.onUndo,
-        onRedo: options?.onRedo,
       })
     }
     act(() => {
@@ -241,31 +233,15 @@ describe('SheetPanel 品牌列排序持久化与协作/编辑锁协同', () => {
     )
   })
 
-  it('3 品牌表头右键菜单提供左移/右移一列，且工具栏支持撤销/重做/HRB400E loading/新增行自动聚焦', async () => {
-    const onUndo = vi.fn()
-    const onRedo = vi.fn()
+  it('3 品牌表头右键菜单提供左移/右移一列，且工具栏不渲染撤销/重做按钮，支持 HRB400E loading 与新增行自动聚焦', async () => {
     renderPanel({
       hrb400eFallbackLoading: true,
       onToggleHrb400eFallback: vi.fn(),
-      canUndo: true,
-      canRedo: false,
-      onUndo,
-      onRedo,
     })
 
-    // 工具栏撤销/重做按钮状态与派发
-    const undoBtn = container.querySelector<HTMLButtonElement>(
-      `button[aria-label="${i18n.t('priceCompare.sheet.undoTooltip')}"]`,
-    )
-    const redoBtn = container.querySelector<HTMLButtonElement>(
-      `button[aria-label="${i18n.t('priceCompare.sheet.redoTooltip')}"]`,
-    )
-    expect(undoBtn?.disabled).toBe(false)
-    expect(redoBtn?.disabled).toBe(true)
-    act(() => {
-      undoBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(onUndo).toHaveBeenCalledTimes(1)
+    // 工具栏不再渲染撤销/重做图标按钮
+    expect(container.querySelector('.anticon-undo')).toBeNull()
+    expect(container.querySelector('.anticon-redo')).toBeNull()
 
     // HRB400E 按钮处于 loading 状态
     const hrbBtn = Array.from(container.querySelectorAll('button')).find(

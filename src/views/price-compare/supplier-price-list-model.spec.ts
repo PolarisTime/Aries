@@ -18,6 +18,7 @@ import {
   type ServerCell,
   serverCellsOf,
   setDraftPrice,
+  sortSuppliersByQuoted,
 } from './supplier-price-list-model'
 
 const row = (
@@ -331,5 +332,31 @@ describe('buildBrandCatalog：叠加供应商品牌规格白名单', () => {
     // 永钢未在白名单中配置 → 保持商品资料全量
     expect(catalogHas(straight, '永钢', 'HRB400E', 12, '9米')).toBe(true)
     expect(catalogHas(straight, '永钢', 'HRB400E', 14, '9米')).toBe(true)
+  })
+})
+
+describe('sortSuppliersByQuoted：有价供应商优先且组内保序', () => {
+  const list = [
+    { value: 's1', label: 'A公司' },
+    { value: 's2', label: 'B公司' },
+    { value: 's3', label: 'C公司' },
+    { value: 's4', label: 'D公司' },
+  ]
+
+  it('有价格的排前面、无价格的排后面，两组内保持原相对顺序且不改原数组', () => {
+    const sorted = sortSuppliersByQuoted(list, new Set(['s4', 's2']))
+    expect(sorted.map((item) => item.value)).toEqual(['s2', 's4', 's1', 's3'])
+    expect(list.map((item) => item.value)).toEqual(['s1', 's2', 's3', 's4'])
+  })
+
+  it('无有价记录或全部有价时保持原始顺序', () => {
+    expect(
+      sortSuppliersByQuoted(list, new Set()).map((item) => item.value),
+    ).toEqual(['s1', 's2', 's3', 's4'])
+    expect(
+      sortSuppliersByQuoted(list, new Set(['s1', 's2', 's3', 's4'])).map(
+        (item) => item.value,
+      ),
+    ).toEqual(['s1', 's2', 's3', 's4'])
   })
 })

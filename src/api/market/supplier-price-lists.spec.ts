@@ -11,6 +11,7 @@ vi.mock('@/api/core/client', () => client)
 
 import {
   addSupplierPriceColumn,
+  fetchQuotedSuppliers,
   fetchSpecRows,
   removeSupplierPriceColumn,
   saveSupplierPriceColumnItems,
@@ -125,5 +126,33 @@ describe('写操作必须带幂等键（后端类级 @IdempotencyRequired）', (
     client.apiDeleteNoContent.mockReset().mockResolvedValue(undefined)
     await removeSupplierPriceColumn('1')
     expect(headerOf(client.apiDeleteNoContent.mock.calls[0]?.[1])).toBeTruthy()
+  })
+})
+
+describe('fetchQuotedSuppliers：已有报价供应商清单', () => {
+  it('保留 19 位雪花 ID 字符串精度并过滤无效/零条目记录', async () => {
+    client.apiGet.mockReset().mockResolvedValueOnce([
+      { supplierId: '1900000000000000123', quotedItemCount: 12 },
+      { supplierId: '1900000000000000456', quotedItemCount: '3' },
+      { supplierId: '1900000000000000789', quotedItemCount: 0 },
+      { supplierId: '   ', quotedItemCount: 5 },
+    ])
+    const controller = new AbortController()
+
+    const result = await fetchQuotedSuppliers(controller.signal, {
+      suppressGlobalErrorToast: true,
+    })
+
+    expect(client.apiGet.mock.calls[0]?.[0]).toBe(
+      '/supplier-price-lists/quoted-suppliers',
+    )
+    expect(client.apiGet.mock.calls[0]?.[2]).toEqual({
+      signal: controller.signal,
+      suppressGlobalErrorToast: true,
+    })
+    expect(result).toEqual([
+      { supplierId: '1900000000000000123', quotedItemCount: 12 },
+      { supplierId: '1900000000000000456', quotedItemCount: 3 },
+    ])
   })
 })

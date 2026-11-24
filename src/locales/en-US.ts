@@ -2919,6 +2919,7 @@ export const enUS = {
       brand: 'Brand',
       supplier: 'Supplier',
       supplierPlaceholder: 'Select a supplier',
+      hasQuotedPrices: 'Has quotes',
       lastEdited: 'Last edited',
       lastEditedHint:
         'Recorded automatically when a (supplier, brand) price list is saved as a whole; no manual date entry',
@@ -3220,8 +3221,6 @@ export const enUS = {
       columnPanelResetOrder: 'Reset order',
       columnPanelFixed: 'Fixed columns',
       columnPanelBrands: 'Brand columns',
-      undoTooltip: 'Undo (Ctrl+Z)',
-      redoTooltip: 'Redo (Ctrl+Y)',
       addSeparator: 'Add separator',
       separator: 'Separator',
       removeSelectedTitle: 'Delete {{selected}} selected row(s)?',

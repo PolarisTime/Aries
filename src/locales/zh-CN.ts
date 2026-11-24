@@ -2908,6 +2908,7 @@ export const zhCN = {
       brand: '品牌',
       supplier: '供应商',
       supplierPlaceholder: '选择供应商',
+      hasQuotedPrices: '已有报价',
       lastEdited: '最后编辑',
       lastEditedHint:
         '价格表按（供应商, 品牌）整列保存时自动记录最后编辑时间，不需要手工选日期',
@@ -3174,8 +3175,6 @@ export const zhCN = {
       columnPanelResetOrder: '恢复默认顺序',
       columnPanelFixed: '固定列',
       columnPanelBrands: '品牌列',
-      undoTooltip: '撤销 (Ctrl+Z)',
-      redoTooltip: '重做 (Ctrl+Y)',
       selectProduct: '选择商品',
       /** 规格来自已保存行但不在项目可选商品范围: 只回显、不可选。 */
       varietyOutOfScope: '不在项目可选范围',

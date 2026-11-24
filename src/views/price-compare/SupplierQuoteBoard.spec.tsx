@@ -16,6 +16,7 @@ import {
 const priceApi = vi.hoisted(() => ({
   fetchSpecRows: vi.fn(),
   fetchSupplierPriceGrid: vi.fn(),
+  fetchQuotedSuppliers: vi.fn(),
   addSupplierPriceColumn: vi.fn(),
   saveSupplierPriceColumnItems: vi.fn(),
   removeSupplierPriceColumn: vi.fn(),
@@ -191,6 +192,7 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     priceApi.fetchSupplierPriceGrid
       .mockReset()
       .mockResolvedValue(gridWithColumn())
+    priceApi.fetchQuotedSuppliers.mockReset().mockResolvedValue([])
     priceApi.addSupplierPriceColumn.mockReset().mockResolvedValue(COLUMN)
     priceApi.saveSupplierPriceColumnItems.mockReset().mockResolvedValue({
       ...COLUMN,
@@ -607,6 +609,188 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     await waitFor(() => selectedSupplierText() === SUPPLIER2.label)
     expect(selectedSupplierText()).toBe(SUPPLIER2.label)
   })
+
+  it('有价格的供应商排在前面先显示并带图标，组内保持原顺序且首次默认选中首个有价供应商', async () => {
+    const supplier3 = {
+      ...SUPPLIER,
+      id: 's3',
+      value: 's3',
+      supplierName: '杭州中金钢铁有限公司',
+      label: '杭州中金钢铁有限公司',
+    }
+    const supplier4 = {
+      ...SUPPLIER,
+      id: 's4',
+      value: 's4',
+      supplierName: '物产中大金属集团有限公司',
+      label: '物产中大金属集团有限公司',
+    }
+    supplierApi.fetchSupplierOptions.mockResolvedValue([
+      SUPPLIER,
+      SUPPLIER2,
+      supplier3,
+      supplier4,
+    ])
+    priceApi.fetchQuotedSuppliers.mockResolvedValue([
+      { supplierId: 's2', quotedItemCount: 8 },
+      { supplierId: 's4', quotedItemCount: 3 },
+    ])
+
+    await render()
+
+    // 首次进入无存档：默认选中排序后的首位（首个有价格的供应商 s2），且选中框带图标
+    await waitFor(() => selectedSupplierText() === SUPPLIER2.label)
+    expect(selectedSupplierText()).toBe(SUPPLIER2.label)
+    const selectedIcon = supplierSelect()?.querySelector(
+      '.ant-select-content .supplier-price-supplier-quoted-icon',
+    )
+    expect(selectedIcon).not.toBeNull()
+    expect(selectedIcon?.getAttribute('aria-label')).toBe(
+      i18n.t('priceCompare.supplierPrice.hasQuotedPrices'),
+    )
+
+    // 展开下拉：有价格的 s2、s4 排在前面并带图标，无价格的 s1、s3 排后面且不带图标（组内保持原顺序）
+    await openSupplierDropdown()
+    await waitFor(
+      () => document.querySelectorAll('.ant-select-item-option').length === 4,
+    )
+    const optionNodes = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-select-item-option'),
+    )
+    expect(optionNodes.map((node) => node.textContent?.trim())).toEqual([
+      SUPPLIER2.label,
+      supplier4.label,
+      SUPPLIER.label,
+      supplier3.label,
+    ])
+    expect(
+      optionNodes.map((node) =>
+        Boolean(node.querySelector('.supplier-price-supplier-quoted-icon')),
+      ),
+    ).toEqual([true, true, false, false])
+
+    // 带图标后拼音首字母搜索仍正常命中（wczd → 物产中大金属集团有限公司）
+    const combobox = supplierCombobox()
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set?.call(combobox, 'wczd')
+      combobox?.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    const filtered = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-select-item-option'),
+    )
+    expect(filtered.map((node) => node.textContent?.trim())).toEqual([
+      supplier4.label,
+    ])
+    expect(
+      filtered[0]?.querySelector('.supplier-price-supplier-quoted-icon'),
+    ).not.toBeNull()
+  })
+
+  it('存在本地存档时仍恢复存档供应商，且下拉继续把有价格的供应商排在前面并标图标', async () => {
+    supplierApi.fetchSupplierOptions.mockResolvedValue([SUPPLIER, SUPPLIER2])
+    priceApi.fetchQuotedSuppliers.mockResolvedValue([
+      { supplierId: 's2', quotedItemCount: 5 },
+    ])
+    writeSupplierTabs({
+      openSupplierIds: ['s1'],
+      activeSupplierId: 's1',
+    })
+
+    await render()
+
+    await waitFor(() => selectedSupplierText() === SUPPLIER.label)
+    expect(selectedSupplierText()).toBe(SUPPLIER.label)
+    // 当前恢复的 s1 无价格，选中框不展示图标
+    expect(
+      supplierSelect()?.querySelector(
+        '.ant-select-content .supplier-price-supplier-quoted-icon',
+      ),
+    ).toBeNull()
+
+    await openSupplierDropdown()
+    await waitFor(
+      () => document.querySelectorAll('.ant-select-item-option').length === 2,
+    )
+    const optionNodes = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-select-item-option'),
+    )
+    expect(optionNodes.map((node) => node.textContent?.trim())).toEqual([
+      SUPPLIER2.label,
+      SUPPLIER.label,
+    ])
+    expect(
+      optionNodes.map((node) =>
+        Boolean(node.querySelector('.supplier-price-supplier-quoted-icon')),
+      ),
+    ).toEqual([true, false])
+  })
+
+  it('已有报价供应商接口失败时静默降级：不弹错、按原始顺序展示且无图标', async () => {
+    supplierApi.fetchSupplierOptions.mockResolvedValue([SUPPLIER, SUPPLIER2])
+    priceApi.fetchQuotedSuppliers.mockRejectedValue(new Error('network error'))
+
+    await render()
+
+    await waitFor(() => selectedSupplierText() === SUPPLIER.label)
+    expect(selectedSupplierText()).toBe(SUPPLIER.label)
+    expect(feedback.message.error).not.toHaveBeenCalled()
+    expect(feedback.notification.error).not.toHaveBeenCalled()
+
+    await openSupplierDropdown()
+    await waitFor(
+      () => document.querySelectorAll('.ant-select-item-option').length === 2,
+    )
+    const optionNodes = Array.from(
+      document.querySelectorAll<HTMLElement>('.ant-select-item-option'),
+    )
+    expect(optionNodes.map((node) => node.textContent?.trim())).toEqual([
+      SUPPLIER.label,
+      SUPPLIER2.label,
+    ])
+    expect(
+      optionNodes.some((node) =>
+        Boolean(node.querySelector('.supplier-price-supplier-quoted-icon')),
+      ),
+    ).toBe(false)
+  })
+
+  it('录价自动保存成功后刷新已有报价供应商清单，下拉图标与排序同步更新', async () => {
+    supplierApi.fetchSupplierOptions.mockResolvedValue([SUPPLIER, SUPPLIER2])
+    priceApi.fetchQuotedSuppliers
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ supplierId: 's1', quotedItemCount: 1 }])
+
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    expect(
+      supplierSelect()?.querySelector(
+        '.ant-select-content .supplier-price-supplier-quoted-icon',
+      ),
+    ).toBeNull()
+
+    await typePrice('中天 HRB400E 12 9米', '3310')
+    await pressKey(cellInput('中天 HRB400E 12 9米'), 'Enter')
+    await flushAutosave()
+
+    await waitFor(
+      () =>
+        supplierSelect()?.querySelector(
+          '.ant-select-content .supplier-price-supplier-quoted-icon',
+        ) !== null,
+    )
+    expect(
+      priceApi.fetchQuotedSuppliers.mock.calls.length,
+    ).toBeGreaterThanOrEqual(2)
+    expect(
+      supplierSelect()?.querySelector(
+        '.ant-select-content .supplier-price-supplier-quoted-icon',
+      ),
+    ).not.toBeNull()
+  }, 10000)
 
   /** 回归：只属于不成列品牌（如商品资料 brand='圆钢'）的规格不该变成空行。 */
   it('不成列的品牌（如圆钢）不会把自己的规格变成空行', async () => {

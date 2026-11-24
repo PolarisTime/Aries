@@ -16,6 +16,7 @@ import type { SupplierPriceGrid } from '@/api/market/supplier-price-lists'
 const priceApi = vi.hoisted(() => ({
   fetchSpecRows: vi.fn(),
   fetchSupplierPriceGrid: vi.fn(),
+  fetchQuotedSuppliers: vi.fn(),
   addSupplierPriceColumn: vi.fn(),
   saveSupplierPriceColumnItems: vi.fn(),
   removeSupplierPriceColumn: vi.fn(),
@@ -159,6 +160,7 @@ describe('供应商报价表：Excel 式网格操作', () => {
     priceApi.fetchSupplierPriceGrid
       .mockReset()
       .mockResolvedValue(gridOfZhongtian())
+    priceApi.fetchQuotedSuppliers.mockReset().mockResolvedValue([])
     priceApi.addSupplierPriceColumn.mockReset().mockResolvedValue(COLUMN)
     priceApi.saveSupplierPriceColumnItems.mockReset().mockResolvedValue({
       ...COLUMN,

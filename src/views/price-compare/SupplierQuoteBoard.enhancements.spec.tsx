@@ -12,6 +12,7 @@ import type { SupplierBrandSpecItem } from '@/api/master/supplier-brand-specs'
 const priceApi = vi.hoisted(() => ({
   fetchSpecRows: vi.fn(),
   fetchSupplierPriceGrid: vi.fn(),
+  fetchQuotedSuppliers: vi.fn(),
   addSupplierPriceColumn: vi.fn(),
   saveSupplierPriceColumnItems: vi.fn(),
   removeSupplierPriceColumn: vi.fn(),
@@ -230,6 +231,7 @@ describe('SupplierQuoteBoard 批1与批3增强能力', () => {
     supplierApi.fetchSupplierOptions.mockResolvedValue([SUPPLIER])
     priceApi.fetchSpecRows.mockResolvedValue([ROW_12, ROW_14, ROW_16])
     priceApi.fetchSupplierPriceGrid.mockResolvedValue(makeGrid())
+    priceApi.fetchQuotedSuppliers.mockReset().mockResolvedValue([])
     priceApi.saveSupplierPriceColumnItems.mockResolvedValue({
       ...makeGrid().columns[0],
       version: 2,

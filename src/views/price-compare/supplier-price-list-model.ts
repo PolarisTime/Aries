@@ -18,6 +18,29 @@ export const quoteRowKey = (row: QuoteRow): string =>
   `${row.category}|${row.material}|${row.spec}|${row.length}`
 
 /**
+ * 供应商下拉排序（唯一口径）：已有有效报价的供应商排在前面，未报价的排在后面，
+ * 两组内部均保持主数据返回的原始相对顺序（稳定划分）。
+ */
+export function sortSuppliersByQuoted<T extends { value: string }>(
+  suppliers: readonly T[],
+  quotedSupplierIds: ReadonlySet<string>,
+): T[] {
+  if (quotedSupplierIds.size === 0 || suppliers.length <= 1) {
+    return [...suppliers]
+  }
+  const quoted: T[] = []
+  const unquoted: T[] = []
+  for (const supplier of suppliers) {
+    if (quotedSupplierIds.has(supplier.value)) {
+      quoted.push(supplier)
+    } else {
+      unquoted.push(supplier)
+    }
+  }
+  return [...quoted, ...unquoted]
+}
+
+/**
  * 一个品牌列的草稿：`rowKey → 价格`。
  *
  * <p>三种状态必须分开，否则「清空一个格子」会保存不了：</p>

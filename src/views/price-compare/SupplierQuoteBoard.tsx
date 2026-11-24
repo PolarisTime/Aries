@@ -1,4 +1,5 @@
 import {
+  PayCircleFilled,
   QuestionCircleOutlined,
   RedoOutlined,
   UndoOutlined,
@@ -46,6 +47,7 @@ import {
 } from '@/api/market/supplier-base-price-rules'
 import {
   addSupplierPriceColumn,
+  fetchQuotedSuppliers,
   fetchSpecRows,
   fetchSupplierPriceGrid,
   type SupplierPriceCellInput,
@@ -54,7 +56,10 @@ import {
   saveSupplierPriceColumnItems,
 } from '@/api/market/supplier-price-lists'
 import { fetchSupplierBrandSpecs } from '@/api/master/supplier-brand-specs'
-import { fetchSupplierOptions } from '@/api/master/supplier-options'
+import {
+  fetchSupplierOptions,
+  type SupplierOption,
+} from '@/api/master/supplier-options'
 import { ContextMenu } from '@/components/ContextMenu'
 import { EmptyState } from '@/components/EmptyState'
 import {
@@ -97,6 +102,7 @@ import {
   type ServerCell,
   serverCellsOf,
   setDraftPrice,
+  sortSuppliersByQuoted,
 } from './supplier-price-list-model'
 import {
   type DraftHistory,
@@ -157,6 +163,15 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 /** 单品牌保存结果：切换/关闭供应商前据此决定放行、提示还是弹三选一。 */
 type BrandSaveOutcome = 'saved' | 'skipped' | 'failed'
+
+/** 顶部供应商单选下拉项（保留纯文本 label 供拼音检索，hasPrice 驱动图标与优先排序）。 */
+type SupplierSelectOption = {
+  value: string
+  label: string
+  hasPrice: boolean
+}
+
+const EMPTY_SUPPLIERS: readonly SupplierOption[] = []
 
 /** 自动保存的防抖时长：打字停顿这么久就落库。 */
 const AUTOSAVE_DELAY_MS = 800
@@ -772,13 +787,46 @@ export function SupplierQuoteBoard() {
     queryFn: () => fetchSupplierOptions(),
     staleTime: Number.POSITIVE_INFINITY,
   })
+  /**
+   * 已有有效报价的供应商清单（用于下拉优先排序与有价图标展示）。
+   * 接口异常时静默降级为空列表，不阻塞报价表正常打开。
+   */
+  const quotedSuppliersQuery = useQuery({
+    queryKey: QUERY_KEYS.priceCompare.quotedSuppliers,
+    queryFn: ({ signal }) =>
+      fetchQuotedSuppliers(signal, { suppressGlobalErrorToast: true }).catch(
+        () => [],
+      ),
+    staleTime: 30_000,
+  })
   const specsQuery = useQuery({
     queryKey: ['supplier-price-specs'],
     queryFn: ({ signal }) => fetchSpecRows(signal),
     staleTime: Number.POSITIVE_INFINITY,
   })
 
-  const suppliers = suppliersQuery.data ?? []
+  const suppliers = suppliersQuery.data ?? EMPTY_SUPPLIERS
+
+  const quotedSupplierIds = useMemo(
+    () =>
+      new Set((quotedSuppliersQuery.data ?? []).map((item) => item.supplierId)),
+    [quotedSuppliersQuery.data],
+  )
+
+  const sortedSuppliers = useMemo(
+    () => sortSuppliersByQuoted(suppliers, quotedSupplierIds),
+    [quotedSupplierIds, suppliers],
+  )
+
+  const supplierOptions = useMemo<SupplierSelectOption[]>(
+    () =>
+      sortedSuppliers.map((option) => ({
+        value: option.value,
+        label: option.label,
+        hasPrice: quotedSupplierIds.has(option.value),
+      })),
+    [quotedSupplierIds, sortedSuppliers],
+  )
 
   const supplierId = activeSupplierId
 
@@ -801,7 +849,7 @@ export function SupplierQuoteBoard() {
 
   /*
    * 上次选中的供应商恢复：供应商列表就绪后只执行一次，优先恢复上次的 `activeSupplierId`
-   * （兼容早期多页签存档的 `openSupplierIds`）；无存档或已失效则默认选中第一个供应商。
+   * （兼容早期多页签存档的 `openSupplierIds`）；无存档或已失效则等待有价清单就绪后默认选中排序首位。
    */
   useEffect(() => {
     if (suppliers.length === 0 || supplierRestored) return
@@ -811,9 +859,20 @@ export function SupplierQuoteBoard() {
       stored?.activeSupplierId && validIds.has(stored.activeSupplierId)
         ? stored.activeSupplierId
         : stored?.openSupplierIds.find((id) => validIds.has(id))
-    setActiveSupplierId(restoredId ?? suppliers[0].value)
+    if (restoredId) {
+      setActiveSupplierId(restoredId)
+      setSupplierRestored(true)
+      return
+    }
+    if (quotedSuppliersQuery.isPending) return
+    setActiveSupplierId(sortedSuppliers[0].value)
     setSupplierRestored(true)
-  }, [supplierRestored, suppliers])
+  }, [
+    quotedSuppliersQuery.isPending,
+    sortedSuppliers,
+    supplierRestored,
+    suppliers,
+  ])
 
   /*
    * 选中的供应商写回本地与跨端同步分片（沿用 `supplierQuote` 结构，保持历史/跨端兼容）。
@@ -1460,6 +1519,10 @@ export function SupplierQuoteBoard() {
         saved,
         plan.items,
       )
+      // 首次录价或清空最后一条报价后，同步刷新下拉的「有价优先排序 + 图标」状态
+      void queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.priceCompare.quotedSuppliers,
+      })
       setSavedValues((current) => {
         const values = { ...(current[brandName] ?? {}) }
         const plannedKeys = new Set<string>()
@@ -3731,9 +3794,26 @@ export function SupplierQuoteBoard() {
     )
 
   /*
-   * 顶部供应商切换栏：单选 antd Select（支持中文与拼音搜索）+ 协作状态栏。
+   * 顶部供应商切换栏：单选 antd Select（有价格的优先排前并显示图标，支持中文与拼音搜索）+ 协作状态栏。
    * 取代原多公司页签栏，避免供应商较多时页签行拥挤与「已开页签 / 添加下拉」两套入口并存。
    */
+  const quotedBadgeLabel = t('priceCompare.supplierPrice.hasQuotedPrices')
+  const renderSupplierOption = (
+    label: ReactNode,
+    hasPrice: boolean,
+  ): ReactNode => (
+    <span className="supplier-price-supplier-option">
+      {hasPrice ? (
+        <PayCircleFilled
+          aria-label={quotedBadgeLabel}
+          className="supplier-price-supplier-quoted-icon"
+          title={quotedBadgeLabel}
+        />
+      ) : null}
+      <span className="supplier-price-supplier-option-name">{label}</span>
+    </span>
+  )
+
   const supplierSelector = (
     <Flex
       align="center"
@@ -3748,16 +3828,32 @@ export function SupplierQuoteBoard() {
         >
           {t('priceCompare.supplierPrice.supplier')}
         </label>
-        <Select<string, { value: string; label: string }>
+        <Select<string, SupplierSelectOption>
           aria-label={t('priceCompare.supplierPrice.supplier')}
           className="supplier-price-supplier-select"
           id={SUPPLIER_SELECT_ID}
-          loading={suppliersQuery.isPending}
+          labelRender={(props) => {
+            const value =
+              props.value === undefined || props.value === null
+                ? ''
+                : String(props.value)
+            return renderSupplierOption(
+              props.label ?? value,
+              quotedSupplierIds.has(value),
+            )
+          }}
+          loading={
+            suppliersQuery.isPending ||
+            (!supplierId && quotedSuppliersQuery.isPending)
+          }
           onChange={switchSupplier}
-          options={suppliers.map((option) => ({
-            value: option.value,
-            label: option.label,
-          }))}
+          optionRender={(option) =>
+            renderSupplierOption(
+              option.data.label,
+              Boolean(option.data.hasPrice),
+            )
+          }
+          options={supplierOptions}
           placeholder={t('priceCompare.supplierPrice.supplierPlaceholder')}
           popupMatchSelectWidth={false}
           showSearch={{ filterOption: filterSupplierOption }}

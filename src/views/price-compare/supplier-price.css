@@ -41,6 +41,26 @@
   max-width: 100%;
 }
 
+.supplier-price-supplier-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 6px);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.supplier-price-supplier-option-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.supplier-price-supplier-quoted-icon {
+  flex: 0 0 auto;
+  color: var(--ant-color-success, #52c41a);
+  font-size: var(--app-font-size-xs);
+}
+
 /* 主体容器：承接页面剩余高度并向下传给报价表外壳，让表体在容器内滚动。 */
 .supplier-price-board-container {
   display: flex;

@@ -57,8 +57,6 @@ export function PriceCompareView() {
     configLoaded,
     setConfig,
     setHrb400eFallback,
-    canUndo,
-    canRedo,
     undo,
     redo,
     setRows,
@@ -89,10 +87,6 @@ export function PriceCompareView() {
   const [tourOpen, setTourOpen] = useState(false)
   const [hrb400ePending, setHrb400ePending] = useState(false)
   const [collabTonRemarkWritable, setCollabTonRemarkWritable] = useState(false)
-  const [collabUndoState, setCollabUndoState] = useState({
-    canUndo: false,
-    canRedo: false,
-  })
   const collabBridgeRef = useRef<SheetCollabBridge | null>(null)
   const spotRef = useRef<HTMLSpanElement>(null)
   const urlParamsApplied = useRef(false)
@@ -103,11 +97,6 @@ export function PriceCompareView() {
       collabBridgeRef.current = bridge
       const writableCollab = Boolean(bridge?.active && bridge.writable)
       setCollabTonRemarkWritable(writableCollab)
-      setCollabUndoState(
-        writableCollab && bridge
-          ? { canUndo: bridge.canUndo, canRedo: bridge.canRedo }
-          : { canUndo: false, canRedo: false },
-      )
     },
     [],
   )
@@ -121,13 +110,6 @@ export function PriceCompareView() {
       setHrb400ePending(false)
     }
   }, [config.hrb400eFallback, hrb400ePending, setHrb400eFallback])
-
-  const effectiveCanUndo = collabTonRemarkWritable
-    ? collabUndoState.canUndo
-    : !readOnly && canUndo
-  const effectiveCanRedo = collabTonRemarkWritable
-    ? collabUndoState.canRedo
-    : !readOnly && canRedo
 
   const handleUndo = useCallback(() => {
     const bridge = collabBridgeRef.current
@@ -359,10 +341,6 @@ export function PriceCompareView() {
         availability={availability}
         spotRef={spotRef}
         readOnly={readOnly}
-        canUndo={effectiveCanUndo}
-        canRedo={effectiveCanRedo}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
         onCollabStateChange={handleCollabStateChange}
         hrb400eFallbackLoading={hrb400ePending}
         onToggleHrb400eFallback={
@@ -415,10 +393,6 @@ function PriceCompareSheetArea({
   availability,
   spotRef,
   readOnly,
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
   onCollabStateChange,
   hrb400eFallbackLoading,
   onToggleHrb400eFallback,
@@ -442,10 +416,6 @@ function PriceCompareSheetArea({
   availability: React.ComponentProps<typeof SheetPanel>['availability']
   spotRef: React.ComponentProps<typeof SheetPanel>['spotRef']
   readOnly: boolean
-  canUndo: boolean
-  canRedo: boolean
-  onUndo: () => void
-  onRedo: () => void
   onCollabStateChange?: (bridge: SheetCollabBridge | null) => void
   hrb400eFallbackLoading?: boolean
   /** 项目配置已加载后可切换 HRB400E 参考价；加载中不展示按钮。 */
@@ -489,10 +459,6 @@ function PriceCompareSheetArea({
         availability={availability}
         spotRef={spotRef}
         readOnly={readOnly}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndo={onUndo}
-        onRedo={onRedo}
         onCollabStateChange={onCollabStateChange}
       />
     </Watermark>

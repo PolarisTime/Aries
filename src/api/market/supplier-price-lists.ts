@@ -102,6 +102,17 @@ const lowestQuoteSchema = z.looseObject({
   updatedAt: z.string().nullish(),
 })
 
+/** 已有有效报价的供应商摘要（用于供应商报价表下拉优先排序与有价图标展示）。 */
+export type QuotedSupplierSummary = {
+  supplierId: EntityId
+  quotedItemCount: number
+}
+
+const quotedSupplierSchema = z.looseObject({
+  supplierId: z.string(),
+  quotedItemCount: numberLike.nullish(),
+})
+
 /** 批量最低价的一行：报单比价按 (品牌, 商品) 直接落到格子上。 */
 export type BrandLowestQuote = {
   brandName: string
@@ -264,6 +275,36 @@ export async function fetchLowestBrandQuotes(
     })
   }
   return quotes
+}
+
+/**
+ * 查询当前已有有效报价（至少一条非空单价条目）的供应商清单。
+ *
+ * <p>作为供应商报价表下拉「有价格的先显示 + 图标标识」的唯一后端口径，
+ * 避免前端逐品牌发 N+1 网格请求。</p>
+ */
+export async function fetchQuotedSuppliers(
+  signal?: AbortSignal,
+  options?: { suppressGlobalErrorToast?: boolean },
+): Promise<QuotedSupplierSummary[]> {
+  const payload = await apiGet(
+    `${ENDPOINTS.SUPPLIER_PRICE_LISTS}/quoted-suppliers`,
+    z.array(quotedSupplierSchema),
+    {
+      ...(signal ? { signal } : {}),
+      ...(options?.suppressGlobalErrorToast
+        ? { suppressGlobalErrorToast: true }
+        : {}),
+    },
+  )
+  const result: QuotedSupplierSummary[] = []
+  for (const row of payload) {
+    const supplierId = row.supplierId.trim()
+    const quotedItemCount = toNumber(row.quotedItemCount) ?? 0
+    if (!supplierId || quotedItemCount <= 0) continue
+    result.push({ supplierId, quotedItemCount })
+  }
+  return result
 }
 
 /**
