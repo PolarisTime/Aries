@@ -3,9 +3,14 @@ import dayjs from 'dayjs'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { STORAGE_KEYS } from '@/constants/storage'
 import { useAuthStore } from '@/stores/authStore'
 import { message, modal } from '@/utils/antd-app'
 import { makeRow } from './core'
+import {
+  readLastPriceCompareSelection,
+  writeLastPriceCompareSelection,
+} from './price-compare-support'
 import {
   buildConfigFromRecord,
   buildConfigPayload,
@@ -124,6 +129,7 @@ describe('useSheetsStore 服务端数据源', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
+    window.localStorage.clear()
     rootUnmounted = false
     api.fetchQuoteSheets.mockReset().mockResolvedValue([sheetRecord()])
     api.fetchQuoteSheet.mockReset().mockResolvedValue(sheetRecord())
@@ -185,6 +191,7 @@ describe('useSheetsStore 服务端数据源', () => {
   afterEach(() => {
     if (!rootUnmounted) act(() => root.unmount())
     container.remove()
+    window.localStorage.clear()
     vi.useRealTimers()
   })
 
@@ -2421,6 +2428,111 @@ describe('useSheetsStore 服务端数据源', () => {
     expect(api.createQuoteSheet).not.toHaveBeenCalled()
     expect(store.current.saveStatus).toBe('idle')
     expect(store.current.hasUnsavedChanges).toBe(false)
+  })
+
+  /*
+   * 单页导航切走再切回（组件卸载后重新挂载）：默认恢复上次停留的项目与批次，
+   * 不再每次退回服务端列表第一项（如「仓库」项目）。
+   */
+  it('切到其他页面再切回（卸载重挂）时默认恢复到上一个项目与批次', async () => {
+    const warehouseSheet = sheetRecord({
+      id: '9001',
+      name: '批次 1',
+      projectId: '100',
+      projectName: '仓库',
+    })
+    const otherProjectBatch1 = sheetRecord({
+      id: '9002',
+      name: '批次 1',
+      projectId: '200',
+      projectName: '苏州欧帝',
+    })
+    const otherProjectBatch2 = sheetRecord({
+      id: '9003',
+      name: '批次 2',
+      projectId: '200',
+      projectName: '苏州欧帝',
+    })
+    api.fetchQuoteSheets.mockResolvedValue([
+      warehouseSheet,
+      otherProjectBatch1,
+      otherProjectBatch2,
+    ])
+
+    const firstMount = renderStore()
+    await hydrate(firstMount)
+    expect(firstMount.current.active.projectId).toBe('100')
+
+    // 切到项目 200 的批次 2
+    act(() => {
+      firstMount.current.setActiveId('9003')
+    })
+    expect(firstMount.current.active.projectId).toBe('200')
+    expect(firstMount.current.activeId).toBe('9003')
+
+    // 模拟单页导航切去其他页面（卸载组件）再切回报单比价（重新挂载）
+    act(() => root.unmount())
+    root = createRoot(container)
+    const secondMount = renderStore()
+    await hydrate(secondMount)
+
+    expect(secondMount.current.active.projectId).toBe('200')
+    expect(secondMount.current.activeId).toBe('9003')
+  })
+
+  it('上次停留的批次已被删除但同项目仍有其他批次时，切回仍回到上一个项目', async () => {
+    writeLastPriceCompareSelection({ projectId: '200', sheetId: '9999' })
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord({ id: '9001', projectId: '100', projectName: '仓库' }),
+      sheetRecord({ id: '9002', projectId: '200', projectName: '苏州欧帝' }),
+    ])
+
+    const store = renderStore()
+    await hydrate(store)
+
+    expect(store.current.active.projectId).toBe('200')
+    expect(store.current.activeId).toBe('9002')
+  })
+
+  it('单据加载失败时不覆盖已记住的上次项目', async () => {
+    writeLastPriceCompareSelection({ projectId: '200', sheetId: '9003' })
+    api.fetchQuoteSheets.mockRejectedValueOnce(new Error('network down'))
+
+    const store = renderStore()
+    await hydrate(store)
+
+    // 即使页面对占位单据调用 assignProjectToUnassigned，也不得冲掉已存档项目
+    act(() => {
+      store.current.assignProjectToUnassigned('100', '仓库')
+    })
+    expect(readLastPriceCompareSelection()).toEqual({
+      projectId: '200',
+      sheetId: '9003',
+    })
+  })
+
+  it('上次停留项目按登录账号隔离，不同账号不会互串', async () => {
+    window.localStorage.setItem(
+      STORAGE_KEYS.user,
+      JSON.stringify({ id: 'user-a', loginName: 'alice' }),
+    )
+    writeLastPriceCompareSelection({ projectId: '200', sheetId: '9002' })
+
+    // 切换到账号 B：不应读到账号 A 的上次项目，安全回落到首个单据
+    window.localStorage.setItem(
+      STORAGE_KEYS.user,
+      JSON.stringify({ id: 'user-b', loginName: 'bob' }),
+    )
+    api.fetchQuoteSheets.mockResolvedValue([
+      sheetRecord({ id: '9001', projectId: '100', projectName: '仓库' }),
+      sheetRecord({ id: '9002', projectId: '200', projectName: '苏州欧帝' }),
+    ])
+
+    const store = renderStore()
+    await hydrate(store)
+
+    expect(store.current.active.projectId).toBe('100')
+    expect(store.current.activeId).toBe('9001')
   })
 })
 

@@ -11,7 +11,13 @@ import {
   PriceCompareBatchBar,
   PriceCompareProjectPicker,
 } from './price-compare-pickers'
-import { resolveProjectSelection } from './price-compare-support'
+import {
+  LAST_PRICE_COMPARE_SELECTION_KEY,
+  readLastPriceCompareSelection,
+  resolveInitialActiveSheetId,
+  resolveProjectSelection,
+  writeLastPriceCompareSelection,
+} from './price-compare-support'
 import type {
   Brand,
   PriceData,
@@ -233,6 +239,66 @@ describe('报单比价 项目/批次选择控件契约', () => {
       expect(
         resolveProjectSelection('p-脏数据', projectGroups, projects),
       ).toBeNull()
+    })
+  })
+
+  describe('切回报单比价时恢复上次停留项目（唯一判定出口）', () => {
+    const sheets = [
+      { id: 's1', projectId: 'p-warehouse' },
+      { id: 's2', projectId: 'p2' },
+      { id: 's3', projectId: 'p2' },
+    ]
+
+    afterEach(() => {
+      window.localStorage.clear()
+    })
+
+    it('优先精确命中上次停留的批次，其次按项目命中该项目第一个批次', () => {
+      expect(
+        resolveInitialActiveSheetId(sheets, {
+          projectId: 'p2',
+          sheetId: 's3',
+        }),
+      ).toBe('s3')
+      expect(
+        resolveInitialActiveSheetId(sheets, {
+          projectId: 'p2',
+          sheetId: 'deleted-sheet',
+        }),
+      ).toBe('s2')
+    })
+
+    it('无存档或存档项目/批次均已不存在时回落首项；空列表返回 undefined', () => {
+      expect(resolveInitialActiveSheetId(sheets, null)).toBe('s1')
+      expect(
+        resolveInitialActiveSheetId(sheets, {
+          projectId: 'p-gone',
+          sheetId: 's-gone',
+        }),
+      ).toBe('s1')
+      expect(
+        resolveInitialActiveSheetId([], { projectId: 'p2' }),
+      ).toBeUndefined()
+    })
+
+    it('本地读写容错坏数据与空对象', () => {
+      writeLastPriceCompareSelection({ projectId: 'p2', sheetId: 's3' })
+      expect(readLastPriceCompareSelection()).toEqual({
+        projectId: 'p2',
+        sheetId: 's3',
+      })
+
+      writeLastPriceCompareSelection({})
+      expect(readLastPriceCompareSelection()).toBeNull()
+
+      window.localStorage.setItem(LAST_PRICE_COMPARE_SELECTION_KEY, '{bad json')
+      expect(readLastPriceCompareSelection()).toBeNull()
+
+      window.localStorage.setItem(
+        LAST_PRICE_COMPARE_SELECTION_KEY,
+        JSON.stringify([1, 2]),
+      )
+      expect(readLastPriceCompareSelection()).toBeNull()
     })
   })
 

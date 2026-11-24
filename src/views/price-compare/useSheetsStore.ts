@@ -31,6 +31,11 @@ import { message, modal } from '@/utils/antd-app'
 import { logger } from '@/utils/logger'
 import { DEFAULT_LENGTH_PREMIUM, isSeparatorRow, makeSheet } from './core'
 import {
+  readLastPriceCompareSelection,
+  resolveInitialActiveSheetId,
+  writeLastPriceCompareSelection,
+} from './price-compare-support'
+import {
   type ConflictModalInstance,
   type ConflictResolution,
   conflictResourceKey,
@@ -297,6 +302,8 @@ export function useSheetsStore(options?: {
    * (effect 内同步更新会多触发一轮渲染)。
    */
   const [loading, setLoading] = useState(() => Boolean(token))
+  /** 服务端单据列表是否已成功加载（仅成功后才允许写回上次选中项目，防止首帧占位或失败请求冲掉存档）。 */
+  const [sheetsLoaded, setSheetsLoaded] = useState(false)
   const [, forceRender] = useState(0)
   /**
    * 撤销/重做可用性镜像。
@@ -1562,15 +1569,21 @@ export function useSheetsStore(options?: {
     const controller = new AbortController()
     fetchQuoteSheets(controller.signal)
       .then((records) => {
+        setSheetsLoaded(true)
         if (!records.length) return
         const sheets = records.map(toPriceSheet)
         for (const sheet of sheets) {
           serverIdRef.current.set(sheet.id, sheet.id)
           baselineRef.current.set(sheet.id, buildBaseline(sheet))
         }
+        const initialActiveId =
+          resolveInitialActiveSheetId(
+            sheets,
+            readLastPriceCompareSelection(),
+          ) ?? sheets[0].id
         commit({
           sheets,
-          activeId: sheets[0].id,
+          activeId: initialActiveId,
           configs: stateRef.current.configs,
         })
         // 初次加载不是用户编辑: 清掉历史, 避免第一次撤销把整表撤没
@@ -1897,6 +1910,19 @@ export function useSheetsStore(options?: {
       state.sheets[0],
     [state.sheets, state.activeId],
   )
+  const activeProjectId = active?.projectId ?? ''
+  const activeServerSheetId = active?.serverId ?? ''
+
+  // 记住当前停留的项目与批次：单页导航切去其他页面再切回（或刷新）时默认回到上一个项目，
+  // 不再每次落回服务端第一张单据（如「仓库」）。仅在服务端单据成功加载后写回，避免首帧占位覆盖存档。
+  useEffect(() => {
+    if (!sheetsLoaded) return
+    if (!activeProjectId && !activeServerSheetId) return
+    writeLastPriceCompareSelection({
+      ...(activeProjectId ? { projectId: activeProjectId } : {}),
+      ...(activeServerSheetId ? { sheetId: activeServerSheetId } : {}),
+    })
+  }, [activeProjectId, activeServerSheetId, sheetsLoaded])
   const { config, configLoaded, activeLock, lockPending, readOnly } =
     deriveActiveViews({
       active,
