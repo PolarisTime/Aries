@@ -46,5 +46,17 @@ export const projectSalesSummarySchema = z.object({
   amountUsageRate: responseDecimalSchema.nullish().transform((v) => v ?? null),
   tonnageUsageRate: responseDecimalSchema.nullish().transform((v) => v ?? null),
   message: z.string().default(''),
+  /** 已确认期初欠款总额（系统启用前客户欠我方）。 */
+  openingReceivableAmount: responseDecimalSchema.default(0),
+  /** 期初欠款已核销金额。 */
+  openingSettledAmount: responseDecimalSchema.default(0),
+  /** 期初剩余欠款 = 期初欠款 − 期初已核销。 */
+  openingRemainingAmount: responseDecimalSchema.default(0),
+  /** 已确认期初预收金额（系统启用前客户预收/我方欠客户）。 */
+  openingAdvanceAmount: responseDecimalSchema.default(0),
+  /** 期初净欠款 = 期初剩余欠款 − 期初预收（可为负）。 */
+  openingNetBalance: responseDecimalSchema.default(0),
+  /** 项目总欠款 = (期初欠款 − 期初预收) + 已送货 − 项目已审核客户收款（不 clamp，可为负）。 */
+  projectTotalDebtAmount: responseDecimalSchema.default(0),
 })
 export type ProjectSalesSummary = z.output<typeof projectSalesSummarySchema>

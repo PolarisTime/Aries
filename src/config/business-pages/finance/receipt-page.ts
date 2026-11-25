@@ -1,4 +1,5 @@
 import i18next from 'i18next'
+import { createElement } from 'react'
 import { withDeletedDocumentStatus } from '@/constants/module-options'
 import { DOCUMENT_STATUS } from '@/constants/status-constants'
 import {
@@ -8,6 +9,7 @@ import {
 } from '@/module-system/core/module-option-resolvers'
 import type { ModulePageConfig } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
+import { ReceiptAllocationField } from '@/views/modules/components/ReceiptAllocationField'
 import { BILL_STATUS_LABEL } from '../shared/filter-labels'
 import { SETTLEMENT_COMPANY_LABEL } from '../shared/settlement-company'
 import { statusMap } from '../shared/shared'
@@ -174,6 +176,39 @@ export const receiptsPageConfig: ModulePageConfig = {
    */
   detailLayout: 'inline',
   detailInfoTitle: i18next.t('modules.detailCards.docInfoTitle'),
+  detailItemTitle: i18next.t('openingBalance.receiptAllocationDetailTitle'),
+  detailItemColumns: [
+    {
+      title: i18next.t('openingBalance.allocationType'),
+      dataIndex: 'sourceOpeningBalanceId',
+      width: 130,
+      render: (_value, record) =>
+        asString(record.sourceOpeningBalanceId).trim()
+          ? i18next.t('openingBalance.allocationTypeOpening')
+          : i18next.t('openingBalance.allocationTypeStatement'),
+    },
+    {
+      title: i18next.t('openingBalance.allocationSourceNo'),
+      dataIndex: 'statementNo',
+      width: 180,
+      render: (_value, record) =>
+        asString(record.openingBalanceNo).trim() ||
+        asString(record.statementNo).trim() ||
+        '-',
+    },
+    {
+      title: i18next.t('openingBalance.project'),
+      dataIndex: 'projectName',
+      width: 220,
+    },
+    {
+      title: i18next.t('openingBalance.allocatedAmount'),
+      dataIndex: 'allocatedAmount',
+      width: 140,
+      align: 'right',
+      type: 'amount',
+    },
+  ],
   detailFields: [
     {
       label: i18next.t('modules.pages.receipt.receiptNo'),
@@ -402,11 +437,24 @@ export const receiptsPageConfig: ModulePageConfig = {
       row: 5,
     },
     {
+      key: 'receiptAllocations',
+      formStep: 2,
+      label: i18next.t('openingBalance.receiptAllocationFieldLabel'),
+      type: 'input',
+      fullRow: true,
+      row: 6,
+      visibleWhen: (form) => form?.counterpartyType !== '供应商',
+      render: (context) =>
+        createElement(ReceiptAllocationField, {
+          disabled: context.disabled,
+        }),
+    },
+    {
       key: 'remark',
       formStep: 3,
       label: i18next.t('modules.pages.receipt.remark'),
       type: 'textarea',
-      row: 6,
+      row: 7,
       fullRow: true,
     },
     {
@@ -414,7 +462,7 @@ export const receiptsPageConfig: ModulePageConfig = {
       formStep: 3,
       label: i18next.t('modules.filter.receiptVoucher'),
       type: 'upload',
-      row: 7,
+      row: 8,
       fullRow: true,
     },
   ],
@@ -440,6 +488,12 @@ export const receiptsPageConfig: ModulePageConfig = {
       'status',
       'operatorName',
       'remark',
+    ],
+    lineItem: [
+      'id',
+      'sourceCustomerStatementId',
+      'sourceOpeningBalanceId',
+      'allocatedAmount',
     ],
   },
   data: [],

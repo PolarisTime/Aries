@@ -69,6 +69,10 @@ export const viewLoaders: Record<
     import('@/views/finance/FinanceOverviewView').then((m) => ({
       default: m.FinanceOverviewView,
     })),
+  'project-opening-balance': () =>
+    import('@/views/finance/ProjectOpeningBalanceView').then((m) => ({
+      default: m.ProjectOpeningBalanceView,
+    })),
   'cash-ledger': () =>
     import('@/views/finance/CashLedgerView').then((m) => ({
       default: m.CashLedgerView,

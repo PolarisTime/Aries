@@ -74,6 +74,12 @@ function summaryOf(): ProjectSalesSummary {
     amountUsageRate: 0.617284,
     tonnageUsageRate: 0.61725,
     message: '',
+    openingReceivableAmount: 0,
+    openingSettledAmount: 0,
+    openingRemainingAmount: 0,
+    openingAdvanceAmount: 0,
+    openingNetBalance: 0,
+    projectTotalDebtAmount: 900000.5,
   }
 }
 
@@ -280,5 +286,37 @@ describe('项目数据在两个只读详情面上的新形态（指标条 + 合�
         (button) => button.textContent?.includes('关闭'),
       ),
     ).toBe(true)
+  })
+
+  it('项目存在已确认期初往来时保持四张主指标卡并在下方展示期初与累计欠款', async () => {
+    fetchProjectSalesSummaryMock.mockResolvedValue({
+      ...summaryOf(),
+      openingReceivableAmount: 100000,
+      openingSettledAmount: 20000,
+      openingRemainingAmount: 80000,
+      openingAdvanceAmount: 5000,
+      openingNetBalance: 75000,
+      projectTotalDebtAmount: 975000.5,
+    })
+
+    act(() => {
+      root.render(
+        createElement(ModuleRecordDetailContent, {
+          config: salesOrdersPageConfig,
+          record,
+          loading: false,
+          error: null,
+          onClose: () => {},
+          onRetry: () => {},
+        }),
+      )
+    })
+    await flushRequest()
+
+    expect(container.querySelectorAll('.module-detail-metric')).toHaveLength(4)
+    const text = container.textContent || ''
+    expect(text).toContain(
+      '系统启用前期初：剩余欠款 ¥80000.00 · 期初预收 ¥5000.00 · 项目总欠款 ¥975000.50',
+    )
   })
 })

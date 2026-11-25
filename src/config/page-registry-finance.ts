@@ -30,6 +30,21 @@ export const financePageDefinitions: AppPageDefinition[] = [
     menuParent: 'finance',
   },
   {
+    key: 'project-opening-balance',
+    titleKey: 'pages.project-opening-balance',
+    menuKey: '/project-opening-balance',
+    view: 'project-opening-balance',
+    icon: 'WalletOutlined',
+    menuParent: 'finance',
+    requiredPermission: 'project-opening-balances:read',
+    validateSearch: (raw) => ({
+      ...raw,
+      ...(typeof raw.projectId === 'string' && raw.projectId.trim()
+        ? { projectId: raw.projectId.trim() }
+        : {}),
+    }),
+  },
+  {
     key: 'receipt',
     titleKey: 'pages.receipt',
     menuKey: '/receipt',

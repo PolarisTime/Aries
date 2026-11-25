@@ -10,6 +10,7 @@ const lineItemPayloadModules = [
   'freight-bill',
   'customer-statement',
   'freight-statement',
+  'receipt',
 ] as const satisfies readonly ModuleKey[]
 
 const extraScalarFieldsByModule = [

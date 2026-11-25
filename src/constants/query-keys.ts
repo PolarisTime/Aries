@@ -37,6 +37,34 @@ export const QUERY_KEYS = {
     page: number
     size: number
   }) => ['finance-overview', query] as const,
+  projectOpeningBalancesBase: ['project-opening-balances'] as const,
+  projectOpeningBalances: (query: {
+    keyword?: string
+    projectId?: string
+    customerId?: string
+    settlementCompanyId?: string
+    balanceType?: string
+    status?: string
+    startDate?: string
+    endDate?: string
+    page: number
+    size: number
+  }) => ['project-opening-balances', 'list', query] as const,
+  projectOpeningBalancesSummary: (query: {
+    keyword?: string
+    projectId?: string
+    customerId?: string
+    settlementCompanyId?: string
+    balanceType?: string
+    status?: string
+    startDate?: string
+    endDate?: string
+  }) => ['project-opening-balances', 'summary', query] as const,
+  projectOpeningBalanceAllocatable: (params: {
+    projectId?: string
+    customerId?: string
+    settlementCompanyId?: string
+  }) => ['project-opening-balances', 'allocatable', params] as const,
 
   // Business grid
   businessGrid: (moduleKey: string) => ['business-grid', moduleKey] as const,

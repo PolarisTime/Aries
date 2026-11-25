@@ -153,4 +153,35 @@ export const contributeNormalizerBehaviors: ModuleBehaviorContributor = (
       record.direction = normalizeStatementDirection(record.direction)
     },
   })
+
+  registerModuleBehavior('receipt', {
+    normalizeEditorRecord(record) {
+      const items = Array.isArray(record.items) ? record.items : []
+      return {
+        ...record,
+        receiptAllocations: items.map((item, index) => ({
+          key: asString(item.id).trim() || `alloc-${index}`,
+          ...(asString(item.id).trim() ? { id: asString(item.id).trim() } : {}),
+          sourceType: asString(item.sourceOpeningBalanceId).trim()
+            ? 'OPENING_BALANCE'
+            : 'STATEMENT',
+          ...(asString(item.sourceCustomerStatementId).trim()
+            ? {
+                sourceCustomerStatementId: asString(
+                  item.sourceCustomerStatementId,
+                ).trim(),
+              }
+            : {}),
+          ...(asString(item.sourceOpeningBalanceId).trim()
+            ? {
+                sourceOpeningBalanceId: asString(
+                  item.sourceOpeningBalanceId,
+                ).trim(),
+              }
+            : {}),
+          allocatedAmount: Number(item.allocatedAmount ?? 0),
+        })),
+      }
+    },
+  })
 }

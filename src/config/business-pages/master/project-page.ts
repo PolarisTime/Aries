@@ -26,6 +26,7 @@ import type {
   ModulePageConfig,
 } from '@/types/module-page'
 import { asString } from '@/utils/type-narrowing'
+import { ProjectOpeningBalanceDetailSection } from '@/views/modules/components/ProjectOpeningBalanceDetailSection'
 import {
   PRICE_BASIS_LABEL_KEYS,
   PRICE_BASIS_OPTIONS,
@@ -296,6 +297,10 @@ const projectPageConfig: ModulePageConfig = {
     { label: i18next.t('modules.columns.remark'), key: 'remark' },
   ],
   detailColumnCount: 4,
+  renderDetailExtras: ({ record }) =>
+    createElement(ProjectOpeningBalanceDetailSection, {
+      projectId: record.id,
+    }),
   /*
    * 字段长度上限以 **DB 列宽**为权威依据（md_project），后端 `ProjectRequest` 的 @Size 与本组数值
    * 已逐项一致（64/200/100/32/255/255），前端仍按同一口径在校验层拦截，避免超长内容打到 varchar

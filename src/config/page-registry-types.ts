@@ -19,6 +19,7 @@ export type RouteViewKey =
   | 'role-management'
   | 'user-accounts'
   | 'finance-overview'
+  | 'project-opening-balance'
   | 'cash-ledger'
   | 'inventory'
 

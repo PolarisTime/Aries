@@ -64,6 +64,15 @@ export const ENDPOINTS = {
     `/cash-ledger-export-requests/${pathSegment(id)}/content`,
   FINANCE_OVERVIEW: '/finance/overview',
 
+  // Project opening balances (项目期初往来：系统启用前欠款/预收)
+  PROJECT_OPENING_BALANCES: '/project-opening-balances',
+  PROJECT_OPENING_BALANCES_SUMMARY: '/project-opening-balances/summary',
+  PROJECT_OPENING_BALANCES_ALLOCATABLE: '/project-opening-balances/allocatable',
+  PROJECT_OPENING_BALANCE: (id: string | number) =>
+    `/project-opening-balances/${pathSegment(id)}`,
+  PROJECT_OPENING_BALANCE_STATUS: (id: string | number) =>
+    `/project-opening-balances/${pathSegment(id)}/status`,
+
   // Inventory (aggregate read models)
   INVENTORY_BALANCES: '/inventory/balances',
   INVENTORY_TRANSACTIONS: '/inventory/transactions',

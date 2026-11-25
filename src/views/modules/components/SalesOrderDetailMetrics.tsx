@@ -1,6 +1,8 @@
 import { ClockCircleOutlined } from '@ant-design/icons'
 import { Skeleton } from 'antd'
+import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
+import type { ProjectSalesSummary } from '@/api/sales/project-sales-summary'
 import type { ModuleDetailMetric } from '@/types/module-page'
 import { formatAmount, formatWeight } from '@/utils/formatters'
 import { asString } from '@/utils/type-narrowing'
@@ -69,56 +71,43 @@ interface Props {
   orderTotalWeight?: number
 }
 
-export function SalesOrderDetailMetrics({
-  record,
-  variant = 'detail',
-  excludeOrderId,
-  pendingAmount,
-  pendingTonnage,
-  orderTotalWeight,
-}: Props) {
+function OpeningBalanceSummaryStrip({
+  openingReceivableAmount,
+  openingAdvanceAmount,
+  openingRemainingAmount,
+  projectTotalDebtAmount,
+}: {
+  openingReceivableAmount: number
+  openingAdvanceAmount: number
+  openingRemainingAmount: number
+  projectTotalDebtAmount: number
+}) {
   const { t } = useTranslation()
-  const ton = t('modules.units.ton')
-
-  const projectId = asString(record.projectId).trim()
-  /*
-   * 详情面是「含本单」的项目口径：本单已保存、后端聚合里已经算过它，因此**不传**
-   * excludeOrderId。「排除本单」只属于编辑器的 pending 口径（那张单还没保存，
-   * 不排除就会和草稿合计重复计数），别在这里加回来 —— 加回来会让使用率与送货少算本单。
-   */
-  const { summary, loading, error } = useProjectSalesSummary({
-    projectId,
-    ...(excludeOrderId ? { excludeOrderId } : {}),
-    ...(pendingAmount === undefined ? {} : { pendingAmount }),
-    ...(pendingTonnage === undefined ? {} : { pendingTonnage }),
-  })
-
-  // 未选项目：没有可汇总的对象。hook 内部按空 projectId 短路，这里只是不渲染。
-  if (!projectId) return null
-  if (error) return null
-  if (loading && !summary) {
-    return <Skeleton active title={false} paragraph={{ rows: 1 }} />
+  if (openingReceivableAmount <= 0 && openingAdvanceAmount <= 0) {
+    return null
   }
-  if (!summary) return null
+  return (
+    <div className="sales-order-metrics-hint">
+      <span>
+        {t('openingBalance.salesSummaryOpeningStrip', {
+          openingRemaining: `¥${formatAmount(openingRemainingAmount)}`,
+          openingAdvance: `¥${formatAmount(openingAdvanceAmount)}`,
+          totalDebt: `¥${formatAmount(projectTotalDebtAmount)}`,
+        })}
+      </span>
+    </div>
+  )
+}
 
-  /*
-   * 已用额度 = 合同 − 剩余。后端只下发 remaining*（剩余额度）与使用率，
-   * 不下发「已用」绝对值；这里按同一恒等式还原，金额/吨位两张卡共用一处推导，
-   * 不在渲染分支里各写一遍。
-   */
+function buildSalesOrderMetrics(
+  summary: ProjectSalesSummary,
+  currentOrderWeight: number,
+  t: TFunction,
+): ModuleDetailMetric[] {
+  const ton = t('modules.units.ton')
   const usedAmount = summary.contractAmount - summary.remainingAmount
   const usedTonnage = summary.contractTonnage - summary.remainingTonnage
-  /*
-   * 本单总重量：详情面取单据字段（后端聚合的 totalWeight）；编辑器里单据还没保存，
-   * 由调用方传草稿合计吨位进来 —— 两条路径都不在前端重新 reduce 明细。
-   */
-  const currentOrderWeight =
-    orderTotalWeight ?? (Number(record.totalWeight) || 0)
 
-  /*
-   * 胶囊文案的唯一出口：只有后端下发的 exceeded* 才判「超支」，其余（含无合同、使用率
-   * 缺失）都不给胶囊 —— 没有数据时宁可不显示，也不要凭空判个「健康」。
-   */
   const resolveCapsule = (
     exceeded: number,
     withinText: string,
@@ -131,7 +120,7 @@ export function SalesOrderDetailMetrics({
     return { text: withinText, tone: withinTone }
   }
 
-  const metrics: ModuleDetailMetric[] = [
+  return [
     {
       key: 'contractAmountUsage',
       label: t('modules.projectSalesSummary.amountUsage'),
@@ -142,7 +131,6 @@ export function SalesOrderDetailMetrics({
         'processing',
       ),
       value: formatUsagePercent(summary.amountUsageRate),
-      /* 副值放「已用」绝对值：使用率单独看没有量级感，分子必须挨着它 */
       subValue: t('modules.salesContractCheck.usedAmount', {
         value: `¥${formatAmount(usedAmount)}`,
       }),
@@ -191,10 +179,6 @@ export function SalesOrderDetailMetrics({
     },
     {
       key: 'deliveredVsOrderWeight',
-      /*
-       * 两个数不同源：主值是**本单**的 totalWeight，副值是**项目汇总**的合计送货吨位（含其它单据）。
-       * 标题直接点明两个口径，避免「总重量 / 合计送货吨位」被误读为同一范围。
-       */
       label: `${t('modules.detailCards.orderWeight')} / ${t('modules.detailCards.projectDeliveredTonnage')}`,
       value: formatWeight(currentOrderWeight),
       subValue: `/ ${formatWeight(summary.deliveredTonnage)} ${ton}`,
@@ -203,7 +187,6 @@ export function SalesOrderDetailMetrics({
       key: 'unreconciled',
       label: t('modules.detailCards.unreconciledSummary'),
       value: `¥${formatAmount(summary.unreconciledAmount)}`,
-      // 未对账是「待办」性质：整卡 amber（底色 + 描边 + 文字），不靠颜色单独传达语义。
       tone: 'warning',
       icon: <ClockCircleOutlined />,
       stats: {
@@ -214,33 +197,107 @@ export function SalesOrderDetailMetrics({
       },
     },
   ]
+}
 
-  const bar = <ModuleDetailMetricBar metrics={metrics} />
+function buildSummaryQueryOptions(
+  projectId: string,
+  excludeOrderId?: string,
+  pendingAmount?: number,
+  pendingTonnage?: number,
+) {
+  return {
+    projectId,
+    ...(excludeOrderId ? { excludeOrderId } : {}),
+    ...(pendingAmount === undefined ? {} : { pendingAmount }),
+    ...(pendingTonnage === undefined ? {} : { pendingTonnage }),
+  }
+}
 
-  if (variant !== 'editor') {
+function EditorPendingHint({
+  pendingAmount,
+  pendingTonnage,
+  hasContract,
+}: {
+  pendingAmount?: number
+  pendingTonnage?: number
+  hasContract: boolean
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="sales-order-metrics-hint">
+      <span>
+        {t('modules.projectSalesSummary.pendingHint', {
+          amount: formatAmount(pendingAmount ?? 0),
+          tonnage: formatWeight(pendingTonnage ?? 0),
+        })}
+      </span>
+      {hasContract ? null : (
+        <span>{t('modules.projectSalesSummary.noContract')}</span>
+      )}
+    </div>
+  )
+}
+
+function hasProjectOpeningBalance(summary: ProjectSalesSummary): boolean {
+  return summary.openingReceivableAmount > 0 || summary.openingAdvanceAmount > 0
+}
+
+export function SalesOrderDetailMetrics({
+  record,
+  variant = 'detail',
+  excludeOrderId,
+  pendingAmount,
+  pendingTonnage,
+  orderTotalWeight,
+}: Props) {
+  const { t } = useTranslation()
+  const projectId = asString(record.projectId).trim()
+  const { summary, loading, error } = useProjectSalesSummary(
+    buildSummaryQueryOptions(
+      projectId,
+      excludeOrderId,
+      pendingAmount,
+      pendingTonnage,
+    ),
+  )
+
+  if (!projectId || error) return null
+  if (loading && !summary) {
+    return <Skeleton active title={false} paragraph={{ rows: 1 }} />
+  }
+  if (!summary) return null
+
+  const currentOrderWeight =
+    orderTotalWeight ?? (Number(record.totalWeight) || 0)
+  const bar = (
+    <ModuleDetailMetricBar
+      metrics={buildSalesOrderMetrics(summary, currentOrderWeight, t)}
+    />
+  )
+  const openingStrip = (
+    <OpeningBalanceSummaryStrip
+      openingReceivableAmount={summary.openingReceivableAmount}
+      openingAdvanceAmount={summary.openingAdvanceAmount}
+      openingRemainingAmount={summary.openingRemainingAmount}
+      projectTotalDebtAmount={summary.projectTotalDebtAmount}
+    />
+  )
+
+  if (variant !== 'editor' && !hasProjectOpeningBalance(summary)) {
     return bar
   }
 
-  /*
-   * 编辑器专属说明（详情面不需要）：
-   * - 「含本单未保存合计」解释这批数字里有多少还没落库；
-   * - 「该项目未关联有效销售合同」解释使用率为什么是 `—`，避免被当成数据缺失。
-   * 两行都放在指标条**下方**，不占卡片区的高度，也不再单独画一个边框面板。
-   */
   return (
     <div className="sales-order-metrics-with-hint">
       {bar}
-      <div className="sales-order-metrics-hint">
-        <span>
-          {t('modules.projectSalesSummary.pendingHint', {
-            amount: formatAmount(pendingAmount ?? 0),
-            tonnage: formatWeight(pendingTonnage ?? 0),
-          })}
-        </span>
-        {summary.hasContract ? null : (
-          <span>{t('modules.projectSalesSummary.noContract')}</span>
-        )}
-      </div>
+      {openingStrip}
+      {variant === 'editor' ? (
+        <EditorPendingHint
+          pendingAmount={pendingAmount}
+          pendingTonnage={pendingTonnage}
+          hasContract={summary.hasContract}
+        />
+      ) : null}
     </div>
   )
 }

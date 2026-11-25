@@ -547,6 +547,13 @@ export async function fetchProjectAbbreviationOptions(
   return toProjectAbbreviationOptions(await fetchAllEnabledProjectRows(signal))
 }
 
+/** 拉取全部启用项目的标准选项（含客户 ID 与结算主体快照），供项目期初往来等跨客户选项目场景复用。 */
+export async function fetchAllEnabledProjectOptions(
+  signal?: AbortSignal,
+): Promise<ProjectOption[]> {
+  return normalizeProjectOptions(await fetchAllEnabledProjectRows(signal))
+}
+
 /** 比价页项目选择器需要的形态：id + 全称 + 简称。 */
 export type ProjectPickerRow = {
   id: EntityId

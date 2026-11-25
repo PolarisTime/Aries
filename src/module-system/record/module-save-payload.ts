@@ -300,10 +300,17 @@ function assertTypedAllocationSource(
       fields.sourceCustomerStatementId,
       `items[${index}].sourceCustomerStatementId`,
     )
-    if (!sourceCustomerStatementId) {
+    const sourceOpeningBalanceId = parseOptionalEntityId(
+      fields.sourceOpeningBalanceId,
+      `items[${index}].sourceOpeningBalanceId`,
+    )
+    if (!sourceCustomerStatementId && !sourceOpeningBalanceId) {
       throw new Error(
-        `items[${index}].sourceCustomerStatementId 核销来源不能为空`,
+        `items[${index}] 核销来源不能为空（需选择客户对账单或项目期初欠款）`,
       )
+    }
+    if (sourceCustomerStatementId && sourceOpeningBalanceId) {
+      throw new Error(`items[${index}] 不能同时关联客户对账单和项目期初欠款`)
     }
     return
   }
@@ -350,9 +357,21 @@ function resolveLineItemsForSave(
   if (statementLinkingType === 'receipt') {
     if (
       fields.receiptPurpose === 'SUPPLIER_PREPAYMENT_REFUND' ||
-      fields.receiptPurpose === 'SUPPLIER_OTHER_RECEIPT'
+      fields.receiptPurpose === 'SUPPLIER_OTHER_RECEIPT' ||
+      fields.counterpartyType === '供应商'
     ) {
       return []
+    }
+    if (Array.isArray(fields.receiptAllocations)) {
+      return (fields.receiptAllocations as SerializableLineItem[]).filter(
+        (entry) => {
+          const entryFields = getDynamicFields(entry)
+          return Boolean(
+            entryFields.sourceCustomerStatementId ||
+              entryFields.sourceOpeningBalanceId,
+          )
+        },
+      )
     }
     const sourceCustomerStatementId = parseOptionalEntityId(
       fields.sourceCustomerStatementId,

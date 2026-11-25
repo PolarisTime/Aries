@@ -279,6 +279,12 @@ const modulePageSchemaMap: Record<string, ModulePageSchema> = {
         'operatorName',
         'remark',
       ],
+      lineItem: [
+        'id',
+        'sourceCustomerStatementId',
+        'sourceOpeningBalanceId',
+        'allocatedAmount',
+      ],
     },
   },
   payment: {

@@ -42,6 +42,12 @@ function summaryOf(
     amountUsageRate: 0.5,
     tonnageUsageRate: 0.5,
     message: '',
+    openingReceivableAmount: 0,
+    openingSettledAmount: 0,
+    openingRemainingAmount: 0,
+    openingAdvanceAmount: 0,
+    openingNetBalance: 0,
+    projectTotalDebtAmount: 800,
     ...overrides,
   }
 }
