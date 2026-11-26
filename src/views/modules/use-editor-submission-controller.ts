@@ -23,9 +23,9 @@ import {
   type StatusChangeActionKind,
 } from '@/module-system/adapter/module-adapter-actions'
 import {
-  getEditorValidationMessage,
   normalizeDraftRecordForModule,
   trimEditorItemsForModule,
+  validateEditorSubmission,
 } from '@/module-system/adapter/module-adapter-editor'
 import { getBehaviorValue } from '@/module-system/behavior/module-behavior-registry'
 import {
@@ -128,6 +128,8 @@ interface SubmissionWorkspace {
 interface SubmissionCallbacks {
   onClose: () => void
   onSaved: () => void
+  /** 提交校验发现表单字段错误时回调，供向导自动跳回出错步骤并聚焦字段。 */
+  onValidationFieldError?: (fieldKey: string) => void
 }
 
 interface Options<Key extends ModuleKey> {
@@ -222,7 +224,7 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
   } = session
   const { items, expenseItems, authoritativePrimaryNo, submissionRef } =
     workspace
-  const { onClose, onSaved } = callbacks
+  const { onClose, onSaved, onValidationFieldError } = callbacks
   const [saving, setSaving] = useState(false)
   const [saveResult, setSaveResult] = useState<EditorSaveResult<Key> | null>(
     null,
@@ -281,7 +283,7 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
           )
           const trimmedItems = trimEditorItemsForModule(moduleKey, items)
 
-          const validationMessage = getEditorValidationMessage({
+          const validationResult = validateEditorSubmission({
             moduleKey,
             fields: config.formFields || [],
             editorForm: values,
@@ -296,8 +298,11 @@ export function useEditorSubmissionController<Key extends ModuleKey>({
                 : [],
             collectAll: true,
           })
-          if (validationMessage) {
-            message.warning(validationMessage)
+          if (validationResult.message) {
+            if (validationResult.firstInvalidFieldKey) {
+              onValidationFieldError?.(validationResult.firstInvalidFieldKey)
+            }
+            message.warning(validationResult.message)
             invalidateSubmissionIntent(submissionRef.current, idempotencyKey)
             return
           }

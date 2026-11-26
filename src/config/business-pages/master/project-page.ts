@@ -308,12 +308,15 @@ const projectPageConfig: ModulePageConfig = {
    * project_address 255 / remark 255。客户、结算主体、状态、取价策略等都是受控取值，不声明 maxLength。
    */
   /*
-   * 两步录入：21 个字段一屏放得下，但「基本信息」和「车辆/报价」是两类心智模型，
-   * 分两步可以让第一步只留必填与常用字段。字段少（≤10）时不要这么做。
+   * 三步录入向导：26 个字段拆成均衡的三段，每步 5 行左右、标题与步内区块一一对应：
+   * 1. 基本信息（9 字段：必填与档案主信息）；
+   * 2. 取价与价格规定（取价规则 8 字段 + 价格规定独立清单）；
+   * 3. 范围与比价配置（允许范围 4 字段 + 比价配置 4 字段）。
    */
   formSteps: [
     { title: i18next.t('modules.formSections.basic') },
-    { title: PRICING_SECTION },
+    { title: i18next.t('modules.pages.project.stepPricingAndRules') },
+    { title: i18next.t('modules.pages.project.stepScopeAndQuote') },
   ],
   formFields: [
     {
@@ -388,13 +391,13 @@ const projectPageConfig: ModulePageConfig = {
     },
     {
       key: 'projectAddress',
+      colSpan: 12,
       formStep: 1,
       section: i18next.t('modules.formSections.basic'),
       label: i18next.t('modules.pages.project.projectAddress'),
       type: 'input',
       maxLength: 255,
-      row: 3,
-      fullRow: true,
+      row: 2,
     },
     {
       key: 'status',
@@ -414,7 +417,7 @@ const projectPageConfig: ModulePageConfig = {
       label: i18next.t('modules.columns.remark'),
       type: 'textarea',
       maxLength: 255,
-      row: 4,
+      row: 3,
       fullRow: true,
     },
     /*
@@ -589,7 +592,7 @@ const projectPageConfig: ModulePageConfig = {
     {
       key: 'allowedBrands',
       colSpan: 12,
-      formStep: 2,
+      formStep: 3,
       label: i18next.t('modules.pages.project.allowedBrands'),
       type: 'multiSelect',
       options: getBrandOptions,
@@ -602,7 +605,7 @@ const projectPageConfig: ModulePageConfig = {
     {
       key: 'allowedBrandSeverity',
       colSpan: 12,
-      formStep: 2,
+      formStep: 3,
       label: i18next.t('modules.pages.project.scopeEnforcementBrand'),
       // 标签已含「品牌」，占位再用默认模板会变成「请选择品牌处理方式」
       placeholder: i18next.t(
@@ -619,7 +622,7 @@ const projectPageConfig: ModulePageConfig = {
     {
       key: 'allowedMaterials',
       colSpan: 12,
-      formStep: 2,
+      formStep: 3,
       label: i18next.t('modules.pages.project.allowedMaterials'),
       type: 'multiSelect',
       options: materialGradeOptions,
@@ -632,7 +635,7 @@ const projectPageConfig: ModulePageConfig = {
     {
       key: 'allowedMaterialSeverity',
       colSpan: 12,
-      formStep: 2,
+      formStep: 3,
       label: i18next.t('modules.pages.project.scopeEnforcementMaterial'),
       placeholder: i18next.t(
         'modules.pages.project.scopeEnforcementPlaceholder',
@@ -655,7 +658,7 @@ const projectPageConfig: ModulePageConfig = {
     {
       key: 'quoteBrandCategories',
       colSpan: 24,
-      formStep: 2,
+      formStep: 3,
       label: i18next.t('modules.pages.project.quoteBrandCategories'),
       // 实际控件由 render 接管（品牌 × 品类矩阵）；type 只决定表单项样式与占位口径
       type: 'multiSelect',
@@ -673,7 +676,7 @@ const projectPageConfig: ModulePageConfig = {
     {
       key: 'quoteProducts',
       colSpan: 24,
-      formStep: 2,
+      formStep: 3,
       label: i18next.t('modules.pages.project.quoteProducts'),
       // 实际控件由 render 接管（类别 → 材质 → 规格 → 长度的树形多选）
       type: 'multiSelect',
@@ -691,7 +694,7 @@ const projectPageConfig: ModulePageConfig = {
     {
       key: 'quoteLengthPremium',
       colSpan: 12,
-      formStep: 2,
+      formStep: 3,
       label: i18next.t('modules.pages.project.quoteLengthPremium'),
       type: 'number',
       min: 0,
@@ -705,7 +708,7 @@ const projectPageConfig: ModulePageConfig = {
     {
       key: 'quoteHrb400eFallback',
       colSpan: 12,
-      formStep: 2,
+      formStep: 3,
       label: i18next.t('modules.pages.project.quoteHrb400eFallback'),
       type: 'segmented',
       defaultValue: false,

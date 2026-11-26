@@ -1757,6 +1757,8 @@ export const enUS = {
         sectionPricing: 'Pricing rules',
         sectionScope: 'Scope & validation',
         sectionQuote: 'Quote config',
+        stepPricingAndRules: 'Pricing & rules',
+        stepScopeAndQuote: 'Scope & quote config',
         quoteBrandCategories: 'Enabled categories per brand',
         quoteBrandCategoriesHint:
           'Pick the categories each brand can quote; leave empty to include every category',

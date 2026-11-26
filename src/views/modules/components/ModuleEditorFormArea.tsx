@@ -2,6 +2,7 @@ import type { FormInstance } from 'antd'
 import { Form } from 'antd'
 import type { ProjectOption } from '@/api/master/project-options'
 import type { ModulePageConfig } from '@/types/module-page'
+import type { EditorWizardControl } from '@/views/modules/editor-wizard'
 import type { EditorFormValues } from '@/views/modules/module-editor-workspace-support'
 import { ModuleEditorFormSection } from './ModuleEditorFormSection'
 
@@ -32,6 +33,7 @@ interface Props {
     label: string
     value: string | number | boolean
   }[]
+  wizard?: EditorWizardControl
   onValuesChange: (changedValues: Record<string, unknown>) => void
 }
 
@@ -49,6 +51,7 @@ export function ModuleEditorFormArea({
   layoutVariant = 'default',
   projectOptions,
   settlementAccountOptions,
+  wizard,
   onValuesChange,
 }: Props) {
   return (
@@ -87,6 +90,7 @@ export function ModuleEditorFormArea({
         authoritativePrimaryNo={authoritativePrimaryNo}
         recordId={recordId}
         layoutVariant={layoutVariant}
+        wizard={wizard}
       />
     </Form>
   )

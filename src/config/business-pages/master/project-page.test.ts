@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { groupFieldsByRow } from '@/module-system/presentation/module-field-layout'
+import {
+  groupFieldsByRow,
+  moveDocumentNoFieldsToSectionEnd,
+} from '@/module-system/presentation/module-field-layout'
+import {
+  getModuleFormFieldSpan,
+  packWizardFieldRows,
+} from '@/views/modules/editor-wizard'
 import { masterProjectPageConfigs } from './project-page'
 
 describe('projectPageConfig', () => {
@@ -10,8 +17,7 @@ describe('projectPageConfig', () => {
 
     expect(rows.map((row) => row.map((field) => field.key))).toEqual([
       ['projectCode', 'projectName', 'projectNameAbbr', 'customerId'],
-      ['settlementCompanyId', 'projectManager', 'status'],
-      ['projectAddress'],
+      ['settlementCompanyId', 'projectManager', 'projectAddress', 'status'],
       ['remark'],
       // 取价规则：基准日期/顺延交易日数/休市口径/时段策略（与专用弹层 ProjectPricingBasisFields 同口径）
       ['quoteSource', 'quoteRegion', 'priceDateBasis', 'priceDateOffsetDays'],
@@ -27,11 +33,55 @@ describe('projectPageConfig', () => {
       ['allowedBrands', 'allowedBrandSeverity'],
       ['allowedMaterials', 'allowedMaterialSeverity'],
       // 比价配置（2026-11-16 起为唯一配置点）：两个长清单（品牌×品种矩阵、商品规格）各占整行，
-      // 其余三项按 12 栅格两两成对 —— 不再出现 12+6+6 那种一行三种宽度、竖边对不齐的排法
+      // 其余两项按 12 栅格成对 —— 不再出现 12+6+6 那种一行三种宽度、竖边对不齐的排法
       ['quoteBrandCategories'],
       ['quoteProducts'],
       ['quoteLengthPremium', 'quoteHrb400eFallback'],
     ])
+  })
+
+  it('三步向导内每步均无半行空洞，且第 1 步主编码停在备注之前', () => {
+    const config = masterProjectPageConfigs.project
+    const fields = config.formFields ?? []
+    const step1Ordered = moveDocumentNoFieldsToSectionEnd(
+      fields.filter((field) => field.formStep === 1),
+      [config.primaryNoKey ?? ''],
+    )
+    expect(step1Ordered.map((field) => field.key)).toEqual([
+      'projectName',
+      'projectNameAbbr',
+      'customerId',
+      'settlementCompanyId',
+      'projectManager',
+      'projectAddress',
+      'status',
+      'projectCode',
+      'remark',
+    ])
+
+    // 校验每一步按 24 栅格打包后，所有行均铺满 24（零半行空洞）
+    for (const stepNo of [1, 2, 3]) {
+      const stepFields = moveDocumentNoFieldsToSectionEnd(
+        fields.filter((field) => field.formStep === stepNo),
+        [config.primaryNoKey ?? ''],
+      )
+      const sections = new Map<string, typeof stepFields>()
+      for (const field of stepFields) {
+        const key = field.section ?? ''
+        const list = sections.get(key) ?? []
+        list.push(field)
+        sections.set(key, list)
+      }
+      for (const [section, sectionFields] of sections.entries()) {
+        for (const row of packWizardFieldRows(sectionFields)) {
+          const rowSpan = row.reduce(
+            (sum, field) => sum + getModuleFormFieldSpan(field, 'default'),
+            0,
+          )
+          expect(rowSpan, `step ${stepNo} / ${section} 出现半行空洞`).toBe(24)
+        }
+      }
+    }
   })
 
   it('基础文案字段 maxLength 与 md_project 列宽一致（varchar 契约）', () => {

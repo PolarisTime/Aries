@@ -37,11 +37,17 @@ export interface EditorPresentation {
   financeLayout: boolean
   formActionsVisible: boolean
   /**
-   * 保存组是否渲染到弹层 footer 槽（与之互斥地渲染在明细工具栏）。
+   * 保存组是否渲染到弹层 footer 槽（与之互斥地渲染在明细工具栏或表单顶栏）。
    * 与 {@link resolveEditorShowsOverlayFooter} 同源，在此一并给出，
    * 避免调用方为同一判据再加一次计算。
    */
   overlayFooterVisible: boolean
+  /**
+   * 启用 `formSteps` 且无明细区的模块（项目资料、物流商、收付款单）：
+   * 统一由弹层固定 footer 承载「步骤进度 + 上一步 / 下一步 + 取消 / 保存」，
+   * 消除表单顶栏与向导底部两排按钮分裂及双主按钮冲突。
+   */
+  wizardFooterVisible: boolean
   layoutVariant: 'finance' | 'default'
   overlayClassName: string | undefined
 }
@@ -57,13 +63,20 @@ export interface EditorPresentationOptions {
   actionPlacement?: 'top' | 'bottom'
 }
 
-/** 财务版布局在 JSX 上的投影: 集中一次判断, 避免同一条件散成多个三元。 */
+function usesWizardOverlayFooter(
+  config?: Pick<ModulePageConfig, 'formSteps' | 'itemColumns'>,
+) {
+  return Boolean(config?.formSteps?.length) && !config?.itemColumns?.length
+}
+
+/** 财务版布局与向导底栏在 JSX 上的投影: 集中一次判断, 避免同一条件散成多个三元。 */
 export function resolveEditorPresentation(
   config: ModulePageConfig,
   moduleKey: string,
   options: EditorPresentationOptions = {},
 ): EditorPresentation {
   const financeLayout = isFinanceDocumentModule(moduleKey)
+  const wizardFooterVisible = usesWizardOverlayFooter(config)
   /*
    * 用户把按钮位置设成「底部」时，等价于财务单据那种常驻 footer 的形态：
    * 无论有没有明细区、当前在哪个页签，保存入口都在右下角，不会被滚动或页签切走。
@@ -75,16 +88,21 @@ export function resolveEditorPresentation(
       ? 'workspace-overlay-panel--finance-editor'
       : undefined,
     /*
-     * 财务布局（收付款单）不给表单区按钮：它们的取消/保存常驻在弹层 footer 槽里。
+     * 财务布局（收付款单）与启用向导的无明细模块（项目资料 / 物流商）不给表单区顶部按钮：
+     * 它们的向导导航与取消/保存统一收口在弹层 footer 槽里。
      * 其余有明细区的模块把按钮放在明细工具栏（见 resolveEditorShowsOverlayFooter），
      * 由明细区在「货物明细 / 附加费用」两个页签都渲染工具栏来保证不丢入口。
-     * 无明细区的模块（主数据式表单）才把按钮放在表单标题右侧。
-     * 用户选了「底部」时，以上三处一律让位给 footer，避免出现两条按钮。
+     * 无明细区且未启用向导的模块才把按钮放在表单标题右侧。
+     * 用户选了「底部」时，以上位置一律让位给 footer，避免出现两条按钮。
      */
     formActionsVisible:
-      !financeLayout && !config.itemColumns?.length && !bottomActions,
+      !financeLayout &&
+      !wizardFooterVisible &&
+      !config.itemColumns?.length &&
+      !bottomActions,
     overlayFooterVisible:
-      resolveEditorShowsOverlayFooter(moduleKey) || bottomActions,
+      resolveEditorShowsOverlayFooter(moduleKey, config) || bottomActions,
+    wizardFooterVisible,
     layoutVariant: financeLayout ? 'finance' : 'default',
   }
 }
@@ -92,22 +110,16 @@ export function resolveEditorPresentation(
 /**
  * 取消 / 保存 / 保存并审核是否渲染到 `WorkspaceOverlay` 的 footer 槽 —— **唯一来源**。
  *
- * <p>历史缺陷：这三个按钮曾挂在明细工具栏（`ModuleItemsToolbarActions`）里，而明细区
- * 的「货物明细 / 附加费用」两个页签是**互斥渲染**，切到「附加费用」就整条工具栏被卸载，
- * 保存入口一起消失（销售订单 / 采购订单 100% 复现，用户只能切回货物明细才能保存）。
- * 当时的修法是把按钮整体提升到弹层 footer 槽常驻。</p>
- *
- * <p>现在按用户使用习惯改回**明细工具栏**，但要保住「任何页签都有保存入口」这个不变量，
- * 于是把保证方式从「挪到 footer」换成「两个页签渲染同一条工具栏」：</p>
- *
- * - 财务单据（收付款单）保持 footer 常驻，与原状一致；
+ * <p>口径：</p>
+ * - 财务单据（收付款单）保持 footer 常驻；
+ * - 启用 `formSteps` 的无明细模块（项目资料 / 物流商等）由 footer 统一承载向导导航与保存按钮；
  * - 其余**有明细区**的模块把按钮放回明细工具栏，且 `ModuleEditorItemsSection` 在两个页签
- *   都渲染工具栏（见该组件 `showFooterActions` 的说明）；
- * - 无明细区的模块保持按钮在表单区（footer 为空），避免出现两条按钮。
- *
- * <p>判据只看「有没有明细区」，不看当前激活的页签 —— 页签是明细区内部状态，
- * 不该参与外壳是否渲染保存入口的决策。</p>
+ *   都渲染工具栏；
+ * - 无明细区且非向导的模块保持按钮在表单区（footer 为空），避免出现两条按钮。
  */
-export function resolveEditorShowsOverlayFooter(moduleKey: string) {
-  return isFinanceDocumentModule(moduleKey)
+export function resolveEditorShowsOverlayFooter(
+  moduleKey: string,
+  config?: Pick<ModulePageConfig, 'formSteps' | 'itemColumns'>,
+) {
+  return isFinanceDocumentModule(moduleKey) || usesWizardOverlayFooter(config)
 }

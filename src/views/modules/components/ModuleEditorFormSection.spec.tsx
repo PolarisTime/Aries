@@ -98,32 +98,54 @@ describe('ModuleEditorFormSection 多步向导', () => {
     container.remove()
   })
 
-  function renderSection(config: ModulePageConfig) {
+  function renderSection(
+    config: ModulePageConfig,
+    options: {
+      isEdit?: boolean
+      wizard?: {
+        currentStep: number
+        onStepChange: (nextStep: number) => void
+        hideInlineNav?: boolean
+      }
+      wrapOverlayBody?: boolean
+    } = {},
+  ) {
+    const sectionElement = createElement(
+      AppAntdProvider,
+      null,
+      /* 真实编辑弹层里字段区始终在 antd Form 内：Form.useFormInstance 需要它 */
+      createElement(
+        Form,
+        { className: 'editor-form-shell', layout: 'horizontal' },
+        createElement(ModuleEditorFormSection, {
+          actions: {
+            canAudit: true,
+            canSave: true,
+            onCancel: () => {},
+            onSave: () => {},
+            saving: false,
+            visible: false,
+          },
+          config,
+          editorState: {
+            isEdit: options.isEdit ?? false,
+            lineItemsLocked: false,
+          },
+          lockedLineItemsNotice: '',
+          moduleKey: config.key,
+          wizard: options.wizard,
+        }),
+      ),
+    )
     act(() => {
       root.render(
-        createElement(
-          AppAntdProvider,
-          null,
-          /* 真实编辑弹层里字段区始终在 antd Form 内：Form.useFormInstance 需要它 */
-          createElement(
-            Form,
-            { className: 'editor-form-shell', layout: 'horizontal' },
-            createElement(ModuleEditorFormSection, {
-              actions: {
-                canAudit: true,
-                canSave: true,
-                onCancel: () => {},
-                onSave: () => {},
-                saving: false,
-                visible: false,
-              },
-              config,
-              editorState: { isEdit: false, lineItemsLocked: false },
-              lockedLineItemsNotice: '',
-              moduleKey: config.key,
-            }),
-          ),
-        ),
+        options.wrapOverlayBody
+          ? createElement(
+              'div',
+              { className: 'workspace-overlay-body' },
+              sectionElement,
+            )
+          : sectionElement,
       )
     })
   }
@@ -210,6 +232,116 @@ describe('ModuleEditorFormSection 多步向导', () => {
     expect(visibleFieldLabels()).toEqual(['备注'])
     expect(buttonByText('下一步')).toBeUndefined()
   })
+
+  it('编辑态点击步骤条任意后续步骤可直接跳转（不锁死单向）', async () => {
+    renderSection(REQUIRED_CONFIG, { isEdit: true })
+
+    const steps = Array.from(
+      container.querySelectorAll<HTMLElement>('.ant-steps-item'),
+    )
+    await act(async () => {
+      steps[2]?.click()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+
+    expect(visibleFieldLabels()).toEqual(['备注'])
+  })
+
+  it('新建态点步骤条后续步骤时自动校验当前步：失败停留原步，无错可前进并回顶滚动容器', async () => {
+    renderSection(REQUIRED_CONFIG, { isEdit: false })
+    const requiredSteps = Array.from(
+      container.querySelectorAll<HTMLElement>('.ant-steps-item'),
+    )
+    await act(async () => {
+      requiredSteps[1]?.click()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+    // 第 1 步必填项未填，停在第 1 步
+    expect(visibleFieldLabels()).toEqual(['往来方'])
+
+    // 无必填缺口时允许点击步骤条直接跳到第 3 步，并将外层滚动容器滚回顶部
+    renderSection(WIZARD_CONFIG, { isEdit: false, wrapOverlayBody: true })
+    const body = container.querySelector<HTMLElement>('.workspace-overlay-body')
+    if (body) {
+      body.scrollTop = 320
+    }
+    const steps = Array.from(
+      container.querySelectorAll<HTMLElement>('.ant-steps-item'),
+    )
+    await act(async () => {
+      steps[2]?.click()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+    expect(visibleFieldLabels()).toEqual(['备注'])
+    expect(body?.scrollTop).toBe(0)
+  })
+
+  it('单区块步骤与步骤条同名时省略重复 Divider；多区块步骤保留各自 Divider', async () => {
+    const sectionConfig = {
+      ...WIZARD_CONFIG,
+      formSteps: [{ title: '基本信息' }, { title: '取价与价格规定' }],
+      formFields: [
+        {
+          key: 'name',
+          label: '名称',
+          type: 'input',
+          formStep: 1,
+          section: '基本信息',
+        },
+        {
+          key: 'quoteSource',
+          label: '数据源',
+          type: 'input',
+          formStep: 2,
+          section: '取价规则',
+        },
+        {
+          key: 'priceRules',
+          label: '价格规定',
+          type: 'input',
+          formStep: 2,
+          section: '价格规定',
+        },
+      ],
+    } as unknown as ModulePageConfig
+
+    renderSection(sectionConfig, { isEdit: true })
+    // 第 1 步仅 1 个区块且与步骤条同名 → 不渲染重复 Divider
+    expect(container.querySelectorAll('.master-section-divider')).toHaveLength(
+      0,
+    )
+
+    // 切到第 2 步（2 个区块）→ 保留两条 Divider
+    const steps = Array.from(
+      container.querySelectorAll<HTMLElement>('.ant-steps-item'),
+    )
+    await act(async () => {
+      steps[1]?.click()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+    expect(
+      Array.from(container.querySelectorAll('.master-section-divider')).map(
+        (node) => node.textContent?.trim(),
+      ),
+    ).toEqual(['取价规则', '价格规定'])
+  })
+
+  it('外部托管向导且 hideInlineNav=true 时隐藏表单内联导航条，点击步骤条回调 onStepChange', async () => {
+    const onStepChange = vi.fn()
+    renderSection(WIZARD_CONFIG, {
+      wizard: { currentStep: 0, onStepChange, hideInlineNav: true },
+    })
+
+    expect(container.querySelector('.editor-form-wizard-nav')).toBeNull()
+    const steps = Array.from(
+      container.querySelectorAll<HTMLElement>('.ant-steps-item'),
+    )
+    await act(async () => {
+      steps[1]?.click()
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(onStepChange).toHaveBeenCalledWith(1)
+  })
 })
 
 /*
@@ -250,7 +382,7 @@ describe('启用向导的页面配置契约', () => {
     ['receipt', 3],
     ['payment', 3],
     ['carrier', 2],
-    ['project', 2],
+    ['project', 3],
   ] as const)(
     '%s 声明 %s 步且每个可见字段都标注了 formStep',
     async (key, steps) => {

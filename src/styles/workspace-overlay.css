@@ -532,6 +532,11 @@
   background: var(--ant-color-bg-container, #fff);
 }
 
+/* 向导固定底栏：左侧「第 X / N 步」贴左，右侧「取消 / 上一步 / 下一步 / 保存」贴右。 */
+.editor-wizard-footer {
+  width: 100%;
+}
+
 /*
  * 表单下拉的字段级空态(字段声明了 emptyHint 时)。
  *

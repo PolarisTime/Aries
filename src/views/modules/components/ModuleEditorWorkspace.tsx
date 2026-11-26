@@ -34,19 +34,14 @@ import { useModuleEditorItemControls } from '@/views/modules/use-module-editor-i
 import { useModuleEditorSettlementAccounts } from '@/views/modules/use-module-editor-settlement-accounts'
 import { useModuleEditorWorkspace } from '@/views/modules/use-module-editor-workspace'
 import { resolveItemsEmptyText } from '../module-editor-empty-text'
-import { EditorFooterActions } from './EditorFooterActions'
-import { ModuleEditorExtras } from './ModuleEditorExtras'
-import { ModuleEditorFormArea } from './ModuleEditorFormArea'
-import { ModuleEditorItemsArea } from './ModuleEditorItemsArea'
+import { ModuleEditorOverlay } from './ModuleEditorOverlay'
 import { ModuleEditorSaveResultHost } from './ModuleEditorSaveResultHost'
-import { ModuleEditorWorkspaceTitle } from './ModuleEditorWorkspaceTitle'
 import {
   isFinanceDocumentModule,
   resolveEditorCustomerId,
   resolveEditorPresentation,
   resolveEditorSessionIds,
 } from './module-editor-workspace-presentation'
-import { WorkspaceOverlay } from './WorkspaceOverlay'
 
 interface Props<Key extends ModuleKey> {
   open: boolean
@@ -104,15 +99,7 @@ function useEditorSessionLifecycle({
   const wasSavingRef = useRef(false)
   /**
    * 会话宿主哨兵节点的 id：只用于在 effect 清理时区分**隐藏**与**卸载**。
-   *
-   * <p>React 19 的 `Activity` 隐藏面板时用 `display:none` 隐藏子树、销毁子树 effect，
-   * **并把子树里 host node 的 ref 置空**（实测 `ref.current === null`），但 DOM 节点仍在文档里；
-   * 真正卸载（关闭编辑器、刷新标签、路由换页、标签被回收）时节点已从文档移除。
-   * 因此不能用 ref 判断，只能用「哨兵节点还在不在文档里」判断。`useId()` 是组件 state，
-   * 隐藏时保留、卸载时随实例销毁，正好做这个身份标记。</p>
-   *
-   * <p>这条判定的意义：隐藏不得结束会话，否则恢复后脏状态被重置为 clean，
-   * 关闭标签的「存在未保存的修改」守卫就失效了（e2e P2-25 第 4 步会变红）。</p>
+   * 隐藏时保留会话槽与其脏状态，真正卸载时才结束会话。
    */
   const sessionSentinelId = useId()
 
@@ -125,7 +112,6 @@ function useEditorSessionLifecycle({
     })
     return () => {
       if (document.getElementById(sessionSentinelId)) {
-        // 只是被隐藏（Activity hidden）：保留会话槽与其状态。
         return
       }
       endSession()
@@ -169,13 +155,10 @@ function useEditorSessionLifecycle({
 }
 
 /**
- * 模块编辑器工作区（弹层外壳）。
+ * 模块编辑器工作区（会话生命周期、表单状态与保存回执宿主）。
  *
- * <p>本轮重构把外壳里三块内容移出本组件：标题抽到 ModuleEditorWorkspaceTitle，
- * 保存回执宿主抽到 ModuleEditorSaveResultHost，布局/客户 id/会话 id 等纯判断抽到
- * module-editor-workspace-presentation.ts。原因：本组件同时在 no-giant-component
- * (>300 行) 与 no-high-complexity-react-function 名单里，而这三块恰好既有分支又占行数。
- * 弹层结构、子组件 props、快捷键与编辑会话语义保持不变。</p>
+ * <p>打开态弹层与多步向导交互抽至 {@link ModuleEditorOverlay}，保证本组件职责清晰、
+ * 弹层关闭重开时向导自然复位。</p>
  */
 export function ModuleEditorWorkspace<Key extends ModuleKey>({
   open,
@@ -195,11 +178,8 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
 }: Props<Key>) {
   const [form] = Form.useForm<EditorFormValues>()
   const { t } = useTranslation()
-  /*
-   * 「取消 / 保存 / 保存并审核」的位置来自个人设置（顶部工具栏 / 右下角 footer）。
-   * 直接订阅 store 而不是经 props 传：这是**用户级偏好**，与单据内容无关，
-   * 也不该让每层调用方都多接一个参数。
-   */
+  const wizardFocusRef = useRef<((fieldKey: string) => void) | null>(null)
+  const sessionIds = resolveEditorSessionIds(record)
   const editorActionPlacement = useUiSettingsStore(
     (state) => state.settings?.editorActionPlacement ?? 'top',
   )
@@ -242,6 +222,17 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     canAudit,
   })
 
+  const handleValidationFieldError = useCallback(
+    (fieldKey: string) => {
+      if (wizardFocusRef.current) {
+        wizardFocusRef.current(fieldKey)
+        return
+      }
+      form.focusField(fieldKey)
+    },
+    [form],
+  )
+
   // oxlint-disable react-doctor/no-event-handler -- These callbacks configure the editor hook; no effect is acting as a UI event.
   const {
     addItem,
@@ -278,19 +269,12 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     onClose: finishAndCloseEditor,
     onDirty: markEditorDirty,
     onSaved,
+    onValidationFieldError: handleValidationFieldError,
   })
   // oxlint-enable react-doctor/no-event-handler
 
-  /*
-   * 编辑器忙态：保存与上游导入共用同一把 in-flight 锁。
-   *
-   * <p>导入进行中若还允许保存，保存载荷取自导入前的 items，服务端会先落一份
-   * 「没有导入行」的单据；导入随后完成又置脏，用户以为已保存、其实还要再存一次。
-   * 取消与 Ctrl+S 同频禁用，避免同一段异步链路里出现第二份草稿快照。</p>
-   */
   const editorBusy = saving || parentImporting
 
-  // Ctrl/Cmd+S 保存、Ctrl/Cmd+Shift+S 保存并审核；保存中/导入中/只读/无权限时忽略。
   useEditorSaveShortcuts({
     enabled: open,
     canSave,
@@ -305,7 +289,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     open,
     moduleKey,
     isEdit,
-    ...resolveEditorSessionIds(record),
+    ...sessionIds,
     saving,
     saveStatus: saveResult?.status,
     saveErrorCode: saveResult?.errorCode,
@@ -316,27 +300,7 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     expenseItems,
     updateExpenseItems,
   })
-  const {
-    canAddManualItemsForCurrentRecord,
-    canAutoSortItems,
-    canImportParentItems,
-    freightStatementSortDirection,
-    handleAutoSortItems,
-    parentImportVisible,
-    supportsExpenseTab,
-    clearSelectedItems,
-    handleRowReorder,
-    itemColumns,
-    itemRowSelection,
-    itemTableComponents,
-    itemColumnOrder,
-    itemRowMenus,
-    onItemColumnOrderChange,
-    removeSelectedItems: removeSelectedItemsDirectly,
-    selectedItemIds,
-    toggleItemColumn,
-    visibleItemColumnKeys,
-  } = useModuleEditorItemControls({
+  const itemControls = useModuleEditorItemControls({
     moduleKey,
     config,
     items,
@@ -349,164 +313,70 @@ export function ModuleEditorWorkspace<Key extends ModuleKey>({
     saving,
     lineItemsLocked,
     canEditItemColumns,
-    // 单据状态不在表单字段里注册（Form.useWatch 拿不到），显隐按记录状态单独判定
     recordStatus: String(record?.status ?? ''),
   })
 
-  /* 删除选中：二次确认 + toast 撤销（P1-4）。唯一实现见 use-confirmed-item-removal。 */
-  /*
-   * 明细空态：只对"不允许手工新增行"的模块给引导（销售订单 = 只能从上级单据导入），
-   * 其余模块保持 antd 默认「暂无数据」——那里「新增明细」就在工具栏上，不用指路。
-   * 唯一出口见 resolveItemsEmptyText（含单测）。
-   */
   const itemsEmptyText = resolveItemsEmptyText({
-    canAddManualItems: canAddManualItemsForCurrentRecord,
+    canAddManualItems: itemControls.canAddManualItemsForCurrentRecord,
     importActionLabel: config.parentImport?.buttonText,
     t,
   })
 
   const removeSelectedItems = useConfirmedItemRemoval({
     items,
-    selectedItemIds,
-    onConfirmDelete: removeSelectedItemsDirectly,
+    selectedItemIds: itemControls.selectedItemIds,
+    onConfirmDelete: itemControls.removeSelectedItems,
     onRestore: (snapshot: RemovedItemsSnapshot) =>
       setItems((current) => restoreRemovedItems(current, snapshot)),
   })
 
   return (
     <>
-      {/* 会话宿主哨兵：见 useEditorSessionLifecycle 里的 sessionSentinelId。
-          本身 hidden、不承载任何子节点，因此不参与布局、不进无障碍树；
-          只用来在 effect 清理时判断「子树被 Activity 隐藏（节点还在文档里）」还是「真的卸载」。 */}
       <span id={sessionSentinelId} hidden aria-hidden="true" />
-      <WorkspaceOverlay
-        open={open}
-        title={
-          <ModuleEditorWorkspaceTitle
-            config={config}
-            currentStatus={currentStatus}
-            financeLayout={presentation.financeLayout}
-            isEdit={isEdit}
-          />
-        }
-        onClose={requestCloseEditor}
-        className={presentation.overlayClassName}
-        footer={
-          presentation.overlayFooterVisible ? (
-            <EditorFooterActions
-              canSave={canSave}
-              canAudit={canSaveAndAuditInEditor}
-              auditLabel={editorAuditLabel}
-              saving={editorBusy}
-              onCancel={requestCloseEditor}
-              onSave={(audit) => {
-                void handleSave(audit)
-              }}
-            />
-          ) : undefined
-        }
-      >
-        <ModuleEditorFormArea
-          form={form}
+      {open ? (
+        <ModuleEditorOverlay
           config={config}
           moduleKey={moduleKey}
-          projectOptions={projectOptions}
-          settlementAccountOptions={settlementAccountOptions}
+          form={form}
+          record={record as ModuleRecordInput | null}
+          recordId={sessionIds.recordId}
+          isEdit={isEdit}
+          currentStatus={currentStatus}
+          presentation={presentation}
+          canSave={canSave}
+          canAudit={canSaveAndAuditInEditor}
           auditLabel={editorAuditLabel}
-          actions={{
-            canSave,
-            canAudit: canSaveAndAuditInEditor,
-            saving: editorBusy,
-            visible: presentation.formActionsVisible,
-            onCancel: requestCloseEditor,
-            onSave: (audit) => {
-              void handleSave(audit)
-            },
-          }}
-          editorState={{ isEdit, lineItemsLocked }}
+          editorBusy={editorBusy}
+          lineItemsLocked={lineItemsLocked}
           lockedLineItemsNotice={lockedLineItemsNotice}
           authoritativePrimaryNo={authoritativePrimaryNo}
-          /* 复合控件读写附属资源（例如项目价格规定）需要实体主键；新建态没有 */
-          recordId={record?.id != null ? String(record.id) : undefined}
-          layoutVariant={presentation.layoutVariant}
-          onValuesChange={(changedValues) => {
-            handleFormValuesChange(changedValues)
-          }}
-        />
-
-        {/* 编辑器附加节点（模块配置可选的 renderEditorExtras）：只读派生展示，不写单据数据。 */}
-        <ModuleEditorExtras
-          config={config}
-          // 主流程编辑器的精确草稿类型（items 带模块私有字段）只在会话/保存链路内需要；
-          // 附加节点按通用契约（ModuleRecordInput）消费，这里做一次边界收窄。
-          record={record as ModuleRecordInput | null}
-          form={form}
-          formValues={editorFormValues}
-          items={items}
-          expenseItems={expenseItems}
-        />
-
-        <ModuleEditorItemsArea
-          open={open}
-          moduleKey={moduleKey}
-          config={config}
+          projectOptions={projectOptions}
+          settlementAccountOptions={settlementAccountOptions}
+          editorFormValues={editorFormValues}
           items={items}
           expenseItems={expenseItems}
           expense={expense}
-          supportsExpenseTab={supportsExpenseTab}
-          selectedItemIds={selectedItemIds}
-          parentImportVisible={parentImportVisible}
+          itemControls={itemControls}
+          itemsEmptyText={itemsEmptyText}
           parentImporting={parentImporting}
           parentSelectorDisplayFieldKey={parentSelectorDisplayFieldKey}
           parentSelectorFilters={parentSelectorFilters}
           parentSelectorModuleKey={parentSelectorModuleKey}
           parentSelectorOpen={parentSelectorOpen}
-          itemColumns={itemColumns}
-          itemRowSelection={itemRowSelection}
-          itemsEmptyText={itemsEmptyText}
-          itemTableComponents={itemTableComponents}
-          itemColumnOrder={itemColumnOrder}
-          itemRowMenus={itemRowMenus}
-          visibleItemColumnKeys={visibleItemColumnKeys}
-          capabilities={{
-            addManualItems: canAddManualItemsForCurrentRecord,
-            importParentItems: canImportParentItems,
-            autoSortItems: canAutoSortItems,
-            save: canSave,
-            audit: canSaveAndAuditInEditor,
-          }}
-          auditLabel={editorAuditLabel}
-          saving={editorBusy}
-          /*
-           * 单据级动作跟着明细工具栏走：工具组在左、取消/保存/保存并审核贴行末（行末槽）。
-           * 弹层 footer 只留给收付款单（见 resolveEditorShowsOverlayFooter）。
-           */
-          showFooterActions={!presentation.overlayFooterVisible}
-          currentStatus={currentStatus}
-          formValues={editorFormValues}
-          projectOptions={projectOptions}
-          setItems={setItems}
-          setFormValue={(key, value) => form.setFieldValue(key, value)}
-          freightStatementSortDirection={freightStatementSortDirection}
-          onAddItem={addItem}
-          onAutoSortItems={handleAutoSortItems}
-          onCancel={requestCloseEditor}
+          wizardFocusRef={wizardFocusRef}
+          onRequestClose={requestCloseEditor}
           onSave={(audit) => {
             void handleSave(audit)
           }}
+          onFormValuesChange={handleFormValuesChange}
+          onSetItems={setItems}
+          onAddItem={addItem}
           onOpenParentSelector={openParentSelector}
           onCloseParentSelector={closeParentSelector}
           onRemoveSelectedItems={removeSelectedItems}
-          onImportParentRecord={(parentRecords) => {
-            clearSelectedItems()
-            // 返回 Promise：选单弹层据此保持打开+锁定，直到导入真正回填完成。
-            return handleImportParentRecord(parentRecords)
-          }}
-          onItemColumnOrderChange={onItemColumnOrderChange}
-          onToggleItemColumn={toggleItemColumn}
-          onItemsReorder={handleRowReorder}
+          onImportParentRecord={handleImportParentRecord}
         />
-      </WorkspaceOverlay>
+      ) : null}
 
       <ModuleEditorSaveResultHost
         saveResult={saveResult}

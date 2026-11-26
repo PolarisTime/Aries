@@ -145,7 +145,19 @@ function getFreightBillSettlementMessage(
     : i18next.t('modules.validation.fixedFreightAmountPositive')
 }
 
-export function getEditorValidationMessage(options: {
+export interface EditorValidationFieldError {
+  fieldKey: string
+  message: string
+}
+
+export interface EditorValidationResult {
+  message: string | null
+  /** 首个校验失败的表单字段 key（用于跨步向导自动跳回出错步骤并聚焦）。 */
+  firstInvalidFieldKey?: string
+  fieldErrors: EditorValidationFieldError[]
+}
+
+export interface EditorValidationOptions {
   fields: ModuleFormFieldDefinition[]
   editorForm: ModuleRecordInput
   moduleKey?: string
@@ -155,7 +167,30 @@ export function getEditorValidationMessage(options: {
   itemCount: number
   skipRequiredFieldKeys?: string[]
   collectAll?: boolean
-}) {
+}
+
+function formatValidationSummary(allErrors: string[]): string | null {
+  if (!allErrors.length) {
+    return null
+  }
+  return (
+    allErrors.slice(0, 5).join('；') +
+    (allErrors.length > 5
+      ? ` ${i18next.t('modules.validation.errorSummarySuffix', { count: allErrors.length })}`
+      : '')
+  )
+}
+
+/**
+ * 编辑器全表单提交校验（**唯一来源**）。
+ *
+ * <p>向导模式采用条件渲染，antd `form.validateFields()` 只能校验当前已挂载步骤的字段；
+ * 因此本函数负责兜底全量可见字段的 `required` 与自定义 `validate`（如项目资料第 2 步
+ * 「固定时段」必选具体时段），并返回首个出错字段 key 供调用方自动切回对应步骤并聚焦。</p>
+ */
+export function validateEditorSubmission(
+  options: EditorValidationOptions,
+): EditorValidationResult {
   const {
     fields,
     editorForm,
@@ -168,7 +203,23 @@ export function getEditorValidationMessage(options: {
   } = options
 
   const allErrors: string[] = []
+  const fieldErrors: EditorValidationFieldError[] = []
+  const erroredFieldKeys = new Set<string>()
   const skipRequiredFieldKeySet = new Set(skipRequiredFieldKeys)
+
+  const recordFieldError = (fieldKey: string, text: string) => {
+    allErrors.push(text)
+    fieldErrors.push({ fieldKey, message: text })
+    erroredFieldKeys.add(fieldKey)
+  }
+
+  const buildResult = (): EditorValidationResult => ({
+    message: collectAll
+      ? formatValidationSummary(allErrors)
+      : (allErrors[0] ?? null),
+    firstInvalidFieldKey: fieldErrors[0]?.fieldKey,
+    fieldErrors,
+  })
 
   for (const field of fields) {
     if (skipRequiredFieldKeySet.has(field.key)) {
@@ -178,28 +229,41 @@ export function getEditorValidationMessage(options: {
       continue
     }
     if (field.required && !hasEditorValue(editorForm[field.key])) {
-      if (!collectAll)
-        return i18next.t('modules.validation.fieldRequired', {
+      recordFieldError(
+        field.key,
+        i18next.t('modules.validation.fieldRequired', {
           label: field.label,
-        })
-      allErrors.push(
-        i18next.t('modules.validation.fieldRequired', { label: field.label }),
+        }),
       )
+      if (!collectAll) return buildResult()
+      continue
+    }
+    const isDisabled = Boolean(
+      field.disabled || field.disabledWhen?.(editorForm),
+    )
+    if (!isDisabled && field.validate) {
+      const customMessage = field.validate(editorForm[field.key], editorForm)
+      if (customMessage) {
+        recordFieldError(field.key, customMessage)
+        if (!collectAll) return buildResult()
+      }
     }
   }
 
   if (hasItemColumns && itemCount === 0) {
-    if (!collectAll) return i18next.t('modules.validation.minOneItem')
     allErrors.push(i18next.t('modules.validation.minOneItem'))
+    if (!collectAll) return buildResult()
   }
 
-  const freightBillMessage = getFreightBillSettlementMessage(
-    options.moduleKey,
-    editorForm,
-  )
-  if (freightBillMessage) {
-    if (!collectAll) return freightBillMessage
-    allErrors.push(freightBillMessage)
+  if (!erroredFieldKeys.has(FIXED_FREIGHT_AMOUNT_FIELD)) {
+    const freightBillMessage = getFreightBillSettlementMessage(
+      options.moduleKey,
+      editorForm,
+    )
+    if (freightBillMessage) {
+      recordFieldError(FIXED_FREIGHT_AMOUNT_FIELD, freightBillMessage)
+      if (!collectAll) return buildResult()
+    }
   }
 
   if (hasItemColumns) {
@@ -209,19 +273,14 @@ export function getEditorValidationMessage(options: {
       options.moduleKey,
     )
     if (itemMessages.length) {
-      if (!collectAll) return itemMessages[0]
       allErrors.push(...itemMessages)
+      if (!collectAll) return buildResult()
     }
   }
 
-  if (allErrors.length) {
-    return (
-      allErrors.slice(0, 5).join('；') +
-      (allErrors.length > 5
-        ? ` ${i18next.t('modules.validation.errorSummarySuffix', { count: allErrors.length })}`
-        : '')
-    )
-  }
+  return buildResult()
+}
 
-  return null
+export function getEditorValidationMessage(options: EditorValidationOptions) {
+  return validateEditorSubmission(options).message
 }

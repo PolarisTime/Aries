@@ -23,4 +23,8 @@ export {
 } from '@/module-system/editor/module-editor-line-items'
 export type { EditorItemDragPosition } from '@/module-system/editor/module-editor-shared'
 export { buildDefaultEditorLineItem } from '@/module-system/editor/module-editor-shared'
-export { getEditorValidationMessage } from '@/module-system/editor/module-editor-validation'
+export type { EditorValidationResult } from '@/module-system/editor/module-editor-validation'
+export {
+  getEditorValidationMessage,
+  validateEditorSubmission,
+} from '@/module-system/editor/module-editor-validation'

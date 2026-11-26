@@ -73,6 +73,7 @@ interface Props<Key extends ModuleKey> {
   onClose: () => void
   onDirty: () => void
   onSaved: () => void
+  onValidationFieldError?: (fieldKey: string) => void
 }
 
 async function resolveDefaultSettlementCompany() {
@@ -141,6 +142,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
   onClose,
   onDirty,
   onSaved,
+  onValidationFieldError,
 }: Props<Key>) {
   const submissionRef = useRef<SubmissionState>({
     action: null,
@@ -177,7 +179,7 @@ export function useModuleEditorWorkspace<Key extends ModuleKey>({
     },
     form,
     workspace: { items, expenseItems, authoritativePrimaryNo, submissionRef },
-    callbacks: { onClose, onSaved },
+    callbacks: { onClose, onSaved, onValidationFieldError },
   })
   const {
     closeParentSelector,

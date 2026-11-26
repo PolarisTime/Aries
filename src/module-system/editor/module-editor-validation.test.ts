@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { masterProjectPageConfigs } from '@/config/business-pages/master/project-page'
 import { freightOperationsPageConfigs } from '@/config/business-pages/operations/freight-operations'
 import { salesOrdersPageConfig } from '@/config/business-pages/operations/sales-order-page'
 import { removeEditorLineItems } from '@/module-system/editor/module-editor-line-item-removal'
-import { getEditorValidationMessage } from '@/module-system/editor/module-editor-validation'
+import {
+  getEditorValidationMessage,
+  validateEditorSubmission,
+} from '@/module-system/editor/module-editor-validation'
 import type { ModuleLineItem } from '@/types/module-page'
 
 const salesItemColumns = salesOrdersPageConfig.itemColumns ?? []
@@ -148,6 +152,89 @@ describe('getEditorValidationMessage 物流单结算方式', () => {
         settlementMode: 'FIXED',
         fixedFreightAmount: 1500,
       }),
+    ).toBeNull()
+  })
+
+  it('固定运费为 0 时 field.validate 与物流单兜底规则不重复报错，且返回出错字段 key', () => {
+    const result = validateEditorSubmission({
+      moduleKey: 'freight-bill',
+      fields: freightBillFields,
+      editorForm: {
+        ...freightBillBase,
+        settlementMode: 'FIXED',
+        fixedFreightAmount: 0,
+      },
+      hasItemColumns: false,
+      items: [],
+      itemCount: 0,
+      collectAll: true,
+    })
+
+    expect(result.firstInvalidFieldKey).toBe('fixedFreightAmount')
+    expect(result.fieldErrors).toHaveLength(1)
+    expect(result.message).toBe('固定运费结算必须填写大于 0 的固定运费金额')
+  })
+})
+
+describe('validateEditorSubmission 跨步自定义校验', () => {
+  const projectFields = masterProjectPageConfigs.project.formFields ?? []
+  const validProjectBase = {
+    projectCode: 'PRJ-001',
+    projectName: '示范项目',
+    customerId: '1001',
+    settlementCompanyId: '2001',
+  }
+
+  it('项目资料第 2 步选「固定时段」却未选具体时段：即使停在其他步保存也会拦截并定位到 pricePeriodFixed', () => {
+    const result = validateEditorSubmission({
+      moduleKey: 'project',
+      fields: projectFields,
+      editorForm: {
+        ...validProjectBase,
+        pricePeriodPolicy: 'FIXED',
+        pricePeriodFixed: '',
+      },
+      hasItemColumns: false,
+      items: [],
+      itemCount: 0,
+      collectAll: true,
+    })
+
+    expect(result.firstInvalidFieldKey).toBe('pricePeriodFixed')
+    expect(result.message).toContain('选择「固定时段」时必须选择具体取价时段')
+  })
+
+  it('项目资料「自动取价」时 pricePeriodFixed 置灰且不报错；选定具体固定时段时通过', () => {
+    expect(
+      validateEditorSubmission({
+        moduleKey: 'project',
+        fields: projectFields,
+        editorForm: {
+          ...validProjectBase,
+          pricePeriodPolicy: 'AUTO',
+          pricePeriodFixed: '',
+        },
+        hasItemColumns: false,
+        items: [],
+        itemCount: 0,
+        collectAll: true,
+      }).message,
+    ).toBeNull()
+
+    expect(
+      validateEditorSubmission({
+        moduleKey: 'project',
+        fields: projectFields,
+        editorForm: {
+          ...validProjectBase,
+          pricePeriodPolicy: 'FIXED',
+          pricePeriodFixed: '上午',
+        },
+        hasItemColumns: false,
+        items: [],
+        itemCount: 0,
+        collectAll: true,
+      }).message,
     ).toBeNull()
   })
 })

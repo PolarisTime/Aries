@@ -31,7 +31,7 @@ export interface SubmissionRef {
 }
 
 export interface WorkspaceFormApi {
-  validateFields: () => Promise<ModuleRecordInput>
+  validateFields: (nameList?: NamePath[]) => Promise<ModuleRecordInput>
   getFieldsValue: (all?: boolean) => ModuleRecordInput
   setFieldsValue: (values: Partial<ModuleRecordInput>) => void
   resetFields: () => void

@@ -23,14 +23,28 @@ const QUOTE_FIELD_KEYS = [
   'quoteHrb400eFallback',
 ] as const
 
-describe('项目资料：比价配置字段', () => {
-  it('表单里包含 5 个比价配置字段，且都在第二步（与范围校验同一步）', () => {
+describe('项目资料：比价配置字段与三步向导', () => {
+  it('项目资料拆分为 3 步且比价配置与允许范围归属第 3 步', () => {
+    expect(config?.formSteps?.map((step) => step.title)).toEqual([
+      zhCN.modules.formSections.basic,
+      zhCN.modules.pages.project.stepPricingAndRules,
+      zhCN.modules.pages.project.stepScopeAndQuote,
+    ])
     const fields = config?.formFields ?? []
     for (const key of QUOTE_FIELD_KEYS) {
       const field = fields.find((item) => item.key === key)
       expect(field, `缺少字段 ${key}`).toBeDefined()
-      expect(field?.formStep).toBe(2)
+      expect(field?.formStep).toBe(3)
     }
+    for (const key of [
+      'allowedBrands',
+      'allowedBrandSeverity',
+      'allowedMaterials',
+      'allowedMaterialSeverity',
+    ]) {
+      expect(fields.find((item) => item.key === key)?.formStep).toBe(3)
+    }
+    expect(fields.find((item) => item.key === 'priceRules')?.formStep).toBe(2)
   })
 
   it('每品牌启用品种由模块专属控件渲染（品牌 × 品类矩阵）', () => {
@@ -110,6 +124,8 @@ describe('i18n：新增文案两侧齐全', () => {
     }, dictionary)
 
   const KEYS = [
+    'modules.pages.project.stepPricingAndRules',
+    'modules.pages.project.stepScopeAndQuote',
     'modules.pages.project.sectionQuote',
     'modules.pages.project.quoteBrandCategories',
     'modules.pages.project.quoteBrandCategoriesHint',

@@ -1,5 +1,5 @@
 import { CloseOutlined } from '@ant-design/icons'
-import { useId, useRef } from 'react'
+import { type RefObject, useId, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getTrapFocusableElements, useFocusTrap } from '@/hooks/useFocusTrap'
 import '@/styles/workspace-overlay.css'
@@ -14,6 +14,8 @@ interface Props {
   width?: number | string
   height?: number | string
   footer?: React.ReactNode
+  /** 滚动内容区引用（向导切步回顶等场景使用）。 */
+  bodyRef?: RefObject<HTMLDivElement | null>
   variant?: 'workspace'
   zIndex?: number
   className?: string
@@ -39,6 +41,7 @@ export function WorkspaceOverlay({
   width,
   height,
   footer,
+  bodyRef,
   variant = 'workspace',
   zIndex,
   className,
@@ -103,7 +106,9 @@ export function WorkspaceOverlay({
             <kbd className="keyboard-shortcut-hint">Esc</kbd>
           </button>
         </header>
-        <div className="workspace-overlay-body">{children}</div>
+        <div ref={bodyRef} className="workspace-overlay-body">
+          {children}
+        </div>
         {footer && <div className="workspace-overlay-footer">{footer}</div>}
       </section>
     </div>

@@ -64,19 +64,28 @@ export function groupFieldsByRow<T extends RowField>(fields: T[]): T[][] {
 }
 
 /**
- * 抬头字段排序：把「单号类字段」移到**同一个 section 段内**的末尾，
+ * 抬头字段排序：把「单号类字段」移到**同一个 section 段内常规字段的末尾**
+ * （若有 `fullRow` / `textarea` 备注等整行字段，则停在首个整行字段之前），
  * 客户/供应商（公司）、项目等业务对象因此自然前移。
  *
- * <p>为什么只在段内移动：`ModuleEditorFormSection` 按「相邻 section 相同」分段，
- * 若把单号从段首搬到整表末尾，它们会与原来的 section 断成两段，渲染出重复的区块标题。
- * 段内稳定分区只调整顺序，不改变分段；`groupFieldsByRow` 仍按 `row` 归组，
- * 所以单号落在它原来那一行的末尾，不会跳到整张表单最后。</p>
+ * <p>为什么只在段内移动且不跨过整行字段：</p>
+ * <ul>
+ *   <li>`ModuleEditorFormSection` 按「相邻 section 相同」分段，跨段移动会拆出重复的区块标题；</li>
+ *   <li>单页模式 `groupFieldsByRow` 会按 `row` 归回原行，而向导模式 `packFieldRows` 按数组顺序打包：
+ *   若把 `projectCode` 跨过 `remark`（`fullRow`/`textarea`）搬到段末，主编码会掉到备注下方并制造半行空洞。
+ *   停在首个整行字段之前既保持常规抬头「业务对象在前、单号在后」，又避免单号跑到备注后面。</li>
+ * </ul>
  *
  * <p>单号由调用方给出（主单号 `primaryNoKey` + 来源单号 `parentImport.parentFieldKey`），
  * 不按 key 后缀猜：`batchNo`（批号）同样以 `No` 结尾，但它不是单据号。</p>
  */
 export function moveDocumentNoFieldsToSectionEnd<
-  T extends { key: string; section?: string },
+  T extends {
+    key: string
+    section?: string
+    fullRow?: boolean
+    type?: string
+  },
 >(fields: T[], documentNoKeys: readonly string[]): T[] {
   const documentNoKeySet = new Set(documentNoKeys)
   if (!documentNoKeySet.size) {
@@ -94,10 +103,24 @@ export function moveDocumentNoFieldsToSectionEnd<
       segmentEnd += 1
     }
     const segment = fields.slice(segmentStart, segmentEnd)
-    ordered.push(
-      ...segment.filter((field) => !documentNoKeySet.has(field.key)),
-      ...segment.filter((field) => documentNoKeySet.has(field.key)),
+    const documentNoFields = segment.filter((field) =>
+      documentNoKeySet.has(field.key),
     )
+    const otherFields = segment.filter(
+      (field) => !documentNoKeySet.has(field.key),
+    )
+    const firstFullRowIndex = otherFields.findIndex(
+      (field) => field.fullRow || field.type === 'textarea',
+    )
+    if (firstFullRowIndex === -1) {
+      ordered.push(...otherFields, ...documentNoFields)
+    } else {
+      ordered.push(
+        ...otherFields.slice(0, firstFullRowIndex),
+        ...documentNoFields,
+        ...otherFields.slice(firstFullRowIndex),
+      )
+    }
     segmentStart = segmentEnd
   }
   return ordered

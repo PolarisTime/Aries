@@ -197,4 +197,18 @@ describe('moveDocumentNoFieldsToSectionEnd', () => {
       ),
     ).toEqual(['batchNo', 'customerId', 'orderNo'])
   })
+
+  it('同段包含 fullRow / textarea 备注时，单号留在常规字段末尾而不掉到备注下方', () => {
+    const fields = [
+      { key: 'projectCode', section: '基本信息' },
+      { key: 'projectName', section: '基本信息' },
+      { key: 'status', section: '基本信息' },
+      { key: 'remark', section: '基本信息', type: 'textarea', fullRow: true },
+    ]
+    expect(
+      moveDocumentNoFieldsToSectionEnd(fields, ['projectCode']).map(
+        (field) => field.key,
+      ),
+    ).toEqual(['projectName', 'status', 'projectCode', 'remark'])
+  })
 })

@@ -21,6 +21,11 @@ const configWithItems = {
   itemColumns: [{ dataIndex: 'name' }],
 }
 const configWithoutItems = { key: 'customer', formFields: [] }
+const configMasterWizard = {
+  key: 'project',
+  formSteps: [{ title: '基本信息' }, { title: '取价与价格规定' }],
+  formFields: [],
+}
 
 describe('resolveEditorShowsOverlayFooter', () => {
   it('有明细区的普通单据不再走 footer（按钮已移回明细工具栏）', () => {
@@ -33,8 +38,17 @@ describe('resolveEditorShowsOverlayFooter', () => {
     expect(resolveEditorShowsOverlayFooter('payment')).toBe(true)
   })
 
-  it('无明细区的模块不渲染 footer（按钮在表单区，避免两条按钮）', () => {
+  it('无明细区且未启用向导的模块不渲染 footer（按钮在表单区，避免两条按钮）', () => {
     expect(resolveEditorShowsOverlayFooter('customer')).toBe(false)
+  })
+
+  it('启用 formSteps 的无明细主数据模块（如项目资料 / 物流商）由 footer 统一承载', () => {
+    expect(
+      resolveEditorShowsOverlayFooter(
+        'project',
+        configMasterWizard as unknown as ModulePageConfig,
+      ),
+    ).toBe(true)
   })
 })
 
@@ -112,6 +126,19 @@ describe('resolveEditorPresentation 与 footer 的互斥关系', () => {
     expect(presentation.financeLayout).toBe(true)
     expect(presentation.formActionsVisible).toBe(false)
     expect(presentation.overlayFooterVisible).toBe(true)
+    expect(presentation.wizardFooterVisible).toBe(false)
     expect(resolveEditorShowsOverlayFooter('receipt')).toBe(true)
+  })
+
+  it('启用 formSteps 的无明细主数据模块：表单顶栏不出按钮，统一收口到固定向导底栏', () => {
+    const presentation = resolveEditorPresentation(
+      configMasterWizard as unknown as ModulePageConfig,
+      'project',
+      { actionPlacement: 'top' },
+    )
+    expect(presentation.financeLayout).toBe(false)
+    expect(presentation.formActionsVisible).toBe(false)
+    expect(presentation.overlayFooterVisible).toBe(true)
+    expect(presentation.wizardFooterVisible).toBe(true)
   })
 })

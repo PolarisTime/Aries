@@ -361,10 +361,11 @@ export function ProjectPriceRulesField({ projectId, disabled, label }: Props) {
           {t('priceRule.addRow')}
         </Button>
         <Button
+          color="primary"
           disabled={disabled || !dirty}
           loading={saving}
           onClick={() => void handleSave()}
-          type="primary"
+          variant="outlined"
         >
           {t('priceRule.save')}
         </Button>

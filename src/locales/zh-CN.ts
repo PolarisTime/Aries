@@ -1762,6 +1762,9 @@ export const zhCN = {
         sectionPricing: '取价规则',
         sectionScope: '范围与校验',
         sectionQuote: '比价配置',
+        /** 分步向导标题：与步内承载的区块保持一致，避免标题名不副实 */
+        stepPricingAndRules: '取价与价格规定',
+        stepScopeAndQuote: '范围与比价配置',
         quoteBrandCategories: '每品牌启用品种',
         quoteBrandCategoriesHint:
           '为每个品牌勾选可以报的品种（品类）；留空表示该品牌全部品种都参与比价',
