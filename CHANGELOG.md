@@ -1,3 +1,17 @@
+# [16.7.0](https://github.com/PolarisTime/Aries/compare/v16.6.0...v16.7.0) (2026-11-27)
+
+
+### Bug Fixes
+
+* **price-compare:** 修复供应商报价表自动保存后及协作模式下撤销重做失效 ([ba0986b](https://github.com/PolarisTime/Aries/commit/ba0986be881ccf5f83f97531f8a15d1fc3014c64))
+
+
+### Features
+
+* **finance:** 新增项目期初往来台账并联动项目详情、收款核销与汇总对账 ([6fb9a0d](https://github.com/PolarisTime/Aries/commit/6fb9a0da02278feeda5ce752b1f0a57910a4e347))
+* **price-compare:** 供应商下拉优先展示有价公司并标图标，移除报单比价撤销重做按钮 ([12e27d9](https://github.com/PolarisTime/Aries/commit/12e27d96c4d12a667763f969bb0825931da5390c))
+* **project:** 重构项目资料三步向导与多步编辑底栏交互 ([9058a0f](https://github.com/PolarisTime/Aries/commit/9058a0fe6582d52627659beba6932edca5dc1c5d))
+
 # [16.6.0](https://github.com/PolarisTime/Aries/compare/v16.5.0...v16.6.0) (2026-11-24)
 
 
