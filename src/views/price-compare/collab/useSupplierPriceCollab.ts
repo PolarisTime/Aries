@@ -20,7 +20,7 @@ import {
   observeCollabCells,
   readCollabPrice,
   seedCollabCells,
-  writeCollabCell,
+  writeCollabCells,
   writeCollabMeta,
 } from './collab-doc'
 import { attachIndexedDbPersistence } from './collab-indexeddb'
@@ -96,6 +96,13 @@ export type UseSupplierPriceCollabOptions = {
   enableOfflinePersistence?: boolean
 }
 
+/** 批量写入协作单元格的单条价格载荷。 */
+export type CollabBatchPriceWrite = {
+  listId: string
+  cellKey: string
+  price: number | null
+}
+
 export type SupplierPriceCollab = {
   /** `collab` = 至少一张表已连上且同步完成；否则 `rest`（现有自动保存链路）。 */
   mode: 'rest' | 'collab'
@@ -110,14 +117,25 @@ export type SupplierPriceCollab = {
   /** 该表是否已进入协作（逐表判断：部分表失败时其余表照常 REST）。 */
   isCollabList: (listId: string) => boolean
   setPrice: (listId: string, cellKey: string, price: number | null) => void
+  /** 按 listId 分组、每张表在单次 Yjs 事务中批量写入，返回实际产生撤销记录的 listId 列表。 */
+  applyBatchPrices: (writes: readonly CollabBatchPriceWrite[]) => string[]
   setCursor: (listId: string, cellKey: string | null) => void
   undo: () => void
   redo: () => void
+  /** 仅撤销指定协作表集合的最近一步（供工作台统一时间线精确调度）。 */
+  undoLists: (listIds: readonly string[]) => void
+  /** 仅重做指定协作表集合的最近一步（供工作台统一时间线精确调度）。 */
+  redoLists: (listIds: readonly string[]) => void
+  canUndoList: (listId: string) => boolean
+  canRedoList: (listId: string) => boolean
   canUndo: boolean
   canRedo: boolean
   /** 最近一次「自己刚改过、远端又改了同一格」的冲突（设计文档 §8）。 */
   lastPeerEdit: CollabPeerEdit | null
 }
+
+/** 协作撤销步骤索引上限（与 REST 历史栈保持一致）。 */
+const COLLAB_STEP_HISTORY_LIMIT = 50
 
 type CollabEntry = {
   listId: string
@@ -169,6 +187,11 @@ export function useSupplierPriceCollab(
   const [lastPeerEdit, setLastPeerEdit] = useState<CollabPeerEdit | null>(null)
 
   const entriesRef = useRef<CollabEntry[]>([])
+  /** 多表协作时的操作顺序栈：记录每一步涉及的 listId，避免 undo() 同时把所有品牌各撤一步。 */
+  const stepHistoryRef = useRef<{ past: string[][]; future: string[][] }>({
+    past: [],
+    future: [],
+  })
   /** 一次都没连上时的降级原因（`disabled` = 正常未开启）。 */
   const fallbackRef = useRef<CollabConnectionState>('disabled')
   const localEditsRef = useRef(new Map<string, number>())
@@ -226,6 +249,7 @@ export function useSupplierPriceCollab(
     if (!enabled || !supplierId || targetsKey === '') {
       destroyEntries(entriesRef.current)
       entriesRef.current = []
+      stepHistoryRef.current = { past: [], future: [] }
       fallbackRef.current = 'disabled'
       setLastPeerEdit(null)
       bump()
@@ -287,9 +311,20 @@ export function useSupplierPriceCollab(
       cancelled = true
       destroyEntries(created)
       const removed = new Set(created)
+      const removedIds = new Set(created.map((entry) => entry.listId))
       entriesRef.current = entriesRef.current.filter(
         (entry) => !removed.has(entry),
       )
+      if (removedIds.size > 0) {
+        const filterSteps = (steps: readonly string[][]) =>
+          steps
+            .map((step) => step.filter((id) => !removedIds.has(id)))
+            .filter((step) => step.length > 0)
+        stepHistoryRef.current = {
+          past: filterSteps(stepHistoryRef.current.past),
+          future: filterSteps(stepHistoryRef.current.future),
+        }
+      }
       bump()
     }
     // targets 用 targetsKey 代表（数组每次渲染都是新身份）；localUser 已由 useMemo 稳定
@@ -332,11 +367,62 @@ export function useSupplierPriceCollab(
   const writable =
     entries.length > 0 && entries.every((entry) => entry.writable)
 
+  const applyBatchPrices = (
+    writes: readonly CollabBatchPriceWrite[],
+  ): string[] => {
+    if (writes.length === 0) return []
+    const grouped = new Map<
+      string,
+      { cellKey: string; price: number | null }[]
+    >()
+    for (const write of writes) {
+      const bucket = grouped.get(write.listId)
+      if (bucket) {
+        bucket.push({ cellKey: write.cellKey, price: write.price })
+      } else {
+        grouped.set(write.listId, [
+          { cellKey: write.cellKey, price: write.price },
+        ])
+      }
+    }
+    const entryByListId = new Map(
+      entriesRef.current.map((entry) => [entry.listId, entry]),
+    )
+    const now = nowRef.current()
+    const recordedListIds: string[] = []
+    for (const [listId, cellWrites] of grouped) {
+      const entry = entryByListId.get(listId)
+      if (!entry || !entry.writable) continue
+      const prevTop = entry.undoManager.undoStack.at(-1)
+      writeCollabCells(
+        entry.doc,
+        cellWrites.map(({ cellKey, price }) => ({
+          cellKey,
+          patch: { price },
+        })),
+      )
+      // 立即截断捕获窗口：连续快速提交两格时各自独立成步，不被默认 500ms 合并
+      entry.undoManager.stopCapturing()
+      for (const { cellKey } of cellWrites) {
+        localEditsRef.current.set(localEditKey(listId, cellKey), now)
+      }
+      if (entry.undoManager.undoStack.at(-1) !== prevTop) {
+        recordedListIds.push(listId)
+      }
+    }
+    if (recordedListIds.length > 0) {
+      stepHistoryRef.current = {
+        past: [...stepHistoryRef.current.past, recordedListIds].slice(
+          -COLLAB_STEP_HISTORY_LIMIT,
+        ),
+        future: [],
+      }
+    }
+    return recordedListIds
+  }
+
   const setPrice = (listId: string, cellKey: string, price: number | null) => {
-    const entry = entriesRef.current.find((item) => item.listId === listId)
-    if (!entry || !entry.writable) return
-    writeCollabCell(entry.doc, cellKey, { price })
-    localEditsRef.current.set(localEditKey(listId, cellKey), nowRef.current())
+    applyBatchPrices([{ listId, cellKey, price }])
   }
 
   const setCursor = (listId: string, cellKey: string | null) => {
@@ -353,11 +439,97 @@ export function useSupplierPriceCollab(
     cursorTimersRef.current.set(listId, timer)
   }
 
-  const undo = () => {
-    for (const entry of entriesRef.current) entry.undoManager.undo()
+  const undoLists = (listIds: readonly string[]) => {
+    const entryByListId = new Map(
+      entriesRef.current.map((entry) => [entry.listId, entry]),
+    )
+    const seen = new Set<string>()
+    for (const listId of listIds) {
+      if (seen.has(listId)) continue
+      seen.add(listId)
+      const entry = entryByListId.get(listId)
+      if (entry && entry.writable && entry.undoManager.canUndo()) {
+        entry.undoManager.undo()
+      }
+    }
   }
+
+  const redoLists = (listIds: readonly string[]) => {
+    const entryByListId = new Map(
+      entriesRef.current.map((entry) => [entry.listId, entry]),
+    )
+    const seen = new Set<string>()
+    for (const listId of listIds) {
+      if (seen.has(listId)) continue
+      seen.add(listId)
+      const entry = entryByListId.get(listId)
+      if (entry && entry.writable && entry.undoManager.canRedo()) {
+        entry.undoManager.redo()
+      }
+    }
+  }
+
+  const canUndoList = (listId: string) =>
+    entriesRef.current.some(
+      (entry) =>
+        entry.listId === listId &&
+        entry.writable &&
+        entry.undoManager.canUndo(),
+    )
+
+  const canRedoList = (listId: string) =>
+    entriesRef.current.some(
+      (entry) =>
+        entry.listId === listId &&
+        entry.writable &&
+        entry.undoManager.canRedo(),
+    )
+
+  const undo = () => {
+    const past = [...stepHistoryRef.current.past]
+    while (past.length > 0) {
+      const step = past.pop()
+      if (!step) break
+      if (step.some((listId) => canUndoList(listId))) {
+        stepHistoryRef.current = {
+          past,
+          future: [step, ...stepHistoryRef.current.future].slice(
+            0,
+            COLLAB_STEP_HISTORY_LIMIT,
+          ),
+        }
+        undoLists(step)
+        return
+      }
+    }
+    stepHistoryRef.current = { ...stepHistoryRef.current, past }
+    const fallback = [...entriesRef.current]
+      .reverse()
+      .find((entry) => entry.writable && entry.undoManager.canUndo())
+    fallback?.undoManager.undo()
+  }
+
   const redo = () => {
-    for (const entry of entriesRef.current) entry.undoManager.redo()
+    const future = [...stepHistoryRef.current.future]
+    while (future.length > 0) {
+      const step = future.shift()
+      if (!step) break
+      if (step.some((listId) => canRedoList(listId))) {
+        stepHistoryRef.current = {
+          past: [...stepHistoryRef.current.past, step].slice(
+            -COLLAB_STEP_HISTORY_LIMIT,
+          ),
+          future,
+        }
+        redoLists(step)
+        return
+      }
+    }
+    stepHistoryRef.current = { ...stepHistoryRef.current, future }
+    const fallback = [...entriesRef.current]
+      .reverse()
+      .find((entry) => entry.writable && entry.undoManager.canRedo())
+    fallback?.undoManager.redo()
   }
 
   return {
@@ -382,11 +554,20 @@ export function useSupplierPriceCollab(
         (entry) => entry.listId === listId && entry.state === 'connected',
       ),
     setPrice,
+    applyBatchPrices,
     setCursor,
     undo,
     redo,
-    canUndo: entries.some((entry) => entry.undoManager.canUndo()),
-    canRedo: entries.some((entry) => entry.undoManager.canRedo()),
+    undoLists,
+    redoLists,
+    canUndoList,
+    canRedoList,
+    canUndo: entries.some(
+      (entry) => entry.writable && entry.undoManager.canUndo(),
+    ),
+    canRedo: entries.some(
+      (entry) => entry.writable && entry.undoManager.canRedo(),
+    ),
     lastPeerEdit,
   }
 }
@@ -426,8 +607,10 @@ function createEntry(args: {
 
   const cells = doc.getMap('cells')
   const undoManager = new Y.UndoManager(cells, {
-    // 只撤销自己的操作：远端 update 的 origin 不是本地标记，不会被收进栈
+    // 只撤销自己的操作：远端 update 的 origin 不是本地标记，不会被收进栈；
+    // captureTimeout: 0 保证每次事务独立成步，不把 500ms 内的两次不同格提交合并成一步。
     trackedOrigins: new Set([COLLAB_LOCAL_ORIGIN]),
+    captureTimeout: 0,
   })
 
   const entry: CollabEntry = {

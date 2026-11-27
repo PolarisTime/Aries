@@ -165,6 +165,47 @@ export function readCollabPrice(
   return toFinitePrice(cell.get('price'))
 }
 
+/** 批量写入时的单格载荷。 */
+export type CollabCellWrite = {
+  cellKey: string
+  patch: CollabCellPatch
+}
+
+/**
+ * 批量写多格（本地 origin，单次事务）。
+ *
+ * <p>粘贴 / 清空 / 填充 / 批量调价 / 基价自动补全必须走单次事务：
+ * 既只广播一次 Yjs update，也让 `Y.UndoManager` 将整批改动记成一步撤销。</p>
+ */
+export function writeCollabCells(
+  doc: Y.Doc,
+  writes: readonly CollabCellWrite[],
+): void {
+  if (writes.length === 0) return
+  doc.transact(() => {
+    const cells = cellsOf(doc)
+    for (const { cellKey, patch } of writes) {
+      let cell = cells.get(cellKey)
+      if (!cell) {
+        cell = new Y.Map<unknown>()
+        cells.set(cellKey, cell)
+      }
+      if ('price' in patch) {
+        cell.set('price', toFinitePrice(patch.price))
+      }
+      if ('priceStatus' in patch) {
+        cell.set(
+          'priceStatus',
+          toText(patch.priceStatus, DEFAULT_COLLAB_PRICE_STATUS),
+        )
+      }
+      if ('remark' in patch) {
+        cell.set('remark', toText(patch.remark, ''))
+      }
+    }
+  }, COLLAB_LOCAL_ORIGIN)
+}
+
 /**
  * 写一格（本地 origin）。
  *
@@ -176,26 +217,7 @@ export function writeCollabCell(
   cellKey: string,
   patch: CollabCellPatch,
 ): void {
-  doc.transact(() => {
-    const cells = cellsOf(doc)
-    let cell = cells.get(cellKey)
-    if (!cell) {
-      cell = new Y.Map<unknown>()
-      cells.set(cellKey, cell)
-    }
-    if ('price' in patch) {
-      cell.set('price', toFinitePrice(patch.price))
-    }
-    if ('priceStatus' in patch) {
-      cell.set(
-        'priceStatus',
-        toText(patch.priceStatus, DEFAULT_COLLAB_PRICE_STATUS),
-      )
-    }
-    if ('remark' in patch) {
-      cell.set('remark', toText(patch.remark, ''))
-    }
-  }, COLLAB_LOCAL_ORIGIN)
+  writeCollabCells(doc, [{ cellKey, patch }])
 }
 
 /** 写 meta（建房时由前端补一份文档头，物化器以它为准）。 */

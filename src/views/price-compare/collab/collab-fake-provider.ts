@@ -25,6 +25,7 @@ import type {
 
 /** 服务端侧的回调面（传输实现内部使用，不导出）。 */
 interface FakeClientHooks {
+  getRoom(): string
   getDoc(): Y.Doc
   getAwarenessStates(): Map<number, CollabAwarenessState>
   receiveUpdate(update: Uint8Array): void
@@ -127,7 +128,9 @@ export class FakeCollabServer {
       client.markFailed()
       return false
     }
+    const room = client.getRoom()
     for (const existing of this.clients) {
+      if (existing.getRoom() !== room) continue
       existing.receiveUpdate(
         Y.encodeStateAsUpdate(
           client.getDoc(),
@@ -151,21 +154,23 @@ export class FakeCollabServer {
     this.clients.delete(client)
   }
 
-  /** 文档更新广播给房间内其他客户端。 */
+  /** 文档更新广播给同房间内其他客户端。 */
   broadcastUpdate(from: FakeClientHooks, update: Uint8Array): void {
+    const room = from.getRoom()
     for (const client of this.clients) {
-      if (client === from) continue
+      if (client === from || client.getRoom() !== room) continue
       client.receiveUpdate(update)
     }
   }
 
-  /** awareness 状态广播：把发送方的完整状态快照推给其他人。 */
+  /** awareness 状态广播：把发送方的完整状态快照推给同房间其他人。 */
   broadcastAwareness(
     from: FakeClientHooks,
     states: Map<number, CollabAwarenessState>,
   ): void {
+    const room = from.getRoom()
     for (const client of this.clients) {
-      if (client === from) continue
+      if (client === from || client.getRoom() !== room) continue
       client.receiveAwareness(states)
     }
   }
@@ -247,6 +252,10 @@ class FakeTransport implements CollabTransport, FakeClientHooks {
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
+  }
+
+  getRoom(): string {
+    return this.room
   }
 
   getDoc(): Y.Doc {

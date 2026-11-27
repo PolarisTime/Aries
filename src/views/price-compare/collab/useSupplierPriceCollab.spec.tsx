@@ -309,6 +309,135 @@ describe('useSupplierPriceCollab', () => {
     expect(collab().priceOf(LIST_ID, CELL_KEY)).toBe(3280)
   })
 
+  it('连续两次快速修改各自独立成步，不被 500ms 捕获窗口合并', async () => {
+    const network = createFakeCollabNetwork()
+    const cellKey2 = collabCellKeyOf({
+      category: '直条',
+      material: 'HRB400E',
+      spec: 14,
+      length: '9米',
+    })
+    mount(baseOptions({ transportFactory: network.createTransport }))
+    await flush()
+
+    act(() => {
+      collab().setPrice(LIST_ID, CELL_KEY, 3300)
+      collab().setPrice(LIST_ID, cellKey2, 3400)
+    })
+    expect(collab().priceOf(LIST_ID, CELL_KEY)).toBe(3300)
+    expect(collab().priceOf(LIST_ID, cellKey2)).toBe(3400)
+
+    // 第一次撤销只撤第二格
+    act(() => collab().undo())
+    expect(collab().priceOf(LIST_ID, CELL_KEY)).toBe(3300)
+    expect(collab().priceOf(LIST_ID, cellKey2)).toBeUndefined()
+
+    // 第二次撤销才撤第一格
+    act(() => collab().undo())
+    expect(collab().priceOf(LIST_ID, CELL_KEY)).toBe(3280)
+
+    // 重做按正序恢复
+    act(() => collab().redo())
+    expect(collab().priceOf(LIST_ID, CELL_KEY)).toBe(3300)
+    expect(collab().priceOf(LIST_ID, cellKey2)).toBeUndefined()
+    act(() => collab().redo())
+    expect(collab().priceOf(LIST_ID, cellKey2)).toBe(3400)
+  })
+
+  it('多品牌协作按最后操作顺序逐品牌撤销/重做，不再把所有品牌同时各撤一步', async () => {
+    const network = createFakeCollabNetwork()
+    const listB = 'list-2'
+    mount(
+      baseOptions({
+        targets: [
+          { brandName: '萍钢', listId: LIST_ID },
+          { brandName: '中天', listId: listB },
+        ],
+        requestSession: (listId) =>
+          Promise.resolve({
+            kind: 'session',
+            session: {
+              room: `supplier-price:${listId}`,
+              url: 'ws://fake/collab',
+              token: 'fake-token',
+              writable: true,
+              color: '#1677ff',
+              expiresAt: null,
+            },
+          }),
+        seed: (listId) => [
+          [
+            CELL_KEY,
+            {
+              price: listId === LIST_ID ? 3280 : 3400,
+              priceStatus: 'NORMAL',
+              remark: '',
+            },
+          ],
+        ],
+        transportFactory: network.createTransport,
+      }),
+    )
+    await flush()
+
+    // 先改品牌 A，再改品牌 B
+    act(() => collab().setPrice(LIST_ID, CELL_KEY, 3310))
+    act(() => collab().setPrice(listB, CELL_KEY, 3450))
+    expect(collab().priceOf(LIST_ID, CELL_KEY)).toBe(3310)
+    expect(collab().priceOf(listB, CELL_KEY)).toBe(3450)
+
+    // 第一次 undo 只撤品牌 B，品牌 A 不动
+    act(() => collab().undo())
+    expect(collab().priceOf(LIST_ID, CELL_KEY)).toBe(3310)
+    expect(collab().priceOf(listB, CELL_KEY)).toBe(3400)
+
+    // 第二次 undo 再撤品牌 A
+    act(() => collab().undo())
+    expect(collab().priceOf(LIST_ID, CELL_KEY)).toBe(3280)
+    expect(collab().priceOf(listB, CELL_KEY)).toBe(3400)
+
+    // 重做按先 A 后 B 恢复
+    act(() => collab().redo())
+    expect(collab().priceOf(LIST_ID, CELL_KEY)).toBe(3310)
+    expect(collab().priceOf(listB, CELL_KEY)).toBe(3400)
+    act(() => collab().redo())
+    expect(collab().priceOf(listB, CELL_KEY)).toBe(3450)
+  })
+
+  it('applyBatchPrices 将同品牌多格批量写入合并为单次事务一步撤销', async () => {
+    const network = createFakeCollabNetwork()
+    const cellKey2 = collabCellKeyOf({
+      category: '直条',
+      material: 'HRB400E',
+      spec: 14,
+      length: '9米',
+    })
+    mount(baseOptions({ transportFactory: network.createTransport }))
+    await flush()
+
+    let touched: string[] = []
+    act(() => {
+      touched = collab().applyBatchPrices([
+        { listId: LIST_ID, cellKey: CELL_KEY, price: 3350 },
+        { listId: LIST_ID, cellKey: cellKey2, price: 3450 },
+      ])
+    })
+    expect(touched).toEqual([LIST_ID])
+    expect(collab().priceOf(LIST_ID, CELL_KEY)).toBe(3350)
+    expect(collab().priceOf(LIST_ID, cellKey2)).toBe(3450)
+
+    // 一次 undoLists 同时回滚整批两格
+    act(() => collab().undoLists(touched))
+    expect(collab().priceOf(LIST_ID, CELL_KEY)).toBe(3280)
+    expect(collab().priceOf(LIST_ID, cellKey2)).toBeUndefined()
+    expect(collab().canUndoList(LIST_ID)).toBe(false)
+    expect(collab().canRedoList(LIST_ID)).toBe(true)
+
+    act(() => collab().redoLists(touched))
+    expect(collab().priceOf(LIST_ID, CELL_KEY)).toBe(3350)
+    expect(collab().priceOf(LIST_ID, cellKey2)).toBe(3450)
+  })
+
   it('同格冲突：本地刚改过、远端随即改同一格 → 记录冲突提示', async () => {
     const network = createFakeCollabNetwork()
     const probeA: Probe = { current: null }

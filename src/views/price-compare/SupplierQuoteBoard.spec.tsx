@@ -1689,4 +1689,188 @@ describe('供应商报价表（供应商为主轴的报价工作台）', () => {
     await waitFor(() => selectedSupplierText() === SUPPLIER2.label)
     expect(selectedSupplierText()).toBe(SUPPLIER2.label)
   }, 10000)
+
+  /*
+   * 回归：自动保存清空草稿后，单步/多步/空格→有价的撤销与重做均必须生效并回写服务端。
+   */
+  it('单步改价自动保存后，撤销回到原价并触发回写保存，重做恢复新价并再次保存', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    const cell = cellInput('中天 HRB400E 12 9米') as HTMLInputElement
+
+    await typePrice('中天 HRB400E 12 9米', '3350')
+    await pressKey(cell, 'Enter')
+    await flushAutosave()
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3350')
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledTimes(1)
+
+    const undoBtn = container.querySelector<HTMLButtonElement>(
+      `button[aria-label="${i18n.t('priceCompare.supplierPrice.undoTooltip')}"]`,
+    )
+    const redoBtn = container.querySelector<HTMLButtonElement>(
+      `button[aria-label="${i18n.t('priceCompare.supplierPrice.redoTooltip')}"]`,
+    )
+    expect(undoBtn?.disabled).toBe(false)
+
+    await act(async () => {
+      undoBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3280')
+
+    // 撤销后自动保存应把回滚值 3280 落回服务端
+    await flushAutosave()
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledTimes(2)
+    const rollbackItems = priceApi.saveSupplierPriceColumnItems.mock
+      .calls[1][2] as Array<{ spec: number; price: number }>
+    expect(rollbackItems.find((item) => item.spec === 12)?.price).toBe(3280)
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3280')
+
+    // 重做恢复 3350 并再次自动保存
+    expect(redoBtn?.disabled).toBe(false)
+    await act(async () => {
+      redoBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3350')
+    await flushAutosave()
+    expect(priceApi.saveSupplierPriceColumnItems).toHaveBeenCalledTimes(3)
+    const redoItems = priceApi.saveSupplierPriceColumnItems.mock
+      .calls[2][2] as Array<{ spec: number; price: number }>
+    expect(redoItems.find((item) => item.spec === 12)?.price).toBe(3350)
+  }, 10000)
+
+  it('连续两步改价后自动保存，连续撤销两步回到最初服务端值（不再跳回已保存新值）', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    const cell = cellInput('中天 HRB400E 12 9米') as HTMLInputElement
+
+    await typePrice('中天 HRB400E 12 9米', '3290')
+    await pressKey(cell, 'Enter')
+    await typePrice('中天 HRB400E 12 9米', '3300')
+    await pressKey(cell, 'Enter')
+    await flushAutosave()
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3300')
+
+    // 第一次撤销：3300 → 3290
+    await pressKey(document.activeElement, 'z', { ctrlKey: true })
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3290')
+
+    // 第二次撤销：3290 → 3280（旧实现此处会跳回已保存的 3300）
+    await pressKey(document.activeElement, 'z', { ctrlKey: true })
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3280')
+
+    // 连续重做两步：3280 → 3290 → 3300
+    await pressKey(document.activeElement, 'y', { ctrlKey: true })
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3290')
+    await pressKey(document.activeElement, 'y', { ctrlKey: true })
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3300')
+  }, 10000)
+
+  it('空格填价自动保存后，撤销回到空且自动保存不回弹，重做恢复价格', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    const emptyCell = cellInput('中天 HRB400E 12 12米') as HTMLInputElement
+    expect(emptyCell.value).toBe('')
+
+    emptyCell.focus()
+    await typePrice('中天 HRB400E 12 12米', '3250')
+    await pressKey(emptyCell, 'Tab')
+    await flushAutosave()
+    expect(cellInput('中天 HRB400E 12 12米')?.value).toBe('3250')
+
+    // 撤销回空并等待自动保存：价格必须保持空白、不能回弹为 3250
+    await pressKey(document.activeElement, 'z', { ctrlKey: true })
+    expect(cellInput('中天 HRB400E 12 12米')?.value).toBe('')
+    await flushAutosave()
+    expect(cellInput('中天 HRB400E 12 12米')?.value).toBe('')
+
+    // 重做恢复 3250
+    await pressKey(document.activeElement, 'y', { ctrlKey: true })
+    expect(cellInput('中天 HRB400E 12 12米')?.value).toBe('3250')
+  }, 10000)
+
+  it('编辑 B 格未失焦时直接点撤销按钮（同拍 blur + click），只撤 B 格不吞掉 A 格', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    const cellA = cellInput('中天 HRB400E 12 9米') as HTMLInputElement
+    const cellB = cellInput('中天 HRB400E 14 9米') as HTMLInputElement
+
+    // 第一步：改 A 格并提交
+    await typePrice('中天 HRB400E 12 9米', '3290')
+    await pressKey(cellA, 'Enter')
+    expect(cellA.value).toBe('3290')
+
+    // 第二步：改 B 格但尚未失焦
+    cellB.focus()
+    await typePrice('中天 HRB400E 14 9米', '3450')
+    const undoBtn = container.querySelector<HTMLButtonElement>(
+      `button[aria-label="${i18n.t('priceCompare.supplierPrice.undoTooltip')}"]`,
+    )
+    expect(undoBtn?.disabled).toBe(false)
+
+    // 同拍触发 B 格失焦提交与撤销按钮点击（blur() 同步派发 focusout 触发 React onBlur）
+    await act(async () => {
+      cellB.blur()
+      undoBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    // 仅 B 格回退到 3300，A 格必须保留 3290
+    expect(cellB.value).toBe('3300')
+    expect(cellA.value).toBe('3290')
+
+    // 再点一次撤销才把 A 格回退到 3280
+    await act(async () => {
+      undoBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    expect(cellA.value).toBe('3280')
+  }, 10000)
+
+  it('焦点在 document.body 时 Ctrl+Z/Ctrl+Y 仍生效；供应商搜索框与只读模式下不拦截', async () => {
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+    const cell = cellInput('中天 HRB400E 12 9米') as HTMLInputElement
+
+    await typePrice('中天 HRB400E 12 9米', '3360')
+    await pressKey(cell, 'Enter')
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3360')
+
+    // 模拟关闭弹窗或点击空白后焦点掉到 document.body
+    act(() => {
+      ;(document.activeElement as HTMLElement | null)?.blur()
+    })
+    const bodyUndo = await pressKey(document.body, 'z', { ctrlKey: true })
+    expect(bodyUndo.defaultPrevented).toBe(true)
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3280')
+
+    const bodyRedo = await pressKey(document.body, 'y', { ctrlKey: true })
+    expect(bodyRedo.defaultPrevented).toBe(true)
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3360')
+
+    // 焦点在顶部供应商搜索框内时让位给原生撤销，不得撤销表格价格
+    const combobox = supplierCombobox()
+    expect(combobox).not.toBeNull()
+    act(() => {
+      combobox?.focus()
+    })
+    const searchUndo = await pressKey(combobox, 'z', { ctrlKey: true })
+    expect(searchUndo.defaultPrevented).toBe(false)
+    expect(cellInput('中天 HRB400E 12 9米')?.value).toBe('3360')
+  }, 10000)
+
+  it('只读权限下隐藏撤销按钮且不响应 Ctrl+Z', async () => {
+    permissions.canWrite = false
+    await render()
+    await waitFor(() => cellInput('中天 HRB400E 12 9米')?.value === '3280')
+
+    expect(
+      container.querySelector(
+        `button[aria-label="${i18n.t('priceCompare.supplierPrice.undoTooltip')}"]`,
+      ),
+    ).toBeNull()
+    const event = await pressKey(document.body, 'z', { ctrlKey: true })
+    expect(event.defaultPrevented).toBe(false)
+  }, 10000)
 })

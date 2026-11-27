@@ -68,6 +68,11 @@ import {
 } from '@/components/PriceCompareSaveStatus'
 import { QUERY_KEYS } from '@/constants/query-keys'
 import { STALE_MASTER_OPTIONS } from '@/constants/query-policies'
+import {
+  hasShortcutModifier,
+  isEditableShortcutTarget,
+  useGlobalShortcut,
+} from '@/hooks/useGlobalShortcut'
 import { useHasPermission } from '@/hooks/usePermission'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import { message, notification } from '@/utils/antd-app'
@@ -83,6 +88,7 @@ import {
 import type { CollabPeer } from './collab/collab-presence'
 import { CollabCellCursors } from './collab/RemoteCursors'
 import {
+  type CollabBatchPriceWrite,
   type CollabTarget,
   useSupplierPriceCollab,
 } from './collab/useSupplierPriceCollab'
@@ -105,11 +111,15 @@ import {
   sortSuppliersByQuoted,
 } from './supplier-price-list-model'
 import {
-  type DraftHistory,
-  EMPTY_HISTORY,
-  pushHistory,
-  redoDrafts,
-  undoDrafts,
+  applyEditHistoryToDrafts,
+  EMPTY_EDIT_HISTORY,
+  popRedoEntry,
+  popUndoEntry,
+  pruneEditHistoryForCollab,
+  pushEditHistory,
+  type QuoteCellEdit,
+  type QuoteEditHistory,
+  type QuoteHistoryEntry,
 } from './supplier-quote-edits'
 import {
   evaluatePriceFormula,
@@ -741,7 +751,8 @@ export function SupplierQuoteBoard() {
       }
     }
   }, [])
-  const [history, setHistory] = useState<DraftHistory>(EMPTY_HISTORY)
+  const [history, setHistory] = useState<QuoteEditHistory>(EMPTY_EDIT_HISTORY)
+  const pageRef = useRef<HTMLDivElement | null>(null)
   /** 本次进页是否从 localStorage 恢复了上次未保存的草稿（恢复后提示「已恢复 / 放弃」）。 */
   const [restoredDrafts, setRestoredDrafts] = useState(false)
   /** 已完成「恢复判断」的供应商；只有它等于当前供应商时才允许把草稿写回本地。 */
@@ -1271,6 +1282,8 @@ export function SupplierQuoteBoard() {
    * 优化假设）。草稿走 commitDrafts（只在事件/异步回调里写），其余用 effect 在提交后同步。
    */
   const draftsRef = useRef<Record<string, BrandDraft>>({})
+  const savedValuesRef = useRef<Record<string, Record<string, number>>>({})
+  const historyRef = useRef<QuoteEditHistory>(EMPTY_EDIT_HISTORY)
   const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const savingRef = useRef(new Set<string>())
   /** 品牌 → 正在进行的保存 Promise：切换前保存与自动保存同时触发时复用同一次请求。 */
@@ -1289,10 +1302,24 @@ export function SupplierQuoteBoard() {
     setDrafts(next)
   }, [])
 
-  const applyDrafts = (next: Record<string, BrandDraft>) => {
-    setHistory((current) => pushHistory(current, draftsRef.current))
-    commitDrafts(next)
-  }
+  /** 同步镜像撤销历史：失焦提交紧接点击撤销时同拍可读到最新栈，避免过期闭包一次吞掉两步。 */
+  const commitHistory = useCallback((next: QuoteEditHistory) => {
+    historyRef.current = next
+    setHistory(next)
+  }, [])
+
+  const commitSavedValues = useCallback(
+    (
+      updater: (
+        current: Record<string, Record<string, number>>,
+      ) => Record<string, Record<string, number>>,
+    ) => {
+      const next = updater(savedValuesRef.current)
+      savedValuesRef.current = next
+      setSavedValues(next)
+    },
+    [],
+  )
 
   /**
    * 协作文档为空时用「REST 快照 + 本地未保存草稿」播种（设计文档 §9.4）。
@@ -1386,7 +1413,7 @@ export function SupplierQuoteBoard() {
   /** 放弃恢复出来的草稿：清空草稿与本地存储，价格回到服务端值。 */
   const discardRestoredDrafts = () => {
     commitDrafts({})
-    setHistory(EMPTY_HISTORY)
+    commitHistory(EMPTY_EDIT_HISTORY)
     setRestoredDrafts(false)
     if (supplierId) writeDrafts(supplierId, {})
   }
@@ -1473,6 +1500,30 @@ export function SupplierQuoteBoard() {
 
     const existing = byBrandRef.current.columns.get(brandName) ?? null
     const serverCells = byBrandRef.current.cells.get(brandName) ?? new Map()
+    const initialPlan = buildColumnSavePlan({
+      brandName,
+      column: existing,
+      rows: allRowsRef.current,
+      draft: snapshot,
+      serverCells,
+    })
+    if (!initialPlan) {
+      // 新列且没有有效价格（例如输入后又在自动保存前撤销回空）：不建空列，只清理本次快照对应的草稿键
+      const now = draftsRef.current[brandName]
+      if (now) {
+        const rest: BrandDraft = { ...now }
+        for (const [key, value] of Object.entries(snapshot ?? {})) {
+          if (rest[key] === value) delete rest[key]
+        }
+        const next = { ...draftsRef.current }
+        if (Object.keys(rest).length === 0) delete next[brandName]
+        else next[brandName] = rest
+        commitDrafts(next)
+      }
+      setSaveState((current) => ({ ...current, [brandName]: 'saved' }))
+      saveRetryRef.current.delete(brandName)
+      return 'saved'
+    }
     savingRef.current.add(brandName)
     setSaveState((current) => ({ ...current, [brandName]: 'saving' }))
     let savedOk = false
@@ -1489,24 +1540,9 @@ export function SupplierQuoteBoard() {
       if (created) {
         setColumns((current) => ({ ...current, [brandName]: created }))
       }
-      const plan = buildColumnSavePlan({
-        brandName,
-        column: target,
-        rows: allRowsRef.current,
-        draft: snapshot,
-        serverCells,
-      })
-      if (!plan) {
-        const cleared = { ...draftsRef.current }
-        delete cleared[brandName]
-        commitDrafts(cleared)
-        setSaveState((current) => ({ ...current, [brandName]: 'saved' }))
-        savedOk = true
-        saveRetryRef.current.delete(brandName)
-        return 'saved'
-      }
       // target 一定非空（刚创建或本来就存在）；这里的守卫只用于满足类型收窄
       if (!target) return 'failed'
+      const plan = existing ? initialPlan : { ...initialPlan, column: target }
       const saved = await saveSupplierPriceColumnItems(
         target.listId,
         target.version,
@@ -1523,7 +1559,7 @@ export function SupplierQuoteBoard() {
       void queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.priceCompare.quotedSuppliers,
       })
-      setSavedValues((current) => {
+      commitSavedValues((current) => {
         const values = { ...(current[brandName] ?? {}) }
         const plannedKeys = new Set<string>()
         for (const item of plan.items) {
@@ -1693,7 +1729,7 @@ export function SupplierQuoteBoard() {
     }
   }, [])
 
-  /** 一格当前有效价格（协作态优先读 Y.Doc，其余读草稿 → 已保存 → 服务端）。 */
+  /** 一格当前有效价格（渲染期读态：协作态优先读 Y.Doc，其余读草稿 → 已保存 → 服务端）。 */
   const effectiveCellValue = (
     brandName: string,
     rowKey: string,
@@ -1709,11 +1745,109 @@ export function SupplierQuoteBoard() {
     return cellValueAt({ brandName, rowKey })
   }
 
+  const effectiveCellValueAt = (address: GridAddress): number | null =>
+    effectiveCellValue(address.brandName, address.rowKey)
+
+  /** 事件期读取该格已落库价格（不依赖未提交渲染态）。 */
+  const persistedPriceOf = (brandName: string, rowKey: string): number | null =>
+    savedValuesRef.current[brandName]?.[rowKey] ??
+    byBrandRef.current.cells.get(brandName)?.get(rowKey)?.price ??
+    null
+
+  /** 事件期读取该格最新有效价格（含同拍刚写入的草稿与协作文档）。 */
+  const latestCellValueAt = (address: GridAddress): number | null => {
+    const collabListId = collabListIdOf(address.brandName)
+    if (collabListId) {
+      const collabPrice = collab.priceOf(
+        collabListId,
+        collabCellKeyOfRowKey(address.rowKey),
+      )
+      if (collabPrice !== undefined) return collabPrice
+    }
+    return draftPrice(
+      draftsRef.current[address.brandName],
+      address.rowKey,
+      persistedPriceOf(address.brandName, address.rowKey) ?? undefined,
+    )
+  }
+
+  /**
+   * 全部写格入口的唯一收敛处（逐格输入 / 基价自动补全 / 粘贴 / 清空 / 填充 / 批量调价）：
+   *
+   * <ul>
+   *   <li>先按最新有效值计算每格改动前/后值，过滤空操作；</li>
+   *   <li>协作表按 listId 合并为单次 Yjs 事务，REST 表落草稿并按受影响品牌排自动保存；</li>
+   *   <li>把本次操作合并为统一时间线上的**一步**历史（REST 与协作同轨，自动保存后仍可精准回滚）。</li>
+   * </ul>
+   */
+  const commitCellChanges = (cells: readonly GridCellValue[]) => {
+    if (!canEdit || cells.length === 0) return
+    // 同批写入出现重复坐标时以最后一次为准，避免重复读取导致 before 失真
+    const deduped = new Map<string, GridCellValue>()
+    for (const cell of cells) {
+      deduped.set(`${cell.brandName}\u0000${cell.rowKey}`, cell)
+    }
+
+    const nextDrafts: Record<string, BrandDraft> = { ...draftsRef.current }
+    const restEdits: QuoteCellEdit[] = []
+    const touchedRestBrands = new Set<string>()
+    const collabWrites: CollabBatchPriceWrite[] = []
+
+    for (const cell of deduped.values()) {
+      const before = latestCellValueAt(cell)
+      if (before === cell.value) continue
+      const collabListId = collabListIdOf(cell.brandName)
+      if (collabListId) {
+        if (collab.writable) {
+          collabWrites.push({
+            listId: collabListId,
+            cellKey: collabCellKeyOfRowKey(cell.rowKey),
+            price: cell.value,
+          })
+        }
+        continue
+      }
+      nextDrafts[cell.brandName] = setDraftPrice(
+        nextDrafts[cell.brandName],
+        cell.rowKey,
+        cell.value,
+      )
+      restEdits.push({
+        brandName: cell.brandName,
+        rowKey: cell.rowKey,
+        before,
+        after: cell.value,
+      })
+      touchedRestBrands.add(cell.brandName)
+    }
+
+    const collabListIds =
+      collabWrites.length > 0 ? collab.applyBatchPrices(collabWrites) : []
+
+    if (touchedRestBrands.size > 0) {
+      commitDrafts(nextDrafts)
+      for (const brandName of touchedRestBrands) {
+        // 用户重新编辑 = 新意图：清掉上轮失败留下的退避计数，按正常防抖保存
+        saveRetryRef.current.delete(brandName)
+        scheduleSave(brandName)
+      }
+    }
+
+    const nextHistory = pushEditHistory(historyRef.current, {
+      rest: restEdits,
+      collabListIds,
+    })
+    if (nextHistory !== historyRef.current) {
+      commitHistory(nextHistory)
+    }
+  }
+
   const updateCell = (
     brandName: string,
     rowKey: string,
     value: number | null,
   ) => {
+    if (!canEdit) return
     const collabListId = collabListIdOf(brandName)
     if (collabListId && !collab.writable) return
 
@@ -1736,38 +1870,19 @@ export function SupplierQuoteBoard() {
           specRows: specRowsForBrand(brandName),
           isFilled: (candidateKey) =>
             candidateKey === rowKey ||
-            effectiveCellValue(brandName, candidateKey) !== null,
+            latestCellValueAt({ brandName, rowKey: candidateKey }) !== null,
         })
       }
     }
 
-    if (collabListId) {
-      // 协作表：改的是本地 Y.Doc（离线也即时生效），不再排 REST 自动保存
-      collab.setPrice(collabListId, collabCellKeyOfRowKey(rowKey), value)
-      for (const cell of fillPlan) {
-        collab.setPrice(
-          collabListId,
-          collabCellKeyOfRowKey(cell.rowKey),
-          cell.value,
-        )
-      }
-    } else {
-      let nextBrandDraft = setDraftPrice(
-        draftsRef.current[brandName],
-        rowKey,
-        value,
-      )
-      for (const cell of fillPlan) {
-        nextBrandDraft = setDraftPrice(nextBrandDraft, cell.rowKey, cell.value)
-      }
-      applyDrafts({
-        ...draftsRef.current,
-        [brandName]: nextBrandDraft,
-      })
-      // 用户重新编辑 = 新意图：清掉上轮失败留下的退避计数，按正常防抖保存
-      saveRetryRef.current.delete(brandName)
-      scheduleSave(brandName)
-    }
+    commitCellChanges([
+      { brandName, rowKey, value },
+      ...fillPlan.map((cell) => ({
+        brandName,
+        rowKey: cell.rowKey,
+        value: cell.value,
+      })),
+    ])
 
     if (fillPlan.length > 0) {
       message.success(
@@ -1789,34 +1904,99 @@ export function SupplierQuoteBoard() {
 
   /* ---------------------------------------------------------------- 操作 */
 
-  /** 撤销/重做后按受影响品牌重新排队保存，避免界面与库不一致。 */
-  const flushDirtyBrands = () => {
-    for (const brandName of Object.keys(draftsRef.current)) {
-      scheduleSave(brandName)
-    }
+  /** 判断一条统一时间线记录此刻是否可执行（防止协作重连重建 Y.Doc 后残留不可撤空步）。 */
+  const isHistoryEntryActionable = (
+    entry: QuoteHistoryEntry,
+    direction: 'undo' | 'redo',
+  ): boolean => {
+    if (entry.rest.length > 0) return true
+    return entry.collabListIds.some((listId) =>
+      direction === 'undo'
+        ? collab.canUndoList(listId)
+        : collab.canRedoList(listId),
+    )
   }
 
-  const undo = () => {
-    // 协作模式下撤销栈在 Y.Doc 里（设计文档 §8：只撤自己的操作）
-    if (collab.mode === 'collab') {
-      collab.undo()
-      return
+  const runHistoryStep = (direction: 'undo' | 'redo') => {
+    if (!canEdit) return
+    let working = historyRef.current
+    let actionable: QuoteHistoryEntry | null = null
+    let committedHistory = working
+
+    while (true) {
+      const popped =
+        direction === 'undo' ? popUndoEntry(working) : popRedoEntry(working)
+      if (!popped.entry) break
+      if (isHistoryEntryActionable(popped.entry, direction)) {
+        actionable = popped.entry
+        committedHistory = popped.history
+        break
+      }
+      // 已失效的纯协作条目直接丢弃，不推入反向栈
+      working =
+        direction === 'undo'
+          ? { past: popped.history.past, future: working.future }
+          : { past: working.past, future: popped.history.future }
+      committedHistory = working
     }
-    const next = undoDrafts(history, draftsRef.current)
-    setHistory(next.history)
-    commitDrafts(next.drafts)
-    flushDirtyBrands()
-  }
-  const redo = () => {
-    if (collab.mode === 'collab') {
-      collab.redo()
-      return
+
+    if (committedHistory !== historyRef.current) {
+      commitHistory(committedHistory)
     }
-    const next = redoDrafts(history, draftsRef.current)
-    setHistory(next.history)
-    commitDrafts(next.drafts)
-    flushDirtyBrands()
+    if (!actionable) return
+
+    if (actionable.rest.length > 0) {
+      const applied = applyEditHistoryToDrafts(
+        draftsRef.current,
+        actionable.rest,
+        direction,
+        {
+          shouldOmit: (brandName, rowKey, target) =>
+            !savingRef.current.has(brandName) &&
+            target === persistedPriceOf(brandName, rowKey),
+        },
+      )
+      commitDrafts(applied.drafts)
+      const cleanedBrands: string[] = []
+      for (const brandName of applied.touchedBrands) {
+        saveRetryRef.current.delete(brandName)
+        if (draftCount(applied.drafts[brandName]) > 0) {
+          scheduleSave(brandName)
+        } else {
+          const timer = timersRef.current.get(brandName)
+          if (timer) {
+            clearTimeout(timer)
+            timersRef.current.delete(brandName)
+          }
+          cleanedBrands.push(brandName)
+        }
+      }
+      if (cleanedBrands.length > 0) {
+        setSaveState((current) => {
+          let changed = false
+          const next = { ...current }
+          for (const brandName of cleanedBrands) {
+            if (next[brandName] === 'error') {
+              next[brandName] = 'idle'
+              changed = true
+            }
+          }
+          return changed ? next : current
+        })
+      }
+    }
+
+    if (actionable.collabListIds.length > 0) {
+      if (direction === 'undo') collab.undoLists(actionable.collabListIds)
+      else collab.redoLists(actionable.collabListIds)
+    }
+
+    // 重置单元格本地未提交输入文本，确保界面立即回显撤销/重做后的最新值
+    setBulkResetToken((token) => token + 1)
   }
+
+  const undo = () => runHistoryStep('undo')
+  const redo = () => runHistoryStep('redo')
 
   /** 切到某个供应商前先清空这一屏的临时状态（草稿、历史、选区、新建列缓存）。 */
   const resetBoardState = () => {
@@ -1830,8 +2010,8 @@ export function SupplierQuoteBoard() {
     // 否则迟到的一次 saveBrand 会拿新供应商的草稿提前落库（保存提示也会错位）。
     for (const timer of timersRef.current.values()) clearTimeout(timer)
     timersRef.current.clear()
-    setHistory(EMPTY_HISTORY)
-    setSavedValues({})
+    commitHistory(EMPTY_EDIT_HISTORY)
+    commitSavedValues(() => ({}))
     setColumns({})
     setSaveState({})
     // 材质 tab 是上一个供应商的数据形状（有的供应商直条只有 HRB400E），不能带过去
@@ -1935,33 +2115,7 @@ export function SupplierQuoteBoard() {
    * 避免每处各写一遍"协作还是 REST"的判断（同一口径只在一处）。</p>
    */
   const writeCellValues = (cells: readonly GridCellValue[]) => {
-    if (!cells.length) return
-    const next: Record<string, BrandDraft> = { ...draftsRef.current }
-    const touched = new Set<string>()
-    for (const cell of cells) {
-      const collabListId = collabListIdOf(cell.brandName)
-      if (collabListId) {
-        if (collab.writable) {
-          collab.setPrice(
-            collabListId,
-            collabCellKeyOfRowKey(cell.rowKey),
-            cell.value,
-          )
-        }
-        continue
-      }
-      next[cell.brandName] = setDraftPrice(
-        next[cell.brandName],
-        cell.rowKey,
-        cell.value,
-      )
-      touched.add(cell.brandName)
-    }
-    // 只有真的还有 REST 表被改过才落草稿：全协作时不要凭空造历史记录
-    if (touched.size) {
-      applyDrafts(next)
-      for (const brandName of touched) scheduleSave(brandName)
-    }
+    commitCellChanges(cells)
   }
 
   const applyBulkValues = (cells: readonly GridCellValue[]) => {
@@ -2011,7 +2165,7 @@ export function SupplierQuoteBoard() {
     const plan = buildClearPlan({
       bounds: target.bounds,
       lookup: lookupOfSheet(target.group, target.sheet),
-      valueOf: cellValueAt,
+      valueOf: effectiveCellValueAt,
     })
     if (!plan.cells.length) {
       message.info(t('priceCompare.supplierPrice.clearNothing'))
@@ -2086,7 +2240,7 @@ export function SupplierQuoteBoard() {
       bounds: target.bounds,
       mode,
       lookup: lookupOfSheet(target.group, target.sheet),
-      valueOf: cellValueAt,
+      valueOf: effectiveCellValueAt,
     })
     if (plan.cells.length) {
       applyBulkValues(plan.cells)
@@ -2139,7 +2293,7 @@ export function SupplierQuoteBoard() {
     text: string,
   ): number | null => {
     const result = evaluatePriceFormula(text, {
-      base: cellValueAt({ brandName, rowKey }),
+      base: latestCellValueAt({ brandName, rowKey }),
     })
     if (!result.ok) {
       reportFormulaFailure({ reason: result.reason, text })
@@ -2179,7 +2333,7 @@ export function SupplierQuoteBoard() {
     })
     const next: GridCellValue[] = []
     for (const cell of cells) {
-      const current = cellValueAt(cell.address)
+      const current = effectiveCellValueAt(cell.address)
       // 空格跳过：批量调价只改「本来有价」的格子（见 batchAdjustHint）
       if (current === null) continue
       if (relative) {
@@ -2462,12 +2616,51 @@ export function SupplierQuoteBoard() {
     }
   }
 
-  /** Ctrl+Z / Ctrl+Y 撤销重做（与逐格输入、粘贴共用同一份草稿历史）。 */
+  /**
+   * 页面级撤销/重做快捷键（Ctrl/Cmd+Z、Ctrl/Cmd+Shift+Z、Ctrl/Cmd+Y）：
+   *
+   * <p>复用 `useGlobalShortcut` 挂在 `window` 捕获阶段，避免关掉批量调价/基价规则弹窗或点击页面空白区后
+   * 焦点落到 `document.body` 导致快捷键失灵；同时按 keep-alive 面板可见性、弹窗态、只读态、输入法组合态
+   * 与编辑态（`data-editing="true"`）以及非价格格输入框（如顶部供应商搜索框）严格放行原生行为。</p>
+   */
+  useGlobalShortcut({
+    enabled:
+      Boolean(supplierId) &&
+      canEdit &&
+      !batchOpen &&
+      baseRuleBrand === null &&
+      !pendingLeave,
+    containerRef: pageRef,
+    capture: true,
+    match: (event) => {
+      if (!hasShortcutModifier(event)) return false
+      const key = event.key.toLowerCase()
+      if (key !== 'z' && key !== 'y') return false
+      const target = event.target instanceof HTMLElement ? event.target : null
+      if (target?.dataset.editing === 'true') return false
+      if (target?.closest('.ant-modal-root')) return false
+      if (isEditableShortcutTarget(target)) {
+        if (
+          !target?.hasAttribute('data-grid-cell') ||
+          !pageRef.current?.contains(target)
+        ) {
+          return false
+        }
+      }
+      return true
+    },
+    run: (event) => {
+      event.preventDefault()
+      const key = event.key.toLowerCase()
+      if (key === 'y' || event.shiftKey) redo()
+      else undo()
+    },
+  })
+
   /**
    * 表格容器上的快捷键（捕获阶段：格子里的输入框还没处理就先分流）。
    *
    * <ul>
-   *   <li>Ctrl+Z / Ctrl+Y：撤销 / 重做（与逐格输入、粘贴共用同一份草稿历史）；</li>
    *   <li>Ctrl+D / Ctrl+R：把选区首行向下 / 首列向右填满；</li>
    *   <li>Shift+方向键：扩大 / 收缩选区（键盘框选，配合 Shift+F10 打开批量菜单）；</li>
    *   <li>Delete：清空选区内已有价格 —— **正在格子里输入时除外**（那时 Delete 只删字符，
@@ -2493,20 +2686,6 @@ export function SupplierQuoteBoard() {
       (event.target as HTMLElement | null)?.dataset.editing === 'true'
     if ((event.ctrlKey || event.metaKey) && !event.altKey) {
       const key = event.key.toLowerCase()
-      if (key === 'z') {
-        if (editing) return
-        event.preventDefault()
-        // Ctrl+Shift+Z 与 Ctrl+Y 都是重做（S9）
-        if (event.shiftKey) redo()
-        else undo()
-        return
-      }
-      if (key === 'y') {
-        if (editing) return
-        event.preventDefault()
-        redo()
-        return
-      }
       if ((key === 'd' || key === 'r') && selectionWritableCount > 1) {
         event.preventDefault()
         fillSelectedCells(key === 'd' ? 'down' : 'right')
@@ -2630,20 +2809,52 @@ export function SupplierQuoteBoard() {
   }, [specsQuery.isError, specsQuery.refetch, t])
 
   /*
-   * 进入协作模式后，本地草稿已经被播种进 Y.Doc（见 seedCollabFromSnapshot），
-   * 此时必须清掉草稿与自动保存计时器 —— 否则界面显示协作值、后台还在整列 PUT，
-   * 两个写者会互相覆盖（设计文档 §6.1「唯一写者原则」）。
-   * 在途的那一次保存无法撤回，但它写的是同一批值，物化器随后会以文档为准覆盖回来。
+   * 某品牌进入协作模式后，其本地草稿已被播种进 Y.Doc（见 seedCollabFromSnapshot），
+   * 此时只清掉已进协作的那些品牌的草稿、自动保存计时器与 REST 历史 —— 其余仍处于 REST
+   * 模式的未建列品牌不受影响，避免混合模式下被一刀切清掉草稿与撤销栈（设计文档 §6.1）。
    */
-  const collabMode = collab.mode
+  const collabBrandsKey = brandNames
+    .filter((brandName) => Boolean(collabListIdOf(brandName)))
+    .join('\u0000')
   useEffect(() => {
-    if (collabMode !== 'collab') return
-    for (const timer of timersRef.current.values()) clearTimeout(timer)
-    timersRef.current.clear()
-    if (Object.keys(draftsRef.current).length) commitDrafts({})
-    setSaveState({})
-    setHistory(EMPTY_HISTORY)
-  }, [collabMode, commitDrafts])
+    if (!collabBrandsKey) return
+    const collabBrands = new Set(collabBrandsKey.split('\u0000'))
+    for (const brandName of collabBrands) {
+      const timer = timersRef.current.get(brandName)
+      if (timer) {
+        clearTimeout(timer)
+        timersRef.current.delete(brandName)
+      }
+    }
+    const currentDrafts = draftsRef.current
+    let draftsChanged = false
+    const nextDrafts: Record<string, BrandDraft> = {}
+    for (const [brandName, draft] of Object.entries(currentDrafts)) {
+      if (collabBrands.has(brandName)) {
+        draftsChanged = true
+      } else {
+        nextDrafts[brandName] = draft
+      }
+    }
+    if (draftsChanged) commitDrafts(nextDrafts)
+    setSaveState((current) => {
+      let stateChanged = false
+      const nextState: Record<string, SaveState> = {}
+      for (const [brandName, state] of Object.entries(current)) {
+        if (collabBrands.has(brandName)) {
+          stateChanged = true
+        } else {
+          nextState[brandName] = state
+        }
+      }
+      return stateChanged ? nextState : current
+    })
+    const nextHistory = pruneEditHistoryForCollab(
+      historyRef.current,
+      collabBrands,
+    )
+    if (nextHistory !== historyRef.current) commitHistory(nextHistory)
+  }, [collabBrandsKey, commitDrafts, commitHistory])
 
   /*
    * 同格冲突提示（设计文档 §8）：本地刚改过这一格、紧接着收到别人对同一格的改动时，
@@ -2713,8 +2924,10 @@ export function SupplierQuoteBoard() {
           }
           total += 1
           if (
-            cellValueOfLeaf(column.brandName, leafOfSpec(column, row.spec)) !==
-            null
+            effectiveCellValue(
+              column.brandName,
+              quoteRowKey(leafOfSpec(column, row.spec)),
+            ) !== null
           ) {
             filled += 1
           }
@@ -3282,10 +3495,12 @@ export function SupplierQuoteBoard() {
     if (targetId) focusGridCell(targetId)
   }
 
-  const canUndo =
-    collab.mode === 'collab' ? collab.canUndo : history.past.length > 0
-  const canRedo =
-    collab.mode === 'collab' ? collab.canRedo : history.future.length > 0
+  const canUndo = history.past.some((entry) =>
+    isHistoryEntryActionable(entry, 'undo'),
+  )
+  const canRedo = history.future.some((entry) =>
+    isHistoryEntryActionable(entry, 'redo'),
+  )
 
   const staleTag = (() => {
     if (staleBrands.length === 0) return null
@@ -3870,7 +4085,7 @@ export function SupplierQuoteBoard() {
 
   if (!supplierId) {
     return (
-      <Flex vertical gap={12} className="supplier-price-page">
+      <Flex vertical gap={12} className="supplier-price-page" ref={pageRef}>
         {supplierSelector}
         <Typography.Text type="secondary">
           {t('priceCompare.supplierPrice.pickSupplier')}
@@ -3880,7 +4095,7 @@ export function SupplierQuoteBoard() {
   }
 
   return (
-    <Flex vertical gap={12} className="supplier-price-page">
+    <Flex vertical gap={12} className="supplier-price-page" ref={pageRef}>
       {supplierSelector}
       {/* 按 supplierId 重挂载报价表主体，确保切换供应商后格内临时编辑态不会跨供应商残留。 */}
       <div className="supplier-price-board-container" key={supplierId}>
